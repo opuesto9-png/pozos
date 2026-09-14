@@ -645,6 +645,31 @@ function render(filterText){
 // ---------------- Edicion local (localStorage) ----------------
 const OVERRIDES_KEY = 'pozos_overrides_v1';
 
+function downloadFile(blob, fileName){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 3000);
+  alert('Se descargo el archivo "' + fileName + '". Buscalo en tus Descargas y compartilo desde ahi (WhatsApp, mail, etc.).');
+}
+
+function downloadOrShareBlob(blob, fileName, title){
+  const file = new File([blob], fileName, { type: blob.type });
+  if(navigator.canShare && navigator.canShare({ files: [file] })){
+    navigator.share({ title: title, files: [file] }).catch((err) => {
+      // si el usuario cancelo el share, no hacemos nada; si fue otro error, ofrecemos descargar
+      if(err && err.name === 'AbortError') return;
+      downloadFile(blob, fileName);
+    });
+    return;
+  }
+  downloadFile(blob, fileName);
+}
+
 function loadOverrides(){
   try{
     return JSON.parse(safeGet(OVERRIDES_KEY, '{}'));
@@ -898,20 +923,7 @@ function exportOverrides(){
   const fileName = `Cambios_pozos_${new Date().toISOString().slice(0,10)}.xlsx`;
 
   function shareOrDownload(blob){
-    const file = new File([blob], fileName, { type: blob.type });
-    if(navigator.canShare && navigator.canShare({ files: [file] })){
-      navigator.share({ title: 'Cambios de pozos', files: [file] }).catch(() => {});
-      return;
-    }
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = fileName;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 3000);
-    alert('Se descargo el archivo "' + fileName + '". Compartilo desde donde lo guardaste.');
+    downloadOrShareBlob(blob, fileName, 'Cambios de pozos');
   }
 
   function fallbackTextShare(){
@@ -970,8 +982,12 @@ document.addEventListener('keydown', (e) => {
   if(e.key === 'Escape') closeCard();
 });
 document.getElementById('searchBox').addEventListener('input', (e) => render(e.target.value));
-document.getElementById('exportBtn').addEventListener('click', exportOverrides);
-document.getElementById('parteBtn').addEventListener('click', exportParteDeCampo);
+document.getElementById('exportBtn').addEventListener('click', () => {
+  try { exportOverrides(); } catch(err) { alert('Error al compartir cambios: ' + (err && err.message ? err.message : err)); }
+});
+document.getElementById('parteBtn').addEventListener('click', () => {
+  try { exportParteDeCampo(); } catch(err) { alert('Error al generar el parte: ' + (err && err.message ? err.message : err)); }
+});
 
 function bateriaToInstalacion(bat){
   if(!bat) return '';
@@ -1073,17 +1089,7 @@ function exportParteDeCampo(){
   const fileName = `Parte_de_campo_${new Date().toISOString().slice(0,10)}.xlsx`;
   wb.xlsx.writeBuffer().then(buffer => {
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    const file = new File([blob], fileName, { type: blob.type });
-    if(navigator.canShare && navigator.canShare({ files: [file] })){
-      navigator.share({ title: 'Parte de campo', files: [file] }).catch(() => {});
-      return;
-    }
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = fileName;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 3000);
-    alert('Se descargo "' + fileName + '". Abrilo y copia/pega las filas directo en el Excel del parte.');
+    downloadOrShareBlob(blob, fileName, 'Parte de campo');
   }).catch((err) => {
     alert('No se pudo generar el Excel (' + (err && err.message ? err.message : 'error desconocido') + '). Probá de nuevo con conexion a internet.');
   });
@@ -1267,6 +1273,7 @@ document.getElementById('tabLista').addEventListener('click', () => {
   document.getElementById('ciclajeMain').style.display = 'none';
 });
 </script>
+
 <script>
 if('serviceWorker' in navigator){
   window.addEventListener('load', () => {
