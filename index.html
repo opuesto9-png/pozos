@@ -488,7 +488,7 @@
 
 <header>
   <h1>Pozos por bateria</h1>
-  <p>Tocá un pozo para ver el detalle completo. Colectora segun plano de red (Act. Agosto 2017) &mdash; puede estar desactualizado, confirmar estado real en campo/SCADA.</p>
+  <p>Tocá un pozo para ver el detalle completo. Los cambios (ABIERTO/CERRADO, ediciones) se guardan solos, al instante. El botón de abajo solo arma y manda el parte cuando vos lo toques, no antes. Colectora segun plano de red (Act. Agosto 2017) &mdash; puede estar desactualizado, confirmar estado real en campo/SCADA.</p>
   <div class="search">
     <input id="searchBox" type="text" placeholder="Buscar pozo (ej: 1580)..." autocomplete="off">
   </div>
@@ -500,7 +500,7 @@
     <button class="tab-btn active" id="tabLista">Lista</button>
     <button class="tab-btn" id="tabPlano">Plano (colectoras)</button>
     <button class="tab-btn" id="tabCiclaje">Ciclaje</button>
-    <button class="tab-btn export-btn" id="parteBtn">Guardar / Enviar parte <span id="pendCount" class="pend-badge" style="display:none;"></span></button>
+    <button class="tab-btn export-btn" id="parteBtn">Enviar parte de campo <span id="pendCount" class="pend-badge" style="display:none;"></span></button>
     <div class="unit-toggle">
       <button class="unit-btn active" id="unitKg">kg/cm&sup2;</button>
       <button class="unit-btn" id="unitPsi">psi</button>
