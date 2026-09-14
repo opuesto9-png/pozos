@@ -360,6 +360,25 @@
   }
   .edit-input:focus{ outline:none; border-color: var(--amber); }
   .edit-textarea{ min-height: 70px; resize: vertical; }
+  .input-with-clear{
+    display:flex;
+    gap: 6px;
+    align-items: flex-start;
+  }
+  .input-with-clear .edit-input{ flex:1; }
+  .field-clear-btn{
+    background: none;
+    border: 1px solid var(--line);
+    color: var(--muted);
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    border-radius: 6px;
+    font-size: 1rem;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .field-clear-btn:hover{ border-color:#c0524a; color:#e6a49d; }
   .time-row{
     display:flex;
     gap: 10px;
@@ -744,6 +763,24 @@ try{
 }catch(e){ firestoreOk = false; }
 
 let lastOverridesCount = 0;
+let pendingReportSet = new Set();
+try{
+  pendingReportSet = new Set(JSON.parse(safeGet('pending_report_v1', '[]')));
+}catch(e){ pendingReportSet = new Set(); }
+
+function persistPendingReportSet(){
+  safeSet('pending_report_v1', JSON.stringify([...pendingReportSet]));
+}
+function markPendingReport(pozoKey){
+  pendingReportSet.add(pozoKey);
+  persistPendingReportSet();
+  updatePendCount();
+}
+function clearPendingReport(){
+  pendingReportSet.clear();
+  persistPendingReportSet();
+  updatePendCount();
+}
 
 function downloadFile(blob, fileName){
   const url = URL.createObjectURL(blob);
@@ -773,9 +810,10 @@ function downloadOrShareBlob(blob, fileName, title){
 function updatePendCount(){
   const badge = document.getElementById('pendCount');
   if(!badge) return;
-  if(lastOverridesCount > 0){
+  const n = pendingReportSet.size;
+  if(n > 0){
     badge.style.display = '';
-    badge.textContent = lastOverridesCount;
+    badge.textContent = n;
   } else {
     badge.style.display = 'none';
   }
@@ -826,7 +864,9 @@ function saveEdit(pozoKey, newFields){
     alert('No hay conexion con el guardado compartido. Revisa tu internet e intenta de nuevo.');
     return;
   }
-  db.collection('pozos_overrides').doc(pozoKey).set(newFields, { merge: true }).catch((err) => {
+  db.collection('pozos_overrides').doc(pozoKey).set(newFields, { merge: true }).then(() => {
+    markPendingReport(pozoKey);
+  }).catch((err) => {
     alert('No se pudo guardar el cambio (' + err.message + '). Revisa tu conexion.');
   });
 }
@@ -977,13 +1017,19 @@ function renderCardEdit(rec, bat){
   function inputField(label, key, value){
     return `<div class="field">
       <div class="k">${label}</div>
-      <input class="edit-input" data-key="${key}" value="${(value||'').replace(/"/g,'&quot;')}">
+      <div class="input-with-clear">
+        <input class="edit-input" data-key="${key}" value="${(value||'').replace(/"/g,'&quot;')}">
+        <button type="button" class="field-clear-btn" data-clear-target="${key}" title="Borrar este dato">&times;</button>
+      </div>
     </div>`;
   }
   function textareaField(label, key, value){
     return `<div class="field">
       <div class="k">${label}</div>
-      <textarea class="edit-input edit-textarea" data-key="${key}">${value||''}</textarea>
+      <div class="input-with-clear">
+        <textarea class="edit-input edit-textarea" data-key="${key}">${value||''}</textarea>
+        <button type="button" class="field-clear-btn" data-clear-target="${key}" title="Borrar este dato">&times;</button>
+      </div>
     </div>`;
   }
 
@@ -1039,6 +1085,13 @@ function renderCardEdit(rec, bat){
   `;
   document.getElementById('closeBtn').addEventListener('click', closeCard);
   document.getElementById('cancelBtn').addEventListener('click', () => renderCardView(rec, bat));
+  card.querySelectorAll('.field-clear-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.clearTarget;
+      const input = card.querySelector(`.edit-input[data-key="${key}"]`);
+      if(input) input.value = '';
+    });
+  });
   document.getElementById('saveBtn').addEventListener('click', () => {
     const inputs = card.querySelectorAll('.edit-input[data-key]');
     const newFields = {};
@@ -1116,12 +1169,21 @@ function buildNovedad(rec){
   return 'Maniobra registrada.';
 }
 
+function buildHoraColumna(rec){
+  const hA = rec.horaApertura || '';
+  const hC = rec.horaCierre || '';
+  if(hA && hC) return `${hA}-${hC}`;
+  if(hA) return hA;
+  if(hC) return hC;
+  return '';
+}
+
 function exportParteDeCampo(){
-  // usamos el horario cargado a mano (Apertura - Cierre) de cada pozo, no un registro automatico
+  // usamos SOLO la hora de apertura/cierre cargada a mano (campos horaApertura/horaCierre), nada de texto de ciclo
   const filas = POZOS
-    .filter(rec => rec.horario && rec.horario.trim())
+    .filter(rec => rec.horaApertura || rec.horaCierre)
     .map(rec => ({
-      hora: rec.horario,
+      hora: buildHoraColumna(rec),
       instalacion: bateriaToInstalacion(rec.bateria),
       pozo: rec.pozo,
       novedad: buildNovedad(rec)
@@ -1142,6 +1204,7 @@ function exportParteDeCampo(){
     if(navigator.share){ navigator.share({ title: 'Parte de campo', text }).catch(()=>{}); }
     else if(navigator.clipboard){ navigator.clipboard.writeText(text).then(()=>alert('Copiado.')); }
     else { prompt('Copia este texto:', text); }
+    clearPendingReport();
     return;
   }
 
@@ -1189,6 +1252,7 @@ function exportParteDeCampo(){
   wb.xlsx.writeBuffer().then(buffer => {
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     downloadOrShareBlob(blob, fileName, 'Parte de campo');
+    clearPendingReport();
   }).catch((err) => {
     alert('No se pudo generar el Excel (' + (err && err.message ? err.message : 'error desconocido') + '). Probá de nuevo con conexion a internet.');
   });
