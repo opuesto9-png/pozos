@@ -1,7 +1,5 @@
-const CACHE_NAME = 'pozos-cache-v1';
+const CACHE_NAME = 'pozos-cache-v2';
 const ASSETS = [
-  './',
-  './index.html',
   './manifest.json',
   './icon-192.png',
   './icon-512.png'
@@ -24,20 +22,38 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // solo interceptamos GET, dejamos pasar todo lo demas (ej. CDN de ExcelJS) directo a la red
   if (event.request.method !== 'GET') return;
+  const url = event.request.url;
+  const isSameOrigin = url.startsWith(self.location.origin);
+  const isHTML = event.request.mode === 'navigate' || url.endsWith('/') || url.endsWith('.html');
 
-  event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request).then((response) => {
-        // cacheamos solo pedidos al mismo origen (nuestros archivos), no CDNs externos
-        if (response.ok && event.request.url.startsWith(self.location.origin)) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-        }
+  if (isSameOrigin && isHTML) {
+    // red primero para el HTML: asi las actualizaciones se ven apenas se suben, sin quedar pegado a una version vieja
+    event.respondWith(
+      fetch(event.request).then((response) => {
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
         return response;
-      }).catch(() => cached);
-    })
-  );
+      }).catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  if (isSameOrigin) {
+    event.respondWith(
+      caches.match(event.request).then((cached) => {
+        if (cached) return cached;
+        return fetch(event.request).then((response) => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
+          return response;
+        });
+      })
+    );
+    return;
+  }
+
+  // CDNs externos (ej. ExcelJS): siempre directo a la red, sin tocar el cache
 });

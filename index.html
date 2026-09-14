@@ -322,6 +322,15 @@
 
   .tag.edit-tag{ color: #7fb0e0; }
   .export-btn{ margin-left: auto; border-color: #7fb0e0; color: #7fb0e0; }
+  .pend-badge{
+    background: #d98e3f;
+    color: #14181d;
+    font-weight: 800;
+    border-radius: 20px;
+    padding: 1px 7px;
+    margin-left: 6px;
+    font-size: 0.72rem;
+  }
   .edited-note{
     font-size: 0.68rem;
     color: #7fb0e0;
@@ -491,8 +500,7 @@
     <button class="tab-btn active" id="tabLista">Lista</button>
     <button class="tab-btn" id="tabPlano">Plano (colectoras)</button>
     <button class="tab-btn" id="tabCiclaje">Ciclaje</button>
-    <button class="tab-btn export-btn" id="exportBtn">Compartir cambios</button>
-    <button class="tab-btn export-btn" id="parteBtn">Parte de campo</button>
+    <button class="tab-btn export-btn" id="parteBtn">Guardar / Enviar parte <span id="pendCount" class="pend-badge" style="display:none;"></span></button>
     <div class="unit-toggle">
       <button class="unit-btn active" id="unitKg">kg/cm&sup2;</button>
       <button class="unit-btn" id="unitPsi">psi</button>
@@ -688,10 +696,24 @@ function applyOverrides(){
     }
   });
 }
+function updatePendCount(){
+  const overrides = loadOverrides();
+  const n = Object.keys(overrides).length;
+  const badge = document.getElementById('pendCount');
+  if(!badge) return;
+  if(n > 0){
+    badge.style.display = '';
+    badge.textContent = n;
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
 function saveEdit(pozoKey, newFields){
   const overrides = loadOverrides();
   overrides[pozoKey] = Object.assign(overrides[pozoKey] || {}, newFields);
   saveOverridesToStorage(overrides);
+  updatePendCount();
 }
 let clearArmed = null; // pozo que esta esperando el segundo toque para confirmar limpieza
 
@@ -721,6 +743,7 @@ function clearPozoData(rec, bat){
   const overrides = loadOverrides();
   delete overrides[rec.pozo];
   saveOverridesToStorage(overrides);
+  updatePendCount();
 
   const original = ORIGINAL_POZOS[rec.pozo];
   if(original){
@@ -982,9 +1005,6 @@ document.addEventListener('keydown', (e) => {
   if(e.key === 'Escape') closeCard();
 });
 document.getElementById('searchBox').addEventListener('input', (e) => render(e.target.value));
-document.getElementById('exportBtn').addEventListener('click', () => {
-  try { exportOverrides(); } catch(err) { alert('Error al compartir cambios: ' + (err && err.message ? err.message : err)); }
-});
 document.getElementById('parteBtn').addEventListener('click', () => {
   try { exportParteDeCampo(); } catch(err) { alert('Error al generar el parte: ' + (err && err.message ? err.message : err)); }
 });
@@ -1101,6 +1121,7 @@ POZOS.forEach(p => { ORIGINAL_POZOS[p.pozo] = Object.assign({}, p); });
 
 applyOverrides();
 render('');
+updatePendCount();
 if(storageBlocked){
   const warn = document.createElement('div');
   warn.className = 'plano-note';
