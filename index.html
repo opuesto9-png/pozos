@@ -590,6 +590,7 @@
     <button class="tab-btn active" id="tabLista">Lista</button>
     <button class="tab-btn" id="tabPlano">Plano (colectoras)</button>
     <button class="tab-btn" id="tabCiclaje">Ciclaje</button>
+    <button class="tab-btn" id="tabMov">Últimos movimientos</button>
     <button class="tab-btn export-btn" id="parteBtn">Enviar parte de campo <span id="pendCount" class="pend-badge" style="display:none;"></span></button>
     <div class="unit-toggle">
       <button class="unit-btn active" id="unitKg">kg/cm&sup2;</button>
@@ -601,6 +602,7 @@
 <main id="main"></main>
 <main id="planoMain" style="display:none;"></main>
 <main id="ciclajeMain" style="display:none;"></main>
+<main id="movMain" style="display:none;"></main>
 
 <div class="overlay" id="overlay">
   <div class="card" id="card"></div>
@@ -825,6 +827,12 @@ function refreshEverything(){
   if(document.getElementById('planoMain').dataset.rendered){
     document.getElementById('planoMain').dataset.rendered = '';
   }
+  if(document.getElementById('ciclajeMain').style.display !== 'none'){
+    renderCiclaje();
+  }
+  if(document.getElementById('movMain').style.display !== 'none'){
+    renderMovimientos();
+  }
   if(document.getElementById('overlay').classList.contains('show') && window._currentCardRec){
     // si hay una ficha abierta, la refrescamos tambien por si cambio desde otro dispositivo
     if(document.getElementById('editBtn')){
@@ -851,6 +859,7 @@ function startSync(){
         const data = doc.data();
         Object.assign(rec, data);
         rec._edited = true;
+        rec._updatedAtDate = (data.updatedAt && data.updatedAt.toDate) ? data.updatedAt.toDate() : (rec._updatedAtDate || null);
       }
     });
     refreshEverything();
@@ -864,7 +873,11 @@ function saveEdit(pozoKey, newFields){
     alert('No hay conexion con el guardado compartido. Revisa tu internet e intenta de nuevo.');
     return;
   }
-  db.collection('pozos_overrides').doc(pozoKey).set(newFields, { merge: true }).then(() => {
+  const toSave = Object.assign({}, newFields, {
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    updatedFields: Object.keys(newFields)
+  });
+  db.collection('pozos_overrides').doc(pozoKey).set(toSave, { merge: true }).then(() => {
     markPendingReport(pozoKey);
   }).catch((err) => {
     alert('No se pudo guardar el cambio (' + err.message + '). Revisa tu conexion.');
@@ -1353,9 +1366,11 @@ document.getElementById('tabPlano').addEventListener('click', () => {
   document.getElementById('tabPlano').classList.add('active');
   document.getElementById('tabLista').classList.remove('active');
   document.getElementById('tabCiclaje').classList.remove('active');
+  document.getElementById('tabMov').classList.remove('active');
   document.getElementById('main').style.display = 'none';
   document.getElementById('planoMain').style.display = '';
   document.getElementById('ciclajeMain').style.display = 'none';
+  document.getElementById('movMain').style.display = 'none';
   if(!document.getElementById('planoMain').dataset.rendered){
     renderPlano();
     document.getElementById('planoMain').dataset.rendered = '1';
@@ -1462,18 +1477,87 @@ document.getElementById('tabCiclaje').addEventListener('click', () => {
   document.getElementById('tabCiclaje').classList.add('active');
   document.getElementById('tabLista').classList.remove('active');
   document.getElementById('tabPlano').classList.remove('active');
+  document.getElementById('tabMov').classList.remove('active');
   document.getElementById('main').style.display = 'none';
   document.getElementById('planoMain').style.display = 'none';
   document.getElementById('ciclajeMain').style.display = '';
+  document.getElementById('movMain').style.display = 'none';
   renderCiclaje();
 });
 document.getElementById('tabLista').addEventListener('click', () => {
   document.getElementById('tabLista').classList.add('active');
   document.getElementById('tabPlano').classList.remove('active');
   document.getElementById('tabCiclaje').classList.remove('active');
+  document.getElementById('tabMov').classList.remove('active');
   document.getElementById('main').style.display = '';
   document.getElementById('planoMain').style.display = 'none';
   document.getElementById('ciclajeMain').style.display = 'none';
+  document.getElementById('movMain').style.display = 'none';
+});
+
+// ---------------- Vista Ultimos movimientos ----------------
+function tiempoRelativo(date){
+  if(!date) return '';
+  const diffMs = Date.now() - date.getTime();
+  const mins = Math.floor(diffMs / 60000);
+  if(mins < 1) return 'recien';
+  if(mins < 60) return `hace ${mins} min`;
+  const horas = Math.floor(mins / 60);
+  if(horas < 24) return `hace ${horas} h`;
+  const dias = Math.floor(horas / 24);
+  return `hace ${dias} d`;
+}
+
+function renderMovimientos(){
+  const movMain = document.getElementById('movMain');
+  movMain.innerHTML = `<div class="plano-note">Pozos ordenados por la ultima modificacion (de cualquier dispositivo), la mas reciente primero.</div>`;
+
+  const conMovimiento = POZOS.filter(p => p._updatedAtDate).sort((a,b) => b._updatedAtDate - a._updatedAtDate);
+
+  if(conMovimiento.length === 0){
+    movMain.innerHTML += '<div class="empty-msg">Todavia no hay movimientos registrados.</div>';
+    return;
+  }
+
+  const FIELD_LABELS_MOV = {
+    presion: 'presion', colectora: 'colectora', tablero: 'tablero', optim: 'optimizador',
+    fecha: 'ultima visita', notas: 'notas', estado: 'estado', ciclo: 'ciclo',
+    horario: 'horario', horaApertura: 'hora apertura', horaCierre: 'hora cierre',
+    horarioNota: 'nota horario', enCiclaje: 'ciclaje'
+  };
+
+  conMovimiento.forEach(rec => {
+    const bat = rec.bateria || 'Sin bateria';
+    const estadoClass = rec.estado === 'Abierto' ? 'abierto' : (rec.estado === 'Cerrado' ? 'cerrado' : 'sd');
+    const camposTocados = (rec.updatedFields || [])
+      .filter(k => k !== 'updatedAt')
+      .map(k => FIELD_LABELS_MOV[k] || k)
+      .join(', ');
+
+    const row = document.createElement('div');
+    row.className = 'ciclaje-row';
+    row.innerHTML = `
+      <div class="cr-left">
+        <div class="cr-pozo">${rec.pozo} <span style="color:var(--muted); font-weight:400; font-size:0.75rem;">${bat}</span></div>
+        <div class="cr-detail">${tiempoRelativo(rec._updatedAtDate)}${camposTocados ? ' &middot; se modifico: ' + camposTocados : ''}</div>
+      </div>
+      <div class="cr-estado ${estadoClass}">${rec.estado || 'sin dato'}</div>
+    `;
+    row.addEventListener('click', () => openCard(rec, bat));
+    movMain.appendChild(row);
+  });
+}
+
+document.getElementById('tabMov').addEventListener('click', () => {
+  document.getElementById('tabMov').classList.add('active');
+  document.getElementById('tabLista').classList.remove('active');
+  document.getElementById('tabPlano').classList.remove('active');
+  document.getElementById('tabCiclaje').classList.remove('active');
+  document.getElementById('main').style.display = 'none';
+  document.getElementById('planoMain').style.display = 'none';
+  document.getElementById('ciclajeMain').style.display = 'none';
+  document.getElementById('movMain').style.display = '';
+  renderMovimientos();
 });
 </script>
 
