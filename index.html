@@ -959,6 +959,18 @@ function calcDuracionDesde(hIni){
   const hh = Math.floor(mins/60), mm = mins%60;
   return `${hh}h${mm>0 ? ' '+mm+'m' : ''}`;
 }
+function tiempoHasta(ts){
+  const diffMs = ts - Date.now();
+  if(diffMs <= 0) return 'en instantes';
+  const mins = Math.round(diffMs/60000);
+  const hh = Math.floor(mins/60), mm = mins%60;
+  return `${hh>0 ? hh+'h ' : ''}${mm}m`;
+}
+function cicloCountdownText(rec){
+  if(!rec.cicloAuto || !rec.cicloProximoCambioTs) return '';
+  const accion = rec.estado === 'Abierto' ? 'cierra' : 'abre';
+  return `Por ciclo, ${accion} en ${tiempoHasta(rec.cicloProximoCambioTs)}`;
+}
 function horarioInfo(rec){
   if(!rec.horaApertura && !rec.horaCierre){
     return { text: rec.horario || '', colorClass: '', label: 'Horario de maniobra' };
@@ -974,8 +986,11 @@ function horarioInfo(rec){
     text = `Abrio a las ${rec.horaApertura} (lleva abierto ${calcDuracionDesde(rec.horaApertura)})`;
   }
   if(rec.horarioNota) text += ` - ${rec.horarioNota}`;
+  const cd = cicloCountdownText(rec);
+  if(cd) text += ` · ${cd}`;
   return { text, colorClass, label: 'Horario de maniobra' };
 }
+
 
 function renderCardView(rec, bat){
   const card = document.getElementById('card');
@@ -1022,6 +1037,46 @@ function renderCardView(rec, bat){
   document.getElementById('editBtn').addEventListener('click', () => renderCardEdit(rec, bat));
   const clearBtn = document.getElementById('clearBtn');
   if(clearBtn) clearBtn.addEventListener('click', () => clearPozoData(rec, bat));
+}
+
+function parseCiclo(cicloText){
+  if(!cicloText) return null;
+  const UNIDAD = '(?:horas|hora|hs|h)?';
+  // 1) preferimos entender el texto en palabras, buscando "apertura" y "cierre" (asi no importa el orden ni hace falta memorizar formato)
+  const mA = cicloText.match(new RegExp(`(\\d+)\\s*${UNIDAD}\\s*(?:de\\s*)?(?:apertura|abiert[oa])`, 'i'));
+  const mC = cicloText.match(new RegExp(`(\\d+)\\s*${UNIDAD}\\s*(?:de\\s*)?(?:cierre|cerrad[oa])`, 'i'));
+  if(mA && mC){
+    return { horasAbierto: parseInt(mA[1], 10), horasCerrado: parseInt(mC[1], 10) };
+  }
+  // 2) si no hay esas palabras, caemos al patron corto "NxM" => asumimos horas abierto x horas cerrado
+  const m = cicloText.match(new RegExp(`(\\d+)\\s*${UNIDAD}\\s*[xX]\\s*(\\d+)\\s*${UNIDAD}`));
+  if(!m) return null;
+  return { horasAbierto: parseInt(m[1], 10), horasCerrado: parseInt(m[2], 10) };
+}
+
+// dado un "HH:MM" (hora de hoy) y una cantidad de horas, devuelve el timestamp (ms) del proximo cambio
+function calcularProximoCambioTs(horaRefHHMM, horasASumar){
+  const [h, m] = horaRefHHMM.split(':').map(Number);
+  const ref = new Date();
+  ref.setHours(h, m, 0, 0);
+  return ref.getTime() + horasASumar * 3600 * 1000;
+}
+
+function calcularCicloAuto(rec, newFields, hA, hC){
+  const ciclo = parseCiclo(newFields.ciclo !== undefined ? newFields.ciclo : rec.ciclo);
+  if(!ciclo || (!hA && !hC)){
+    newFields.cicloAuto = false;
+    newFields.cicloProximoCambioTs = null;
+    return;
+  }
+  newFields.cicloAuto = true;
+  if(hC){
+    // acaba de cerrar: el proximo cambio es la reapertura, contando desde la hora de cierre
+    newFields.cicloProximoCambioTs = calcularProximoCambioTs(hC, ciclo.horasCerrado);
+  } else {
+    // acaba de abrir: el proximo cambio es el cierre, contando desde la hora de apertura
+    newFields.cicloProximoCambioTs = calcularProximoCambioTs(hA, ciclo.horasAbierto);
+  }
 }
 
 function renderCardEdit(rec, bat){
@@ -1132,6 +1187,8 @@ function renderCardEdit(rec, bat){
     } else if(hA){
       newFields.estado = 'Abierto';
     }
+
+    calcularCicloAuto(rec, newFields, hA, hC);
 
     Object.assign(rec, newFields);
     rec._edited = true;
@@ -1280,9 +1337,52 @@ function exportParteDeCampo(){
 const ORIGINAL_POZOS = {};
 POZOS.forEach(p => { ORIGINAL_POZOS[p.pozo] = Object.assign({}, p); });
 
+function checkCiclosAutomaticos(){
+  if(!firestoreOk) return;
+  const ahora = Date.now();
+  POZOS.forEach(rec => {
+    if(!rec.cicloAuto || !rec.cicloProximoCambioTs) return;
+    if(ahora < rec.cicloProximoCambioTs) return;
+
+    const ciclo = parseCiclo(rec.ciclo);
+    if(!ciclo) return;
+    const nowStr = new Date().toTimeString().slice(0,5);
+    const newFields = {};
+
+    if(rec.estado === 'Abierto'){
+      // se cierra solo, por cumplirse el tiempo del ciclo
+      newFields.horaCierre = nowStr;
+      newFields.estado = 'Cerrado';
+      newFields.cicloProximoCambioTs = calcularProximoCambioTs(nowStr, ciclo.horasCerrado);
+    } else {
+      // se reabre solo, arranca un ciclo nuevo
+      newFields.horaApertura = nowStr;
+      newFields.horaCierre = '';
+      newFields.estado = 'Abierto';
+      newFields.cicloProximoCambioTs = calcularProximoCambioTs(nowStr, ciclo.horasAbierto);
+    }
+    newFields.cicloAuto = true;
+
+    const hA2 = newFields.horaApertura !== undefined ? newFields.horaApertura : rec.horaApertura;
+    const hC2 = newFields.horaCierre !== undefined ? newFields.horaCierre : rec.horaCierre;
+    let horario = '';
+    if(hA2 || hC2){
+      horario = `${hA2 || '??'} - ${hC2 || '??'}`;
+      if(rec.horarioNota) horario += ` (${rec.horarioNota})`;
+    }
+    newFields.horario = horario;
+
+    Object.assign(rec, newFields);
+    saveEdit(rec.pozo, newFields);
+  });
+  refreshEverything();
+}
+
 render('');
 startSync();
 updatePendCount();
+checkCiclosAutomaticos();
+setInterval(checkCiclosAutomaticos, 30000);
 if(storageBlocked){
   const warn = document.createElement('div');
   warn.className = 'plano-note';
@@ -1446,6 +1546,8 @@ function renderCiclaje(){
       const detailBits = [];
       if(rec.ciclo) detailBits.push(`Ciclo: ${rec.ciclo}`);
       if(rec.horario) detailBits.push(`Horario: ${rec.horario}`);
+      const cd = cicloCountdownText(rec);
+      if(cd) detailBits.push(`<span class="cr-manual">${cd}</span>`);
       if(isManual) detailBits.push(`<span class="cr-manual">Con optimizador, operado en manual</span>`);
 
       const row = document.createElement('div');
