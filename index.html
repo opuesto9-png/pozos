@@ -765,24 +765,7 @@ try{
 }catch(e){ firestoreOk = false; }
 
 let lastOverridesCount = 0;
-let pendingReportSet = new Set();
-try{
-  pendingReportSet = new Set(JSON.parse(safeGet('pending_report_v1', '[]')));
-}catch(e){ pendingReportSet = new Set(); }
-
-function persistPendingReportSet(){
-  safeSet('pending_report_v1', JSON.stringify([...pendingReportSet]));
-}
-function markPendingReport(pozoKey){
-  pendingReportSet.add(pozoKey);
-  persistPendingReportSet();
-  updatePendCount();
-}
-function clearPendingReport(){
-  pendingReportSet.clear();
-  persistPendingReportSet();
-  updatePendCount();
-}
+let ultimoReporteTs = null; // fecha/hora (compartida entre dispositivos) del ultimo parte de campo enviado
 
 function downloadFile(blob, fileName){
   const url = URL.createObjectURL(blob);
@@ -809,10 +792,15 @@ function downloadOrShareBlob(blob, fileName, title){
   downloadFile(blob, fileName);
 }
 
+// un pozo "cuenta" para el proximo parte si se modifico despues del ultimo envio (compartido entre dispositivos)
+function pendientesDeReporte(){
+  return POZOS.filter(p => (p.horaApertura || p.horaCierre) && p._updatedAtDate && (!ultimoReporteTs || p._updatedAtDate > ultimoReporteTs));
+}
+
 function updatePendCount(){
   const badge = document.getElementById('pendCount');
   if(!badge) return;
-  const n = pendingReportSet.size;
+  const n = pendientesDeReporte().length;
   if(n > 0){
     badge.style.display = '';
     badge.textContent = n;
@@ -866,6 +854,15 @@ function startSync(){
   }, (err) => {
     console.error('Firestore sync error', err);
   });
+
+  // fecha/hora del ultimo parte enviado (compartida): apenas cambia, todos los dispositivos recalculan solos
+  db.collection('pozos_meta').doc('estado').onSnapshot((doc) => {
+    const data = doc.data();
+    ultimoReporteTs = (data && data.lastReporteTs && data.lastReporteTs.toDate) ? data.lastReporteTs.toDate() : null;
+    refreshEverything();
+  }, (err) => {
+    console.error('Firestore sync error (meta)', err);
+  });
 }
 
 function saveEdit(pozoKey, newFields){
@@ -877,9 +874,7 @@ function saveEdit(pozoKey, newFields){
     updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
     updatedFields: Object.keys(newFields)
   });
-  db.collection('pozos_overrides').doc(pozoKey).set(toSave, { merge: true }).then(() => {
-    markPendingReport(pozoKey);
-  }).catch((err) => {
+  db.collection('pozos_overrides').doc(pozoKey).set(toSave, { merge: true }).catch((err) => {
     alert('No se pudo guardar el cambio (' + err.message + '). Revisa tu conexion.');
   });
 }
@@ -1248,10 +1243,18 @@ function buildHoraColumna(rec){
   return '';
 }
 
+function marcarReporteEnviado(){
+  if(!firestoreOk) return;
+  db.collection('pozos_meta').doc('estado').set({
+    lastReporteTs: firebase.firestore.FieldValue.serverTimestamp()
+  }, { merge: true }).catch((err) => {
+    console.error('No se pudo marcar el reporte como enviado', err);
+  });
+}
+
 function exportParteDeCampo(){
-  // usamos SOLO la hora de apertura/cierre cargada a mano (campos horaApertura/horaCierre), nada de texto de ciclo
-  const filas = POZOS
-    .filter(rec => rec.horaApertura || rec.horaCierre)
+  // solo pozos con hora de apertura/cierre que se modificaron DESPUES del ultimo parte enviado (compartido entre dispositivos)
+  const filas = pendientesDeReporte()
     .map(rec => ({
       hora: buildHoraColumna(rec),
       instalacion: bateriaToInstalacion(rec.bateria),
@@ -1260,7 +1263,7 @@ function exportParteDeCampo(){
     }));
 
   if(filas.length === 0){
-    alert('Todavia no hay ningun pozo con horario de apertura/cierre cargado.');
+    alert('No hay pozos con movimientos nuevos desde el ultimo parte enviado.');
     return;
   }
 
@@ -1274,7 +1277,7 @@ function exportParteDeCampo(){
     if(navigator.share){ navigator.share({ title: 'Parte de campo', text }).catch(()=>{}); }
     else if(navigator.clipboard){ navigator.clipboard.writeText(text).then(()=>alert('Copiado.')); }
     else { prompt('Copia este texto:', text); }
-    clearPendingReport();
+    marcarReporteEnviado();
     return;
   }
 
@@ -1327,7 +1330,7 @@ function exportParteDeCampo(){
   wb.xlsx.writeBuffer().then(buffer => {
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     downloadOrShareBlob(blob, fileName, 'Parte de campo');
-    clearPendingReport();
+    marcarReporteEnviado();
   }).catch((err) => {
     alert('No se pudo generar el Excel (' + (err && err.message ? err.message : 'error desconocido') + '). Probá de nuevo con conexion a internet.');
   });
