@@ -846,6 +846,10 @@ function setPressureUnit(u){
   if(document.getElementById('overlay').classList.contains('show') && document.getElementById('editBtn')){
     renderCardView(window._currentCardRec, window._currentCardBat);
   }
+  // si la pestana AIB esta a la vista, la re-renderizamos para que BP/PL tambien cambien de unidad
+  if(document.getElementById('aibMain').style.display !== 'none'){
+    renderAib();
+  }
 }
 document.getElementById('unitKg').addEventListener('click', () => setPressureUnit('kg'));
 document.getElementById('unitPsi').addEventListener('click', () => setPressureUnit('psi'));
@@ -1954,11 +1958,24 @@ document.getElementById('tabMov').addEventListener('click', () => {
 });
 
 // ---------------- Vista AIB (pozos de petroleo) ----------------
+function formatAibPresion(raw){
+  if(!raw || raw.toString().trim().toUpperCase() === 'S/D') return 'S/D';
+  return convertPresionText(raw.toString(), pressureUnit);
+}
+
 function buildAibNovedad(rec){
-  const bp = rec.bp || 'S/D';
-  const pl = rec.pl || 'S/D';
+  const bpTxt = formatAibPresion(rec.bp);
+  const plTxt = formatAibPresion(rec.pl);
+
+  if(rec.estado === 'Parado'){
+    const motivo = rec.motivoParo || 'sin especificar';
+    let texto = `Se verifica AIB, PARADO - Motivo: ${motivo}. #BP: ${bpTxt} / #PL: ${plTxt}.`;
+    if(rec.nota && rec.nota.trim()) texto += ` ${rec.nota.trim()}`;
+    return texto;
+  }
+
   const perdidasTxt = rec.perdidas ? 'Con perdidas por vastago.' : 'Sin perdidas.';
-  let texto = `Se verifica AIB, en marcha OK - #BP: ${bp} kg/cm2 / #PL: ${pl} kg/cm2. ${perdidasTxt}`;
+  let texto = `Se verifica AIB, en marcha OK - #BP: ${bpTxt} / #PL: ${plTxt}. ${perdidasTxt}`;
   if(rec.nota && rec.nota.trim()) texto += ` ${rec.nota.trim()}`;
   return texto;
 }
@@ -1998,15 +2015,30 @@ function renderAib(){
 
   const ordenados = [...AIB_POZOS].sort((a,b) => (a.bateria||'').localeCompare(b.bateria||'') || a.pozo.localeCompare(b.pozo, undefined, {numeric:true}));
 
+  const MOTIVOS_PARO = ['Paro ecologico', 'Corte de vastago', 'Sobrecarga', 'Sobrevelocidad'];
+
   ordenados.forEach(rec => {
     const row = document.createElement('div');
     row.className = 'aib-row';
+    const estadoActual = rec.estado === 'Parado' ? 'Parado' : 'Marcha';
+    const motivoOptions = MOTIVOS_PARO.map(m => `<option value="${m}" ${rec.motivoParo===m?'selected':''}>${m}</option>`).join('');
     row.innerHTML = `
       <div class="aib-row-top">
         <div class="aib-pozo">${rec.pozo}</div>
         <button class="cr-remove" title="Quitar pozo">&times;</button>
       </div>
-      <div class="aib-fields">
+      <div class="estado-toggle">
+        <button type="button" class="estado-btn abierto aib-estado-btn ${estadoActual==='Marcha'?'active':''}" data-val="Marcha">MARCHA</button>
+        <button type="button" class="estado-btn cerrado aib-estado-btn ${estadoActual==='Parado'?'active':''}" data-val="Parado">PARADO</button>
+      </div>
+      <div class="aib-motivo-wrap" style="display:${estadoActual==='Parado'?'':'none'}; margin-top:8px;">
+        <div class="time-label">Motivo del paro</div>
+        <select class="edit-input aib-motivo">
+          <option value="">-- seleccionar --</option>
+          ${motivoOptions}
+        </select>
+      </div>
+      <div class="aib-fields" style="margin-top:8px;">
         <div class="aib-field">
           <div class="time-label">Bateria</div>
           <input type="text" class="edit-input aib-bateria" value="${(rec.bateria||'').replace(/"/g,'&quot;')}" placeholder="ej: Bateria 1">
@@ -2018,27 +2050,43 @@ function renderAib(){
       </div>
       <div class="aib-fields">
         <div class="aib-field">
-          <div class="time-label">BP (kg/cm2)</div>
+          <div class="time-label">BP (${pressureUnit === 'psi' ? 'psi' : 'kg/cm2'})</div>
           <input type="text" class="edit-input aib-bp" value="${(rec.bp||'').toString().replace(/"/g,'&quot;')}" placeholder="ej: 14,7">
         </div>
         <div class="aib-field">
-          <div class="time-label">PL (kg/cm2)</div>
+          <div class="time-label">PL (${pressureUnit === 'psi' ? 'psi' : 'kg/cm2'})</div>
           <input type="text" class="edit-input aib-pl" value="${(rec.pl||'').toString().replace(/"/g,'&quot;')}" placeholder="ej: 3">
         </div>
       </div>
-      <label class="aib-perdidas-check">
+      <label class="aib-perdidas-check" style="display:${estadoActual==='Parado'?'none':''};">
         <input type="checkbox" class="aib-perdidas" ${rec.perdidas ? 'checked' : ''}> Con perdidas por vastago
       </label>
       <input type="text" class="edit-input aib-nota" value="${(rec.nota||'').replace(/"/g,'&quot;')}" placeholder="Nota extra (opcional)" style="margin-top:6px;">
-      <div class="aib-preview">${buildAibNovedad(rec)}</div>
+      <div class="aib-preview">${buildAibNovedad(Object.assign({}, rec, { estado: estadoActual }))}</div>
       <button class="save-btn aib-save-btn">Guardar</button>
     `;
     row.querySelector('.cr-remove').addEventListener('click', () => {
       deleteAibPozo(rec.pozo);
     });
+
+    let estadoSeleccionado = estadoActual;
+    const motivoWrap = row.querySelector('.aib-motivo-wrap');
+    const perdidasLabel = row.querySelector('.aib-perdidas-check');
+    row.querySelectorAll('.aib-estado-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        estadoSeleccionado = btn.dataset.val;
+        row.querySelectorAll('.aib-estado-btn').forEach(b => b.classList.toggle('active', b.dataset.val === estadoSeleccionado));
+        motivoWrap.style.display = estadoSeleccionado === 'Parado' ? '' : 'none';
+        perdidasLabel.style.display = estadoSeleccionado === 'Parado' ? 'none' : '';
+        updatePreview();
+      });
+    });
+
     const previewEl = row.querySelector('.aib-preview');
     function updatePreview(){
       previewEl.textContent = buildAibNovedad({
+        estado: estadoSeleccionado,
+        motivoParo: row.querySelector('.aib-motivo').value,
         bp: row.querySelector('.aib-bp').value.trim(),
         pl: row.querySelector('.aib-pl').value.trim(),
         perdidas: row.querySelector('.aib-perdidas').checked,
@@ -2049,6 +2097,7 @@ function renderAib(){
     row.querySelector('.aib-pl').addEventListener('input', updatePreview);
     row.querySelector('.aib-perdidas').addEventListener('change', updatePreview);
     row.querySelector('.aib-nota').addEventListener('input', updatePreview);
+    row.querySelector('.aib-motivo').addEventListener('change', updatePreview);
     row.querySelector('.aib-save-btn').addEventListener('click', () => {
       const bateria = row.querySelector('.aib-bateria').value.trim() || 'Sin bateria';
       const hora = row.querySelector('.aib-hora').value;
@@ -2056,7 +2105,8 @@ function renderAib(){
       const pl = row.querySelector('.aib-pl').value.trim();
       const perdidas = row.querySelector('.aib-perdidas').checked;
       const nota = row.querySelector('.aib-nota').value.trim();
-      saveAibPozo(rec.pozo, { hora, bp, pl, perdidas, nota, bateria });
+      const motivoParo = row.querySelector('.aib-motivo').value;
+      saveAibPozo(rec.pozo, { hora, bp, pl, perdidas, nota, bateria, estado: estadoSeleccionado, motivoParo });
     });
     aibMain.appendChild(row);
   });
