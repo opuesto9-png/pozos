@@ -1238,14 +1238,10 @@ function renderCardEdit(rec, bat){
       notaVal = rec.horario;
     }
   }
-  // si el pozo ya quedo Cerrado (ciclo completo: apertura y cierre cargados), no precargamos el cierre viejo:
-  // lo mas probable al volver a editar es que estes por reabrirlo, y si dejaramos el cierre anterior
-  // precargado, al guardar quedaria mal marcado como Cerrado de nuevo aunque cargues una apertura nueva.
-  let cierreOculto = false;
-  if(rec.estado === 'Cerrado' && horaCierreVal){
-    horaCierreVal = '';
-    cierreOculto = true;
-  }
+  // guardamos el valor ORIGINAL con el que abrimos el formulario, para comparar al guardar
+  // y asi saber si realmente tocaste el horario o si estabas editando otra cosa
+  const horaAperturaOriginal = horaAperturaVal;
+  const horaCierreOriginal = horaCierreVal;
 
   card.innerHTML = `
     <div class="card-head">
@@ -1255,7 +1251,6 @@ function renderCardEdit(rec, bat){
       </div>
       <button class="close-btn" id="closeBtn">&times;</button>
     </div>
-    ${cierreOculto ? `<div class="edit-hint" style="color:var(--amber);">Este pozo estaba Cerrado (cerro a las ${rec.horaCierre}). Dejamos el cierre vacio: si cargas una hora de Apertura, arranca un ciclo nuevo. Si en realidad querias corregir el cierre anterior, volve a escribirlo vos mismo.</div>` : ''}
     ${inputField('Presion', 'presion', rec.presion === 's/d' ? '' : rec.presion)}
     ${inputField('Colectora', 'colectora', rec.colectora)}
     ${inputField('Ciclo', 'ciclo', rec.ciclo)}
@@ -1313,26 +1308,41 @@ function renderCardEdit(rec, bat){
     const hA = document.getElementById('horaApertura').value;
     const hC = document.getElementById('horaCierre').value;
     const nota = document.getElementById('horarioNota').value.trim();
+
+    const aperturaCambio = hA !== horaAperturaOriginal;
+    const cierreCambio = hC !== horaCierreOriginal;
+
+    // si cambiaste la apertura pero dejaste el cierre TAL CUAL estaba (sin tocarlo) y el pozo ya
+    // habia completado un ciclo (estaba Cerrado), ese cierre es viejo: asumimos que estas arrancando
+    // un ciclo nuevo y no lo tenemos en cuenta (evita que quede mal marcado como Cerrado de nuevo).
+    let hcEfectivo = hC;
+    if(aperturaCambio && !cierreCambio && rec.estado === 'Cerrado'){
+      hcEfectivo = '';
+    }
+
     newFields.horaApertura = hA;
-    newFields.horaCierre = hC;
+    newFields.horaCierre = hcEfectivo;
     newFields.horarioNota = nota;
     let horario = '';
-    if(hA || hC){
-      horario = `${hA || '??'} - ${hC || '??'}`;
+    if(hA || hcEfectivo){
+      horario = `${hA || '??'} - ${hcEfectivo || '??'}`;
       if(nota) horario += ` (${nota})`;
     } else if(nota){
       horario = nota;
     }
     newFields.horario = horario;
 
-    // el estado se deduce del horario cargado: hay cierre => Cerrado (rojo); solo apertura => Abierto (verde)
-    if(hC){
-      newFields.estado = 'Cerrado';
-    } else if(hA){
-      newFields.estado = 'Abierto';
+    // el estado solo se reevalua si REALMENTE tocaste apertura o cierre. Si solo editaste otro campo
+    // (presion, notas, etc.) sin tocar el horario, el estado actual (manual o del ciclo automatico)
+    // queda como estaba, sin pisarlo.
+    if(aperturaCambio || cierreCambio){
+      if(hcEfectivo){
+        newFields.estado = 'Cerrado';
+      } else if(hA){
+        newFields.estado = 'Abierto';
+      }
+      calcularCicloAuto(rec, newFields, hA, hcEfectivo);
     }
-
-    calcularCicloAuto(rec, newFields, hA, hC);
 
     Object.assign(rec, newFields);
     rec._edited = true;
