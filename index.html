@@ -350,6 +350,7 @@
     color: var(--text);
   }
   .well-chip-sm.opt{ border-color: var(--opt); color: var(--opt); }
+  .well-chip-sm.match{ border-color: var(--amber); box-shadow: 0 0 0 2px var(--amber-dim); font-weight:700; }
   .well-chip-sm:hover{ border-color: var(--amber); }
 
   .tag.edit-tag{ color: #7fb0e0; }
@@ -885,8 +886,8 @@ function updatePendCount(){
 function refreshEverything(){
   render(document.getElementById('searchBox').value);
   updatePendCount();
-  if(document.getElementById('planoMain').dataset.rendered){
-    document.getElementById('planoMain').dataset.rendered = '';
+  if(document.getElementById('planoMain').style.display !== 'none'){
+    renderPlano();
   }
   if(document.getElementById('ciclajeMain').style.display !== 'none'){
     renderCiclaje();
@@ -991,8 +992,8 @@ function clearPozoData(rec, bat){
 
   renderCardView(rec, bat);
   render(document.getElementById('searchBox').value);
-  if(document.getElementById('planoMain').dataset.rendered){
-    document.getElementById('planoMain').dataset.rendered = '';
+  if(document.getElementById('planoMain').style.display !== 'none'){
+    renderPlano();
   }
 }
 
@@ -1185,6 +1186,14 @@ function renderCardEdit(rec, bat){
       notaVal = rec.horario;
     }
   }
+  // si el pozo ya quedo Cerrado (ciclo completo: apertura y cierre cargados), no precargamos el cierre viejo:
+  // lo mas probable al volver a editar es que estes por reabrirlo, y si dejaramos el cierre anterior
+  // precargado, al guardar quedaria mal marcado como Cerrado de nuevo aunque cargues una apertura nueva.
+  let cierreOculto = false;
+  if(rec.estado === 'Cerrado' && horaCierreVal){
+    horaCierreVal = '';
+    cierreOculto = true;
+  }
 
   card.innerHTML = `
     <div class="card-head">
@@ -1194,6 +1203,7 @@ function renderCardEdit(rec, bat){
       </div>
       <button class="close-btn" id="closeBtn">&times;</button>
     </div>
+    ${cierreOculto ? `<div class="edit-hint" style="color:var(--amber);">Este pozo estaba Cerrado (cerro a las ${rec.horaCierre}). Dejamos el cierre vacio: si cargas una hora de Apertura, arranca un ciclo nuevo. Si en realidad querias corregir el cierre anterior, volve a escribirlo vos mismo.</div>` : ''}
     ${inputField('Presion', 'presion', rec.presion === 's/d' ? '' : rec.presion)}
     ${inputField('Colectora', 'colectora', rec.colectora)}
     ${inputField('Ciclo', 'ciclo', rec.ciclo)}
@@ -1203,11 +1213,17 @@ function renderCardEdit(rec, bat){
       <div class="time-row">
         <div>
           <div class="time-label">Apertura</div>
-          <input type="time" class="edit-input time-input" id="horaApertura" value="${horaAperturaVal}">
+          <div class="input-with-clear">
+            <input type="time" class="edit-input time-input" id="horaApertura" value="${horaAperturaVal}">
+            <button type="button" class="field-clear-btn" id="clearHoraApertura" title="Borrar apertura">&times;</button>
+          </div>
         </div>
         <div>
           <div class="time-label">Cierre</div>
-          <input type="time" class="edit-input time-input" id="horaCierre" value="${horaCierreVal}">
+          <div class="input-with-clear">
+            <input type="time" class="edit-input time-input" id="horaCierre" value="${horaCierreVal}">
+            <button type="button" class="field-clear-btn" id="clearHoraCierre" title="Borrar cierre">&times;</button>
+          </div>
         </div>
       </div>
       <input class="edit-input" id="horarioNota" placeholder="Nota (ej: prueba 2hs, ciclo 8x8)" value="${notaVal.replace(/"/g,'&quot;')}" style="margin-top:8px;">
@@ -1229,6 +1245,12 @@ function renderCardEdit(rec, bat){
       const input = card.querySelector(`.edit-input[data-key="${key}"]`);
       if(input) input.value = '';
     });
+  });
+  document.getElementById('clearHoraApertura').addEventListener('click', () => {
+    document.getElementById('horaApertura').value = '';
+  });
+  document.getElementById('clearHoraCierre').addEventListener('click', () => {
+    document.getElementById('horaCierre').value = '';
   });
   document.getElementById('saveBtn').addEventListener('click', () => {
     const inputs = card.querySelectorAll('.edit-input[data-key]');
@@ -1265,8 +1287,8 @@ function renderCardEdit(rec, bat){
     saveEdit(rec.pozo, newFields);
     renderCardView(rec, bat);
     render(document.getElementById('searchBox').value);
-    if(document.getElementById('planoMain').dataset.rendered){
-      document.getElementById('planoMain').dataset.rendered = '';
+    if(document.getElementById('planoMain').style.display !== 'none'){
+      renderPlano();
     }
   });
 }
@@ -1288,7 +1310,12 @@ document.getElementById('overlay').addEventListener('click', (e) => {
 document.addEventListener('keydown', (e) => {
   if(e.key === 'Escape') closeCard();
 });
-document.getElementById('searchBox').addEventListener('input', (e) => render(e.target.value));
+document.getElementById('searchBox').addEventListener('input', (e) => {
+  render(e.target.value);
+  if(document.getElementById('planoMain').style.display !== 'none'){
+    renderPlano();
+  }
+});
 document.getElementById('parteBtn').addEventListener('click', () => {
   try { exportParteDeCampo(); } catch(err) { alert('Error al generar el parte: ' + (err && err.message ? err.message : err)); }
 });
@@ -1482,6 +1509,7 @@ const USPA_TITLES = {
 
 function renderPlano(){
   const planoMain = document.getElementById('planoMain');
+  const f = (document.getElementById('searchBox').value || '').trim().toLowerCase();
   planoMain.innerHTML = `<div class="plano-note">Colectoras segun el plano de red "RED DE CAPTACION DE GAS - YACIMIENTO CENTENARIO" (Act. Agosto 2017). Puede estar desactualizado: confirmar estado real de cada pozo antes de operar. Los pozos sin colectora identificada en el plano no aparecen aca (ver pestana Lista).</div>`;
 
   // agrupar por colectora
@@ -1491,6 +1519,16 @@ function renderPlano(){
     if(!colectoras[p.colectora]) colectoras[p.colectora] = [];
     colectoras[p.colectora].push(p);
   });
+
+  // si hay busqueda, nos quedamos solo con las colectoras que tengan algun pozo que coincida
+  let colectorasKeys = Object.keys(colectoras);
+  if(f){
+    colectorasKeys = colectorasKeys.filter(name => colectoras[name].some(w => w.pozo.toLowerCase().includes(f)));
+    if(colectorasKeys.length === 0){
+      planoMain.innerHTML += '<div class="empty-msg">No hay pozos que coincidan con esa busqueda.</div>';
+      return;
+    }
+  }
 
   // determinar bateria dominante de cada colectora
   function dominantBat(wells){
@@ -1502,7 +1540,7 @@ function renderPlano(){
   }
 
   const byUspa = {};
-  Object.keys(colectoras).forEach(colName => {
+  colectorasKeys.forEach(colName => {
     const wells = colectoras[colName];
     const bat = dominantBat(wells);
     if(!byUspa[bat]) byUspa[bat] = [];
@@ -1534,12 +1572,14 @@ function renderPlano(){
       const wellsBox = card.querySelector('.colector-wells');
       col.wells.sort((a,b) => a.pozo.localeCompare(b.pozo, undefined, {numeric:true})).forEach(w => {
         const isOpt = !!(w.optim && w.optim.trim());
+        const isMatch = f && w.pozo.toLowerCase().includes(f);
         const chip = document.createElement('span');
-        chip.className = 'well-chip-sm' + (isOpt ? ' opt' : '');
+        chip.className = 'well-chip-sm' + (isOpt ? ' opt' : '') + (isMatch ? ' match' : '');
         chip.textContent = w.pozo.replace('Ce-','');
         chip.addEventListener('click', (ev) => { ev.stopPropagation(); openCard(w, w.bateria); });
         wellsBox.appendChild(chip);
       });
+      if(f) wellsBox.classList.add('show'); // con busqueda activa, mostramos los pozos ya desplegados
       card.addEventListener('click', () => wellsBox.classList.toggle('show'));
       grid.appendChild(card);
     });
@@ -1558,10 +1598,7 @@ document.getElementById('tabPlano').addEventListener('click', () => {
   document.getElementById('planoMain').style.display = '';
   document.getElementById('ciclajeMain').style.display = 'none';
   document.getElementById('movMain').style.display = 'none';
-  if(!document.getElementById('planoMain').dataset.rendered){
-    renderPlano();
-    document.getElementById('planoMain').dataset.rendered = '1';
-  }
+  renderPlano(); // siempre redibuja (barato) para respetar la busqueda vigente y datos frescos
 });
 
 // ---------------- Vista Ciclaje ----------------
@@ -1751,7 +1788,6 @@ document.getElementById('tabMov').addEventListener('click', () => {
 
 // arranca mostrando el Plano por defecto (ya con todo declarado)
 renderPlano();
-document.getElementById('planoMain').dataset.rendered = '1';
 
 </script>
 
