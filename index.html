@@ -48,6 +48,29 @@
     font-weight: 600;
     letter-spacing: 0.2px;
   }
+  .status-bar{
+    display:flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+  .conn-badge{
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 20px;
+    letter-spacing: 0.02em;
+  }
+  .conn-badge.online{ background: #24391f; color:#a6d9a0; }
+  .conn-badge.offline{ background: #3a201d; color:#e6a49d; }
+  .operador-tag{
+    font-size: 0.72rem;
+    color: var(--muted);
+    cursor: pointer;
+    text-decoration: underline dotted;
+  }
+  .operador-tag:hover{ color: var(--amber); }
   header p{
     margin: 0;
     color: var(--muted);
@@ -587,6 +610,10 @@
 
 <header>
   <h1>Pozos por bateria</h1>
+  <div class="status-bar">
+    <span id="connBadge" class="conn-badge"></span>
+    <span id="operadorTag" class="operador-tag"></span>
+  </div>
   <p>Tocá un pozo para ver el detalle completo. Los cambios (ABIERTO/CERRADO, ediciones) se guardan solos, al instante. El botón de abajo solo arma y manda el parte cuando vos lo toques, no antes. Colectora segun plano de red (Act. Agosto 2017) &mdash; puede estar desactualizado, confirmar estado real en campo/SCADA.</p>
   <div class="search">
     <input id="searchBox" type="text" placeholder="Buscar pozo (ej: 1580)..." autocomplete="off">
@@ -596,8 +623,8 @@
     <span><span class="dot" style="background:#2b323b; opacity:.5"></span>Sin datos todavia</span>
   </div>
   <div class="tabs">
-    <button class="tab-btn active" id="tabLista">Lista</button>
-    <button class="tab-btn" id="tabPlano">Plano (colectoras)</button>
+    <button class="tab-btn" id="tabLista">Lista</button>
+    <button class="tab-btn active" id="tabPlano">Plano (colectoras)</button>
     <button class="tab-btn" id="tabCiclaje">Ciclaje</button>
     <button class="tab-btn" id="tabMov">Últimos movimientos</button>
   </div>
@@ -610,8 +637,8 @@
   </div>
 </header>
 
-<main id="main"></main>
-<main id="planoMain" style="display:none;"></main>
+<main id="main" style="display:none;"></main>
+<main id="planoMain"></main>
 <main id="ciclajeMain" style="display:none;"></main>
 <main id="movMain" style="display:none;"></main>
 
@@ -654,6 +681,41 @@ function safeSet(key, value){
 
 // ---------------- Unidad de presion (kg/cm2 <-> psi) ----------------
 const KG_TO_PSI = 14.223343307;
+// ---------------- Operador (para saber quien hizo cada cambio) ----------------
+let operadorName = safeGet('pozos_operador', '');
+
+function pedirOperador(){
+  const n = prompt('Tu nombre (para que se sepa quien hizo cada cambio):', operadorName || '');
+  if(n && n.trim()){
+    operadorName = n.trim();
+    safeSet('pozos_operador', operadorName);
+  }
+  renderOperadorTag();
+}
+function renderOperadorTag(){
+  const tag = document.getElementById('operadorTag');
+  if(!tag) return;
+  tag.textContent = operadorName ? `Operador: ${operadorName} (cambiar)` : 'Tocá para poner tu nombre';
+}
+document.getElementById('operadorTag').addEventListener('click', pedirOperador);
+if(!operadorName){ pedirOperador(); } else { renderOperadorTag(); }
+
+// ---------------- Indicador de conexion ----------------
+function updateConnBadge(){
+  const badge = document.getElementById('connBadge');
+  if(!badge) return;
+  if(navigator.onLine){
+    badge.textContent = '● Conectado';
+    badge.className = 'conn-badge online';
+  } else {
+    badge.textContent = '● Sin conexion — se guarda en el celular y sincroniza solo al volver la señal';
+    badge.className = 'conn-badge offline';
+  }
+}
+window.addEventListener('online', updateConnBadge);
+window.addEventListener('offline', updateConnBadge);
+updateConnBadge();
+
 let pressureUnit = safeGet('pozos_unit', 'kg');
 
 function convertPresionText(raw, unit){
@@ -884,7 +946,8 @@ function saveEdit(pozoKey, newFields){
   }
   const toSave = Object.assign({}, newFields, {
     updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-    updatedFields: Object.keys(newFields)
+    updatedFields: Object.keys(newFields),
+    operador: newFields.operador || operadorName || 'Sin nombre'
   });
   db.collection('pozos_overrides').doc(pozoKey).set(toSave, { merge: true }).catch((err) => {
     alert('No se pudo guardar el cambio (' + err.message + '). Revisa tu conexion.');
@@ -1377,7 +1440,7 @@ function checkCiclosAutomaticos(){
       newFields.cicloProximoCambioTs = calcularProximoCambioTs(nowStr, ciclo.horasAbierto);
     }
     newFields.cicloAuto = true;
-
+    newFields.operador = 'Automatico (ciclo)';
     const hA2 = newFields.horaApertura !== undefined ? newFields.horaApertura : rec.horaApertura;
     const hC2 = newFields.horaCierre !== undefined ? newFields.horaCierre : rec.horaCierre;
     let horario = '';
@@ -1665,7 +1728,7 @@ function renderMovimientos(){
     row.innerHTML = `
       <div class="cr-left">
         <div class="cr-pozo">${rec.pozo} <span style="color:var(--muted); font-weight:400; font-size:0.75rem;">${bat}</span></div>
-        <div class="cr-detail">${tiempoRelativo(rec._updatedAtDate)}${camposTocados ? ' &middot; se modifico: ' + camposTocados : ''}</div>
+        <div class="cr-detail">${rec.operador ? `<b>${rec.operador}</b> &middot; ` : ''}${tiempoRelativo(rec._updatedAtDate)}${camposTocados ? ' &middot; se modifico: ' + camposTocados : ''}</div>
       </div>
       <div class="cr-estado ${estadoClass}">${rec.estado || 'sin dato'}</div>
     `;
@@ -1685,6 +1748,11 @@ document.getElementById('tabMov').addEventListener('click', () => {
   document.getElementById('movMain').style.display = '';
   renderMovimientos();
 });
+
+// arranca mostrando el Plano por defecto (ya con todo declarado)
+renderPlano();
+document.getElementById('planoMain').dataset.rendered = '1';
+
 </script>
 
 <script>
