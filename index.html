@@ -611,6 +611,47 @@
   }
   .cr-remove:hover{ border-color:#c0524a; color:#e6a49d; }
 
+  .aib-row{
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+  .aib-row-top{
+    display:flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .aib-pozo{ font-family:'Consolas','SF Mono',monospace; font-weight:700; font-size:0.95rem; }
+  .aib-bat{ font-size:0.72rem; color: var(--muted); font-weight:400; margin-left: 6px; }
+  .aib-fields{
+    display:flex;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .aib-field{ flex:1; }
+  .aib-perdidas-check{
+    display:flex;
+    align-items:center;
+    gap: 6px;
+    font-size: 0.82rem;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+  .aib-preview{
+    font-size: 0.76rem;
+    color: var(--muted);
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 8px 10px;
+    margin-top: 8px;
+    line-height: 1.4;
+  }
+  .aib-save-btn{ width:100%; margin-top: 10px; }
+
   .mov-list{
     display:flex;
     flex-direction:column;
@@ -656,6 +697,7 @@
     <button class="tab-btn active" id="tabPlano">Plano (colectoras)</button>
     <button class="tab-btn" id="tabCiclaje">Ciclaje</button>
     <button class="tab-btn" id="tabMov">Últimos movimientos</button>
+    <button class="tab-btn" id="tabAib">AIB</button>
   </div>
   <div class="toolbar">
     <button class="tab-btn export-btn" id="parteBtn">Enviar parte de campo <span id="pendCount" class="pend-badge" style="display:none;"></span></button>
@@ -670,6 +712,7 @@
 <main id="planoMain"></main>
 <main id="ciclajeMain" style="display:none;"></main>
 <main id="movMain" style="display:none;"></main>
+<main id="aibMain" style="display:none;"></main>
 
 <div class="overlay" id="overlay">
   <div class="card" id="card"></div>
@@ -892,6 +935,25 @@ try{
 
 let lastOverridesCount = 0;
 let ultimoReporteTs = null; // fecha/hora (compartida entre dispositivos) del ultimo parte de campo enviado
+let AIB_POZOS = []; // pozos de petroleo (AIB), viven enteramente en Firestore, no hay lista base
+
+function saveAibPozo(pozoKey, newFields){
+  if(!firestoreOk){
+    alert('No hay conexion con el guardado compartido. Revisa tu internet e intenta de nuevo.');
+    return;
+  }
+  const toSave = Object.assign({}, newFields, {
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    operador: newFields.operador || operadorName || 'Sin nombre'
+  });
+  db.collection('aib_pozos').doc(pozoKey).set(toSave, { merge: true }).catch((err) => {
+    alert('No se pudo guardar el cambio (' + err.message + '). Revisa tu conexion.');
+  });
+}
+function deleteAibPozo(pozoKey){
+  if(!firestoreOk) return;
+  db.collection('aib_pozos').doc(pozoKey).delete().catch(() => {});
+}
 
 function downloadFile(blob, fileName){
   const url = URL.createObjectURL(blob);
@@ -989,6 +1051,49 @@ function startSync(){
     refreshEverything();
   }, (err) => {
     console.error('Firestore sync error (meta)', err);
+  });
+
+  // pozos de petroleo (AIB) - coleccion propia, totalmente separada de los pozos de gas
+  db.collection('aib_pozos').onSnapshot((snapshot) => {
+    AIB_POZOS = [];
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      AIB_POZOS.push(Object.assign({ pozo: doc.id }, data, {
+        _updatedAtDate: (data.updatedAt && data.updatedAt.toDate) ? data.updatedAt.toDate() : null
+      }));
+    });
+    if(snapshot.size === 0 && !safeGet('aib_seeded_v1', '')){
+      sembrarAibInicial();
+    }
+    if(document.getElementById('aibMain').style.display !== 'none'){
+      renderAib();
+    }
+  }, (err) => {
+    console.error('Firestore sync error (aib)', err);
+  });
+}
+
+// carga inicial de pozos de petroleo (solo corre una vez, la primera vez que la coleccion esta vacia)
+const AIB_SEED = [
+  { pozo: 'P-130A-B', bateria: 'Bateria 1', bp: '', pl: '', perdidas: false, hora: '19:00', nota: 'Mecanicos de ENSI realizan mantenimiento preventivo en bombas. Caldera F/S (en reparacion).' },
+  { pozo: 'Ce-1314', bateria: 'Bateria 5', bp: '8', pl: '5,5', perdidas: false, hora: '02:28' },
+  { pozo: 'Ce-1273', bateria: 'Bateria 5', bp: '14,7', pl: '3', perdidas: false, hora: '19:53' },
+  { pozo: 'Ce-1351', bateria: 'Bateria 5', bp: '14', pl: '4', perdidas: false, hora: '23:20' },
+  { pozo: 'Ce-1272', bateria: 'Bateria 5', bp: '17,2', pl: '7,5', perdidas: false, hora: '23:27' },
+  { pozo: 'Ce-1093', bateria: 'Bateria 5', bp: '12,27', pl: '7,5', perdidas: false, hora: '01:04' },
+  { pozo: 'Ce-1101', bateria: 'Bateria 5', bp: '3', pl: '3', perdidas: false, hora: '01:00' },
+  { pozo: 'Ce-1390', bateria: 'Bateria 5', bp: '16', pl: '3', perdidas: false, hora: '04:00' },
+  { pozo: 'Ce-1318', bateria: 'Bateria 5', bp: '26,2', pl: '3', perdidas: false, hora: '00:22' },
+  { pozo: 'Ce-1316', bateria: 'Bateria 5', bp: '4', pl: 'S/D', perdidas: false, hora: '00:22' },
+  { pozo: 'Ce-1345', bateria: 'Bateria 5', bp: '5', pl: '3,5', perdidas: false, hora: '00:07' },
+  { pozo: 'Ce-1378', bateria: 'Bateria 5', bp: '4', pl: 'S/D', perdidas: false, hora: '23:40' },
+  { pozo: 'Ce-1379', bateria: 'Bateria 5', bp: '', pl: '', perdidas: false, hora: '23:42' }
+];
+function sembrarAibInicial(){
+  safeSet('aib_seeded_v1', '1');
+  AIB_SEED.forEach(w => {
+    const { pozo, ...datos } = w;
+    saveAibPozo(pozo, datos);
   });
 }
 
@@ -1416,44 +1521,17 @@ function marcarReporteEnviado(){
   });
 }
 
-function exportParteDeCampo(){
-  // solo pozos con hora de apertura/cierre que se modificaron DESPUES del ultimo parte enviado (compartido entre dispositivos)
-  const filas = pendientesDeReporte()
-    .map(rec => ({
-      hora: buildHoraColumna(rec),
-      instalacion: bateriaToInstalacion(rec.bateria),
-      pozo: rec.pozo,
-      novedad: buildNovedad(rec)
-    }));
+function pendientesDeReporteAib(){
+  return AIB_POZOS.filter(p => (p.bp || p.pl) && p._updatedAtDate && (!ultimoReporteTs || p._updatedAtDate > ultimoReporteTs));
+}
 
-  if(filas.length === 0){
-    alert('No hay pozos con movimientos nuevos desde el ultimo parte enviado.');
-    return;
-  }
-
-  const hoy = todayStr();
-
-  if(typeof ExcelJS === 'undefined'){
-    let text = `PARTE DE CAMPO ${hoy}\n\n`;
-    filas.forEach(f => {
-      text += `${f.hora} | ${f.instalacion} | ${f.pozo} | ${f.novedad}\n`;
-    });
-    if(navigator.share){ navigator.share({ title: 'Parte de campo', text }).catch(()=>{}); }
-    else if(navigator.clipboard){ navigator.clipboard.writeText(text).then(()=>alert('Copiado.')); }
-    else { prompt('Copia este texto:', text); }
-    marcarReporteEnviado();
-    return;
-  }
-
-  const wb = new ExcelJS.Workbook();
-  const ws = wb.addWorksheet('GAS');
+function agregarHojaParte(wb, nombreHoja, tituloHoja, filas, hoy, FONT_NAME, FONT_SIZE){
+  const ws = wb.addWorksheet(nombreHoja);
   ws.columns = [
     { width: 3 }, { width: 14 }, { width: 12 }, { width: 12 }, { width: 55 }, { width: 16 }
   ];
-  const FONT_NAME = 'Calibri';
-  const FONT_SIZE = 11.5;
 
-  ws.getCell('B2').value = 'REPORTE GAS - YAC. CENTENARIO';
+  ws.getCell('B2').value = tituloHoja;
   ws.getCell('B2').font = { name: FONT_NAME, size: 13, bold: true };
 
   let r = 10;
@@ -1484,11 +1562,65 @@ function exportParteDeCampo(){
       const cell = ws.getCell(`${col}${r}`);
       cell.border = { top:{style:'thin'}, left:{style:'thin'}, bottom:{style:'thin'}, right:{style:'thin'} };
       cell.alignment = { vertical:'middle', wrapText: true };
-      // HORA, INSTALACION, EQUIPO y NOVEDAD describen la maniobra de apertura/cierre: van en negrita
       cell.font = { name: FONT_NAME, size: FONT_SIZE, bold: (col !== 'F') };
     });
     r++;
   });
+}
+
+function exportParteDeCampo(){
+  // GAS: solo pozos con hora de apertura/cierre modificados DESPUES del ultimo parte enviado
+  const filasGas = pendientesDeReporte()
+    .map(rec => ({
+      hora: buildHoraColumna(rec),
+      instalacion: bateriaToInstalacion(rec.bateria),
+      pozo: rec.pozo,
+      novedad: buildNovedad(rec)
+    }));
+
+  // OIL: pozos de AIB con BP/PL cargados, modificados desde el ultimo parte
+  const filasOil = pendientesDeReporteAib()
+    .map(rec => ({
+      hora: rec.hora || '',
+      instalacion: rec.bateria || '',
+      pozo: rec.pozo,
+      novedad: buildAibNovedad(rec)
+    }));
+
+  if(filasGas.length === 0 && filasOil.length === 0){
+    alert('No hay pozos (gas ni petroleo) con movimientos nuevos desde el ultimo parte enviado.');
+    return;
+  }
+
+  const hoy = todayStr();
+
+  if(typeof ExcelJS === 'undefined'){
+    let text = `PARTE DE CAMPO ${hoy}\n\n`;
+    if(filasGas.length){
+      text += 'GAS:\n';
+      filasGas.forEach(f => { text += `${f.hora} | ${f.instalacion} | ${f.pozo} | ${f.novedad}\n`; });
+    }
+    if(filasOil.length){
+      text += '\nOIL:\n';
+      filasOil.forEach(f => { text += `${f.hora} | ${f.instalacion} | ${f.pozo} | ${f.novedad}\n`; });
+    }
+    if(navigator.share){ navigator.share({ title: 'Parte de campo', text }).catch(()=>{}); }
+    else if(navigator.clipboard){ navigator.clipboard.writeText(text).then(()=>alert('Copiado.')); }
+    else { prompt('Copia este texto:', text); }
+    marcarReporteEnviado();
+    return;
+  }
+
+  const wb = new ExcelJS.Workbook();
+  const FONT_NAME = 'Calibri';
+  const FONT_SIZE = 11.5;
+
+  if(filasGas.length){
+    agregarHojaParte(wb, 'GAS', 'REPORTE GAS - YAC. CENTENARIO', filasGas, hoy, FONT_NAME, FONT_SIZE);
+  }
+  if(filasOil.length){
+    agregarHojaParte(wb, 'OIL', 'REPORTE OIL - YAC. CENTENARIO', filasOil, hoy, FONT_NAME, FONT_SIZE);
+  }
 
   const fileName = `Parte_de_campo_${new Date().toISOString().slice(0,10)}.xlsx`;
   wb.xlsx.writeBuffer().then(buffer => {
@@ -1645,15 +1777,16 @@ function renderPlano(){
   });
 }
 
+// ---------------- Manejo de pestañas (helper generico) ----------------
+const TAB_IDS = ['tabLista','tabPlano','tabCiclaje','tabMov','tabAib'];
+const MAIN_IDS = ['main','planoMain','ciclajeMain','movMain','aibMain'];
+function switchTab(activeTabId, activeMainId){
+  TAB_IDS.forEach(id => document.getElementById(id).classList.toggle('active', id === activeTabId));
+  MAIN_IDS.forEach(id => document.getElementById(id).style.display = (id === activeMainId) ? '' : 'none');
+}
+
 document.getElementById('tabPlano').addEventListener('click', () => {
-  document.getElementById('tabPlano').classList.add('active');
-  document.getElementById('tabLista').classList.remove('active');
-  document.getElementById('tabCiclaje').classList.remove('active');
-  document.getElementById('tabMov').classList.remove('active');
-  document.getElementById('main').style.display = 'none';
-  document.getElementById('planoMain').style.display = '';
-  document.getElementById('ciclajeMain').style.display = 'none';
-  document.getElementById('movMain').style.display = 'none';
+  switchTab('tabPlano', 'planoMain');
   renderPlano(); // siempre redibuja (barato) para respetar la busqueda vigente y datos frescos
 });
 
@@ -1756,25 +1889,11 @@ function renderCiclaje(){
 }
 
 document.getElementById('tabCiclaje').addEventListener('click', () => {
-  document.getElementById('tabCiclaje').classList.add('active');
-  document.getElementById('tabLista').classList.remove('active');
-  document.getElementById('tabPlano').classList.remove('active');
-  document.getElementById('tabMov').classList.remove('active');
-  document.getElementById('main').style.display = 'none';
-  document.getElementById('planoMain').style.display = 'none';
-  document.getElementById('ciclajeMain').style.display = '';
-  document.getElementById('movMain').style.display = 'none';
+  switchTab('tabCiclaje', 'ciclajeMain');
   renderCiclaje();
 });
 document.getElementById('tabLista').addEventListener('click', () => {
-  document.getElementById('tabLista').classList.add('active');
-  document.getElementById('tabPlano').classList.remove('active');
-  document.getElementById('tabCiclaje').classList.remove('active');
-  document.getElementById('tabMov').classList.remove('active');
-  document.getElementById('main').style.display = '';
-  document.getElementById('planoMain').style.display = 'none';
-  document.getElementById('ciclajeMain').style.display = 'none';
-  document.getElementById('movMain').style.display = 'none';
+  switchTab('tabLista', 'main');
 });
 
 // ---------------- Vista Ultimos movimientos ----------------
@@ -1831,15 +1950,117 @@ function renderMovimientos(){
 }
 
 document.getElementById('tabMov').addEventListener('click', () => {
-  document.getElementById('tabMov').classList.add('active');
-  document.getElementById('tabLista').classList.remove('active');
-  document.getElementById('tabPlano').classList.remove('active');
-  document.getElementById('tabCiclaje').classList.remove('active');
-  document.getElementById('main').style.display = 'none';
-  document.getElementById('planoMain').style.display = 'none';
-  document.getElementById('ciclajeMain').style.display = 'none';
-  document.getElementById('movMain').style.display = '';
+  switchTab('tabMov', 'movMain');
   renderMovimientos();
+});
+
+// ---------------- Vista AIB (pozos de petroleo) ----------------
+function buildAibNovedad(rec){
+  const bp = rec.bp || 'S/D';
+  const pl = rec.pl || 'S/D';
+  const perdidasTxt = rec.perdidas ? 'Con perdidas por vastago.' : 'Sin perdidas.';
+  let texto = `Se verifica AIB, en marcha OK - #BP: ${bp} kg/cm2 / #PL: ${pl} kg/cm2. ${perdidasTxt}`;
+  if(rec.nota && rec.nota.trim()) texto += ` ${rec.nota.trim()}`;
+  return texto;
+}
+
+function renderAib(){
+  const aibMain = document.getElementById('aibMain');
+  aibMain.innerHTML = `<div class="plano-note">Pozos de petroleo (AIB). Agregalos con el numero de pozo y la bateria, despues cargales BP/PL desde cada fila.</div>
+    <div class="add-ciclaje-row">
+      <input type="text" id="addAibPozo" placeholder="Pozo (ej: 1314)" class="edit-input" style="max-width:130px;">
+      <input type="text" id="addAibBat" placeholder="Bateria (ej: Bateria 5)" class="edit-input">
+      <button id="addAibBtn" class="add-ciclaje-btn">Agregar</button>
+    </div>`;
+
+  document.getElementById('addAibBtn').addEventListener('click', () => {
+    const inpPozo = document.getElementById('addAibPozo');
+    const inpBat = document.getElementById('addAibBat');
+    let pozoNum = inpPozo.value.trim().replace(/^ce-?/i, '').replace(/\//g, '-');
+    if(!pozoNum) return;
+    const pozoKey = 'Ce-' + pozoNum;
+    if(AIB_POZOS.find(p => p.pozo === pozoKey)){
+      alert('Ese pozo ya esta cargado en AIB.');
+      return;
+    }
+    const bateria = inpBat.value.trim() || 'Sin bateria';
+    saveAibPozo(pozoKey, { bateria: bateria, bp: '', pl: '', perdidas: false, nota: '' });
+    inpPozo.value = '';
+    inpBat.value = '';
+  });
+  document.getElementById('addAibPozo').addEventListener('keydown', (e) => {
+    if(e.key === 'Enter') document.getElementById('addAibBtn').click();
+  });
+
+  if(AIB_POZOS.length === 0){
+    aibMain.innerHTML += '<div class="empty-msg">Todavia no cargaste ningun pozo de petroleo.</div>';
+    return;
+  }
+
+  const ordenados = [...AIB_POZOS].sort((a,b) => (a.bateria||'').localeCompare(b.bateria||'') || a.pozo.localeCompare(b.pozo, undefined, {numeric:true}));
+
+  ordenados.forEach(rec => {
+    const row = document.createElement('div');
+    row.className = 'aib-row';
+    row.innerHTML = `
+      <div class="aib-row-top">
+        <div class="aib-pozo">${rec.pozo} <span class="aib-bat">${rec.bateria || 'Sin bateria'}</span></div>
+        <button class="cr-remove" title="Quitar pozo">&times;</button>
+      </div>
+      <div class="aib-fields">
+        <div class="aib-field">
+          <div class="time-label">Hora de verificacion</div>
+          <input type="time" class="edit-input time-input aib-hora" value="${rec.hora || ''}">
+        </div>
+      </div>
+      <div class="aib-fields">
+        <div class="aib-field">
+          <div class="time-label">BP (kg/cm2)</div>
+          <input type="text" class="edit-input aib-bp" value="${(rec.bp||'').toString().replace(/"/g,'&quot;')}" placeholder="ej: 14,7">
+        </div>
+        <div class="aib-field">
+          <div class="time-label">PL (kg/cm2)</div>
+          <input type="text" class="edit-input aib-pl" value="${(rec.pl||'').toString().replace(/"/g,'&quot;')}" placeholder="ej: 3">
+        </div>
+      </div>
+      <label class="aib-perdidas-check">
+        <input type="checkbox" class="aib-perdidas" ${rec.perdidas ? 'checked' : ''}> Con perdidas por vastago
+      </label>
+      <input type="text" class="edit-input aib-nota" value="${(rec.nota||'').replace(/"/g,'&quot;')}" placeholder="Nota extra (opcional)" style="margin-top:6px;">
+      <div class="aib-preview">${buildAibNovedad(rec)}</div>
+      <button class="save-btn aib-save-btn">Guardar</button>
+    `;
+    row.querySelector('.cr-remove').addEventListener('click', () => {
+      deleteAibPozo(rec.pozo);
+    });
+    const previewEl = row.querySelector('.aib-preview');
+    function updatePreview(){
+      previewEl.textContent = buildAibNovedad({
+        bp: row.querySelector('.aib-bp').value.trim(),
+        pl: row.querySelector('.aib-pl').value.trim(),
+        perdidas: row.querySelector('.aib-perdidas').checked,
+        nota: row.querySelector('.aib-nota').value.trim()
+      });
+    }
+    row.querySelector('.aib-bp').addEventListener('input', updatePreview);
+    row.querySelector('.aib-pl').addEventListener('input', updatePreview);
+    row.querySelector('.aib-perdidas').addEventListener('change', updatePreview);
+    row.querySelector('.aib-nota').addEventListener('input', updatePreview);
+    row.querySelector('.aib-save-btn').addEventListener('click', () => {
+      const hora = row.querySelector('.aib-hora').value;
+      const bp = row.querySelector('.aib-bp').value.trim();
+      const pl = row.querySelector('.aib-pl').value.trim();
+      const perdidas = row.querySelector('.aib-perdidas').checked;
+      const nota = row.querySelector('.aib-nota').value.trim();
+      saveAibPozo(rec.pozo, { hora, bp, pl, perdidas, nota, bateria: rec.bateria || 'Sin bateria' });
+    });
+    aibMain.appendChild(row);
+  });
+}
+
+document.getElementById('tabAib').addEventListener('click', () => {
+  switchTab('tabAib', 'aibMain');
+  renderAib();
 });
 
 // arranca mostrando el Plano por defecto (ya con todo declarado)
