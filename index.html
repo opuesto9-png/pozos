@@ -1962,6 +1962,22 @@ function formatAibPresion(raw){
   if(!raw || raw.toString().trim().toUpperCase() === 'S/D') return 'S/D';
   return convertPresionText(raw.toString(), pressureUnit);
 }
+// valor SIN unidad (solo el numero) convertido a la unidad actual, para mostrar en los inputs editables de BP/PL
+function aibPresionDisplayValue(raw){
+  if(!raw || raw.toString().trim().toUpperCase() === 'S/D') return raw || '';
+  const num = parseFloat(raw.toString().replace(',', '.'));
+  if(isNaN(num)) return raw;
+  const out = pressureUnit === 'psi' ? num * KG_TO_PSI : num;
+  return (Math.round(out * 10) / 10).toString().replace('.', ',');
+}
+// inverso: lo que el usuario tipeo (en la unidad actual) vuelve a kg/cm2, que es como se guarda siempre
+function aibPresionToKg(displayVal){
+  if(!displayVal || displayVal.toString().trim().toUpperCase() === 'S/D') return displayVal || '';
+  const num = parseFloat(displayVal.toString().replace(',', '.'));
+  if(isNaN(num)) return displayVal;
+  const kg = pressureUnit === 'psi' ? num / KG_TO_PSI : num;
+  return (Math.round(kg * 10) / 10).toString().replace('.', ',');
+}
 
 function buildAibNovedad(rec){
   const bpTxt = formatAibPresion(rec.bp);
@@ -2051,11 +2067,11 @@ function renderAib(){
       <div class="aib-fields">
         <div class="aib-field">
           <div class="time-label">BP (${pressureUnit === 'psi' ? 'psi' : 'kg/cm2'})</div>
-          <input type="text" class="edit-input aib-bp" value="${(rec.bp||'').toString().replace(/"/g,'&quot;')}" placeholder="ej: 14,7">
+          <input type="text" class="edit-input aib-bp" value="${aibPresionDisplayValue(rec.bp).toString().replace(/"/g,'&quot;')}" placeholder="ej: 14,7">
         </div>
         <div class="aib-field">
           <div class="time-label">PL (${pressureUnit === 'psi' ? 'psi' : 'kg/cm2'})</div>
-          <input type="text" class="edit-input aib-pl" value="${(rec.pl||'').toString().replace(/"/g,'&quot;')}" placeholder="ej: 3">
+          <input type="text" class="edit-input aib-pl" value="${aibPresionDisplayValue(rec.pl).toString().replace(/"/g,'&quot;')}" placeholder="ej: 3">
         </div>
       </div>
       <label class="aib-perdidas-check" style="display:${estadoActual==='Parado'?'none':''};">
@@ -2087,8 +2103,8 @@ function renderAib(){
       previewEl.textContent = buildAibNovedad({
         estado: estadoSeleccionado,
         motivoParo: row.querySelector('.aib-motivo').value,
-        bp: row.querySelector('.aib-bp').value.trim(),
-        pl: row.querySelector('.aib-pl').value.trim(),
+        bp: aibPresionToKg(row.querySelector('.aib-bp').value.trim()),
+        pl: aibPresionToKg(row.querySelector('.aib-pl').value.trim()),
         perdidas: row.querySelector('.aib-perdidas').checked,
         nota: row.querySelector('.aib-nota').value.trim()
       });
@@ -2101,8 +2117,8 @@ function renderAib(){
     row.querySelector('.aib-save-btn').addEventListener('click', () => {
       const bateria = row.querySelector('.aib-bateria').value.trim() || 'Sin bateria';
       const hora = row.querySelector('.aib-hora').value;
-      const bp = row.querySelector('.aib-bp').value.trim();
-      const pl = row.querySelector('.aib-pl').value.trim();
+      const bp = aibPresionToKg(row.querySelector('.aib-bp').value.trim());
+      const pl = aibPresionToKg(row.querySelector('.aib-pl').value.trim());
       const perdidas = row.querySelector('.aib-perdidas').checked;
       const nota = row.querySelector('.aib-nota').value.trim();
       const motivoParo = row.querySelector('.aib-motivo').value;
