@@ -70,6 +70,30 @@
     cursor: pointer;
     text-decoration: underline dotted;
   }
+  .operador-edit-wrap{
+    display:flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .operador-input{
+    background: var(--panel);
+    border: 1px solid var(--line);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    width: 130px;
+  }
+  .operador-save-btn{
+    background: var(--amber-dim);
+    border: 1px solid var(--amber);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
   .operador-tag:hover{ color: var(--amber); }
   header p{
     margin: 0;
@@ -614,6 +638,10 @@
   <div class="status-bar">
     <span id="connBadge" class="conn-badge"></span>
     <span id="operadorTag" class="operador-tag"></span>
+    <span id="operadorEditWrap" class="operador-edit-wrap" style="display:none;">
+      <input id="operadorInput" type="text" placeholder="Tu nombre" class="operador-input">
+      <button id="operadorSaveBtn" class="operador-save-btn">Guardar</button>
+    </span>
   </div>
   <p>Tocá un pozo para ver el detalle completo. Los cambios (ABIERTO/CERRADO, ediciones) se guardan solos, al instante. El botón de abajo solo arma y manda el parte cuando vos lo toques, no antes. Colectora segun plano de red (Act. Agosto 2017) &mdash; puede estar desactualizado, confirmar estado real en campo/SCADA.</p>
   <div class="search">
@@ -685,21 +713,40 @@ const KG_TO_PSI = 14.223343307;
 // ---------------- Operador (para saber quien hizo cada cambio) ----------------
 let operadorName = safeGet('pozos_operador', '');
 
-function pedirOperador(){
-  const n = prompt('Tu nombre (para que se sepa quien hizo cada cambio):', operadorName || '');
-  if(n && n.trim()){
-    operadorName = n.trim();
+function mostrarEdicionOperador(){
+  document.getElementById('operadorTag').style.display = 'none';
+  const wrap = document.getElementById('operadorEditWrap');
+  wrap.style.display = '';
+  const input = document.getElementById('operadorInput');
+  input.value = operadorName || '';
+  input.focus();
+}
+function guardarOperador(){
+  const input = document.getElementById('operadorInput');
+  const v = (input.value || '').trim();
+  if(v){
+    operadorName = v;
     safeSet('pozos_operador', operadorName);
   }
+  document.getElementById('operadorEditWrap').style.display = 'none';
   renderOperadorTag();
 }
 function renderOperadorTag(){
   const tag = document.getElementById('operadorTag');
   if(!tag) return;
+  tag.style.display = '';
   tag.textContent = operadorName ? `Operador: ${operadorName} (cambiar)` : 'Tocá para poner tu nombre';
 }
-document.getElementById('operadorTag').addEventListener('click', pedirOperador);
-if(!operadorName){ pedirOperador(); } else { renderOperadorTag(); }
+document.getElementById('operadorTag').addEventListener('click', mostrarEdicionOperador);
+document.getElementById('operadorSaveBtn').addEventListener('click', guardarOperador);
+document.getElementById('operadorInput').addEventListener('keydown', (e) => {
+  if(e.key === 'Enter') guardarOperador();
+});
+if(!operadorName){
+  mostrarEdicionOperador();
+} else {
+  renderOperadorTag();
+}
 
 // ---------------- Indicador de conexion ----------------
 function updateConnBadge(){
