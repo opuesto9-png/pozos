@@ -379,6 +379,7 @@
 
   .tag.edit-tag{ color: #7fb0e0; }
   .export-btn{ border-color: #7fb0e0; color: #7fb0e0; }
+  .export-btn:disabled{ border-color: var(--line); color: var(--muted); cursor: not-allowed; opacity: 0.6; }
   .pend-badge{
     background: #d98e3f;
     color: #14181d;
@@ -984,9 +985,28 @@ function downloadOrShareBlob(blob, fileName, title){
   downloadFile(blob, fileName);
 }
 
-// un pozo "cuenta" para el proximo parte si se modifico despues del ultimo envio (compartido entre dispositivos)
+// inicio del "dia operativo" vigente: 6:00 am de hoy, o de ayer si todavia no son las 6:00
+function inicioDiaOperativo(fecha){
+  const d = fecha ? new Date(fecha) : new Date();
+  if(d.getHours() < 6){
+    d.setDate(d.getDate() - 1);
+  }
+  d.setHours(6, 0, 0, 0);
+  return d;
+}
+// corte real para "que es nuevo": lo mas reciente entre el inicio del dia operativo y el ultimo parte
+// enviado. Asi, si ya se mando un parte hoy, no se duplica; pero si cambia de dia, arranca de cero
+// aunque no se haya mandado el parte de ayer (no se arrastran pendientes de un dia para el otro).
+function corteDePendientes(){
+  const inicioDia = inicioDiaOperativo();
+  if(!ultimoReporteTs || ultimoReporteTs < inicioDia) return inicioDia;
+  return ultimoReporteTs;
+}
+
+// un pozo "cuenta" para el proximo parte si se modifico despues del corte vigente (dia operativo / ultimo envio)
 function pendientesDeReporte(){
-  return POZOS.filter(p => (p.horaApertura || p.horaCierre) && p._updatedAtDate && (!ultimoReporteTs || p._updatedAtDate > ultimoReporteTs));
+  const corte = corteDePendientes();
+  return POZOS.filter(p => (p.horaApertura || p.horaCierre) && p._updatedAtDate && p._updatedAtDate > corte);
 }
 
 function updatePendCount(){
@@ -1180,6 +1200,14 @@ function calcDuracion(hIni, hFin){
   if(mins < 0) mins += 24*60;
   const hh = Math.floor(mins/60), mm = mins%60;
   return `${hh}h${mm>0 ? ' '+mm+'m' : ''}`;
+}
+// igual que calcDuracion, pero en horas decimales (ej: 4.5) para poder sumarlas en el reporte
+function calcDuracionDecimal(hIni, hFin){
+  const [h1,m1] = hIni.split(':').map(Number);
+  const [h2,m2] = hFin.split(':').map(Number);
+  let mins = (h2*60+m2) - (h1*60+m1);
+  if(mins < 0) mins += 24*60;
+  return Math.round((mins/60) * 10) / 10;
 }
 function calcDuracionDesde(hIni){
   const now = new Date();
@@ -1411,6 +1439,16 @@ function renderCardEdit(rec, bat){
       }
     }
 
+    // Hs total de la maniobra que se acaba de completar (para el reporte, a pedido de Sebastian):
+    // si recien se cerro, cuenta cuanto estuvo ABIERTO antes; si recien se reabrio, cuenta cuanto estuvo CERRADO.
+    if(cierreCambio && hcEfectivo && rec.estado === 'Abierto' && horaAperturaOriginal){
+      newFields.horasTotalNum = calcDuracionDecimal(horaAperturaOriginal, hcEfectivo);
+      newFields.horasTotalTipo = 'abierto';
+    } else if(aperturaCambio && !cierreCambio && rec.estado === 'Cerrado' && horaCierreOriginal){
+      newFields.horasTotalNum = calcDuracionDecimal(horaCierreOriginal, hA);
+      newFields.horasTotalTipo = 'cerrado';
+    }
+
     Object.assign(rec, newFields);
     rec._edited = true;
     saveEdit(rec.pozo, newFields);
@@ -1449,6 +1487,18 @@ document.getElementById('parteBtn').addEventListener('click', () => {
   try { exportParteDeCampo(); } catch(err) { alert('Error al generar el parte: ' + (err && err.message ? err.message : err)); }
 });
 
+// el boton de enviar parte se habilita recien a partir de las 6:00 am (asi no se manda antes de que
+// termine de cargarse el dia operativo, que va de 6am a 6am del dia siguiente)
+function actualizarBotonParte(){
+  const btn = document.getElementById('parteBtn');
+  if(!btn) return;
+  const habilitado = new Date().getHours() >= 6;
+  btn.disabled = !habilitado;
+  btn.title = habilitado ? '' : 'El parte se habilita a partir de las 6:00 am (el dia operativo va de 6am a 6am)';
+}
+actualizarBotonParte();
+setInterval(actualizarBotonParte, 60000);
+
 function bateriaToInstalacion(bat){
   if(!bat) return '';
   const m = bat.match(/USPA(\d)/i);
@@ -1484,13 +1534,14 @@ function marcarReporteEnviado(){
 }
 
 function pendientesDeReporteAib(){
-  return AIB_POZOS.filter(p => (p.bp || p.pl) && p._updatedAtDate && (!ultimoReporteTs || p._updatedAtDate > ultimoReporteTs));
+  const corte = corteDePendientes();
+  return AIB_POZOS.filter(p => (p.bp || p.pl) && p._updatedAtDate && p._updatedAtDate > corte);
 }
 
 function agregarHojaParte(wb, nombreHoja, tituloHoja, filas, hoy, FONT_NAME, FONT_SIZE){
   const ws = wb.addWorksheet(nombreHoja);
   ws.columns = [
-    { width: 3 }, { width: 14 }, { width: 12 }, { width: 12 }, { width: 55 }, { width: 16 }
+    { width: 3 }, { width: 14 }, { width: 12 }, { width: 12 }, { width: 55 }, { width: 14 }, { width: 16 }
   ];
 
   ws.getCell('B2').value = tituloHoja;
@@ -1501,8 +1552,9 @@ function agregarHojaParte(wb, nombreHoja, tituloHoja, filas, hoy, FONT_NAME, FON
   ws.getCell(`C${r}`).value = 'INSTALACION';
   ws.getCell(`D${r}`).value = 'EQUIPO';
   ws.getCell(`E${r}`).value = 'NOVEDAD';
-  ws.getCell(`F${r}`).value = 'INTERVIENE';
-  ['B','C','D','E','F'].forEach(col => {
+  ws.getCell(`F${r}`).value = 'HS TOTAL';
+  ws.getCell(`G${r}`).value = 'INTERVIENE';
+  ['B','C','D','E','F','G'].forEach(col => {
     const cell = ws.getCell(`${col}${r}`);
     cell.font = { name: FONT_NAME, size: FONT_SIZE, bold: true };
     cell.border = { top:{style:'thin'}, left:{style:'thin'}, bottom:{style:'thin'}, right:{style:'thin'} };
@@ -1519,12 +1571,24 @@ function agregarHojaParte(wb, nombreHoja, tituloHoja, filas, hoy, FONT_NAME, FON
     ws.getCell(`C${r}`).value = f.instalacion;
     ws.getCell(`D${r}`).value = f.pozo;
     ws.getCell(`E${r}`).value = f.novedad;
-    ws.getCell(`F${r}`).value = '';
-    ['B','C','D','E','F'].forEach(col => {
+    if(typeof f.horasTotal === 'number'){
+      const cellHs = ws.getCell(`F${r}`);
+      cellHs.value = f.horasTotal;
+      cellHs.numFmt = '0.0';
+      cellHs.fill = { type:'pattern', pattern:'solid', fgColor:{ argb: 'FFFFFF00' } };
+    } else {
+      ws.getCell(`F${r}`).value = '';
+    }
+    ws.getCell(`G${r}`).value = '';
+    ['B','C','D','E','F','G'].forEach(col => {
       const cell = ws.getCell(`${col}${r}`);
       cell.border = { top:{style:'thin'}, left:{style:'thin'}, bottom:{style:'thin'}, right:{style:'thin'} };
       cell.alignment = { vertical:'middle', wrapText: true };
-      cell.font = { name: FONT_NAME, size: FONT_SIZE, bold: (col !== 'F') };
+      if(col !== 'F'){
+        cell.font = { name: FONT_NAME, size: FONT_SIZE, bold: (col !== 'G') };
+      } else {
+        cell.font = { name: FONT_NAME, size: FONT_SIZE, bold: true };
+      }
     });
     r++;
   });
@@ -1537,7 +1601,8 @@ function exportParteDeCampo(){
       hora: buildHoraColumna(rec),
       instalacion: bateriaToInstalacion(rec.bateria),
       pozo: rec.pozo,
-      novedad: buildNovedad(rec)
+      novedad: buildNovedad(rec),
+      horasTotal: typeof rec.horasTotalNum === 'number' ? rec.horasTotalNum : null
     }));
 
   // OIL: pozos de AIB con BP/PL cargados, modificados desde el ultimo parte
@@ -1546,7 +1611,8 @@ function exportParteDeCampo(){
       hora: rec.hora || '',
       instalacion: rec.bateria || '',
       pozo: rec.pozo,
-      novedad: buildAibNovedad(rec)
+      novedad: buildAibNovedad(rec),
+      horasTotal: null
     }));
 
   if(filasGas.length === 0 && filasOil.length === 0){
