@@ -238,8 +238,17 @@
 
   .tabs{
     display:flex;
+    flex-wrap: wrap;
     gap: 6px;
     margin-top: 14px;
+  }
+  .toolbar{
+    display:flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 10px;
   }
   .tab-btn{
     background: var(--panel);
@@ -321,7 +330,7 @@
   .well-chip-sm:hover{ border-color: var(--amber); }
 
   .tag.edit-tag{ color: #7fb0e0; }
-  .export-btn{ margin-left: auto; border-color: #7fb0e0; color: #7fb0e0; }
+  .export-btn{ border-color: #7fb0e0; color: #7fb0e0; }
   .pend-badge{
     background: #d98e3f;
     color: #14181d;
@@ -591,6 +600,8 @@
     <button class="tab-btn" id="tabPlano">Plano (colectoras)</button>
     <button class="tab-btn" id="tabCiclaje">Ciclaje</button>
     <button class="tab-btn" id="tabMov">Últimos movimientos</button>
+  </div>
+  <div class="toolbar">
     <button class="tab-btn export-btn" id="parteBtn">Enviar parte de campo <span id="pendCount" class="pend-badge" style="display:none;"></span></button>
     <div class="unit-toggle">
       <button class="unit-btn active" id="unitKg">kg/cm&sup2;</button>
