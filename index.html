@@ -851,6 +851,7 @@ function startSync(){
       }
     });
     refreshEverything();
+    checkCiclosAutomaticos(); // apenas llegan datos frescos, revisamos si algun ciclo quedo pendiente de cambiar
   }, (err) => {
     console.error('Firestore sync error', err);
   });
@@ -1386,6 +1387,10 @@ startSync();
 updatePendCount();
 checkCiclosAutomaticos();
 setInterval(checkCiclosAutomaticos, 30000);
+document.addEventListener('visibilitychange', () => {
+  if(!document.hidden) checkCiclosAutomaticos();
+});
+window.addEventListener('focus', () => checkCiclosAutomaticos());
 if(storageBlocked){
   const warn = document.createElement('div');
   warn.className = 'plano-note';
