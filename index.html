@@ -686,6 +686,11 @@ const BAT_COLORS = {
   "USPA5": "#9a5fc0",
   "Sin bateria": "#7a828d"
 };
+const USPA_ORDER = ["USPA2","USPA3","USPA4","USPA5","Sin bateria"];
+const USPA_TITLES = {
+  "USPA2": "USPA II", "USPA3": "USPA III", "USPA4": "USPA IV",
+  "USPA5": "USPA V", "Sin bateria": "Sin bateria confirmada"
+};
 
 // ---------------- Almacenamiento seguro (localStorage puede estar bloqueado en file://) ----------------
 let memoryStore = {};
@@ -1548,12 +1553,6 @@ if(storageBlocked){
 }
 
 // ---------------- Vista Plano (colectoras) ----------------
-const USPA_ORDER = ["USPA2","USPA3","USPA4","USPA5","Sin bateria"];
-const USPA_TITLES = {
-  "USPA2": "USPA II", "USPA3": "USPA III", "USPA4": "USPA IV",
-  "USPA5": "USPA V", "Sin bateria": "Sin bateria confirmada"
-};
-
 function renderPlano(){
   const planoMain = document.getElementById('planoMain');
   const f = (document.getElementById('searchBox').value || '').trim().toLowerCase();

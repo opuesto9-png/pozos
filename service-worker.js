@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pozos-cache-v2';
+const CACHE_NAME = 'pozos-cache-v3';
 const ASSETS = [
   './manifest.json',
   './icon-192.png',
@@ -28,9 +28,10 @@ self.addEventListener('fetch', (event) => {
   const isHTML = event.request.mode === 'navigate' || url.endsWith('/') || url.endsWith('.html');
 
   if (isSameOrigin && isHTML) {
-    // red primero para el HTML: asi las actualizaciones se ven apenas se suben, sin quedar pegado a una version vieja
+    // red primero para el HTML, sin usar la cache HTTP del navegador: asi las actualizaciones
+    // se ven apenas se suben a GitHub, sin quedar pegado a una version vieja
     event.respondWith(
-      fetch(event.request).then((response) => {
+      fetch(event.request, { cache: 'no-store' }).then((response) => {
         const clone = response.clone();
         caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
         return response;
