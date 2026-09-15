@@ -1075,9 +1075,8 @@ function startSync(){
 
 // carga inicial de pozos de petroleo (solo corre una vez, la primera vez que la coleccion esta vacia)
 const AIB_SEED = [
-  { pozo: 'P-130A-B', bateria: 'Bateria 1', bp: '', pl: '', perdidas: false, hora: '19:00', nota: 'Mecanicos de ENSI realizan mantenimiento preventivo en bombas. Caldera F/S (en reparacion).' },
   { pozo: 'Ce-1314', bateria: 'Bateria 5', bp: '8', pl: '5,5', perdidas: false, hora: '02:28' },
-  { pozo: 'Ce-1273', bateria: 'Bateria 5', bp: '14,7', pl: '3', perdidas: false, hora: '19:53' },
+  { pozo: 'Ce-1273', bateria: 'Bateria 1', bp: '14,7', pl: '3', perdidas: false, hora: '19:53' },
   { pozo: 'Ce-1351', bateria: 'Bateria 5', bp: '14', pl: '4', perdidas: false, hora: '23:20' },
   { pozo: 'Ce-1272', bateria: 'Bateria 5', bp: '17,2', pl: '7,5', perdidas: false, hora: '23:27' },
   { pozo: 'Ce-1093', bateria: 'Bateria 5', bp: '12,27', pl: '7,5', perdidas: false, hora: '01:04' },
@@ -2004,10 +2003,14 @@ function renderAib(){
     row.className = 'aib-row';
     row.innerHTML = `
       <div class="aib-row-top">
-        <div class="aib-pozo">${rec.pozo} <span class="aib-bat">${rec.bateria || 'Sin bateria'}</span></div>
+        <div class="aib-pozo">${rec.pozo}</div>
         <button class="cr-remove" title="Quitar pozo">&times;</button>
       </div>
       <div class="aib-fields">
+        <div class="aib-field">
+          <div class="time-label">Bateria</div>
+          <input type="text" class="edit-input aib-bateria" value="${(rec.bateria||'').replace(/"/g,'&quot;')}" placeholder="ej: Bateria 1">
+        </div>
         <div class="aib-field">
           <div class="time-label">Hora de verificacion</div>
           <input type="time" class="edit-input time-input aib-hora" value="${rec.hora || ''}">
@@ -2047,12 +2050,13 @@ function renderAib(){
     row.querySelector('.aib-perdidas').addEventListener('change', updatePreview);
     row.querySelector('.aib-nota').addEventListener('input', updatePreview);
     row.querySelector('.aib-save-btn').addEventListener('click', () => {
+      const bateria = row.querySelector('.aib-bateria').value.trim() || 'Sin bateria';
       const hora = row.querySelector('.aib-hora').value;
       const bp = row.querySelector('.aib-bp').value.trim();
       const pl = row.querySelector('.aib-pl').value.trim();
       const perdidas = row.querySelector('.aib-perdidas').checked;
       const nota = row.querySelector('.aib-nota').value.trim();
-      saveAibPozo(rec.pozo, { hora, bp, pl, perdidas, nota, bateria: rec.bateria || 'Sin bateria' });
+      saveAibPozo(rec.pozo, { hora, bp, pl, perdidas, nota, bateria });
     });
     aibMain.appendChild(row);
   });
