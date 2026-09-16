@@ -132,6 +132,33 @@
   main{ padding: 6px 14px 30px; max-width: 640px; margin: 0 auto; }
 
   .bat-group{ margin-top: 22px; }
+
+  .uspa-notas-box{
+    margin-top: 10px;
+  }
+  .uspa-notas-toggle{
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 0.8rem;
+    cursor: pointer;
+    padding: 4px 2px;
+  }
+  .uspa-notas-toggle:hover{ color: var(--amber); }
+  .uspa-notas-body{
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px;
+    margin-top: 4px;
+  }
+  .uspa-notas-text{
+    width: 100%;
+    min-height: 70px;
+    resize: vertical;
+    box-sizing: border-box;
+  }
+  .uspa-notas-save{ margin-top: 8px; }
   .bat-label{
     font-size: 0.72rem;
     letter-spacing: 0.06em;
@@ -914,6 +941,37 @@ function render(filterText){
     });
 
     section.appendChild(grid);
+
+    const notasBox = document.createElement('div');
+    notasBox.className = 'uspa-notas-box';
+    const abierto = uspaNotasAbiertas.has(bat);
+    const tieneNota = !!(USPA_NOTAS[bat] && USPA_NOTAS[bat].trim());
+    notasBox.innerHTML = `
+      <button type="button" class="uspa-notas-toggle">${abierto ? '&#9662;' : '&#9656;'} Notas de ${bat}${tieneNota ? ' &bull;' : ''}</button>
+      <div class="uspa-notas-body" style="display:${abierto ? '' : 'none'};">
+        <textarea class="edit-input edit-textarea uspa-notas-text" placeholder="Anotaciones generales para esta bateria...">${USPA_NOTAS[bat] || ''}</textarea>
+        <button type="button" class="save-btn uspa-notas-save">Guardar nota</button>
+      </div>
+    `;
+    const toggleBtn = notasBox.querySelector('.uspa-notas-toggle');
+    const body = notasBox.querySelector('.uspa-notas-body');
+    toggleBtn.addEventListener('click', () => {
+      if(uspaNotasAbiertas.has(bat)){
+        uspaNotasAbiertas.delete(bat);
+        body.style.display = 'none';
+        toggleBtn.innerHTML = `&#9656; Notas de ${bat}${tieneNota ? ' &bull;' : ''}`;
+      } else {
+        uspaNotasAbiertas.add(bat);
+        body.style.display = '';
+        toggleBtn.innerHTML = `&#9662; Notas de ${bat}${tieneNota ? ' &bull;' : ''}`;
+      }
+    });
+    notasBox.querySelector('.uspa-notas-save').addEventListener('click', () => {
+      const texto = notasBox.querySelector('.uspa-notas-text').value;
+      guardarNotaUspa(bat, texto);
+    });
+    section.appendChild(notasBox);
+
     main.appendChild(section);
   });
 }
@@ -941,6 +999,22 @@ try{
 let lastOverridesCount = 0;
 let ultimoReporteTs = null; // fecha/hora (compartida entre dispositivos) del ultimo parte de campo enviado
 let AIB_POZOS = []; // pozos de petroleo (AIB), viven enteramente en Firestore, no hay lista base
+let USPA_NOTAS = {}; // notas generales por USPA (texto libre), compartidas entre dispositivos
+let uspaNotasAbiertas = new Set(); // que recuadros de notas estan desplegados en este momento (local, no se guarda)
+
+function guardarNotaUspa(bat, texto){
+  if(!firestoreOk){
+    alert('No hay conexion con el guardado compartido. Revisa tu internet e intenta de nuevo.');
+    return;
+  }
+  db.collection('pozos_meta').doc('notasUspa').set({
+    [bat]: texto,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    operador: operadorName || 'Sin nombre'
+  }, { merge: true }).catch((err) => {
+    alert('No se pudo guardar la nota (' + err.message + '). Revisa tu conexion.');
+  });
+}
 
 function saveAibPozo(pozoKey, newFields){
   if(!firestoreOk){
@@ -1073,6 +1147,17 @@ function startSync(){
     refreshEverything();
   }, (err) => {
     console.error('Firestore sync error (meta)', err);
+  });
+
+  // notas generales por USPA (texto libre), compartidas entre dispositivos
+  db.collection('pozos_meta').doc('notasUspa').onSnapshot((doc) => {
+    const data = doc.data();
+    USPA_NOTAS = data || {};
+    if(document.getElementById('main').style.display !== 'none'){
+      render(document.getElementById('searchBox').value);
+    }
+  }, (err) => {
+    console.error('Firestore sync error (notasUspa)', err);
   });
 
   // pozos de petroleo (AIB) - coleccion propia, totalmente separada de los pozos de gas
