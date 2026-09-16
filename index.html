@@ -904,14 +904,50 @@ function groupByBateria(list){
   return groups;
 }
 
+function normalizarBateria(input){
+  const t = (input || '').trim();
+  if(!t) return 'Sin bateria';
+  if(/sin/i.test(t)) return 'Sin bateria';
+  const m = t.match(/([2-5])/);
+  if(m) return 'USPA' + m[1];
+  return t; // si escriben algo que no reconocemos, lo dejamos tal cual (mejor que perder el dato)
+}
+
 function render(filterText){
   const main = document.getElementById('main');
-  main.innerHTML = '';
+  main.innerHTML = `<div class="add-ciclaje-row">
+      <input type="text" id="addPozoNum" placeholder="Agregar pozo (ej: 1580)" class="edit-input" style="max-width:170px;">
+      <input type="text" id="addPozoBat" placeholder="Bateria (ej: USPA2)" class="edit-input" style="max-width:160px;">
+      <button id="addPozoBtn" class="add-ciclaje-btn">Agregar</button>
+    </div>`;
+
+  document.getElementById('addPozoBtn').addEventListener('click', () => {
+    const inpNum = document.getElementById('addPozoNum');
+    const inpBat = document.getElementById('addPozoBat');
+    let pozoNum = inpNum.value.trim().replace(/^ce-?/i, '').replace(/\//g, '-');
+    if(!pozoNum) return;
+    const pozoKey = 'Ce-' + pozoNum;
+    if(POZOS.find(p => p.pozo === pozoKey)){
+      alert('Ese pozo ya existe en la lista.');
+      return;
+    }
+    const bateria = normalizarBateria(inpBat.value);
+    saveEdit(pozoKey, {
+      bateria, presion: 's/d', colectora: '', ciclo: '', horario: '',
+      tablero: '', optim: '', notas: '', fecha: ''
+    });
+    inpNum.value = '';
+    inpBat.value = '';
+  });
+  document.getElementById('addPozoNum').addEventListener('keydown', (e) => {
+    if(e.key === 'Enter') document.getElementById('addPozoBtn').click();
+  });
+
   const f = (filterText || '').trim().toLowerCase();
   const filtered = f ? POZOS.filter(p => p.pozo.toLowerCase().includes(f)) : POZOS;
 
   if(filtered.length === 0){
-    main.innerHTML = '<div class="empty-msg">No hay pozos que coincidan con esa busqueda.</div>';
+    main.innerHTML += '<div class="empty-msg">No hay pozos que coincidan con esa busqueda.</div>';
     return;
   }
 
@@ -1177,13 +1213,20 @@ function startSync(){
   db.collection('pozos_overrides').onSnapshot((snapshot) => {
     lastOverridesCount = snapshot.size;
     snapshot.forEach((doc) => {
-      const rec = POZOS.find(p => p.pozo === doc.id);
-      if(rec){
-        const data = doc.data();
-        Object.assign(rec, data);
-        rec._edited = true;
-        rec._updatedAtDate = (data.updatedAt && data.updatedAt.toDate) ? data.updatedAt.toDate() : (rec._updatedAtDate || null);
+      let rec = POZOS.find(p => p.pozo === doc.id);
+      const data = doc.data();
+      if(!rec){
+        // pozo nuevo, agregado desde la app (no estaba en el listado original): lo creamos con valores por defecto
+        rec = {
+          pozo: doc.id, bateria: data.bateria || 'Sin bateria', presion: 's/d',
+          colectora: '', ciclo: '', horario: '', tablero: '', optim: '', notas: '', fecha: ''
+        };
+        POZOS.push(rec);
+        ORIGINAL_POZOS[rec.pozo] = Object.assign({}, rec);
       }
+      Object.assign(rec, data);
+      rec._edited = true;
+      rec._updatedAtDate = (data.updatedAt && data.updatedAt.toDate) ? data.updatedAt.toDate() : (rec._updatedAtDate || null);
     });
     refreshEverything();
   }, (err) => {
