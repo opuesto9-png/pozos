@@ -1602,9 +1602,11 @@ function agregarHojaParte(wb, nombreHoja, tituloHoja, filas, hoy, FONT_NAME, FON
   });
 }
 
-function exportParteDeCampo(){
+function exportParteDeCampo(forzarTodos){
   // GAS: solo pozos con hora de apertura/cierre modificados DESPUES del ultimo parte enviado
-  const filasGas = pendientesDeReporte()
+  // (o TODOS los que tengan horario cargado, si el usuario elige forzar)
+  const gasBase = forzarTodos ? POZOS.filter(p => p.horaApertura || p.horaCierre) : pendientesDeReporte();
+  const filasGas = gasBase
     .map(rec => ({
       hora: buildHoraColumna(rec),
       instalacion: bateriaToInstalacion(rec.bateria),
@@ -1614,8 +1616,9 @@ function exportParteDeCampo(){
       horasProduccion: (typeof rec.horasTotalNum === 'number' && rec.horasTotalTipo === 'abierto') ? rec.horasTotalNum : null
     }));
 
-  // OIL: pozos de AIB con BP/PL cargados, modificados desde el ultimo parte
-  const filasOil = pendientesDeReporteAib()
+  // OIL: pozos de AIB con BP/PL cargados, modificados desde el ultimo parte (o todos, si se fuerza)
+  const oilBase = forzarTodos ? AIB_POZOS.filter(p => p.bp || p.pl) : pendientesDeReporteAib();
+  const filasOil = oilBase
     .map(rec => ({
       hora: rec.hora || '',
       instalacion: rec.bateria || '',
@@ -1626,7 +1629,12 @@ function exportParteDeCampo(){
     }));
 
   if(filasGas.length === 0 && filasOil.length === 0){
-    alert('No hay pozos (gas ni petroleo) con movimientos nuevos desde el ultimo parte enviado.');
+    if(!forzarTodos){
+      const quiere = confirm('No hay movimientos nuevos desde el ultimo parte enviado.\n\n¿Generar igual el reporte con TODOS los pozos que tengan datos cargados, sin importar si ya se mandaron antes?');
+      if(quiere) exportParteDeCampo(true);
+      return;
+    }
+    alert('No hay ningun pozo con datos cargados todavia (ni gas ni petroleo).');
     return;
   }
 
