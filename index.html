@@ -1012,7 +1012,7 @@ function pendientesDeReporte(){
 function updatePendCount(){
   const badge = document.getElementById('pendCount');
   if(!badge) return;
-  const n = pendientesDeReporte().length;
+  const n = pendientesDeReporte().length + pendientesDeReporteAib().length;
   if(n > 0){
     badge.style.display = '';
     badge.textContent = n;
@@ -1091,6 +1091,10 @@ function startSync(){
     if(document.getElementById('aibMain').style.display !== 'none'){
       renderAib();
     }
+    if(document.getElementById('movMain').style.display !== 'none'){
+      renderMovimientos();
+    }
+    updatePendCount();
   }, (err) => {
     console.error('Firestore sync error (aib)', err);
   });
@@ -1897,9 +1901,11 @@ function tiempoRelativo(date){
 
 function renderMovimientos(){
   const movMain = document.getElementById('movMain');
-  movMain.innerHTML = `<div class="plano-note">Pozos ordenados por la ultima modificacion (de cualquier dispositivo), la mas reciente primero.</div>`;
+  movMain.innerHTML = `<div class="plano-note">Pozos (gas y petroleo) ordenados por la ultima modificacion (de cualquier dispositivo), la mas reciente primero.</div>`;
 
-  const conMovimiento = POZOS.filter(p => p._updatedAtDate).sort((a,b) => b._updatedAtDate - a._updatedAtDate);
+  const gasConMov = POZOS.filter(p => p._updatedAtDate).map(p => Object.assign({ _tipo: 'gas' }, p));
+  const oilConMov = AIB_POZOS.filter(p => p._updatedAtDate).map(p => Object.assign({ _tipo: 'oil' }, p));
+  const conMovimiento = [...gasConMov, ...oilConMov].sort((a,b) => b._updatedAtDate - a._updatedAtDate);
 
   if(conMovimiento.length === 0){
     movMain.innerHTML += '<div class="empty-msg">Todavia no hay movimientos registrados.</div>';
@@ -1910,12 +1916,17 @@ function renderMovimientos(){
     presion: 'presion', colectora: 'colectora', tablero: 'tablero', optim: 'optimizador',
     fecha: 'ultima visita', notas: 'notas', estado: 'estado', ciclo: 'ciclo',
     horario: 'horario', horaApertura: 'hora apertura', horaCierre: 'hora cierre',
-    horarioNota: 'nota horario', enCiclaje: 'ciclaje'
+    horarioNota: 'nota horario', enCiclaje: 'ciclaje',
+    bp: 'BP', pl: 'PL', perdidas: 'perdidas', hora: 'hora', bateria: 'bateria', motivoParo: 'motivo de paro', nota: 'nota'
   };
 
   conMovimiento.forEach(rec => {
+    const esOil = rec._tipo === 'oil';
     const bat = rec.bateria || 'Sin bateria';
-    const estadoClass = rec.estado === 'Abierto' ? 'abierto' : (rec.estado === 'Cerrado' ? 'cerrado' : 'sd');
+    const estadoLabel = esOil ? (rec.estado === 'Parado' ? 'Parado' : 'Marcha') : (rec.estado || 'sin dato');
+    const estadoClass = esOil
+      ? (rec.estado === 'Parado' ? 'cerrado' : 'abierto')
+      : (rec.estado === 'Abierto' ? 'abierto' : (rec.estado === 'Cerrado' ? 'cerrado' : 'sd'));
     const camposTocados = (rec.updatedFields || [])
       .filter(k => k !== 'updatedAt')
       .map(k => FIELD_LABELS_MOV[k] || k)
@@ -1925,12 +1936,19 @@ function renderMovimientos(){
     row.className = 'ciclaje-row';
     row.innerHTML = `
       <div class="cr-left">
-        <div class="cr-pozo">${rec.pozo} <span style="color:var(--muted); font-weight:400; font-size:0.75rem;">${bat}</span></div>
+        <div class="cr-pozo">${rec.pozo} <span style="color:var(--muted); font-weight:400; font-size:0.75rem;">${bat}${esOil ? ' &middot; Petroleo (AIB)' : ''}</span></div>
         <div class="cr-detail">${rec.operador ? `<b>${rec.operador}</b> &middot; ` : ''}${tiempoRelativo(rec._updatedAtDate)}${camposTocados ? ' &middot; se modifico: ' + camposTocados : ''}</div>
       </div>
-      <div class="cr-estado ${estadoClass}">${rec.estado || 'sin dato'}</div>
+      <div class="cr-estado ${estadoClass}">${estadoLabel}</div>
     `;
-    row.addEventListener('click', () => openCard(rec, bat));
+    row.addEventListener('click', () => {
+      if(esOil){
+        switchTab('tabAib', 'aibMain');
+        renderAib();
+      } else {
+        openCard(rec, bat);
+      }
+    });
     movMain.appendChild(row);
   });
 }
