@@ -986,6 +986,7 @@ function downloadOrShareBlob(blob, fileName, title){
 }
 
 // inicio del "dia operativo" vigente: 6:00 am de hoy, o de ayer si todavia no son las 6:00
+// (se usa solo para habilitar/deshabilitar el boton; ya NO se usa para descartar pendientes)
 function inicioDiaOperativo(fecha){
   const d = fecha ? new Date(fecha) : new Date();
   if(d.getHours() < 6){
@@ -994,13 +995,11 @@ function inicioDiaOperativo(fecha){
   d.setHours(6, 0, 0, 0);
   return d;
 }
-// corte real para "que es nuevo": lo mas reciente entre el inicio del dia operativo y el ultimo parte
-// enviado. Asi, si ya se mando un parte hoy, no se duplica; pero si cambia de dia, arranca de cero
-// aunque no se haya mandado el parte de ayer (no se arrastran pendientes de un dia para el otro).
+// corte real para "que es nuevo": el ultimo parte REALMENTE enviado. Si nunca se mando ninguno,
+// cuenta todo. Asi, si un dia no se llega a mandar el parte, los movimientos de ese dia NO se pierden:
+// siguen apareciendo como pendientes hasta que efectivamente se manden, sin importar que haya cambiado el dia.
 function corteDePendientes(){
-  const inicioDia = inicioDiaOperativo();
-  if(!ultimoReporteTs || ultimoReporteTs < inicioDia) return inicioDia;
-  return ultimoReporteTs;
+  return ultimoReporteTs || new Date(0);
 }
 
 // un pozo "cuenta" para el proximo parte si se modifico despues del corte vigente (dia operativo / ultimo envio)
