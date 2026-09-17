@@ -742,6 +742,7 @@
       <button class="unit-btn active" id="unitKg">kg/cm&sup2;</button>
       <button class="unit-btn" id="unitPsi">psi</button>
     </div>
+    <span id="primarioTag" class="operador-tag" style="margin-left:auto;"></span>
   </div>
 </header>
 
@@ -1678,10 +1679,33 @@ document.getElementById('parteBtn').addEventListener('click', () => {
 });
 
 // el boton de enviar parte se habilita recien a partir de las 6:00 am (asi no se manda antes de que
-// termine de cargarse el dia operativo, que va de 6am a 6am del dia siguiente)
+// termine de cargarse el dia operativo, que va de 6am a 6am del dia siguiente), y SOLO se muestra en
+// el dispositivo marcado como "principal" (por dispositivo, guardado en este navegador nada mas).
+let esDispositivoPrimario = safeGet('es_dispositivo_primario', '') === '1';
+
+function renderPrimarioTag(){
+  const tag = document.getElementById('primarioTag');
+  if(!tag) return;
+  tag.textContent = esDispositivoPrimario
+    ? '★ Compu principal (tocar para sacar)'
+    : 'Marcar esta compu como principal';
+}
+document.getElementById('primarioTag').addEventListener('click', () => {
+  esDispositivoPrimario = !esDispositivoPrimario;
+  safeSet('es_dispositivo_primario', esDispositivoPrimario ? '1' : '0');
+  renderPrimarioTag();
+  actualizarBotonParte();
+});
+renderPrimarioTag();
+
 function actualizarBotonParte(){
   const btn = document.getElementById('parteBtn');
   if(!btn) return;
+  if(!esDispositivoPrimario){
+    btn.style.display = 'none';
+    return;
+  }
+  btn.style.display = '';
   const habilitado = new Date().getHours() >= 6;
   btn.disabled = !habilitado;
   btn.title = habilitado ? '' : 'El parte se habilita a partir de las 6:00 am (el dia operativo va de 6am a 6am)';
