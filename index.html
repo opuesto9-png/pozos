@@ -442,6 +442,46 @@
     font-weight: 600;
     cursor: pointer;
   }
+  .hist-btn{
+    width: 100%;
+    margin-top: 8px;
+    padding: 10px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    color: var(--muted);
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .hist-btn:hover{ border-color: var(--amber); color: var(--text); }
+  .hist-box{
+    margin-top: 10px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .hist-loading{
+    font-size: 0.82rem;
+    color: var(--muted);
+    text-align: center;
+    padding: 10px 0;
+  }
+  .hist-title{
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .hist-total{
+    font-weight: 400;
+    color: var(--muted);
+  }
+  .hist-svg{
+    width: 100%;
+    height: auto;
+  }
   .edit-input{
     width: 100%;
     background: var(--bg);
@@ -1324,6 +1364,79 @@ function saveEdit(pozoKey, newFields){
     alert('No se pudo guardar el cambio (' + err.message + '). Revisa tu conexion.');
   });
 }
+
+// ---------------- Historico de aperturas (para el grafico por pozo) ----------------
+function registrarAperturaHistorial(rec, hora){
+  if(!firestoreOk) return;
+  db.collection('pozos_historial').add({
+    pozo: rec.pozo,
+    bateria: rec.bateria || 'Sin bateria',
+    fecha: todayStr(),
+    hora: hora,
+    operador: operadorName || 'Sin nombre',
+    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+  }).catch((err) => {
+    console.error('No se pudo registrar el historico', err);
+  });
+}
+
+function verHistoricoPozo(rec){
+  const cont = document.getElementById('historicoBox');
+  if(!cont) return;
+  cont.innerHTML = '<div class="hist-loading">Cargando historico...</div>';
+  cont.style.display = '';
+  if(!firestoreOk){
+    cont.innerHTML = '<div class="hist-loading">Sin conexion, no se pudo cargar.</div>';
+    return;
+  }
+  db.collection('pozos_historial').where('pozo', '==', rec.pozo).get().then((snapshot) => {
+    const porDia = {};
+    snapshot.forEach((doc) => {
+      const d = doc.data();
+      porDia[d.fecha] = (porDia[d.fecha] || 0) + 1;
+    });
+    renderHistoricoChart(cont, porDia, rec.pozo);
+  }).catch((err) => {
+    cont.innerHTML = '<div class="hist-loading">No se pudo cargar el historico (' + err.message + ').</div>';
+  });
+}
+
+function renderHistoricoChart(cont, porDia, pozoNombre){
+  // ordenamos las fechas (formato DD/MM/YYYY) cronologicamente y nos quedamos con los ultimos 14 dias con datos
+  const entries = Object.keys(porDia).map(f => {
+    const [d, m, y] = f.split('/').map(Number);
+    return { fecha: f, count: porDia[f], ts: new Date(y, m - 1, d).getTime() };
+  }).sort((a, b) => a.ts - b.ts).slice(-14);
+
+  if(entries.length === 0){
+    cont.innerHTML = '<div class="hist-loading">Todavia no hay aperturas registradas para este pozo.</div>';
+    return;
+  }
+
+  const maxCount = Math.max(...entries.map(e => e.count));
+  const W = 560, H = 200, padL = 30, padB = 40, padT = 15, padR = 10;
+  const chartW = W - padL - padR, chartH = H - padT - padB;
+  const barGap = 8;
+  const barW = (chartW / entries.length) - barGap;
+
+  let bars = '';
+  entries.forEach((e, i) => {
+    const barH = maxCount > 0 ? (e.count / maxCount) * chartH : 0;
+    const x = padL + i * (barW + barGap);
+    const y = padT + (chartH - barH);
+    bars += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${barH.toFixed(1)}" rx="3" fill="var(--amber)"></rect>`;
+    bars += `<text x="${(x + barW/2).toFixed(1)}" y="${(y - 5).toFixed(1)}" font-size="11" fill="var(--text)" text-anchor="middle">${e.count}</text>`;
+    const diaCorto = e.fecha.split('/').slice(0,2).join('/');
+    bars += `<text x="${(x + barW/2).toFixed(1)}" y="${H - padB + 16}" font-size="9.5" fill="var(--muted)" text-anchor="middle">${diaCorto}</text>`;
+  });
+
+  const totalAperturas = entries.reduce((s, e) => s + e.count, 0);
+  cont.innerHTML = `
+    <div class="hist-title">Aperturas por dia &mdash; ${pozoNombre} <span class="hist-total">(${totalAperturas} en los ultimos ${entries.length} dias con datos)</span></div>
+    <svg viewBox="0 0 ${W} ${H}" class="hist-svg">${bars}</svg>
+  `;
+}
+
 let clearArmed = null; // pozo que esta esperando el segundo toque para confirmar limpieza
 
 function clearPozoData(rec, bat){
@@ -1466,10 +1579,13 @@ function renderCardView(rec, bat){
     ${field('Ultima visita', rec.fecha)}
     ${field('Notas / accesorios', rec.notas)}
     <button class="edit-btn" id="editBtn">Editar datos / horario</button>
+    <button class="hist-btn" id="histBtn">Ver historico de aperturas</button>
+    <div id="historicoBox" class="hist-box" style="display:none;"></div>
     ${rec._edited ? '<button class="clear-btn" id="clearBtn">Limpiar datos de este pozo</button>' : ''}
   `;
   document.getElementById('closeBtn').addEventListener('click', closeCard);
   document.getElementById('editBtn').addEventListener('click', () => renderCardEdit(rec, bat));
+  document.getElementById('histBtn').addEventListener('click', () => verHistoricoPozo(rec));
   const clearBtn = document.getElementById('clearBtn');
   if(clearBtn) clearBtn.addEventListener('click', () => clearPozoData(rec, bat));
 }
@@ -1643,6 +1759,10 @@ function renderCardEdit(rec, bat){
     Object.assign(rec, newFields);
     rec._edited = true;
     saveEdit(rec.pozo, newFields);
+    // registramos esta apertura en el historico (solo cuando REALMENTE se cargo una apertura nueva)
+    if(aperturaCambio && hA){
+      registrarAperturaHistorial(rec, hA);
+    }
     renderCardView(rec, bat);
     render(document.getElementById('searchBox').value);
     if(document.getElementById('planoMain').style.display !== 'none'){
