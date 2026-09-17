@@ -1683,9 +1683,20 @@ document.getElementById('parteBtn').addEventListener('click', () => {
 // el dispositivo marcado como "principal" (por dispositivo, guardado en este navegador nada mas).
 let esDispositivoPrimario = safeGet('es_dispositivo_primario', '') === '1';
 
+function esMovil(){
+  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+}
+
 function renderPrimarioTag(){
   const tag = document.getElementById('primarioTag');
   if(!tag) return;
+  // en el celular, escondemos la opcion de marcar/sacar principal (para que un operador no la toque
+  // sin querer) salvo que ese mismo celular ya este marcado como principal, para poder sacarlo
+  if(esMovil() && !esDispositivoPrimario){
+    tag.style.display = 'none';
+    return;
+  }
+  tag.style.display = '';
   tag.textContent = esDispositivoPrimario
     ? '★ Compu principal (tocar para sacar)'
     : 'Marcar esta compu como principal';
