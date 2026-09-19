@@ -1202,12 +1202,14 @@ function corteDePendientes(){
 // un pozo "cuenta" para el proximo parte si se modifico despues del corte vigente (dia operativo / ultimo envio)
 function pendientesDeReporte(){
   const corte = corteDePendientes();
-  return POZOS.filter(p => (p.horaApertura || p.horaCierre) && p._updatedAtDate && p._updatedAtDate > corte);
+  return POZOS.filter(p => (p.horaApertura || p.horaCierre) && p._updatedAtDate && p._updatedAtDate > corte)
+    .sort((a,b) => a._updatedAtDate - b._updatedAtDate);
 }
 
 function pendientesDeReporteNotas(){
   const corte = corteDePendientes();
-  return USPA_NOTAS.filter(n => n.texto && n._updatedAtDate && n._updatedAtDate > corte);
+  return USPA_NOTAS.filter(n => n.texto && n._updatedAtDate && n._updatedAtDate > corte)
+    .sort((a,b) => a._updatedAtDate - b._updatedAtDate);
 }
 
 function updatePendCount(){
@@ -1771,12 +1773,18 @@ function renderCardEdit(rec, bat){
 
     // Hs total de la maniobra que se acaba de completar (para el reporte, a pedido de Sebastian):
     // si recien se cerro, cuenta cuanto estuvo ABIERTO antes; si recien se reabrio, cuenta cuanto estuvo CERRADO.
+    // ademas guardamos el rango de horas exacto, para que la columna HORA del reporte muestre de que
+    // hora a que hora fue esa perdida/produccion (no solo el numero).
     if(cierreCambio && hcEfectivo && rec.estado === 'Abierto' && horaAperturaOriginal){
       newFields.horasTotalNum = calcDuracionDecimal(horaAperturaOriginal, hcEfectivo);
       newFields.horasTotalTipo = 'abierto';
+      newFields.horasRangoDesde = horaAperturaOriginal;
+      newFields.horasRangoHasta = hcEfectivo;
     } else if(aperturaCambio && !cierreCambio && rec.estado === 'Cerrado' && horaCierreOriginal){
       newFields.horasTotalNum = calcDuracionDecimal(horaCierreOriginal, hA);
       newFields.horasTotalTipo = 'cerrado';
+      newFields.horasRangoDesde = horaCierreOriginal;
+      newFields.horasRangoHasta = hA;
     }
 
     // correccion manual (si se cargo): pisa el calculo automatico de arriba
@@ -1890,16 +1898,19 @@ function bateriaToInstalacion(bat){
 }
 
 function buildNovedad(rec){
-  const presionTxt = (rec.presion && rec.presion !== 's/d') ? rec.presion : null;
+  const presionTxt = (rec.presion && rec.presion !== 's/d') ? convertPresionText(rec.presion, pressureUnit) : null;
   if(rec.estado === 'Abierto'){
     return `Cerrado, recupera presion. Abierto${presionTxt ? ' con presion estatica de ' + presionTxt : ''}.`;
   } else if(rec.estado === 'Cerrado'){
-    return 'Abierto, se cierra a recuperar presion.';
+    return 'Cerrado, recuperando presion.';
   }
   return 'Maniobra registrada.';
 }
 
 function buildHoraColumna(rec){
+  // si hay un rango guardado del ultimo ciclo completado (apertura/cierre), lo usamos: muestra
+  // exactamente de que hora a que hora fue esa maniobra, aunque el horario "en vivo" ya haya cambiado
+  if(rec.horasRangoDesde && rec.horasRangoHasta) return `${rec.horasRangoDesde}-${rec.horasRangoHasta}`;
   const hA = rec.horaApertura || '';
   const hC = rec.horaCierre || '';
   if(hA && hC) return `${hA}-${hC}`;
@@ -1919,7 +1930,8 @@ function marcarReporteEnviado(){
 
 function pendientesDeReporteAib(){
   const corte = corteDePendientes();
-  return AIB_POZOS.filter(p => (p.bp || p.pl) && p._updatedAtDate && p._updatedAtDate > corte);
+  return AIB_POZOS.filter(p => (p.bp || p.pl) && p._updatedAtDate && p._updatedAtDate > corte)
+    .sort((a,b) => a._updatedAtDate - b._updatedAtDate);
 }
 
 // ---------------- Respaldo completo a Excel (foto de todo, no solo lo pendiente) ----------------
@@ -2061,7 +2073,7 @@ function calcularHsHastaCorte(rec){
 function exportParteDeCampo(forzarTodos){
   // GAS: solo pozos con hora de apertura/cierre modificados DESPUES del ultimo parte enviado
   // (o TODOS los que tengan horario cargado, si el usuario elige forzar)
-  const gasBase = forzarTodos ? POZOS.filter(p => p.horaApertura || p.horaCierre) : pendientesDeReporte();
+  const gasBase = forzarTodos ? POZOS.filter(p => p.horaApertura || p.horaCierre).sort((a,b) => (a._updatedAtDate||0) - (b._updatedAtDate||0)) : pendientesDeReporte();
   const filasGas = gasBase
     .map(rec => {
       let horasPerdida = (typeof rec.horasTotalNum === 'number' && rec.horasTotalTipo === 'cerrado') ? rec.horasTotalNum : null;
@@ -2085,7 +2097,7 @@ function exportParteDeCampo(forzarTodos){
     });
 
   // OIL: pozos de AIB con BP/PL cargados, modificados desde el ultimo parte (o todos, si se fuerza)
-  const oilBase = forzarTodos ? AIB_POZOS.filter(p => p.bp || p.pl) : pendientesDeReporteAib();
+  const oilBase = forzarTodos ? AIB_POZOS.filter(p => p.bp || p.pl).sort((a,b) => (a._updatedAtDate||0) - (b._updatedAtDate||0)) : pendientesDeReporteAib();
   const filasOil = oilBase
     .map(rec => ({
       hora: rec.hora || '',
@@ -2097,7 +2109,7 @@ function exportParteDeCampo(forzarTodos){
     }));
 
   // NOVEDADES GENERALES de USPA (sin pozo especifico), modificadas desde el ultimo parte (o todas, si se fuerza)
-  const notasBase = forzarTodos ? USPA_NOTAS.filter(n => n.texto) : pendientesDeReporteNotas();
+  const notasBase = forzarTodos ? USPA_NOTAS.filter(n => n.texto).sort((a,b) => (a._updatedAtDate||0) - (b._updatedAtDate||0)) : pendientesDeReporteNotas();
   const filasNotas = notasBase
     .map(n => ({
       hora: n.hora || '',
