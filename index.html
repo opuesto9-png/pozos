@@ -778,6 +778,7 @@
   </div>
   <div class="toolbar">
     <button class="tab-btn export-btn" id="parteBtn">Enviar parte de campo <span id="pendCount" class="pend-badge" style="display:none;"></span></button>
+    <button class="tab-btn export-btn" id="exportarTodoBtn">Exportar todo</button>
     <div class="unit-toggle">
       <button class="unit-btn active" id="unitKg">kg/cm&sup2;</button>
       <button class="unit-btn" id="unitPsi">psi</button>
@@ -1797,6 +1798,9 @@ document.getElementById('searchBox').addEventListener('input', (e) => {
 document.getElementById('parteBtn').addEventListener('click', () => {
   try { exportParteDeCampo(); } catch(err) { alert('Error al generar el parte: ' + (err && err.message ? err.message : err)); }
 });
+document.getElementById('exportarTodoBtn').addEventListener('click', () => {
+  try { exportarTodoExcel(); } catch(err) { alert('Error al generar el respaldo: ' + (err && err.message ? err.message : err)); }
+});
 
 // el boton de enviar parte se habilita recien a partir de las 6:00 am (asi no se manda antes de que
 // termine de cargarse el dia operativo, que va de 6am a 6am del dia siguiente), y SOLO se muestra en
@@ -1831,6 +1835,8 @@ renderPrimarioTag();
 
 function actualizarBotonParte(){
   const btn = document.getElementById('parteBtn');
+  const exportarBtn = document.getElementById('exportarTodoBtn');
+  if(exportarBtn) exportarBtn.style.display = esDispositivoPrimario ? '' : 'none';
   if(!btn) return;
   if(!esDispositivoPrimario){
     btn.style.display = 'none';
@@ -1881,6 +1887,68 @@ function marcarReporteEnviado(){
 function pendientesDeReporteAib(){
   const corte = corteDePendientes();
   return AIB_POZOS.filter(p => (p.bp || p.pl) && p._updatedAtDate && p._updatedAtDate > corte);
+}
+
+// ---------------- Respaldo completo a Excel (foto de todo, no solo lo pendiente) ----------------
+function agregarHojaTabla(wb, nombreHoja, headers, filas, anchos){
+  const ws = wb.addWorksheet(nombreHoja);
+  ws.columns = headers.map((h, i) => ({ width: (anchos && anchos[i]) || 16 }));
+
+  headers.forEach((h, i) => {
+    const cell = ws.getCell(1, i + 1);
+    cell.value = h;
+    cell.font = { name: 'Calibri', size: 11, bold: true };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9D9D9' } };
+    cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+  });
+
+  filas.forEach((fila, r) => {
+    fila.forEach((val, i) => {
+      const cell = ws.getCell(r + 2, i + 1);
+      cell.value = val;
+      cell.font = { name: 'Calibri', size: 10.5 };
+      cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+      cell.alignment = { vertical: 'middle', wrapText: true };
+    });
+  });
+}
+
+function exportarTodoExcel(){
+  if(typeof ExcelJS === 'undefined'){
+    alert('No se pudo generar el Excel (falta conexion a internet para cargar la libreria).');
+    return;
+  }
+
+  const wb = new ExcelJS.Workbook();
+
+  const pozosOrdenados = [...POZOS].sort((a,b) => (a.bateria||'').localeCompare(b.bateria||'') || a.pozo.localeCompare(b.pozo, undefined, {numeric:true}));
+  const filasGas = pozosOrdenados.map(p => [
+    p.pozo, p.bateria || '', p.colectora || '', p.presion === 's/d' ? '' : (p.presion || ''),
+    p.estado || '', p.horario || '', p.ciclo || '', p.tablero || '', p.optim || '', p.fecha || '', p.notas || ''
+  ]);
+  agregarHojaTabla(wb, 'GAS', ['Pozo','Bateria','Colectora','Presion','Estado','Horario','Ciclo','Tablero','Optimizador','Ultima visita','Notas'], filasGas, [12,10,12,10,10,16,10,10,14,12,30]);
+
+  const aibOrdenados = [...AIB_POZOS].sort((a,b) => (a.bateria||'').localeCompare(b.bateria||'') || a.pozo.localeCompare(b.pozo, undefined, {numeric:true}));
+  const filasOil = aibOrdenados.map(p => [
+    p.pozo, p.bateria || '', p.estado === 'Parado' ? 'Parado' : 'Marcha', p.motivoParo || '',
+    p.bp || '', p.pl || '', p.perdidas ? 'Si' : 'No', p.hora || '', p.nota || ''
+  ]);
+  agregarHojaTabla(wb, 'OIL', ['Pozo','Bateria','Estado','Motivo de paro','BP','PL','Perdidas por vastago','Hora','Nota'], filasOil, [12,10,10,16,10,10,14,10,30]);
+
+  const notasOrdenadas = [...USPA_NOTAS].sort((a,b) => (a.bateria||'').localeCompare(b.bateria||''));
+  const filasNotas = notasOrdenadas.map(n => [
+    n.bateria || '', n.hora || '', n.equipo || '', n.texto || '', n.operador || '',
+    n._updatedAtDate ? n._updatedAtDate.toLocaleString('es-AR') : ''
+  ]);
+  agregarHojaTabla(wb, 'Notas USPA', ['Bateria','Hora','Equipo','Novedad','Operador','Ultima actualizacion'], filasNotas, [12,10,14,40,14,18]);
+
+  const fileName = `Respaldo_completo_pozos_${new Date().toISOString().slice(0,10)}.xlsx`;
+  wb.xlsx.writeBuffer().then(buffer => {
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    downloadOrShareBlob(blob, fileName, 'Respaldo completo');
+  }).catch((err) => {
+    alert('No se pudo generar el Excel (' + (err && err.message ? err.message : 'error desconocido') + ').');
+  });
 }
 
 function agregarHojaParte(wb, nombreHoja, tituloHoja, filas, hoy, FONT_NAME, FONT_SIZE){
@@ -1944,19 +2012,44 @@ function agregarHojaParte(wb, nombreHoja, tituloHoja, filas, hoy, FONT_NAME, FON
   });
 }
 
+// para pozos que quedan abiertos o cerrados SIN completar el ciclo, calculamos las horas hasta el
+// corte del dia operativo (6am), en vez de dejarlo en blanco. Ej: abre 18:00 -> 12hs de produccion
+// hasta las 6am; cierra 21:00 -> 9hs de perdida hasta las 6am.
+function calcularHsHastaCorte(rec){
+  const CORTE = '06:00';
+  if(rec.estado === 'Abierto' && rec.horaApertura){
+    return { num: calcDuracionDecimal(rec.horaApertura, CORTE), tipo: 'abierto' };
+  } else if(rec.estado === 'Cerrado' && rec.horaCierre){
+    return { num: calcDuracionDecimal(rec.horaCierre, CORTE), tipo: 'cerrado' };
+  }
+  return null;
+}
+
 function exportParteDeCampo(forzarTodos){
   // GAS: solo pozos con hora de apertura/cierre modificados DESPUES del ultimo parte enviado
   // (o TODOS los que tengan horario cargado, si el usuario elige forzar)
   const gasBase = forzarTodos ? POZOS.filter(p => p.horaApertura || p.horaCierre) : pendientesDeReporte();
   const filasGas = gasBase
-    .map(rec => ({
-      hora: buildHoraColumna(rec),
-      instalacion: bateriaToInstalacion(rec.bateria),
-      pozo: rec.pozo,
-      novedad: buildNovedad(rec),
-      horasPerdida: (typeof rec.horasTotalNum === 'number' && rec.horasTotalTipo === 'cerrado') ? rec.horasTotalNum : null,
-      horasProduccion: (typeof rec.horasTotalNum === 'number' && rec.horasTotalTipo === 'abierto') ? rec.horasTotalNum : null
-    }));
+    .map(rec => {
+      let horasPerdida = (typeof rec.horasTotalNum === 'number' && rec.horasTotalTipo === 'cerrado') ? rec.horasTotalNum : null;
+      let horasProduccion = (typeof rec.horasTotalNum === 'number' && rec.horasTotalTipo === 'abierto') ? rec.horasTotalNum : null;
+      // si no hay un ciclo COMPLETO calculado (recien abrio o recien cerro y sigue asi), usamos el corte de las 6am
+      if(horasPerdida === null && horasProduccion === null){
+        const calc = calcularHsHastaCorte(rec);
+        if(calc){
+          if(calc.tipo === 'abierto') horasProduccion = calc.num;
+          else horasPerdida = calc.num;
+        }
+      }
+      return {
+        hora: buildHoraColumna(rec),
+        instalacion: bateriaToInstalacion(rec.bateria),
+        pozo: rec.pozo,
+        novedad: buildNovedad(rec),
+        horasPerdida,
+        horasProduccion
+      };
+    });
 
   // OIL: pozos de AIB con BP/PL cargados, modificados desde el ultimo parte (o todos, si se fuerza)
   const oilBase = forzarTodos ? AIB_POZOS.filter(p => p.bp || p.pl) : pendientesDeReporteAib();
