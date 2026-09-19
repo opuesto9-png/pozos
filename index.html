@@ -1483,12 +1483,18 @@ function clearPozoData(rec, bat){
   }
 }
 
+let modalHistoryPushed = false; // asi el boton/gesto "atras" del celular cierra la ficha en vez de sacarte de la app
+
 function openCard(rec, bat){
   window._currentCardRec = rec;
   window._currentCardBat = bat;
   clearArmed = null;
   renderCardView(rec, bat);
   document.getElementById('overlay').classList.add('show');
+  if(!modalHistoryPushed){
+    history.pushState({ pozosModal: true }, '');
+    modalHistoryPushed = true;
+  }
 }
 
 function todayStr(){
@@ -1815,7 +1821,18 @@ function renderCardEdit(rec, bat){
 
 function closeCard(){
   document.getElementById('overlay').classList.remove('show');
+  if(modalHistoryPushed){
+    modalHistoryPushed = false;
+    history.back(); // consume el estado que agregamos al abrir, para que no quede un "atras" de mas colgado
+  }
 }
+window.addEventListener('popstate', () => {
+  // se dispara tanto si el usuario toca "atras" en el celular como si lo llamamos nosotros arriba
+  if(modalHistoryPushed){
+    modalHistoryPushed = false;
+    document.getElementById('overlay').classList.remove('show');
+  }
+});
 
 const FIELD_LABELS = {
   presion: 'Presion', colectora: 'Colectora', tablero: 'Tablero',
