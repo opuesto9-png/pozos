@@ -1999,7 +1999,7 @@ function exportarTodoExcel(){
 function agregarHojaParte(wb, nombreHoja, tituloHoja, filas, hoy, FONT_NAME, FONT_SIZE){
   const ws = wb.addWorksheet(nombreHoja);
   ws.columns = [
-    { width: 3 }, { width: 14 }, { width: 12 }, { width: 12 }, { width: 55 }, { width: 16 }, { width: 16 }
+    { width: 3 }, { width: 14 }, { width: 12 }, { width: 12 }, { width: 55 }, { width: 19 }, { width: 19 }
   ];
 
   ws.getCell('B2').value = tituloHoja;
@@ -2010,8 +2010,8 @@ function agregarHojaParte(wb, nombreHoja, tituloHoja, filas, hoy, FONT_NAME, FON
   ws.getCell(`C${r}`).value = 'INSTALACION';
   ws.getCell(`D${r}`).value = 'EQUIPO';
   ws.getCell(`E${r}`).value = 'NOVEDAD';
-  ws.getCell(`F${r}`).value = 'HS PERDIDA';
-  ws.getCell(`G${r}`).value = 'HS PRODUCCION';
+  ws.getCell(`F${r}`).value = 'HORAS DE CIERRE';
+  ws.getCell(`G${r}`).value = 'HORAS DE PRODUCCION';
   ['B','C','D','E','F','G'].forEach(col => {
     const cell = ws.getCell(`${col}${r}`);
     cell.font = { name: FONT_NAME, size: FONT_SIZE, bold: true };
