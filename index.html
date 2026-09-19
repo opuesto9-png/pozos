@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Pozos por bateria</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#14181d">
+<meta name="theme-color" content="#0B2436">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -13,15 +13,15 @@
 <meta name="apple-mobile-web-app-title" content="Pozos">
 <style>
   :root{
-    --bg: #14181d;
-    --panel: #1c2229;
-    --line: #2b323b;
-    --text: #e9e6df;
-    --muted: #8b93a0;
-    --amber: #d98e3f;
-    --amber-dim: #6b5330;
-    --opt: #e8c14d;
-    --opt-bg: #33301c;
+    --bg: #0B2436;
+    --panel: #123249;
+    --line: #1E3E56;
+    --text: #E9EEF2;
+    --muted: #7C93A6;
+    --amber: #1C7293;
+    --amber-dim: #163C50;
+    --opt: #6FC9B0;
+    --opt-bg: #123B34;
     --blue: #4c8fb0;
     USPA2: #3d6ea8;
   }
@@ -1575,6 +1575,10 @@ function renderCardView(rec, bat){
       <div class="k">${hInfo.label}</div>
       <div class="v ${!hInfo.text ? 'empty' : ''}">${hInfo.text || 'Sin dato'}</div>
     </div>
+    ${typeof rec.horasTotalNum === 'number' ? `<div class="field">
+      <div class="k">Horas para el reporte</div>
+      <div class="v">${rec.horasTotalNum.toString().replace('.',',')} hs &middot; ${rec.horasTotalTipo === 'cerrado' ? 'PERDIDA' : 'PRODUCCION'}</div>
+    </div>` : ''}
     ${field('Tablero', rec.tablero)}
     ${field('Optimizador', rec.optim, 'optim')}
     ${field('Ultima visita', rec.fecha)}
@@ -1680,6 +1684,24 @@ function renderCardEdit(rec, bat){
       </div>
       <input class="edit-input" id="horarioNota" placeholder="Nota (ej: prueba 2hs, ciclo 8x8)" value="${notaVal.replace(/"/g,'&quot;')}" style="margin-top:8px;">
     </div>
+    <div class="field">
+      <div class="k">Horas para el reporte (corregir a mano)</div>
+      <div class="edit-hint">Se calcula solo. Solo tocalo si el numero quedo mal por algun error de carga.</div>
+      <div class="aib-fields">
+        <div class="aib-field">
+          <div class="time-label">Horas</div>
+          <input type="text" class="edit-input" id="horasManualNum" value="${typeof rec.horasTotalNum === 'number' ? rec.horasTotalNum.toString().replace('.',',') : ''}" placeholder="ej: 2,5">
+        </div>
+        <div class="aib-field">
+          <div class="time-label">Tipo</div>
+          <select class="edit-input" id="horasManualTipo">
+            <option value="">-- sin cambios --</option>
+            <option value="cerrado" ${rec.horasTotalTipo==='cerrado'?'selected':''}>Perdida (cerrado)</option>
+            <option value="abierto" ${rec.horasTotalTipo==='abierto'?'selected':''}>Produccion (abierto)</option>
+          </select>
+        </div>
+      </div>
+    </div>
     ${inputField('Tablero', 'tablero', rec.tablero)}
     ${inputField('Optimizador', 'optim', rec.optim)}
     ${inputField('Ultima visita', 'fecha', rec.fecha)}
@@ -1755,6 +1777,17 @@ function renderCardEdit(rec, bat){
     } else if(aperturaCambio && !cierreCambio && rec.estado === 'Cerrado' && horaCierreOriginal){
       newFields.horasTotalNum = calcDuracionDecimal(horaCierreOriginal, hA);
       newFields.horasTotalTipo = 'cerrado';
+    }
+
+    // correccion manual (si se cargo): pisa el calculo automatico de arriba
+    const horasManualVal = document.getElementById('horasManualNum').value.trim();
+    const horasManualTipo = document.getElementById('horasManualTipo').value;
+    if(horasManualVal && horasManualTipo){
+      const num = parseFloat(horasManualVal.replace(',', '.'));
+      if(!isNaN(num)){
+        newFields.horasTotalNum = Math.round(num * 10) / 10;
+        newFields.horasTotalTipo = horasManualTipo;
+      }
     }
 
     Object.assign(rec, newFields);
