@@ -1946,15 +1946,22 @@ function buildNovedad(rec){
   // pero si es la PRIMERA vez que abre (sin un cierre previo registrado), no corresponde decir
   // "Cerrado, recupera presion" antes, porque nunca estuvo cerrado.
   const presionTxt = (rec.presion && rec.presion !== 's/d') ? convertPresionText(rec.presion, pressureUnit) : null;
+  let base;
   if(rec.estado === 'Abierto'){
     const veniaDeCerrado = rec.veniaDeCerradoConfirmado === true;
-    return veniaDeCerrado
+    base = veniaDeCerrado
       ? `Cerrado, recupera presion. Abierto${presionTxt ? ' con presion estatica de ' + presionTxt : ''}.`
       : `Abierto${presionTxt ? ' con presion estatica de ' + presionTxt : ''}.`;
   } else if(rec.estado === 'Cerrado'){
-    return 'Cerrado recuperando presion.';
+    base = 'Cerrado recuperando presion.';
+  } else {
+    base = 'Maniobra registrada.';
   }
-  return 'Maniobra registrada.';
+  // nota adicional (la que esta debajo del horario de maniobra en la ficha), si el operador cargo algo
+  if(rec.horarioNota && rec.horarioNota.trim()){
+    base += ' ' + rec.horarioNota.trim();
+  }
+  return base;
 }
 
 function buildHoraColumna(rec){
