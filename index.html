@@ -2107,15 +2107,24 @@ function exportParteDeCampo(forzarTodos){
   const gasBase = forzarTodos ? POZOS.filter(p => p.horaApertura || p.horaCierre).sort((a,b) => (a._updatedAtDate||0) - (b._updatedAtDate||0)) : pendientesDeReporte();
   const filasGas = gasBase
     .map(rec => {
-      let horasPerdida = (typeof rec.horasTotalNum === 'number' && rec.horasTotalTipo === 'cerrado') ? rec.horasTotalNum : null;
-      let horasProduccion = (typeof rec.horasTotalNum === 'number' && rec.horasTotalTipo === 'abierto') ? rec.horasTotalNum : null;
-      // si no hay un ciclo COMPLETO calculado (recien abrio o recien cerro y sigue asi), usamos el corte de las 6am
-      if(horasPerdida === null && horasProduccion === null){
+      let horasPerdida = null, horasProduccion = null;
+      if(typeof rec.horasTotalNum === 'number' && rec.horasTotalTipo){
+        if(rec.horasTotalTipo === 'cerrado') horasPerdida = rec.horasTotalNum;
+        else horasProduccion = rec.horasTotalNum;
+      } else {
+        // si no hay un ciclo COMPLETO calculado (recien abrio o recien cerro y sigue asi), usamos el corte de las 6am
         const calc = calcularHsHastaCorte(rec);
         if(calc){
           if(calc.tipo === 'abierto') horasProduccion = calc.num;
           else horasPerdida = calc.num;
         }
+      }
+      // completamos el otro lado como el resto de las 24hs del dia operativo (igual que la planilla
+      // vieja: cerrado = 24 - abierto), asi se ve el reparto completo del dia, no solo un lado
+      if(horasProduccion !== null && horasPerdida === null){
+        horasPerdida = Math.max(0, Math.round((24 - horasProduccion) * 10) / 10);
+      } else if(horasPerdida !== null && horasProduccion === null){
+        horasProduccion = Math.max(0, Math.round((24 - horasPerdida) * 10) / 10);
       }
       return {
         hora: buildHoraColumna(rec),
