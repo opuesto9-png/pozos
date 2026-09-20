@@ -1795,12 +1795,16 @@ function renderCardEdit(rec, bat){
       newFields.horasTotalTipo = 'abierto';
       newFields.horasRangoDesde = referenciaApertura;
       newFields.horasRangoHasta = hcEfectivo;
+      // el numero SIEMPRE se calcula (haga falta o no la referencia de las 6am), pero la columna HORA
+      // del reporte solo muestra el rango completo si la hora anterior era real, no inventada
+      newFields.horasRangoConfirmado = !!horaAperturaOriginal;
     } else if(aperturaCambio && !cierreCambio && rec.estado !== 'Abierto'){
       const referenciaCierre = horaCierreOriginal || '06:00';
       newFields.horasTotalNum = calcDuracionDecimal(referenciaCierre, hA);
       newFields.horasTotalTipo = 'cerrado';
       newFields.horasRangoDesde = referenciaCierre;
       newFields.horasRangoHasta = hA;
+      newFields.horasRangoConfirmado = !!horaCierreOriginal;
       // marca aparte, solo para el texto de la novedad: si de verdad SABIAMOS que estaba cerrado
       // (no un pozo nuevo que nunca tuvo estado), para no decir "Cerrado, recupera presion" de mas
       newFields.veniaDeCerradoConfirmado = rec.estado === 'Cerrado';
@@ -1965,8 +1969,9 @@ function buildNovedad(rec){
 }
 
 function buildHoraColumna(rec){
-  // rango completo de la maniobra (desde que abrio/cerro la vez anterior, hasta ahora), igual al reporte real
-  if(rec.horasRangoDesde && rec.horasRangoHasta) return `${rec.horasRangoDesde}-${rec.horasRangoHasta}`;
+  // rango completo de la maniobra (desde que abrio/cerro la vez anterior, hasta ahora), igual al
+  // reporte real - pero solo si esa hora anterior era real, no la referencia de las 6am inventada
+  if(rec.horasRangoDesde && rec.horasRangoHasta && rec.horasRangoConfirmado) return `${rec.horasRangoDesde}-${rec.horasRangoHasta}`;
   const hA = rec.horaApertura || '';
   const hC = rec.horaCierre || '';
   if(hA && hC) return `${hA}-${hC}`;
