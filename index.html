@@ -1782,19 +1782,24 @@ function renderCardEdit(rec, bat){
     // ademas guardamos el rango de horas exacto, para que la columna HORA del reporte muestre de que
     // hora a que hora fue esa perdida/produccion (no solo el numero).
     // si no sabemos la hora exacta del evento anterior (nunca se cargo), asumimos que viene asi desde
-    // el arranque del dia operativo (6am) en vez de dejar el calculo en blanco.
-    if(cierreCambio && hcEfectivo && rec.estado === 'Abierto'){
+    // el arranque del dia operativo (6am) en vez de dejar el calculo en blanco. Esto vale tambien
+    // para un pozo que nunca tuvo estado guardado (primera vez que se le carga horario): si se esta
+    // cerrando, asumimos que venia abierto; si se esta abriendo, asumimos que venia cerrado.
+    if(cierreCambio && hcEfectivo && rec.estado !== 'Cerrado'){
       const referenciaApertura = horaAperturaOriginal || '06:00';
       newFields.horasTotalNum = calcDuracionDecimal(referenciaApertura, hcEfectivo);
       newFields.horasTotalTipo = 'abierto';
       newFields.horasRangoDesde = referenciaApertura;
       newFields.horasRangoHasta = hcEfectivo;
-    } else if(aperturaCambio && !cierreCambio && rec.estado === 'Cerrado'){
+    } else if(aperturaCambio && !cierreCambio && rec.estado !== 'Abierto'){
       const referenciaCierre = horaCierreOriginal || '06:00';
       newFields.horasTotalNum = calcDuracionDecimal(referenciaCierre, hA);
       newFields.horasTotalTipo = 'cerrado';
       newFields.horasRangoDesde = referenciaCierre;
       newFields.horasRangoHasta = hA;
+      // marca aparte, solo para el texto de la novedad: si de verdad SABIAMOS que estaba cerrado
+      // (no un pozo nuevo que nunca tuvo estado), para no decir "Cerrado, recupera presion" de mas
+      newFields.veniaDeCerradoConfirmado = rec.estado === 'Cerrado';
     }
 
     // correccion manual (si se cargo): pisa el calculo automatico de arriba
@@ -1924,7 +1929,7 @@ function buildNovedad(rec){
   // "Cerrado, recupera presion" antes, porque nunca estuvo cerrado.
   const presionTxt = (rec.presion && rec.presion !== 's/d') ? convertPresionText(rec.presion, pressureUnit) : null;
   if(rec.estado === 'Abierto'){
-    const veniaDeCerrado = rec.horasTotalTipo === 'cerrado';
+    const veniaDeCerrado = rec.veniaDeCerradoConfirmado === true;
     return veniaDeCerrado
       ? `Cerrado, recupera presion. Abierto${presionTxt ? ' con presion estatica de ' + presionTxt : ''}.`
       : `Abierto${presionTxt ? ' con presion estatica de ' + presionTxt : ''}.`;
