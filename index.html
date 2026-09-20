@@ -974,6 +974,7 @@ function render(filterText){
       return;
     }
     const bateria = normalizarBateria(inpBat.value);
+    if(!puedeModificar()) return;
     saveEdit(pozoKey, {
       bateria, presion: 's/d', colectora: '', ciclo: '', horario: '',
       tablero: '', optim: '', notas: '', fecha: ''
@@ -1078,6 +1079,7 @@ function crearNotasUspaBox(bat){
       alert('Escribi la novedad antes de guardar.');
       return;
     }
+    if(!puedeModificar()) return;
     guardarNotaUspa(bat, hora, equipo, texto);
     // limpiamos para la proxima novedad (esto queda como un registro, no una nota fija que se pisa)
     notasBox.querySelector('.uspa-notas-hora').value = '';
@@ -1464,6 +1466,7 @@ function clearPozoData(rec, bat){
   }
 
   // segundo toque: confirmado, limpiamos de verdad
+  if(!puedeModificar()) return;
   clearArmed = null;
   if(firestoreOk){
     db.collection('pozos_overrides').doc(rec.pozo).delete().catch(() => {});
@@ -1735,6 +1738,7 @@ function renderCardEdit(rec, bat){
     document.getElementById('horaCierre').value = '';
   });
   document.getElementById('saveBtn').addEventListener('click', () => {
+    if(!puedeModificar()) return;
     const inputs = card.querySelectorAll('.edit-input[data-key]');
     const newFields = {};
     inputs.forEach(inp => { newFields[inp.dataset.key] = inp.value; });
@@ -1876,6 +1880,20 @@ let esDispositivoPrimario = safeGet('es_dispositivo_primario', '') === '1';
 
 function esMovil(){
   return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+}
+
+// en compu, pide clave antes de guardar cualquier cambio (para evitar que alguien modifique algo
+// sin querer al pasar por la compu). En el celular no pide nada, los operadores siguen igual.
+const CLAVE_MODIFICAR_PC = '091218';
+function puedeModificar(){
+  if(esMovil()) return true;
+  const clave = prompt('Ingresa la clave para guardar cambios desde esta compu:');
+  if(clave === null) return false; // cancelo
+  if(clave !== CLAVE_MODIFICAR_PC){
+    alert('Clave incorrecta. No se guardo el cambio.');
+    return false;
+  }
+  return true;
 }
 
 function renderPrimarioTag(){
@@ -2355,6 +2373,7 @@ function renderCiclaje(){
       alert('No encontre ningun pozo "' + inp.value + '" en la lista.');
       return;
     }
+    if(!puedeModificar()) return;
     rec.enCiclaje = true;
     rec._edited = true;
     saveEdit(rec.pozo, { enCiclaje: true });
@@ -2405,6 +2424,7 @@ function renderCiclaje(){
       row.querySelector('.cr-estado').addEventListener('click', () => openCard(rec, bat));
       row.querySelector('.cr-remove').addEventListener('click', (e) => {
         e.stopPropagation();
+        if(!puedeModificar()) return;
         rec.enCiclaje = false;
         rec._edited = true;
         saveEdit(rec.pozo, { enCiclaje: false });
@@ -2583,6 +2603,7 @@ function renderAib(){
       return;
     }
     const bateria = inpBat.value.trim() || 'Sin bateria';
+    if(!puedeModificar()) return;
     saveAibPozo(pozoKey, { bateria: bateria, bp: '', pl: '', perdidas: false, nota: '' });
     inpPozo.value = '';
     inpBat.value = '';
@@ -2649,6 +2670,7 @@ function renderAib(){
       <button class="save-btn aib-save-btn">Guardar</button>
     `;
     row.querySelector('.cr-remove').addEventListener('click', () => {
+      if(!puedeModificar()) return;
       deleteAibPozo(rec.pozo);
     });
 
@@ -2682,6 +2704,7 @@ function renderAib(){
     row.querySelector('.aib-nota').addEventListener('input', updatePreview);
     row.querySelector('.aib-motivo').addEventListener('change', updatePreview);
     row.querySelector('.aib-save-btn').addEventListener('click', () => {
+      if(!puedeModificar()) return;
       const bateria = row.querySelector('.aib-bateria').value.trim() || 'Sin bateria';
       const hora = row.querySelector('.aib-hora').value;
       const bp = aibPresionToKg(row.querySelector('.aib-bp').value.trim());
