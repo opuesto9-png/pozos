@@ -1915,11 +1915,15 @@ function bateriaToInstalacion(bat){
 }
 
 function buildNovedad(rec){
-  // cada fila del reporte real describe UNA sola maniobra puntual (o el cierre, o la apertura),
-  // sin repetir la maniobra anterior en la misma frase - esa ya quedo en su propia fila antes.
+  // el pozo que cierra y despues reabre va en UNA sola fila, con la novedad combinada (cerro y abrio).
+  // pero si es la PRIMERA vez que abre (sin un cierre previo registrado), no corresponde decir
+  // "Cerrado, recupera presion" antes, porque nunca estuvo cerrado.
   const presionTxt = (rec.presion && rec.presion !== 's/d') ? convertPresionText(rec.presion, pressureUnit) : null;
   if(rec.estado === 'Abierto'){
-    return `Abierto${presionTxt ? ' con presion estatica de ' + presionTxt : ''}.`;
+    const veniaDeCerrado = rec.horasTotalTipo === 'cerrado';
+    return veniaDeCerrado
+      ? `Cerrado, recupera presion. Abierto${presionTxt ? ' con presion estatica de ' + presionTxt : ''}.`
+      : `Abierto${presionTxt ? ' con presion estatica de ' + presionTxt : ''}.`;
   } else if(rec.estado === 'Cerrado'){
     return 'Cerrado recuperando presion.';
   }
@@ -1927,11 +1931,14 @@ function buildNovedad(rec){
 }
 
 function buildHoraColumna(rec){
-  // igual que en el reporte real: una hora sola por fila, la de la maniobra puntual que se acaba
-  // de hacer (no un rango entre dos horas).
-  if(rec.estado === 'Abierto' && rec.horaApertura) return rec.horaApertura;
-  if(rec.estado === 'Cerrado' && rec.horaCierre) return rec.horaCierre;
-  return rec.horaApertura || rec.horaCierre || '';
+  // rango completo de la maniobra (desde que abrio/cerro la vez anterior, hasta ahora), igual al reporte real
+  if(rec.horasRangoDesde && rec.horasRangoHasta) return `${rec.horasRangoDesde}-${rec.horasRangoHasta}`;
+  const hA = rec.horaApertura || '';
+  const hC = rec.horaCierre || '';
+  if(hA && hC) return `${hA}-${hC}`;
+  if(hA) return hA;
+  if(hC) return hC;
+  return '';
 }
 
 function marcarReporteEnviado(){
