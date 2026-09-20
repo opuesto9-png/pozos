@@ -1915,25 +1915,23 @@ function bateriaToInstalacion(bat){
 }
 
 function buildNovedad(rec){
+  // cada fila del reporte real describe UNA sola maniobra puntual (o el cierre, o la apertura),
+  // sin repetir la maniobra anterior en la misma frase - esa ya quedo en su propia fila antes.
   const presionTxt = (rec.presion && rec.presion !== 's/d') ? convertPresionText(rec.presion, pressureUnit) : null;
   if(rec.estado === 'Abierto'){
-    return `Cerrado, recupera presion. Abierto${presionTxt ? ' con presion estatica de ' + presionTxt : ''}.`;
+    return `Abierto${presionTxt ? ' con presion estatica de ' + presionTxt : ''}.`;
   } else if(rec.estado === 'Cerrado'){
-    return 'Cerrado, recuperando presion.';
+    return 'Cerrado recuperando presion.';
   }
   return 'Maniobra registrada.';
 }
 
 function buildHoraColumna(rec){
-  // si hay un rango guardado del ultimo ciclo completado (apertura/cierre), lo usamos: muestra
-  // exactamente de que hora a que hora fue esa maniobra, aunque el horario "en vivo" ya haya cambiado
-  if(rec.horasRangoDesde && rec.horasRangoHasta) return `${rec.horasRangoDesde}-${rec.horasRangoHasta}`;
-  const hA = rec.horaApertura || '';
-  const hC = rec.horaCierre || '';
-  if(hA && hC) return `${hA}-${hC}`;
-  if(hA) return hA;
-  if(hC) return hC;
-  return '';
+  // igual que en el reporte real: una hora sola por fila, la de la maniobra puntual que se acaba
+  // de hacer (no un rango entre dos horas).
+  if(rec.estado === 'Abierto' && rec.horaApertura) return rec.horaApertura;
+  if(rec.estado === 'Cerrado' && rec.horaCierre) return rec.horaCierre;
+  return rec.horaApertura || rec.horaCierre || '';
 }
 
 function marcarReporteEnviado(){
