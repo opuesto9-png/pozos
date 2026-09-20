@@ -1781,15 +1781,19 @@ function renderCardEdit(rec, bat){
     // si recien se cerro, cuenta cuanto estuvo ABIERTO antes; si recien se reabrio, cuenta cuanto estuvo CERRADO.
     // ademas guardamos el rango de horas exacto, para que la columna HORA del reporte muestre de que
     // hora a que hora fue esa perdida/produccion (no solo el numero).
-    if(cierreCambio && hcEfectivo && rec.estado === 'Abierto' && horaAperturaOriginal){
-      newFields.horasTotalNum = calcDuracionDecimal(horaAperturaOriginal, hcEfectivo);
+    // si no sabemos la hora exacta del evento anterior (nunca se cargo), asumimos que viene asi desde
+    // el arranque del dia operativo (6am) en vez de dejar el calculo en blanco.
+    if(cierreCambio && hcEfectivo && rec.estado === 'Abierto'){
+      const referenciaApertura = horaAperturaOriginal || '06:00';
+      newFields.horasTotalNum = calcDuracionDecimal(referenciaApertura, hcEfectivo);
       newFields.horasTotalTipo = 'abierto';
-      newFields.horasRangoDesde = horaAperturaOriginal;
+      newFields.horasRangoDesde = referenciaApertura;
       newFields.horasRangoHasta = hcEfectivo;
-    } else if(aperturaCambio && !cierreCambio && rec.estado === 'Cerrado' && horaCierreOriginal){
-      newFields.horasTotalNum = calcDuracionDecimal(horaCierreOriginal, hA);
+    } else if(aperturaCambio && !cierreCambio && rec.estado === 'Cerrado'){
+      const referenciaCierre = horaCierreOriginal || '06:00';
+      newFields.horasTotalNum = calcDuracionDecimal(referenciaCierre, hA);
       newFields.horasTotalTipo = 'cerrado';
-      newFields.horasRangoDesde = horaCierreOriginal;
+      newFields.horasRangoDesde = referenciaCierre;
       newFields.horasRangoHasta = hA;
     }
 
