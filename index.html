@@ -2119,31 +2119,18 @@ function actualizarBotonParte(){
   const bateriasBtn = document.getElementById('reporteBateriasBtn');
   const aguaBtn = document.getElementById('reporteAguaBtn');
   if(exportarBtn) exportarBtn.style.display = esDispositivoPrimario ? '' : 'none';
-  if(bateriasBtn){
-    bateriasBtn.style.display = esDispositivoPrimario ? '' : 'none';
-    if(esDispositivoPrimario){
-      const hab9 = habilitado9am();
-      bateriasBtn.disabled = !hab9;
-      bateriasBtn.title = hab9 ? '' : 'El reporte de Baterias se habilita a partir de las 9:00 am (dia operativo 9am a 9am)';
-    }
-  }
-  if(aguaBtn){
-    aguaBtn.style.display = esDispositivoPrimario ? '' : 'none';
-    if(esDispositivoPrimario){
-      const hab9 = habilitado9am();
-      aguaBtn.disabled = !hab9;
-      aguaBtn.title = hab9 ? '' : 'El reporte de Agua se habilita a partir de las 9:00 am (dia operativo 9am a 9am)';
-    }
-  }
+  // sin restriccion horaria: con la clave para guardar cambios ya alcanza, quien maneja la compu
+  // puede mandar estos reportes en cualquier momento
+  if(bateriasBtn) bateriasBtn.style.display = esDispositivoPrimario ? '' : 'none';
+  if(aguaBtn) aguaBtn.style.display = esDispositivoPrimario ? '' : 'none';
   if(!btn) return;
   if(!esDispositivoPrimario){
     btn.style.display = 'none';
     return;
   }
+  // sin restriccion horaria: con la clave para guardar cambios ya alcanza, quien maneja la compu
+  // puede mandar el parte en cualquier momento
   btn.style.display = '';
-  const habilitado = new Date().getHours() >= 6;
-  btn.disabled = !habilitado;
-  btn.title = habilitado ? '' : 'El parte se habilita a partir de las 6:00 am (el dia operativo va de 6am a 6am)';
 }
 actualizarBotonParte();
 setInterval(actualizarBotonParte, 60000);
