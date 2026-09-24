@@ -482,6 +482,56 @@
     width: 100%;
     height: auto;
   }
+
+  /* ---- Tanques / Pias 2 ---- */
+  .seccion-titulo{
+    font-size: 0.78rem;
+    color: var(--amber);
+    font-weight: 700;
+    margin: 20px 0 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .seccion-titulo:first-child{ margin-top: 0; }
+  .bat-header{
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+    padding: 11px 14px; margin-bottom: 6px; cursor: pointer;
+  }
+  .bat-header p{ margin: 0; font-weight: 600; font-size: 0.9rem; }
+  .bat-header .chev{ color: var(--muted); font-size: 0.8rem; }
+  .bat-body{ padding-left: 4px; margin-bottom: 6px; }
+  .bat-body.closed{ display: none; }
+  .tk-card{
+    background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+    padding: 12px 14px; margin-bottom: 8px;
+  }
+  .tk-top{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 8px; }
+  .tk-nombre{ font-weight: 600; font-size: 0.88rem; margin: 0; }
+  .tk-ultima{ font-size: 0.68rem; color: var(--muted); margin: 0; text-align: right; }
+  .tk-fields{ display: flex; gap: 8px; }
+  .tk-field{ flex: 1; }
+  .tk-field label{ font-size: 0.68rem; color: var(--muted); display: block; margin-bottom: 3px; }
+  .tk-field input{ width: 100%; background: var(--bg); border: 1px solid var(--line); color: var(--text); padding: 8px; border-radius: 6px; font-size: 0.85rem; }
+  .tk-save{ margin-top: 8px; width: 100%; padding: 8px; background: var(--amber-dim); border: 1px solid var(--amber); color: var(--text); border-radius: 6px; font-size: 0.78rem; font-weight: 600; cursor: pointer; }
+  .eq-card{ background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 11px 14px; margin-bottom: 8px; }
+  .eq-top{ display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .eq-nombre{ font-weight: 600; font-size: 0.85rem; margin: 0; }
+  .eq-badge{ font-size: 0.68rem; font-weight: 600; padding: 4px 10px; border-radius: 10px; border: none; cursor: pointer; }
+  .eq-badge.op{ background: #24391f; color: #a6d9a0; }
+  .eq-badge.falla{ background: #3a201d; color: #e6a49d; }
+  .eq-nota{ width: 100%; background: var(--bg); border: 1px solid var(--line); color: var(--text); padding: 7px; border-radius: 6px; font-size: 0.8rem; margin-top: 8px; font-family: inherit; }
+  .eq-save{ margin-top: 6px; width: 100%; padding: 7px; background: var(--amber-dim); border: 1px solid var(--amber); color: var(--text); border-radius: 6px; font-size: 0.74rem; font-weight: 600; cursor: pointer; }
+  .camion-box{ background: var(--panel); border: 1px solid var(--amber); border-radius: 8px; padding: 12px 14px; margin: 18px 0; }
+  .camion-titulo{ font-size: 0.85rem; font-weight: 600; margin: 0 0 10px; }
+  .camion-grid{ display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .camion-field label{ font-size: 0.68rem; color: var(--muted); display: block; margin-bottom: 3px; }
+  .camion-field input, .camion-field select{ width: 100%; background: var(--bg); border: 1px solid var(--line); color: var(--text); padding: 8px; border-radius: 6px; font-size: 0.82rem; }
+  .camion-save{ margin-top: 10px; width: 100%; padding: 9px; background: var(--amber-dim); border: 1px solid var(--amber); color: var(--text); border-radius: 6px; font-size: 0.82rem; font-weight: 600; cursor: pointer; }
+  .camion-lista{ margin-top: 10px; }
+  .camion-row{ display: flex; justify-content: space-between; gap: 8px; font-size: 0.72rem; color: var(--muted); padding: 6px 0; border-top: 1px solid var(--line); }
+  .camion-row b{ color: var(--text); }
+
   .edit-input{
     width: 100%;
     background: var(--bg);
@@ -775,10 +825,14 @@
     <button class="tab-btn" id="tabCiclaje">Ciclaje</button>
     <button class="tab-btn" id="tabMov">Últimos movimientos</button>
     <button class="tab-btn" id="tabAib">AIB</button>
+    <button class="tab-btn" id="tabTanques">Tanques</button>
+    <button class="tab-btn" id="tabPias">Pías 2</button>
   </div>
   <div class="toolbar">
     <button class="tab-btn export-btn" id="parteBtn">Enviar parte de campo <span id="pendCount" class="pend-badge" style="display:none;"></span></button>
     <button class="tab-btn export-btn" id="exportarTodoBtn">Exportar todo</button>
+    <button class="tab-btn export-btn" id="reporteBateriasBtn">Enviar reporte de Baterías <span id="pendCountBaterias" class="pend-badge" style="display:none;"></span></button>
+    <button class="tab-btn export-btn" id="reporteAguaBtn">Enviar reporte de Agua <span id="pendCountAgua" class="pend-badge" style="display:none;"></span></button>
     <div class="unit-toggle">
       <button class="unit-btn active" id="unitKg">kg/cm&sup2;</button>
       <button class="unit-btn" id="unitPsi">psi</button>
@@ -792,6 +846,8 @@
 <main id="ciclajeMain" style="display:none;"></main>
 <main id="movMain" style="display:none;"></main>
 <main id="aibMain" style="display:none;"></main>
+<main id="tanquesMain" style="display:none;"></main>
+<main id="piasMain" style="display:none;"></main>
 
 <div class="overlay" id="overlay">
   <div class="card" id="card"></div>
@@ -1111,9 +1167,75 @@ try{
 
 let lastOverridesCount = 0;
 let ultimoReporteTs = null; // fecha/hora (compartida entre dispositivos) del ultimo parte de campo enviado
+let ultimoReporteBateriasTs = null; // idem, para el reporte de Baterias (dia operativo 9am-9am)
+let ultimoReporteAguaTs = null; // idem, para el reporte de Agua / Pias 2 (dia operativo 9am-9am)
 let AIB_POZOS = []; // pozos de petroleo (AIB), viven enteramente en Firestore, no hay lista base
 let USPA_NOTAS = []; // ultima novedad general cargada por USPA (con hora), vive en su propia coleccion
 let uspaNotasAbiertas = new Set(); // que recuadros de notas estan desplegados en este momento (local, no se guarda)
+
+// ---------------- Tanques (Bateria 1/2/5) y Pias 2 ----------------
+const TANQUES_BATERIAS = {
+  'Bateria 1': ['TK-101 General','TK-102 Control','TK-103 Cortador','TK-104 Control','TK-105 Cortador'],
+  'Bateria 2': ['SG-211 General','SG-212 General','SG-400 Control','TK-201 Control','TK-202 General','TK-203 Cortador'],
+  'Bateria 5': ['TK-501 Cortador','TK-503 Control','TK-504 Control']
+};
+const PIAS2_TANQUES_NOMBRES = ['TK-101 Pulmon','TK-110 Skimmer','TK-111 Skimmer','TK-120 Stock','TK-121 Stock'];
+const COMPRESORES_PIAS2 = ['K-111','K-112'];
+const BOMBAS_PIAS2 = ['P-101A','P-101B','P-110B','P-110C','P-110D','P-111B','P-111C','P-120','P-121','P-150'];
+
+let TANQUES_DATA = []; // mediciones de tanques de Bateria 1/2/5 (coleccion 'baterias_tanques')
+let PIAS2_TANQUES_DATA = []; // mediciones de tanques de Pias 2 (coleccion 'pias2_tanques')
+let PIAS2_EQUIPOS_DATA = []; // bombas y compresores de Pias 2, con estado/novedad (coleccion 'pias2_equipos')
+let PIAS2_CAMIONES_DATA = []; // descargas de camiones de agua en Pias 2 (coleccion 'pias2_camiones')
+let bateriasAbiertas = new Set(); // que acordeones de bateria estan desplegados (local, no se guarda)
+
+function guardarMedicionTanque(coleccion, nombre, bateria, nivelTotal, nivelInterfaz){
+  if(!puedeModificar()) return;
+  if(!firestoreOk){
+    alert('No hay conexion con el guardado compartido. Revisa tu internet e intenta de nuevo.');
+    return;
+  }
+  db.collection(coleccion).doc(nombre).set({
+    nombre, bateria,
+    nivelTotal: nivelTotal || '',
+    nivelInterfaz: nivelInterfaz || '',
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    operador: operadorName || 'Sin nombre'
+  }, { merge: true }).catch((err) => {
+    alert('No se pudo guardar la medicion (' + err.message + '). Revisa tu conexion.');
+  });
+}
+
+function guardarEquipoPias2(nombre, tipo, estado, nota){
+  if(!puedeModificar()) return;
+  if(!firestoreOk){
+    alert('No hay conexion con el guardado compartido. Revisa tu internet e intenta de nuevo.');
+    return;
+  }
+  db.collection('pias2_equipos').doc(nombre).set({
+    nombre, tipo, estado,
+    nota: nota || '',
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    operador: operadorName || 'Sin nombre'
+  }, { merge: true }).catch((err) => {
+    alert('No se pudo guardar (' + err.message + '). Revisa tu conexion.');
+  });
+}
+
+function guardarCamionAgua(datos){
+  if(!puedeModificar()) return;
+  if(!firestoreOk){
+    alert('No hay conexion con el guardado compartido. Revisa tu internet e intenta de nuevo.');
+    return;
+  }
+  db.collection('pias2_camiones').add(Object.assign({}, datos, {
+    fecha: todayStr(),
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    operador: operadorName || 'Sin nombre'
+  })).catch((err) => {
+    alert('No se pudo guardar la descarga (' + err.message + '). Revisa tu conexion.');
+  });
+}
 
 function guardarNotaUspa(bat, hora, equipo, texto){
   if(!firestoreOk){
@@ -1216,13 +1338,19 @@ function pendientesDeReporteNotas(){
 
 function updatePendCount(){
   const badge = document.getElementById('pendCount');
-  if(!badge) return;
-  const n = pendientesDeReporte().length + pendientesDeReporteAib().length + pendientesDeReporteNotas().length;
-  if(n > 0){
-    badge.style.display = '';
-    badge.textContent = n;
-  } else {
-    badge.style.display = 'none';
+  if(badge){
+    const n = pendientesDeReporte().length + pendientesDeReporteAib().length + pendientesDeReporteNotas().length;
+    if(n > 0){ badge.style.display = ''; badge.textContent = n; } else { badge.style.display = 'none'; }
+  }
+  const badgeBat = document.getElementById('pendCountBaterias');
+  if(badgeBat){
+    const nb = pendientesBaterias().length;
+    if(nb > 0){ badgeBat.style.display = ''; badgeBat.textContent = nb; } else { badgeBat.style.display = 'none'; }
+  }
+  const badgeAgua = document.getElementById('pendCountAgua');
+  if(badgeAgua){
+    const na = pendientesAguaTanques().length + pendientesAguaEquipos().length + pendientesAguaCamiones().length;
+    if(na > 0){ badgeAgua.style.display = ''; badgeAgua.textContent = na; } else { badgeAgua.style.display = 'none'; }
   }
 }
 
@@ -1330,6 +1458,69 @@ function startSync(){
   }, (err) => {
     console.error('Firestore sync error (aib)', err);
   });
+
+  // dia operativo 9am-9am: ultimo envio de Baterias y de Agua/Pias 2 (compartidos)
+  db.collection('pozos_meta').doc('estado9am').onSnapshot((doc) => {
+    const data = doc.data();
+    ultimoReporteBateriasTs = (data && data.lastReporteBateriasTs && data.lastReporteBateriasTs.toDate) ? data.lastReporteBateriasTs.toDate() : null;
+    ultimoReporteAguaTs = (data && data.lastReporteAguaTs && data.lastReporteAguaTs.toDate) ? data.lastReporteAguaTs.toDate() : null;
+    refreshEverything();
+  }, (err) => {
+    console.error('Firestore sync error (meta9am)', err);
+  });
+
+  // mediciones de tanques de Bateria 1/2/5
+  db.collection('baterias_tanques').onSnapshot((snapshot) => {
+    TANQUES_DATA = [];
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      TANQUES_DATA.push(Object.assign({}, data, {
+        _updatedAtDate: (data.updatedAt && data.updatedAt.toDate) ? data.updatedAt.toDate() : null
+      }));
+    });
+    if(document.getElementById('tanquesMain').style.display !== 'none'){ renderTanques(); }
+    updatePendCount();
+  }, (err) => { console.error('Firestore sync error (baterias_tanques)', err); });
+
+  // mediciones de tanques de Pias 2
+  db.collection('pias2_tanques').onSnapshot((snapshot) => {
+    PIAS2_TANQUES_DATA = [];
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      PIAS2_TANQUES_DATA.push(Object.assign({}, data, {
+        _updatedAtDate: (data.updatedAt && data.updatedAt.toDate) ? data.updatedAt.toDate() : null
+      }));
+    });
+    if(document.getElementById('piasMain').style.display !== 'none'){ renderPias(); }
+    updatePendCount();
+  }, (err) => { console.error('Firestore sync error (pias2_tanques)', err); });
+
+  // bombas y compresores de Pias 2 (estado + novedad)
+  db.collection('pias2_equipos').onSnapshot((snapshot) => {
+    PIAS2_EQUIPOS_DATA = [];
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      PIAS2_EQUIPOS_DATA.push(Object.assign({}, data, {
+        _updatedAtDate: (data.updatedAt && data.updatedAt.toDate) ? data.updatedAt.toDate() : null
+      }));
+    });
+    if(document.getElementById('piasMain').style.display !== 'none'){ renderPias(); }
+    updatePendCount();
+  }, (err) => { console.error('Firestore sync error (pias2_equipos)', err); });
+
+  // descargas de camiones de agua en Pias 2
+  db.collection('pias2_camiones').onSnapshot((snapshot) => {
+    PIAS2_CAMIONES_DATA = [];
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      PIAS2_CAMIONES_DATA.push(Object.assign({ id: doc.id }, data, {
+        _updatedAtDate: (data.updatedAt && data.updatedAt.toDate) ? data.updatedAt.toDate() : null
+      }));
+    });
+    PIAS2_CAMIONES_DATA.sort((a,b) => (b._updatedAtDate||0) - (a._updatedAtDate||0));
+    if(document.getElementById('piasMain').style.display !== 'none'){ renderPias(); }
+    updatePendCount();
+  }, (err) => { console.error('Firestore sync error (pias2_camiones)', err); });
 }
 
 // carga inicial de pozos de petroleo (solo corre una vez, la primera vez que la coleccion esta vacia)
@@ -1925,7 +2116,25 @@ renderPrimarioTag();
 function actualizarBotonParte(){
   const btn = document.getElementById('parteBtn');
   const exportarBtn = document.getElementById('exportarTodoBtn');
+  const bateriasBtn = document.getElementById('reporteBateriasBtn');
+  const aguaBtn = document.getElementById('reporteAguaBtn');
   if(exportarBtn) exportarBtn.style.display = esDispositivoPrimario ? '' : 'none';
+  if(bateriasBtn){
+    bateriasBtn.style.display = esDispositivoPrimario ? '' : 'none';
+    if(esDispositivoPrimario){
+      const hab9 = habilitado9am();
+      bateriasBtn.disabled = !hab9;
+      bateriasBtn.title = hab9 ? '' : 'El reporte de Baterias se habilita a partir de las 9:00 am (dia operativo 9am a 9am)';
+    }
+  }
+  if(aguaBtn){
+    aguaBtn.style.display = esDispositivoPrimario ? '' : 'none';
+    if(esDispositivoPrimario){
+      const hab9 = habilitado9am();
+      aguaBtn.disabled = !hab9;
+      aguaBtn.title = hab9 ? '' : 'El reporte de Agua se habilita a partir de las 9:00 am (dia operativo 9am a 9am)';
+    }
+  }
   if(!btn) return;
   if(!esDispositivoPrimario){
     btn.style.display = 'none';
@@ -1938,6 +2147,13 @@ function actualizarBotonParte(){
 }
 actualizarBotonParte();
 setInterval(actualizarBotonParte, 60000);
+
+document.getElementById('reporteBateriasBtn').addEventListener('click', () => {
+  try { exportReporteBaterias(); } catch(err) { alert('Error al generar el reporte de Baterias: ' + (err && err.message ? err.message : err)); }
+});
+document.getElementById('reporteAguaBtn').addEventListener('click', () => {
+  try { exportReporteAgua(); } catch(err) { alert('Error al generar el reporte de Agua: ' + (err && err.message ? err.message : err)); }
+});
 
 function bateriaToInstalacion(bat){
   if(!bat) return '';
@@ -1993,6 +2209,130 @@ function pendientesDeReporteAib(){
   const corte = corteDePendientes();
   return AIB_POZOS.filter(p => (p.bp || p.pl) && p._updatedAtDate && p._updatedAtDate > corte)
     .sort((a,b) => a._updatedAtDate - b._updatedAtDate);
+}
+
+// ---------------- Dia operativo de Baterias y Agua/Pias 2: 9am a 9am (independiente del de gas/oil) ----------------
+function corteDePendientesBaterias(){
+  return ultimoReporteBateriasTs || new Date(0);
+}
+function corteDePendientesAgua(){
+  return ultimoReporteAguaTs || new Date(0);
+}
+function habilitado9am(){
+  return new Date().getHours() >= 9;
+}
+function marcarReporteBateriasEnviado(){
+  if(!firestoreOk) return;
+  db.collection('pozos_meta').doc('estado9am').set({
+    lastReporteBateriasTs: firebase.firestore.FieldValue.serverTimestamp()
+  }, { merge: true }).catch((err) => { console.error('No se pudo marcar el reporte de baterias como enviado', err); });
+}
+function marcarReporteAguaEnviado(){
+  if(!firestoreOk) return;
+  db.collection('pozos_meta').doc('estado9am').set({
+    lastReporteAguaTs: firebase.firestore.FieldValue.serverTimestamp()
+  }, { merge: true }).catch((err) => { console.error('No se pudo marcar el reporte de agua como enviado', err); });
+}
+function pendientesBaterias(){
+  const corte = corteDePendientesBaterias();
+  return TANQUES_DATA.filter(t => t._updatedAtDate && t._updatedAtDate > corte)
+    .sort((a,b) => a._updatedAtDate - b._updatedAtDate);
+}
+function pendientesAguaTanques(){
+  const corte = corteDePendientesAgua();
+  return PIAS2_TANQUES_DATA.filter(t => t._updatedAtDate && t._updatedAtDate > corte)
+    .sort((a,b) => a._updatedAtDate - b._updatedAtDate);
+}
+function pendientesAguaEquipos(){
+  const corte = corteDePendientesAgua();
+  return PIAS2_EQUIPOS_DATA.filter(t => t._updatedAtDate && t._updatedAtDate > corte)
+    .sort((a,b) => a._updatedAtDate - b._updatedAtDate);
+}
+function pendientesAguaCamiones(){
+  const corte = corteDePendientesAgua();
+  return PIAS2_CAMIONES_DATA.filter(t => t._updatedAtDate && t._updatedAtDate > corte)
+    .sort((a,b) => a._updatedAtDate - b._updatedAtDate);
+}
+
+function exportReporteBaterias(forzarTodos){
+  if(typeof ExcelJS === 'undefined'){
+    alert('No se pudo generar el Excel (falta conexion a internet para cargar la libreria).');
+    return;
+  }
+  const base = forzarTodos ? TANQUES_DATA.filter(t => t.nivelTotal || t.nivelInterfaz) : pendientesBaterias();
+  if(base.length === 0){
+    if(!forzarTodos){
+      const quiere = confirm('No hay mediciones de Baterias nuevas desde el ultimo reporte enviado.\n\n¿Generar igual el reporte con TODAS las mediciones cargadas?');
+      if(quiere) exportReporteBaterias(true);
+      return;
+    }
+    alert('No hay ninguna medicion de tanques de Bateria cargada todavia.');
+    return;
+  }
+  const filas = base.map(t => [
+    t._updatedAtDate ? t._updatedAtDate.toTimeString().slice(0,5) : '',
+    t.bateria || '',
+    t.nombre || '',
+    `Medicion: Nivel Total ${t.nivelTotal || '?'}cm / Nivel Interfaz ${t.nivelInterfaz || '?'}cm`
+  ]);
+  const wb = new ExcelJS.Workbook();
+  agregarHojaTabla(wb, 'OIL', ['HORA','INSTALACION','EQUIPO','NOVEDAD'], filas, [12,14,18,50]);
+  wb.xlsx.writeBuffer().then(buffer => {
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    downloadOrShareBlob(blob, `Reporte_Baterias_${todayStr().replace(/\//g,'-')}.xlsx`, 'Reporte de Baterias');
+  });
+  marcarReporteBateriasEnviado();
+}
+
+function exportReporteAgua(forzarTodos){
+  if(typeof ExcelJS === 'undefined'){
+    alert('No se pudo generar el Excel (falta conexion a internet para cargar la libreria).');
+    return;
+  }
+  const tanquesBase = forzarTodos ? PIAS2_TANQUES_DATA.filter(t => t.nivelTotal || t.nivelInterfaz) : pendientesAguaTanques();
+  const equiposBase = forzarTodos ? PIAS2_EQUIPOS_DATA.filter(t => t.estado || t.nota) : pendientesAguaEquipos();
+  const camionesBase = forzarTodos ? PIAS2_CAMIONES_DATA : pendientesAguaCamiones();
+
+  if(tanquesBase.length === 0 && equiposBase.length === 0 && camionesBase.length === 0){
+    if(!forzarTodos){
+      const quiere = confirm('No hay novedades de Agua/Pias 2 nuevas desde el ultimo reporte enviado.\n\n¿Generar igual el reporte con TODO lo cargado?');
+      if(quiere) exportReporteAgua(true);
+      return;
+    }
+    alert('No hay ninguna novedad de Agua/Pias 2 cargada todavia.');
+    return;
+  }
+
+  const filasOil = [];
+  tanquesBase.forEach(t => filasOil.push([
+    t._updatedAtDate ? t._updatedAtDate.toTimeString().slice(0,5) : '',
+    'Pias 2', t.nombre || '',
+    `Medicion: Nivel Total ${t.nivelTotal || '?'}cm / Nivel Interfaz ${t.nivelInterfaz || '?'}cm`
+  ]));
+  equiposBase.forEach(e => filasOil.push([
+    e._updatedAtDate ? e._updatedAtDate.toTimeString().slice(0,5) : '',
+    'Pias 2', e.nombre || '',
+    e.estado === 'Falla' ? `En falla${e.nota ? ': ' + e.nota : ''}` : `Operativa${e.nota ? ' - ' + e.nota : ''}`
+  ]));
+  filasOil.sort((a,b) => (a[0]||'').localeCompare(b[0]||''));
+
+  const filasCamiones = camionesBase.map(c => [
+    c.fecha || '', c.horaEntrada || '', c.horaSalida || '', c.yacProcedencia || '',
+    c.volumen || '', c.chofer || '', c.operador || '', c.tanqueDestino || ''
+  ]);
+
+  const wb = new ExcelJS.Workbook();
+  if(filasOil.length){
+    agregarHojaTabla(wb, 'OIL', ['HORA','INSTALACION','EQUIPO','NOVEDAD'], filasOil, [12,14,18,50]);
+  }
+  if(filasCamiones.length){
+    agregarHojaTabla(wb, 'Camiones de agua', ['Fecha','Hs entrada','Hs salida','Yac. Procedencia','Volumen (m3)','Chofer','Operador','Tanque destino'], filasCamiones, [10,10,10,14,12,14,14,14]);
+  }
+  wb.xlsx.writeBuffer().then(buffer => {
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    downloadOrShareBlob(blob, `Reporte_Agua_Pias2_${todayStr().replace(/\//g,'-')}.xlsx`, 'Reporte de Agua Pias 2');
+  });
+  marcarReporteAguaEnviado();
 }
 
 // ---------------- Respaldo completo a Excel (foto de todo, no solo lo pendiente) ----------------
@@ -2343,8 +2683,8 @@ function renderPlano(){
 }
 
 // ---------------- Manejo de pestañas (helper generico) ----------------
-const TAB_IDS = ['tabLista','tabPlano','tabCiclaje','tabMov','tabAib'];
-const MAIN_IDS = ['main','planoMain','ciclajeMain','movMain','aibMain'];
+const TAB_IDS = ['tabLista','tabPlano','tabCiclaje','tabMov','tabAib','tabTanques','tabPias'];
+const MAIN_IDS = ['main','planoMain','ciclajeMain','movMain','aibMain','tanquesMain','piasMain'];
 function switchTab(activeTabId, activeMainId){
   TAB_IDS.forEach(id => document.getElementById(id).classList.toggle('active', id === activeTabId));
   MAIN_IDS.forEach(id => document.getElementById(id).style.display = (id === activeMainId) ? '' : 'none');
@@ -2733,6 +3073,152 @@ function renderAib(){
 document.getElementById('tabAib').addEventListener('click', () => {
   switchTab('tabAib', 'aibMain');
   renderAib();
+});
+
+// ---------------- Tanques (Bateria 1/2/5) y Pias 2 ----------------
+function crearTarjetaTanque(nombre, bateria, coleccion, datos){
+  const rec = datos.find(d => d.nombre === nombre);
+  const card = document.createElement('div');
+  card.className = 'tk-card';
+  const ultimaTxt = rec && rec._updatedAtDate
+    ? `${rec.nivelTotal || '?'} / ${rec.nivelInterfaz || '?'} cm &middot; ${tiempoRelativo(rec._updatedAtDate)}${rec.operador ? ' &middot; ' + rec.operador : ''}`
+    : 'sin datos';
+  card.innerHTML = `
+    <div class="tk-top">
+      <p class="tk-nombre">${nombre}</p>
+      <p class="tk-ultima">${ultimaTxt}</p>
+    </div>
+    <div class="tk-fields">
+      <div class="tk-field"><label>Nivel Total (cm)</label><input type="text" class="tk-total" placeholder="ej: 90,23" value="${rec ? (rec.nivelTotal||'') : ''}"></div>
+      <div class="tk-field"><label>Nivel Interfaz (cm)</label><input type="text" class="tk-interfaz" placeholder="ej: 30,00" value="${rec ? (rec.nivelInterfaz||'') : ''}"></div>
+    </div>
+    <button class="tk-save">Guardar medicion</button>
+  `;
+  card.querySelector('.tk-save').addEventListener('click', () => {
+    const nt = card.querySelector('.tk-total').value.trim();
+    const ni = card.querySelector('.tk-interfaz').value.trim();
+    guardarMedicionTanque(coleccion, nombre, bateria, nt, ni);
+  });
+  return card;
+}
+
+function crearTarjetaEquipo(nombre, tipo, datos){
+  const rec = datos.find(d => d.nombre === nombre);
+  const estadoActual = rec ? rec.estado : 'Operativa';
+  const card = document.createElement('div');
+  card.className = 'eq-card';
+  card.innerHTML = `
+    <div class="eq-top">
+      <p class="eq-nombre">${nombre}</p>
+      <button type="button" class="eq-badge ${estadoActual === 'Falla' ? 'falla' : 'op'}">${estadoActual === 'Falla' ? 'EN FALLA' : 'OPERATIVA'}</button>
+    </div>
+    <textarea class="eq-nota" rows="2" placeholder="Cargar novedad si entra en falla...">${rec ? (rec.nota||'') : ''}</textarea>
+    <button class="eq-save">Guardar</button>
+  `;
+  const badge = card.querySelector('.eq-badge');
+  let estadoLocal = estadoActual;
+  badge.addEventListener('click', () => {
+    estadoLocal = estadoLocal === 'Falla' ? 'Operativa' : 'Falla';
+    badge.classList.toggle('falla', estadoLocal === 'Falla');
+    badge.classList.toggle('op', estadoLocal !== 'Falla');
+    badge.textContent = estadoLocal === 'Falla' ? 'EN FALLA' : 'OPERATIVA';
+  });
+  card.querySelector('.eq-save').addEventListener('click', () => {
+    guardarEquipoPias2(nombre, tipo, estadoLocal, card.querySelector('.eq-nota').value.trim());
+  });
+  return card;
+}
+
+function renderTanques(){
+  const main = document.getElementById('tanquesMain');
+  main.innerHTML = '<p class="seccion-titulo">Baterias</p><div id="bateriasAcordeon"></div>';
+  const cont = document.getElementById('bateriasAcordeon');
+  Object.keys(TANQUES_BATERIAS).forEach(bat => {
+    const abierto = bateriasAbiertas.has(bat);
+    const header = document.createElement('div');
+    header.className = 'bat-header';
+    header.innerHTML = `<p>${bat}</p><span class="chev">${abierto ? '&#9662;' : '&#9656;'}</span>`;
+    const body = document.createElement('div');
+    body.className = 'bat-body' + (abierto ? '' : ' closed');
+    TANQUES_BATERIAS[bat].forEach(tk => body.appendChild(crearTarjetaTanque(tk, bat, 'baterias_tanques', TANQUES_DATA)));
+    header.addEventListener('click', () => {
+      if(bateriasAbiertas.has(bat)){ bateriasAbiertas.delete(bat); } else { bateriasAbiertas.add(bat); }
+      renderTanques();
+    });
+    cont.appendChild(header);
+    cont.appendChild(body);
+  });
+}
+
+function renderPias(){
+  const main = document.getElementById('piasMain');
+  main.innerHTML = `
+    <p class="seccion-titulo">Tanques Pias 2</p>
+    <div id="piasTanquesCont"></div>
+    <p class="seccion-titulo">Compresores de aire</p>
+    <div id="compresoresCont"></div>
+    <p class="seccion-titulo">Bombas Pias 2</p>
+    <div id="bombasCont"></div>
+    <div class="camion-box">
+      <p class="camion-titulo">Carga de camion de agua</p>
+      <div class="camion-grid">
+        <div class="camion-field"><label>Hora entrada</label><input type="time" id="camHoraEntrada"></div>
+        <div class="camion-field"><label>Hora salida</label><input type="time" id="camHoraSalida"></div>
+        <div class="camion-field"><label>Yac. procedencia</label><input type="text" id="camYac" placeholder="ej: LJE"></div>
+        <div class="camion-field"><label>Volumen (m3)</label><input type="text" id="camVolumen" placeholder="ej: 30"></div>
+        <div class="camion-field"><label>Chofer</label><input type="text" id="camChofer" placeholder="nombre"></div>
+        <div class="camion-field" style="grid-column:1/-1"><label>Tanque destino</label>
+          <select id="camTanque">
+            ${PIAS2_TANQUES_NOMBRES.map(t => `<option>${t}</option>`).join('')}
+            <option>PTC (TK206)</option>
+          </select>
+        </div>
+      </div>
+      <button class="camion-save" id="camionSaveBtn">Guardar descarga</button>
+      <div class="camion-lista" id="camionLista"></div>
+    </div>
+  `;
+  const piasTanquesCont = document.getElementById('piasTanquesCont');
+  PIAS2_TANQUES_NOMBRES.forEach(tk => piasTanquesCont.appendChild(crearTarjetaTanque(tk, 'Pias 2', 'pias2_tanques', PIAS2_TANQUES_DATA)));
+
+  const compresoresCont = document.getElementById('compresoresCont');
+  COMPRESORES_PIAS2.forEach(k => compresoresCont.appendChild(crearTarjetaEquipo(k, 'compresor', PIAS2_EQUIPOS_DATA)));
+
+  const bombasCont = document.getElementById('bombasCont');
+  BOMBAS_PIAS2.forEach(p => bombasCont.appendChild(crearTarjetaEquipo(p, 'bomba', PIAS2_EQUIPOS_DATA)));
+
+  document.getElementById('camionSaveBtn').addEventListener('click', () => {
+    const datos = {
+      horaEntrada: document.getElementById('camHoraEntrada').value,
+      horaSalida: document.getElementById('camHoraSalida').value,
+      yacProcedencia: document.getElementById('camYac').value.trim(),
+      volumen: document.getElementById('camVolumen').value.trim(),
+      chofer: document.getElementById('camChofer').value.trim(),
+      tanqueDestino: document.getElementById('camTanque').value
+    };
+    if(!datos.horaEntrada || !datos.volumen){
+      alert('Cargá al menos la hora de entrada y el volumen.');
+      return;
+    }
+    guardarCamionAgua(datos);
+  });
+
+  const lista = document.getElementById('camionLista');
+  PIAS2_CAMIONES_DATA.slice(0, 8).forEach(c => {
+    const row = document.createElement('div');
+    row.className = 'camion-row';
+    row.innerHTML = `<span>${c.fecha} ${c.horaEntrada}${c.horaSalida ? '-'+c.horaSalida : ''}</span> <b>${c.volumen} m3</b> <span>${c.chofer || ''} &rarr; ${c.tanqueDestino || ''}</span>`;
+    lista.appendChild(row);
+  });
+}
+
+document.getElementById('tabTanques').addEventListener('click', () => {
+  switchTab('tabTanques', 'tanquesMain');
+  renderTanques();
+});
+document.getElementById('tabPias').addEventListener('click', () => {
+  switchTab('tabPias', 'piasMain');
+  renderPias();
 });
 
 // arranca mostrando el Plano por defecto (ya con todo declarado)
