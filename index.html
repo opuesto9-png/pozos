@@ -1263,6 +1263,91 @@ function notaUspaDe(bat){
   return USPA_NOTAS.find(n => n.bateria === bat) || null;
 }
 
+// ---------------- Novedades generales de Baterias (1/2/5) y Pias 2: mismo esquema que USPA ----------------
+let EQUIPOS_NOTAS = [];
+let equiposNotasAbiertas = new Set();
+
+function guardarNotaEquipo(grupo, hora, equipo, texto){
+  if(!firestoreOk){
+    alert('No hay conexion con el guardado compartido. Revisa tu internet e intenta de nuevo.');
+    return;
+  }
+  if(!texto || !texto.trim()){
+    alert('Escribi la novedad antes de guardar.');
+    return;
+  }
+  db.collection('equipos_notas').doc(grupo).set({
+    grupo,
+    hora: hora || '',
+    equipo: equipo || '',
+    texto: texto.trim(),
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    updatedFields: ['hora','equipo','texto'],
+    operador: operadorName || 'Sin nombre'
+  }, { merge: true }).catch((err) => {
+    alert('No se pudo guardar la nota (' + err.message + '). Revisa tu conexion.');
+  });
+}
+
+function notaEquipoDe(grupo){
+  return EQUIPOS_NOTAS.find(n => n.grupo === grupo) || null;
+}
+
+function crearNotasEquipoBox(grupo){
+  const notasBox = document.createElement('div');
+  notasBox.className = 'uspa-notas-box';
+  const abierto = equiposNotasAbiertas.has(grupo);
+  const ultima = notaEquipoDe(grupo);
+  const preview = ultima ? `Ultima: ${ultima.hora ? ultima.hora + ' - ' : ''}${ultima.equipo ? ultima.equipo + ' - ' : ''}${ultima.texto}` : '';
+  notasBox.innerHTML = `
+    <button type="button" class="uspa-notas-toggle">${abierto ? '&#9662;' : '&#9656;'} Novedades de ${grupo}${ultima ? ' &bull;' : ''}</button>
+    <div class="uspa-notas-body" style="display:${abierto ? '' : 'none'};">
+      ${preview ? `<div class="uspa-notas-preview">${preview}</div>` : ''}
+      <div class="aib-fields">
+        <div class="aib-field">
+          <div class="time-label">Hora de la novedad</div>
+          <input type="time" class="edit-input time-input eq-notas-hora">
+        </div>
+        <div class="aib-field">
+          <div class="time-label">Equipo</div>
+          <input type="text" class="edit-input eq-notas-equipo" placeholder="ej: TK-101">
+        </div>
+      </div>
+      <textarea class="edit-input edit-textarea eq-notas-text" placeholder="Novedad para ${grupo}..." style="margin-top:8px;"></textarea>
+      <button type="button" class="save-btn eq-notas-save">Guardar novedad</button>
+    </div>
+  `;
+  const toggleBtn = notasBox.querySelector('.uspa-notas-toggle');
+  const body = notasBox.querySelector('.uspa-notas-body');
+  toggleBtn.addEventListener('click', () => {
+    if(equiposNotasAbiertas.has(grupo)){
+      equiposNotasAbiertas.delete(grupo);
+      body.style.display = 'none';
+      toggleBtn.innerHTML = `&#9656; Novedades de ${grupo}${ultima ? ' &bull;' : ''}`;
+    } else {
+      equiposNotasAbiertas.add(grupo);
+      body.style.display = '';
+      toggleBtn.innerHTML = `&#9662; Novedades de ${grupo}${ultima ? ' &bull;' : ''}`;
+    }
+  });
+  notasBox.querySelector('.eq-notas-save').addEventListener('click', () => {
+    const hora = notasBox.querySelector('.eq-notas-hora').value;
+    const equipo = notasBox.querySelector('.eq-notas-equipo').value.trim();
+    const textArea = notasBox.querySelector('.eq-notas-text');
+    const texto = textArea.value;
+    if(!texto.trim()){
+      alert('Escribi la novedad antes de guardar.');
+      return;
+    }
+    if(!puedeModificar()) return;
+    guardarNotaEquipo(grupo, hora, equipo, texto);
+    notasBox.querySelector('.eq-notas-hora').value = '';
+    notasBox.querySelector('.eq-notas-equipo').value = '';
+    textArea.value = '';
+  });
+  return notasBox;
+}
+
 function saveAibPozo(pozoKey, newFields){
   if(!firestoreOk){
     alert('No hay conexion con el guardado compartido. Revisa tu internet e intenta de nuevo.');
@@ -1344,12 +1429,12 @@ function updatePendCount(){
   }
   const badgeBat = document.getElementById('pendCountBaterias');
   if(badgeBat){
-    const nb = pendientesBaterias().length;
+    const nb = pendientesBaterias().length + pendientesNotasBaterias().length;
     if(nb > 0){ badgeBat.style.display = ''; badgeBat.textContent = nb; } else { badgeBat.style.display = 'none'; }
   }
   const badgeAgua = document.getElementById('pendCountAgua');
   if(badgeAgua){
-    const na = pendientesAguaTanques().length + pendientesAguaEquipos().length + pendientesAguaCamiones().length;
+    const na = pendientesAguaTanques().length + pendientesAguaEquipos().length + pendientesAguaCamiones().length + pendientesNotaAguaPias2().length;
     if(na > 0){ badgeAgua.style.display = ''; badgeAgua.textContent = na; } else { badgeAgua.style.display = 'none'; }
   }
 }
@@ -1434,6 +1519,23 @@ function startSync(){
     updatePendCount();
   }, (err) => {
     console.error('Firestore sync error (notasUspa)', err);
+  });
+
+  // novedades generales de Baterias (1/2/5) y Pias 2, mismo esquema que las de USPA
+  db.collection('equipos_notas').onSnapshot((snapshot) => {
+    EQUIPOS_NOTAS = [];
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      EQUIPOS_NOTAS.push(Object.assign({}, data, {
+        _updatedAtDate: (data.updatedAt && data.updatedAt.toDate) ? data.updatedAt.toDate() : null
+      }));
+    });
+    if(document.getElementById('tanquesMain').style.display !== 'none'){ renderTanques(); }
+    if(document.getElementById('piasMain').style.display !== 'none'){ renderPias(); }
+    if(document.getElementById('movMain').style.display !== 'none'){ renderMovimientos(); }
+    updatePendCount();
+  }, (err) => {
+    console.error('Firestore sync error (equiposNotas)', err);
   });
 
   // pozos de petroleo (AIB) - coleccion propia, totalmente separada de los pozos de gas
@@ -2225,6 +2327,11 @@ function pendientesBaterias(){
   return TANQUES_DATA.filter(t => t._updatedAtDate && t._updatedAtDate > corte)
     .sort((a,b) => a._updatedAtDate - b._updatedAtDate);
 }
+function pendientesNotasBaterias(){
+  const corte = corteDePendientesBaterias();
+  return EQUIPOS_NOTAS.filter(n => n.grupo !== 'Pias 2' && n.texto && n._updatedAtDate && n._updatedAtDate > corte)
+    .sort((a,b) => a._updatedAtDate - b._updatedAtDate);
+}
 function pendientesAguaTanques(){
   const corte = corteDePendientesAgua();
   return PIAS2_TANQUES_DATA.filter(t => t._updatedAtDate && t._updatedAtDate > corte)
@@ -2240,6 +2347,11 @@ function pendientesAguaCamiones(){
   return PIAS2_CAMIONES_DATA.filter(t => t._updatedAtDate && t._updatedAtDate > corte)
     .sort((a,b) => a._updatedAtDate - b._updatedAtDate);
 }
+function pendientesNotaAguaPias2(){
+  const corte = corteDePendientesAgua();
+  return EQUIPOS_NOTAS.filter(n => n.grupo === 'Pias 2' && n.texto && n._updatedAtDate && n._updatedAtDate > corte)
+    .sort((a,b) => a._updatedAtDate - b._updatedAtDate);
+}
 
 function exportReporteBaterias(forzarTodos){
   if(typeof ExcelJS === 'undefined'){
@@ -2247,13 +2359,14 @@ function exportReporteBaterias(forzarTodos){
     return;
   }
   const base = forzarTodos ? TANQUES_DATA.filter(t => t.nivelTotal || t.nivelInterfaz) : pendientesBaterias();
-  if(base.length === 0){
+  const notasBase = forzarTodos ? EQUIPOS_NOTAS.filter(n => n.grupo !== 'Pias 2' && n.texto) : pendientesNotasBaterias();
+  if(base.length === 0 && notasBase.length === 0){
     if(!forzarTodos){
-      const quiere = confirm('No hay mediciones de Baterias nuevas desde el ultimo reporte enviado.\n\n¿Generar igual el reporte con TODAS las mediciones cargadas?');
+      const quiere = confirm('No hay mediciones ni novedades de Baterias nuevas desde el ultimo reporte enviado.\n\n¿Generar igual el reporte con TODO lo cargado?');
       if(quiere) exportReporteBaterias(true);
       return;
     }
-    alert('No hay ninguna medicion de tanques de Bateria cargada todavia.');
+    alert('No hay ninguna medicion ni novedad de Bateria cargada todavia.');
     return;
   }
   const filas = base.map(t => [
@@ -2262,6 +2375,11 @@ function exportReporteBaterias(forzarTodos){
     t.nombre || '',
     `Medicion: Nivel Total ${t.nivelTotal || '?'}cm / Nivel Interfaz ${t.nivelInterfaz || '?'}cm`
   ]);
+  notasBase.forEach(n => filas.push([
+    n.hora || (n._updatedAtDate ? n._updatedAtDate.toTimeString().slice(0,5) : ''),
+    n.grupo || '', n.equipo || 'General', n.texto || ''
+  ]));
+  filas.sort((a,b) => (a[0]||'').localeCompare(b[0]||''));
   const wb = new ExcelJS.Workbook();
   agregarHojaTabla(wb, 'OIL', ['HORA','INSTALACION','EQUIPO','NOVEDAD'], filas, [12,14,18,50]);
   wb.xlsx.writeBuffer().then(buffer => {
@@ -2279,8 +2397,9 @@ function exportReporteAgua(forzarTodos){
   const tanquesBase = forzarTodos ? PIAS2_TANQUES_DATA.filter(t => t.nivelTotal || t.nivelInterfaz) : pendientesAguaTanques();
   const equiposBase = forzarTodos ? PIAS2_EQUIPOS_DATA.filter(t => t.estado || t.nota) : pendientesAguaEquipos();
   const camionesBase = forzarTodos ? PIAS2_CAMIONES_DATA : pendientesAguaCamiones();
+  const notasBase = forzarTodos ? EQUIPOS_NOTAS.filter(n => n.grupo === 'Pias 2' && n.texto) : pendientesNotaAguaPias2();
 
-  if(tanquesBase.length === 0 && equiposBase.length === 0 && camionesBase.length === 0){
+  if(tanquesBase.length === 0 && equiposBase.length === 0 && camionesBase.length === 0 && notasBase.length === 0){
     if(!forzarTodos){
       const quiere = confirm('No hay novedades de Agua/Pias 2 nuevas desde el ultimo reporte enviado.\n\n¿Generar igual el reporte con TODO lo cargado?');
       if(quiere) exportReporteAgua(true);
@@ -2300,6 +2419,10 @@ function exportReporteAgua(forzarTodos){
     e._updatedAtDate ? e._updatedAtDate.toTimeString().slice(0,5) : '',
     'Pias 2', e.nombre || '',
     e.estado === 'Falla' ? `En falla${e.nota ? ': ' + e.nota : ''}` : `Operativa${e.nota ? ' - ' + e.nota : ''}`
+  ]));
+  notasBase.forEach(n => filasOil.push([
+    n.hora || (n._updatedAtDate ? n._updatedAtDate.toTimeString().slice(0,5) : ''),
+    'Pias 2', n.equipo || 'General', n.texto || ''
   ]));
   filasOil.sort((a,b) => (a[0]||'').localeCompare(b[0]||''));
 
@@ -2808,7 +2931,8 @@ function renderMovimientos(){
   const gasConMov = POZOS.filter(p => p._updatedAtDate).map(p => Object.assign({ _tipo: 'gas' }, p));
   const oilConMov = AIB_POZOS.filter(p => p._updatedAtDate).map(p => Object.assign({ _tipo: 'oil' }, p));
   const notasConMov = USPA_NOTAS.filter(n => n._updatedAtDate).map(n => Object.assign({ _tipo: 'nota' }, n));
-  const conMovimiento = [...gasConMov, ...oilConMov, ...notasConMov].sort((a,b) => b._updatedAtDate - a._updatedAtDate);
+  const notasEquipoConMov = EQUIPOS_NOTAS.filter(n => n._updatedAtDate).map(n => Object.assign({ _tipo: 'notaEquipo' }, n));
+  const conMovimiento = [...gasConMov, ...oilConMov, ...notasConMov, ...notasEquipoConMov].sort((a,b) => b._updatedAtDate - a._updatedAtDate);
 
   if(conMovimiento.length === 0){
     movMain.innerHTML += '<div class="empty-msg">Todavia no hay movimientos registrados.</div>';
@@ -2828,6 +2952,31 @@ function renderMovimientos(){
     const esOil = rec._tipo === 'oil';
     const esNota = rec._tipo === 'nota';
     const bat = rec.bateria || 'Sin bateria';
+
+    if(rec._tipo === 'notaEquipo'){
+      const row = document.createElement('div');
+      row.className = 'ciclaje-row';
+      row.innerHTML = `
+        <div class="cr-left">
+          <div class="cr-pozo">Novedad ${rec.grupo}${rec.equipo ? ' &middot; '+rec.equipo : ''}</div>
+          <div class="cr-detail">${rec.operador ? `<b>${rec.operador}</b> &middot; ` : ''}${tiempoRelativo(rec._updatedAtDate)}${rec.hora ? ' &middot; hora: '+rec.hora : ''} &middot; ${rec.texto}</div>
+        </div>
+        <div class="cr-estado sd">Nota</div>
+      `;
+      row.addEventListener('click', () => {
+        equiposNotasAbiertas.add(rec.grupo);
+        if(rec.grupo === 'Pias 2'){
+          switchTab('tabPias', 'piasMain');
+          renderPias();
+        } else {
+          bateriasAbiertas.add(rec.grupo);
+          switchTab('tabTanques', 'tanquesMain');
+          renderTanques();
+        }
+      });
+      movMain.appendChild(row);
+      return;
+    }
 
     if(esNota){
       const row = document.createElement('div');
@@ -3127,6 +3276,7 @@ function renderTanques(){
     header.innerHTML = `<p>${bat}</p><span class="chev">${abierto ? '&#9662;' : '&#9656;'}</span>`;
     const body = document.createElement('div');
     body.className = 'bat-body' + (abierto ? '' : ' closed');
+    body.appendChild(crearNotasEquipoBox(bat));
     TANQUES_BATERIAS[bat].forEach(tk => body.appendChild(crearTarjetaTanque(tk, bat, 'baterias_tanques', TANQUES_DATA)));
     header.addEventListener('click', () => {
       if(bateriasAbiertas.has(bat)){ bateriasAbiertas.delete(bat); } else { bateriasAbiertas.add(bat); }
@@ -3140,6 +3290,8 @@ function renderTanques(){
 function renderPias(){
   const main = document.getElementById('piasMain');
   main.innerHTML = `
+    <p class="seccion-titulo">Novedades generales</p>
+    <div id="piasNotasCont"></div>
     <p class="seccion-titulo">Tanques Pias 2</p>
     <div id="piasTanquesCont"></div>
     <p class="seccion-titulo">Compresores de aire</p>
@@ -3165,6 +3317,7 @@ function renderPias(){
       <div class="camion-lista" id="camionLista"></div>
     </div>
   `;
+  document.getElementById('piasNotasCont').appendChild(crearNotasEquipoBox('Pias 2'));
   const piasTanquesCont = document.getElementById('piasTanquesCont');
   PIAS2_TANQUES_NOMBRES.forEach(tk => piasTanquesCont.appendChild(crearTarjetaTanque(tk, 'Pias 2', 'pias2_tanques', PIAS2_TANQUES_DATA)));
 
