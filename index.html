@@ -1231,7 +1231,7 @@ function guardarCamionAgua(datos){
   db.collection('pias2_camiones').add(Object.assign({}, datos, {
     fecha: todayStr(),
     updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-    operador: operadorName || 'Sin nombre'
+    operador: (datos.operador && datos.operador.trim()) || operadorName || 'Sin nombre'
   })).catch((err) => {
     alert('No se pudo guardar la descarga (' + err.message + '). Revisa tu conexion.');
   });
@@ -3306,6 +3306,7 @@ function renderPias(){
         <div class="camion-field"><label>Yac. procedencia</label><input type="text" id="camYac" placeholder="ej: LJE"></div>
         <div class="camion-field"><label>Volumen (m3)</label><input type="text" id="camVolumen" placeholder="ej: 30"></div>
         <div class="camion-field"><label>Chofer</label><input type="text" id="camChofer" placeholder="nombre"></div>
+        <div class="camion-field"><label>Operador</label><input type="text" id="camOperador" placeholder="nombre" value="${operadorName || ''}"></div>
         <div class="camion-field" style="grid-column:1/-1"><label>Tanque destino</label>
           <select id="camTanque">
             ${PIAS2_TANQUES_NOMBRES.map(t => `<option>${t}</option>`).join('')}
@@ -3334,6 +3335,7 @@ function renderPias(){
       yacProcedencia: document.getElementById('camYac').value.trim(),
       volumen: document.getElementById('camVolumen').value.trim(),
       chofer: document.getElementById('camChofer').value.trim(),
+      operador: document.getElementById('camOperador').value.trim(),
       tanqueDestino: document.getElementById('camTanque').value
     };
     if(!datos.horaEntrada || !datos.volumen){
@@ -3347,7 +3349,7 @@ function renderPias(){
   PIAS2_CAMIONES_DATA.slice(0, 8).forEach(c => {
     const row = document.createElement('div');
     row.className = 'camion-row';
-    row.innerHTML = `<span>${c.fecha} ${c.horaEntrada}${c.horaSalida ? '-'+c.horaSalida : ''}</span> <b>${c.volumen} m3</b> <span>${c.chofer || ''} &rarr; ${c.tanqueDestino || ''}</span>`;
+    row.innerHTML = `<span>${c.fecha} ${c.horaEntrada}${c.horaSalida ? '-'+c.horaSalida : ''}</span> <b>${c.volumen} m3</b> <span>${c.chofer || ''} &rarr; ${c.tanqueDestino || ''} &middot; ${c.operador || ''}</span>`;
     lista.appendChild(row);
   });
 }
