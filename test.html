@@ -1,0 +1,3381 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pozos por bateria</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0B2436">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pozos">
+<style>
+  :root{
+    --bg: #0B2436;
+    --panel: #123249;
+    --line: #1E3E56;
+    --text: #E9EEF2;
+    --muted: #7C93A6;
+    --amber: #1C7293;
+    --amber-dim: #163C50;
+    --opt: #6FC9B0;
+    --opt-bg: #123B34;
+    --blue: #4c8fb0;
+    USPA2: #3d6ea8;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', -apple-system, Roboto, Arial, sans-serif;
+    min-height: 100vh;
+    padding-bottom: 60px;
+  }
+  header{
+    padding: 22px 18px 14px;
+    border-bottom: 1px solid var(--line);
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    z-index: 5;
+  }
+  header h1{
+    font-size: 1.15rem;
+    margin: 0 0 4px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+  }
+  .status-bar{
+    display:flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+  .conn-badge{
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 20px;
+    letter-spacing: 0.02em;
+  }
+  .conn-badge.online{ background: #24391f; color:#a6d9a0; }
+  .conn-badge.offline{ background: #3a201d; color:#e6a49d; }
+  .operador-tag{
+    font-size: 0.72rem;
+    color: var(--muted);
+    cursor: pointer;
+    text-decoration: underline dotted;
+  }
+  .operador-edit-wrap{
+    display:flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .operador-input{
+    background: var(--panel);
+    border: 1px solid var(--line);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    width: 130px;
+  }
+  .operador-save-btn{
+    background: var(--amber-dim);
+    border: 1px solid var(--amber);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .operador-tag:hover{ color: var(--amber); }
+  header p{
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.82rem;
+  }
+  .search{
+    margin-top: 12px;
+    display:flex;
+    gap:8px;
+  }
+  .search input{
+    flex:1;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    color: var(--text);
+    padding: 9px 12px;
+    border-radius: 6px;
+    font-size: 0.95rem;
+  }
+  .search input:focus{
+    outline: none;
+    border-color: var(--amber);
+  }
+  .legend{
+    display:flex;
+    gap:14px;
+    margin-top:10px;
+    font-size:0.72rem;
+    color: var(--muted);
+    flex-wrap: wrap;
+  }
+  .legend span{display:flex; align-items:center; gap:5px;}
+  .dot{width:9px;height:9px;border-radius:2px; display:inline-block;}
+
+  main{ padding: 6px 14px 30px; max-width: 640px; margin: 0 auto; }
+
+  .bat-group{ margin-top: 22px; }
+
+  .uspa-notas-box{
+    margin-top: 10px;
+  }
+  .uspa-notas-toggle{
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 0.8rem;
+    cursor: pointer;
+    padding: 4px 2px;
+  }
+  .uspa-notas-toggle:hover{ color: var(--amber); }
+  .uspa-notas-body{
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px;
+    margin-top: 4px;
+  }
+  .uspa-notas-text{
+    width: 100%;
+    min-height: 70px;
+    resize: vertical;
+    box-sizing: border-box;
+  }
+  .uspa-notas-save{ margin-top: 8px; }
+  .uspa-notas-preview{
+    font-size: 0.76rem;
+    color: var(--muted);
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 6px 8px;
+    margin-bottom: 8px;
+  }
+  .bat-label{
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    color: var(--bat-color, var(--blue));
+    font-weight: 700;
+    margin: 0 2px 8px;
+    display:flex;
+    align-items:center;
+    gap: 8px;
+  }
+  .bat-label .count{
+    color: var(--muted);
+    font-weight: 400;
+    letter-spacing: normal;
+  }
+  .bat-label::after{
+    content:"";
+    flex:1;
+    height:1px;
+    background: var(--line);
+  }
+
+  .grid{
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+    gap: 8px;
+  }
+  .pozo-chip{
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--bat-color, var(--blue));
+    border-radius: 5px;
+    padding: 10px 10px;
+    font-family: 'Consolas', 'SF Mono', monospace;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--text);
+    cursor: pointer;
+    text-align: left;
+    transition: transform .08s ease, border-color .12s ease;
+  }
+  .pozo-chip:hover, .pozo-chip:focus-visible{
+    border-color: var(--amber);
+    transform: translateY(-1px);
+    outline: none;
+  }
+  .pozo-chip.opt{
+    background: var(--opt-bg);
+    border-left-color: var(--opt);
+  }
+  .pozo-chip.missing{
+    opacity: 0.45;
+  }
+  .pozo-chip .tag{
+    display:block;
+    font-family: 'Segoe UI', sans-serif;
+    font-weight: 400;
+    font-size: 0.65rem;
+    color: var(--opt);
+    margin-top: 3px;
+    letter-spacing: 0.02em;
+  }
+  .empty-msg{
+    color: var(--muted);
+    font-size: 0.85rem;
+    padding: 30px 4px;
+    text-align: center;
+  }
+
+  /* modal */
+  .overlay{
+    position: fixed; inset: 0;
+    background: rgba(10,12,15,0.72);
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 20;
+  }
+  .overlay.show{ display:flex; }
+  .card{
+    background: var(--panel);
+    width: 100%;
+    max-width: 480px;
+    border-radius: 14px 14px 0 0;
+    padding: 22px 20px 28px;
+    border-top: 3px solid var(--amber);
+    max-height: 82vh;
+    overflow-y: auto;
+    animation: rise .18s ease-out;
+  }
+  @media (min-width: 620px){
+    .overlay{ align-items:center; }
+    .card{ border-radius: 14px; border-top: 3px solid var(--amber); }
+  }
+  @keyframes rise{
+    from{ transform: translateY(24px); opacity:0; }
+    to{ transform: translateY(0); opacity:1; }
+  }
+  .card-head{
+    display:flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 14px;
+  }
+  .card-head h2{
+    font-family: 'Consolas', 'SF Mono', monospace;
+    font-size: 1.4rem;
+    margin: 0;
+  }
+  .card-head .bat-pill{
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    padding: 4px 9px;
+    border-radius: 20px;
+    margin-top: 6px;
+    display:inline-block;
+    color: #fff;
+  }
+  .close-btn{
+    background: none;
+    border: 1px solid var(--line);
+    color: var(--muted);
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    font-size: 1rem;
+    cursor: pointer;
+    line-height:1;
+  }
+  .close-btn:hover{ color: var(--text); border-color: var(--amber); }
+
+  .field{
+    padding: 11px 0;
+    border-top: 1px solid var(--line);
+  }
+  .field:first-of-type{ border-top: none; }
+  .field .k{
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin-bottom: 3px;
+  }
+  .field .v{
+    font-size: 0.95rem;
+    line-height: 1.4;
+  }
+  .field .v.empty{ color: var(--muted); font-style: italic; }
+  .field.optim .v{ color: var(--opt); font-weight: 600; }
+  .field.presion .v{ font-family: 'Consolas','SF Mono',monospace; font-size:1.15rem; }
+
+  .tabs{
+    display:flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 14px;
+  }
+  .toolbar{
+    display:flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .tab-btn{
+    background: var(--panel);
+    border: 1px solid var(--line);
+    color: var(--muted);
+    padding: 7px 14px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
+  .tab-btn.active{
+    background: var(--amber-dim);
+    border-color: var(--amber);
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  .plano-note{
+    color: var(--muted);
+    font-size: 0.78rem;
+    padding: 10px 2px 4px;
+    line-height: 1.4;
+    border-left: 2px solid var(--amber);
+    padding-left: 10px;
+    margin: 8px 2px 18px;
+  }
+
+  .uspa-block{ margin-bottom: 26px; }
+  .uspa-title{
+    font-size: 0.95rem;
+    font-weight: 700;
+    padding: 6px 12px;
+    border-radius: 6px;
+    display: inline-block;
+    margin-bottom: 10px;
+    color: #fff;
+  }
+  .colector-grid{
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px;
+  }
+  .colector-card{
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px 12px;
+    cursor: pointer;
+  }
+  .colector-card .name{
+    font-size: 0.82rem;
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+  .colector-card .count{
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+  .colector-wells{
+    display:none;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--line);
+  }
+  .colector-wells.show{ display:flex; }
+  .well-chip-sm{
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-family: 'Consolas','SF Mono',monospace;
+    font-size: 0.78rem;
+    cursor: pointer;
+    color: var(--text);
+  }
+  .well-chip-sm.opt{ border-color: var(--opt); color: var(--opt); }
+  .well-chip-sm.match{ border-color: var(--amber); box-shadow: 0 0 0 2px var(--amber-dim); font-weight:700; }
+  .well-chip-sm:hover{ border-color: var(--amber); }
+
+  .tag.edit-tag{ color: #7fb0e0; }
+  .export-btn{ border-color: #7fb0e0; color: #7fb0e0; }
+  .export-btn:disabled{ border-color: var(--line); color: var(--muted); cursor: not-allowed; opacity: 0.6; }
+  .pend-badge{
+    background: #d98e3f;
+    color: #14181d;
+    font-weight: 800;
+    border-radius: 20px;
+    padding: 1px 7px;
+    margin-left: 6px;
+    font-size: 0.72rem;
+  }
+  .edited-note{
+    font-size: 0.68rem;
+    color: #7fb0e0;
+    margin-top: 4px;
+  }
+  .edit-btn{
+    width: 100%;
+    margin-top: 16px;
+    padding: 11px;
+    background: var(--amber-dim);
+    border: 1px solid var(--amber);
+    color: var(--text);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .hist-btn{
+    width: 100%;
+    margin-top: 8px;
+    padding: 10px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    color: var(--muted);
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .hist-btn:hover{ border-color: var(--amber); color: var(--text); }
+  .hist-box{
+    margin-top: 10px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .hist-loading{
+    font-size: 0.82rem;
+    color: var(--muted);
+    text-align: center;
+    padding: 10px 0;
+  }
+  .hist-title{
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .hist-total{
+    font-weight: 400;
+    color: var(--muted);
+  }
+  .hist-svg{
+    width: 100%;
+    height: auto;
+  }
+
+  /* ---- Tanques / Pias 2 ---- */
+  .seccion-titulo{
+    font-size: 0.78rem;
+    color: var(--amber);
+    font-weight: 700;
+    margin: 20px 0 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .seccion-titulo:first-child{ margin-top: 0; }
+  .bat-header{
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+    padding: 11px 14px; margin-bottom: 6px; cursor: pointer;
+  }
+  .bat-header p{ margin: 0; font-weight: 600; font-size: 0.9rem; }
+  .bat-header .chev{ color: var(--muted); font-size: 0.8rem; }
+  .bat-body{ padding-left: 4px; margin-bottom: 6px; }
+  .bat-body.closed{ display: none; }
+  .tk-card{
+    background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+    padding: 12px 14px; margin-bottom: 8px;
+  }
+  .tk-top{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 8px; }
+  .tk-nombre{ font-weight: 600; font-size: 0.88rem; margin: 0; }
+  .tk-ultima{ font-size: 0.68rem; color: var(--muted); margin: 0; text-align: right; }
+  .tk-fields{ display: flex; gap: 8px; }
+  .tk-field{ flex: 1; }
+  .tk-field label{ font-size: 0.68rem; color: var(--muted); display: block; margin-bottom: 3px; }
+  .tk-field input{ width: 100%; background: var(--bg); border: 1px solid var(--line); color: var(--text); padding: 8px; border-radius: 6px; font-size: 0.85rem; }
+  .tk-save{ margin-top: 8px; width: 100%; padding: 8px; background: var(--amber-dim); border: 1px solid var(--amber); color: var(--text); border-radius: 6px; font-size: 0.78rem; font-weight: 600; cursor: pointer; }
+  .eq-card{ background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 11px 14px; margin-bottom: 8px; }
+  .eq-top{ display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .eq-nombre{ font-weight: 600; font-size: 0.85rem; margin: 0; }
+  .eq-badge{ font-size: 0.68rem; font-weight: 600; padding: 4px 10px; border-radius: 10px; border: none; cursor: pointer; }
+  .eq-badge.op{ background: #24391f; color: #a6d9a0; }
+  .eq-badge.falla{ background: #3a201d; color: #e6a49d; }
+  .eq-nota{ width: 100%; background: var(--bg); border: 1px solid var(--line); color: var(--text); padding: 7px; border-radius: 6px; font-size: 0.8rem; margin-top: 8px; font-family: inherit; }
+  .eq-save{ margin-top: 6px; width: 100%; padding: 7px; background: var(--amber-dim); border: 1px solid var(--amber); color: var(--text); border-radius: 6px; font-size: 0.74rem; font-weight: 600; cursor: pointer; }
+  .camion-box{ background: var(--panel); border: 1px solid var(--amber); border-radius: 8px; padding: 12px 14px; margin: 18px 0; }
+  .camion-titulo{ font-size: 0.85rem; font-weight: 600; margin: 0 0 10px; }
+  .camion-grid{ display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .camion-field label{ font-size: 0.68rem; color: var(--muted); display: block; margin-bottom: 3px; }
+  .camion-field input, .camion-field select{ width: 100%; background: var(--bg); border: 1px solid var(--line); color: var(--text); padding: 8px; border-radius: 6px; font-size: 0.82rem; }
+  .camion-save{ margin-top: 10px; width: 100%; padding: 9px; background: var(--amber-dim); border: 1px solid var(--amber); color: var(--text); border-radius: 6px; font-size: 0.82rem; font-weight: 600; cursor: pointer; }
+  .camion-lista{ margin-top: 10px; }
+  .camion-row{ display: flex; justify-content: space-between; gap: 8px; font-size: 0.72rem; color: var(--muted); padding: 6px 0; border-top: 1px solid var(--line); }
+  .camion-row b{ color: var(--text); }
+
+  .edit-input{
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    color: var(--text);
+    padding: 8px 10px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-family: inherit;
+  }
+  .edit-input:focus{ outline:none; border-color: var(--amber); }
+  .edit-textarea{ min-height: 70px; resize: vertical; }
+  .input-with-clear{
+    display:flex;
+    gap: 6px;
+    align-items: flex-start;
+  }
+  .input-with-clear .edit-input{ flex:1; }
+  .field-clear-btn{
+    background: none;
+    border: 1px solid var(--line);
+    color: var(--muted);
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    border-radius: 6px;
+    font-size: 1rem;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .field-clear-btn:hover{ border-color:#c0524a; color:#e6a49d; }
+  .time-row{
+    display:flex;
+    gap: 10px;
+  }
+  .time-row > div{ flex:1; }
+  .time-label{
+    font-size: 0.68rem;
+    color: var(--muted);
+    margin-bottom: 3px;
+  }
+  .time-input{
+    color-scheme: dark;
+  }
+  .edit-actions{
+    display:flex;
+    gap: 10px;
+    margin-top: 18px;
+  }
+  .save-btn, .cancel-btn{
+    flex:1;
+    padding: 11px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--line);
+  }
+  .save-btn{ background: var(--amber-dim); border-color: var(--amber); color: var(--text); }
+  .cancel-btn{ background: none; color: var(--muted); }
+
+  .clear-btn{
+    width: 100%;
+    margin-top: 10px;
+    padding: 10px;
+    background: none;
+    border: 1px solid #6b3a36;
+    color: #d98a82;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+  .clear-btn:hover{ background: #2a1917; }
+  .clear-btn.armed{ background:#4a231f; border-color:#d98a82; color:#fff; font-weight:700; }
+
+  .unit-toggle{
+    display:flex;
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    overflow: hidden;
+  }
+  .unit-btn{
+    background: var(--panel);
+    border: none;
+    color: var(--muted);
+    padding: 7px 12px;
+    font-size: 0.78rem;
+    cursor: pointer;
+  }
+  .unit-btn.active{
+    background: var(--amber-dim);
+    color: var(--text);
+    font-weight: 600;
+  }
+.pozo-chip.abierto{ border-bottom: 3px solid #5fa85f; }
+  .pozo-chip.cerrado{ border-bottom: 3px solid #c0524a; }
+  .tag.estado-tag{ display:block; }
+  .tag.estado-tag.abierto{ color:#7fc97f; }
+  .tag.estado-tag.cerrado{ color:#e08a82; }
+
+  .estado-toggle{
+    display:flex;
+    gap: 8px;
+    margin: 4px 0 2px;
+  }
+  .estado-btn{
+    flex:1;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: var(--bg);
+    color: var(--muted);
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    letter-spacing: 0.03em;
+  }
+  .estado-btn.abierto.active{ background: #24391f; border-color:#5fa85f; color:#a6d9a0; }
+  .estado-btn.cerrado.active{ background: #3a201d; border-color:#c0524a; color:#e6a49d; }
+
+  .estado-badge{
+    text-align: center;
+    padding: 10px;
+    border-radius: 8px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    font-size: 0.9rem;
+    margin: 4px 0 2px;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    color: var(--muted);
+  }
+  .estado-badge.abierto{ background: #24391f; border-color:#5fa85f; color:#a6d9a0; }
+  .estado-badge.cerrado{ background: #3a201d; border-color:#c0524a; color:#e6a49d; }
+
+  .horario-field.abierto{ background: #1c2a1a; border-radius: 6px; padding: 8px; margin: 0 -8px; }
+  .horario-field.abierto .v{ color:#a6d9a0; }
+  .horario-field.cerrado{ background: #2a1c1a; border-radius: 6px; padding: 8px; margin: 0 -8px; }
+  .horario-field.cerrado .v{ color:#e6a49d; }
+
+  .edit-hint{
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .ciclaje-row{
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    display:flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+  }
+  .ciclaje-row:hover{ border-color: var(--amber); }
+  .ciclaje-row .cr-left{ display:flex; flex-direction:column; gap:2px; }
+  .ciclaje-row .cr-pozo{ font-family:'Consolas','SF Mono',monospace; font-weight:700; font-size:0.95rem; }
+  .ciclaje-row .cr-detail{ font-size: 0.74rem; color: var(--muted); }
+  .ciclaje-row .cr-manual{ color: var(--opt); }
+  .ciclaje-row .cr-estado{
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+  .cr-estado.abierto{ background:#24391f; color:#a6d9a0; }
+  .cr-estado.cerrado{ background:#3a201d; color:#e6a49d; }
+  .cr-estado.sd{ background: var(--line); color: var(--muted); }
+
+  .add-ciclaje-row{
+    display:flex;
+    gap: 8px;
+    margin: 4px 2px 18px;
+  }
+  .add-ciclaje-row input{
+    flex:1;
+  }
+  .add-ciclaje-btn{
+    background: var(--amber-dim);
+    border: 1px solid var(--amber);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 0 16px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+  .cr-remove{
+    background: none;
+    border: 1px solid var(--line);
+    color: var(--muted);
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .cr-remove:hover{ border-color:#c0524a; color:#e6a49d; }
+
+  .aib-row{
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+  .aib-row-top{
+    display:flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .aib-pozo{ font-family:'Consolas','SF Mono',monospace; font-weight:700; font-size:0.95rem; }
+  .aib-bat{ font-size:0.72rem; color: var(--muted); font-weight:400; margin-left: 6px; }
+  .aib-fields{
+    display:flex;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .aib-field{ flex:1; }
+  .aib-perdidas-check{
+    display:flex;
+    align-items:center;
+    gap: 6px;
+    font-size: 0.82rem;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+  .aib-preview{
+    font-size: 0.76rem;
+    color: var(--muted);
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 8px 10px;
+    margin-top: 8px;
+    line-height: 1.4;
+  }
+  .aib-save-btn{ width:100%; margin-top: 10px; }
+
+  .mov-list{
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+  }
+  .mov-item{
+    font-size:0.85rem;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    padding: 6px 10px;
+  }
+  .mov-hora{
+    font-family:'Consolas','SF Mono',monospace;
+    font-weight:700;
+    color: var(--amber);
+    margin-right: 8px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Pozos por bateria</h1>
+  <div class="status-bar">
+    <span id="connBadge" class="conn-badge"></span>
+    <span id="operadorTag" class="operador-tag"></span>
+    <span id="operadorEditWrap" class="operador-edit-wrap" style="display:none;">
+      <input id="operadorInput" type="text" placeholder="Tu nombre" class="operador-input">
+      <button id="operadorSaveBtn" class="operador-save-btn">Guardar</button>
+    </span>
+  </div>
+  <p>Tocá un pozo para ver el detalle completo. Los cambios (ABIERTO/CERRADO, ediciones) se guardan solos, al instante. El botón de abajo solo arma y manda el parte cuando vos lo toques, no antes. Colectora segun plano de red (Act. Agosto 2017) &mdash; puede estar desactualizado, confirmar estado real en campo/SCADA.</p>
+  <div class="search">
+    <input id="searchBox" type="text" placeholder="Buscar pozo (ej: 1580)..." autocomplete="off">
+  </div>
+  <div class="legend">
+    <span><span class="dot" style="background:#e8c14d"></span>Con optimizador</span>
+    <span><span class="dot" style="background:#2b323b; opacity:.5"></span>Sin datos todavia</span>
+  </div>
+  <div class="tabs">
+    <button class="tab-btn" id="tabLista">Lista</button>
+    <button class="tab-btn active" id="tabPlano">Plano (colectoras)</button>
+    <button class="tab-btn" id="tabCiclaje">Ciclaje</button>
+    <button class="tab-btn" id="tabMov">Últimos movimientos</button>
+    <button class="tab-btn" id="tabAib">AIB</button>
+    <button class="tab-btn" id="tabTanques">Tanques</button>
+    <button class="tab-btn" id="tabPias">Pías 2</button>
+  </div>
+  <div class="toolbar">
+    <button class="tab-btn export-btn" id="parteBtn">Enviar parte de campo <span id="pendCount" class="pend-badge" style="display:none;"></span></button>
+    <button class="tab-btn export-btn" id="exportarTodoBtn">Exportar todo</button>
+    <button class="tab-btn export-btn" id="reporteBateriasBtn">Enviar reporte de Baterías <span id="pendCountBaterias" class="pend-badge" style="display:none;"></span></button>
+    <button class="tab-btn export-btn" id="reporteAguaBtn">Enviar reporte de Agua <span id="pendCountAgua" class="pend-badge" style="display:none;"></span></button>
+    <div class="unit-toggle">
+      <button class="unit-btn active" id="unitKg">kg/cm&sup2;</button>
+      <button class="unit-btn" id="unitPsi">psi</button>
+    </div>
+    <span id="primarioTag" class="operador-tag" style="margin-left:auto;"></span>
+  </div>
+</header>
+
+<main id="main" style="display:none;"></main>
+<main id="planoMain"></main>
+<main id="ciclajeMain" style="display:none;"></main>
+<main id="movMain" style="display:none;"></main>
+<main id="aibMain" style="display:none;"></main>
+<main id="tanquesMain" style="display:none;"></main>
+<main id="piasMain" style="display:none;"></main>
+
+<div class="overlay" id="overlay">
+  <div class="card" id="card"></div>
+</div>
+
+<script>const POZOS = [{"pozo": "Ce-63", "fecha": "22/08", "presion": "4 kg/cm2", "tablero": "ENSI", "optim": "Optimizador P. Cosing (Auto 6)", "notas": "Colectora (plano 2017): Col. USPA II - BP; Pozo con cono (plano 2017); Nota plano: + Ce-1116 + Ce-1221", "bateria": "USPA2", "colectora": "Col. USPA II - BP", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-103", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Colectora (plano 2017): Col. USPA II - BP; Estado en plano 2017: cerrado", "bateria": "USPA2", "colectora": "Col. USPA II - BP", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1014", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Colectora (plano 2017): Col. USPA II - BP; Estado en plano 2017: cerrado", "bateria": "USPA2", "colectora": "Col. USPA II - BP", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1044", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Aparece en la lista SCADA de USPA2 (tag CEN_USPA2_Ce_1044.FI) pero todavia no tenemos sus datos de la libreta.; Caudal medido en conjunto con Ce-1560 (mismo FI, tag CEN_USPA2_Ce_1044_1560.FI).; Colectora (plano 2017): Col. 29 - BP; Pozo con cono (plano 2017)", "bateria": "USPA2", "colectora": "Col. 29 - BP", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1081", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Aparece en la lista SCADA de USPA2 (tag CEN_USPA2_Ce_1081.FI) pero todavia no tenemos sus datos de la libreta.; Colectora (plano 2017): Col. 29 - BP; Pozo con cono (plano 2017)", "bateria": "USPA2", "colectora": "Col. 29 - BP", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1095", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Colectora (plano 2017): Col. USPA II - BP", "bateria": "USPA2", "colectora": "Col. USPA II - BP", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1096", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Aparece en la lista SCADA de USPA2 (tag CEN_USPA2_Ce_1096.FI) pero todavia no tenemos sus datos de la libreta.; Colectora (plano 2017): Col. 29 - BP; Pozo con cono (plano 2017)", "bateria": "USPA2", "colectora": "Col. 29 - BP", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1097", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Aparece en la lista SCADA de USPA2 (tag CEN_USPA2_Ce_1097.FI) pero todavia no tenemos sus datos de la libreta.; Colectora (plano 2017): Col. 29 - BP; Pozo con cono (plano 2017)", "bateria": "USPA2", "colectora": "Col. 29 - BP", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1116", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Colectora (plano 2017): Col. USPA II - BP; Pozo con cono (plano 2017); Nota plano: junto a Ce-63", "bateria": "USPA2", "colectora": "Col. USPA II - BP", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1119", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Aparece en la lista SCADA de USPA2 (tag CEN_USPA2_Ce_1119.FI) pero todavia no tenemos sus datos de la libreta.; Colectora (plano 2017): Col. 29 - BP; Pozo con cono (plano 2017)", "bateria": "USPA2", "colectora": "Col. 29 - BP", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1126", "fecha": "-", "presion": "4,2 kg/cm2", "tablero": "ENSI", "optim": "", "notas": "Cat. A; (T+); Cronograma 12/09-13/09 (Sebastian Flores, mail 12/9 14:5x): 12/9 20:00:Cerrado / 12/9 22:00:Cerrado / 13/9 00:00:Cerrado / 13/9 02:00:Abierto / 13/9 04:00:Abierto / 13/9 06:00:Abierto / 13/9 08:00:Abierto", "bateria": "USPA2", "colectora": "", "estado": "Cerrado", "ciclo": "6c x 90a", "horario": ""}, {"pozo": "Ce-1141", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Aparece en la lista SCADA de USPA2 (tag CEN_USPA2_Ce_1141.FI) pero todavia no tenemos sus datos de la libreta.; Colectora (plano 2017): Col. 29 - BP; Pozo con cono (plano 2017)", "bateria": "USPA2", "colectora": "Col. 29 - BP", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1147", "fecha": "-", "presion": "4 kg/cm2", "tablero": "", "optim": "", "notas": "Cat. A; se cambio Abrac a T.surg; (T+); Colectora (plano 2017): Col. 29 - BP; Pozo con cono (plano 2017)", "bateria": "USPA2", "colectora": "Col. 29 - BP", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1154", "fecha": "-", "presion": "3 kg/cm2", "tablero": "", "optim": "Optimizador Pompa", "notas": "Cat. A; Auto 6; (T+) (B+); Brida Bocheo, Brida ciego (conexion MC); Colectora (plano 2017): Col. 29 - BP; Pozo con cono (plano 2017); Nota plano: MP", "bateria": "USPA2", "colectora": "Col. 29 - BP", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1193", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Aparece en la lista SCADA de USPA2 (tag CEN_USPA2_Ce_1193.FI) pero todavia no tenemos sus datos de la libreta.; Colectora (plano 2017): Col. 29 - BP; Nota plano: junto con Ce-1490", "bateria": "USPA2", "colectora": "Col. 29 - BP", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1221", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Colectora (plano 2017): Col. USPA II - BP; Nota plano: junto a Ce-63", "bateria": "USPA2", "colectora": "Col. USPA II - BP", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1267", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Colectora (plano 2017): Col. USPA II - BP", "bateria": "USPA2", "colectora": "Col. USPA II - BP", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1294", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Aparece en la lista SCADA de USPA2 (tag CEN_USPA2_Ce_1294.FI) pero todavia no tenemos sus datos de la libreta.; Colectora (plano 2017): Col. 29 - BP; Pozo con cono (plano 2017); Cronograma 12/09-13/09 (Sebastian Flores, mail 12/9 14:5x): 12/9 20:00:Abierto / 12/9 22:00:Abierto / 13/9 00:00:Abierto / 13/9 02:00:Cerrado / 13/9 04:00:Cerrado / 13/9 06:00:Abierto / 13/9 08:00:Abierto", "bateria": "USPA2", "colectora": "Col. 29 - BP", "estado": "Abierto", "ciclo": "8c x 88a", "horario": ""}, {"pozo": "Ce-1295", "fecha": "-", "presion": "2,5 kg/cm2", "tablero": "", "optim": "", "notas": "Cat. A; (T+); Colectora (plano 2017): Col. USPA II - BP; Cronograma 12/09-13/09 (Sebastian Flores, mail 12/9 14:5x): 12/9 20:00:Abierto / 12/9 22:00:Abierto / 13/9 00:00:Abierto / 13/9 02:00:Abierto / 13/9 04:00:Cerrado / 13/9 06:00:Cerrado / 13/9 08:00:Cerrado", "bateria": "USPA2", "colectora": "Col. USPA II - BP", "estado": "Abierto", "ciclo": "2c x 46a", "horario": ""}, {"pozo": "Ce-1296", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Colectora (plano 2017): Col. USPA II - BP", "bateria": "USPA2", "colectora": "Col. USPA II - BP", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1299", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Aparece en la lista SCADA de USPA2 (tag CEN_USPA2_Ce_1299.FI) pero todavia no tenemos sus datos de la libreta.; Colectora (plano 2017): Col. 29 - BP; Pozo con cono (plano 2017)", "bateria": "USPA2", "colectora": "Col. 29 - BP", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1336", "fecha": "-", "presion": "17,5 kg/cm2", "tablero": "", "optim": "Optimizador MNA", "notas": "Cat. C; (T+); Brida Bocheo, Brida ciego, Tope de surgencia; Lubricador fijo; Colectora (plano 2017): Col. 1478; Pozo con cono (plano 2017)", "bateria": "USPA2", "colectora": "Col. 1478", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1339", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Aparece en la lista SCADA de USPA2 (tag CEN_USPA2_Ce_1339.FI) pero todavia no tenemos sus datos de la libreta.; Colectora (plano 2017): Col. GPI USPA II; Pozo con cono (plano 2017)", "bateria": "USPA2", "colectora": "Col. GPI USPA II", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1340", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Aparece en la lista SCADA de USPA2 (tag CEN_USPA2_Ce_1340.FI) pero todavia no tenemos sus datos de la libreta.; Colectora (plano 2017): Col. 29 - BP; Pozo con cono (plano 2017)", "bateria": "USPA2", "colectora": "Col. 29 - BP", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1385", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Colectora (plano 2017): Col. GPI USPA II; Nota plano: caudalimetro", "bateria": "USPA2", "colectora": "Col. GPI USPA II", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1454", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Aparece en la lista SCADA de USPA2 (tag CEN_USPA2_Ce_1454.FI) pero todavia no tenemos sus datos de la libreta.; Colectora (plano 2017): Col. 1095; Pozo con cono (plano 2017); Nota plano: (d)", "bateria": "USPA2", "colectora": "Col. 1095", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1472", "fecha": "-", "presion": "2,5 kg/cm2", "tablero": "", "optim": "", "notas": "Cat. A; Cronograma 12/09-13/09 (Sebastian Flores, mail 12/9 14:5x): 12/9 20:00:Abierto / 12/9 22:00:Abierto / 13/9 00:00:Abierto / 13/9 02:00:Abierto / 13/9 04:00:Cerrado / 13/9 06:00:Cerrado / 13/9 08:00:Cerrado", "bateria": "USPA2", "colectora": "", "estado": "Abierto", "ciclo": "2c x 46a", "horario": ""}, {"pozo": "Ce-1478", "fecha": "-", "presion": "42 kg/cm2", "tablero": "ENSI", "optim": "", "notas": "Cat. C; (T+); Brida Bocheo, Brida ciego; Colectora (plano 2017): Col. 1478", "bateria": "USPA2", "colectora": "Col. 1478", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1520", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Aparece en la lista SCADA de USPA2 (tag CEN_USPA2_Ce_1520.FI) pero todavia no tenemos sus datos de la libreta.; Colectora (plano 2017): Sin colectora especifica; Pozo con cono (plano 2017)", "bateria": "USPA2", "colectora": "Sin colectora especifica", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1543", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Aparece en la lista SCADA de USPA2 (tag CEN_USPA2_Ce_1543.FI) pero todavia no tenemos sus datos de la libreta.; Colectora (plano 2017): Col. 29; Pozo con cono (plano 2017)", "bateria": "USPA2", "colectora": "Col. 29", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1544", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Aparece en la lista SCADA de USPA2 (tag CEN_USPA2_Ce_1544.FI) pero todavia no tenemos sus datos de la libreta.; Colectora (plano 2017): Col. 1095; Pozo con cono (plano 2017); Nota plano: (d)", "bateria": "USPA2", "colectora": "Col. 1095", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1545", "fecha": "30/06", "presion": "3 kg/cm2", "tablero": "ENSI", "optim": "", "notas": "Cat. A; Plunger c/Piston (Auto 2); Tope surgencia (B+); Colectora (plano 2017): Ampl Col. USPA II; Pozo con cono (plano 2017)", "bateria": "USPA2", "colectora": "Ampl Col. USPA II", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1557", "fecha": "30/06", "presion": "3 kg/cm2", "tablero": "", "optim": "", "notas": "Cat. A; Colectora (plano 2017): Ampl Col. USPA II; Pozo con cono (plano 2017)", "bateria": "USPA2", "colectora": "Ampl Col. USPA II", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1558", "fecha": "29/06", "presion": "4 kg", "tablero": "", "optim": "Optimizador Pompa", "notas": "Cat. A; Auto 6; (T+) (B+)", "bateria": "USPA2", "colectora": "", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1559", "fecha": "29/06", "presion": "5 kg/cm2", "tablero": "MNA", "optim": "", "notas": "Cat. A; (T+) - pozo del ciclado PM351/PM420; Colectora (plano 2017): Ampl Col. USPA II; Pozo con cono (plano 2017)", "bateria": "USPA2", "colectora": "Ampl Col. USPA II", "estado": "", "ciclo": "", "horario": "Abrir 16:00 - Cerrar 22:00 / Abrir 04:00 - Cerrar 10:00 (ciclo 6x6)"}, {"pozo": "Ce-1560", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Aparece en la lista SCADA de USPA2 (tag CEN_USPA2_Ce_1560.FI) pero todavia no tenemos sus datos de la libreta.; Caudal medido en conjunto con Ce-1044 (mismo FI, tag CEN_USPA2_Ce_1044_1560.FI).; Colectora (plano 2017): Col. 29; Pozo con cono (plano 2017)", "bateria": "USPA2", "colectora": "Col. 29", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1561", "fecha": "29/06", "presion": "18 kg/cm2", "tablero": "MNA", "optim": "", "notas": "Cat. C; Auto 2; Plunger c/Piston (B+)", "bateria": "USPA2", "colectora": "", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1562", "fecha": "29/06", "presion": "3 kg/cm2", "tablero": "", "optim": "", "notas": "Cat. A; Auto 2; Plunger c/Piston (B+)", "bateria": "USPA2", "colectora": "", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1563", "fecha": "29/06", "presion": "17 kg/cm2", "tablero": "", "optim": "Optimizador Pompa", "notas": "Cat. C; Auto 6; (T+) (B+)", "bateria": "USPA2", "colectora": "", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1564", "fecha": "29/06", "presion": "3 kg/cm2", "tablero": "ENSI", "optim": "", "notas": "Cat. A - pozo del ciclado PM351/PM420 (ya con optimizador montado); Colectora (plano 2017): Ampl Col. USPA II; Pozo con cono (plano 2017)", "bateria": "USPA2", "colectora": "Ampl Col. USPA II", "estado": "", "ciclo": "", "horario": "Cerrar 16:00 / Abrir 22:00 - Cerrar 04:00 / Abrir 10:00 - Cerrar 16:00 (ciclo 6x6, complementario a Ce-1559)"}, {"pozo": "Ce-1570", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Aparece en la lista SCADA de USPA2 (tag CEN_USPA2_Ce_1570.FI) pero todavia no tenemos sus datos de la libreta.; Colectora (plano 2017): Col. 1095", "bateria": "USPA2", "colectora": "Col. 1095", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1577", "fecha": "30/06", "presion": "4 kg/cm2", "tablero": "ENSI", "optim": "Optimizador Pompa", "notas": "Cat. A; (T+) (B+)", "bateria": "USPA2", "colectora": "", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1578", "fecha": "30/06", "presion": "3,5 kg/cm2", "tablero": "MNA", "optim": "", "notas": "Cat. A; (T+) - pozo tambien en ciclado PM351/PM420", "bateria": "USPA2", "colectora": "", "estado": "Abierto", "ciclo": "", "horario": "Abrir 21:00 - Cerrar 05:00 / Abrir 13:00 - Cerrar 21:00 (ciclo 8x8)"}, {"pozo": "Ce-1580", "fecha": "30/06", "presion": "3,5 kg/cm2", "tablero": "MNA", "optim": "", "notas": "Cat. A; Lubricador fijo; T. de surgencia; (T+) - pozo tambien en ciclado PM351/PM420", "bateria": "USPA2", "colectora": "", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1062", "fecha": "22/08", "presion": "4 kg/cm2", "tablero": "", "optim": "Optimizador Pompa (Auto 6)", "notas": "", "bateria": "USPA3", "colectora": "", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1105", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Cronograma 12/09-13/09 (Sebastian Flores, mail 12/9 14:5x): 12/9 20:00:Cerrado / 12/9 22:00:Cerrado / 13/9 00:00:Cerrado / 13/9 02:00:Cerrado / 13/9 04:00:Abierto / 13/9 06:00:Abierto / 13/9 08:00:Abierto", "bateria": "USPA3", "colectora": "", "estado": "Cerrado", "ciclo": "48c x 24a", "horario": ""}, {"pozo": "Ce-1120", "fecha": "21/08", "presion": "4 kg/cm2", "tablero": "", "optim": "", "notas": "(T+); Colectora (plano 2017): Col. 1156; Nota plano: junto con Ce-1220 (cortada); Cronograma 12/09-13/09 (Sebastian Flores, mail 12/9 14:5x): 12/9 20:00:Abierto / 12/9 22:00:Abierto / 13/9 00:00:Cerrado / 13/9 02:00:Abierto / 13/9 04:00:Abierto / 13/9 06:00:Abierto / 13/9 08:00:Abierto", "bateria": "USPA3", "colectora": "Col. 1156", "estado": "Abierto", "ciclo": "2c x 46a", "horario": ""}, {"pozo": "Ce-1122", "fecha": "22/08", "presion": "1,2 kg/cm2", "tablero": "MNA", "optim": "", "notas": "MCBP (Hoerbiger) (T+); Colectora (plano 2017): Col. 1153; Pozo con cono (plano 2017); Nota plano: MP", "bateria": "USPA3", "colectora": "Col. 1153", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1125", "fecha": "21/08", "presion": "5 kg/cm2", "tablero": "ENSI", "optim": "Optimizador Pompa", "notas": "(T+); Colectora (plano 2017): Col. 1136; Pozo con cono (plano 2017); Nota plano: a-1125 BP", "bateria": "USPA3", "colectora": "Col. 1136", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1136", "fecha": "22/08", "presion": "4,5 kg/cm2", "tablero": "", "optim": "", "notas": "Iny. P.Quimico wezol; Pack Off Sup 3600 PSI / Inf 4000 PSI, habilitado (T+); Colectora (plano 2017): Col. 1136; Pozo con cono (plano 2017); Nota plano: BP", "bateria": "USPA3", "colectora": "Col. 1136", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1140", "fecha": "21/08", "presion": "4 kg/cm2", "tablero": "", "optim": "", "notas": "(T+); Cronograma 12/09-13/09 (Sebastian Flores, mail 12/9 14:5x): 12/9 20:00:Cerrado / 12/9 22:00:Cerrado / 13/9 00:00:Abierto / 13/9 02:00:Abierto / 13/9 04:00:Abierto / 13/9 06:00:Abierto / 13/9 08:00:Abierto", "bateria": "USPA3", "colectora": "", "estado": "Cerrado", "ciclo": "4c x 42a", "horario": ""}, {"pozo": "Ce-1142", "fecha": "22/08", "presion": "4,5 kg/cm2", "tablero": "MNA", "optim": "", "notas": "Colectora (plano 2017): Col. 1153; Pozo con cono (plano 2017); Nota plano: MP", "bateria": "USPA3", "colectora": "Col. 1153", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1143", "fecha": "22/08", "presion": "4 kg/cm2", "tablero": "MNA", "optim": "", "notas": "T+; Colectora (plano 2017): Col. 1143", "bateria": "USPA3", "colectora": "Col. 1143", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1144", "fecha": "22/08", "presion": "5 kg/cm2", "tablero": "ENSI", "optim": "Optimizado P. Cosing (Auto 6)", "notas": "Colectora (plano 2017): Col. 1144; Nota plano: MP (resaltado en el plano)", "bateria": "USPA3", "colectora": "Col. 1144", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1146", "fecha": "21/08", "presion": "4 kg/cm2", "tablero": "MNA", "optim": "", "notas": "(T+); Colectora (plano 2017): Col. 1146; Pozo con cono (plano 2017)", "bateria": "USPA3", "colectora": "Col. 1146", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1148", "fecha": "21/08", "presion": "6 kg/cm2", "tablero": "MNA", "optim": "", "notas": "(T+); Colectora (plano 2017): Col. 1136; Pozo con cono (plano 2017); Nota plano: MP", "bateria": "USPA3", "colectora": "Col. 1136", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1149", "fecha": "22/08", "presion": "3 kg/cm2", "tablero": "ENSI", "optim": "Optimizador Pompa (Auto 6)", "notas": "Colectora (plano 2017): Sin colectora especifica; Pozo con cono (plano 2017)", "bateria": "USPA3", "colectora": "Sin colectora especifica", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1151", "fecha": "22/08", "presion": "4,5 kg/cm2", "tablero": "MNA", "optim": "", "notas": "Brida Bocheo, Brida ciego (T+); Colectora (plano 2017): Col. 1151", "bateria": "USPA3", "colectora": "Col. 1151", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1152", "fecha": "22/08", "presion": "2,5 kg/cm2", "tablero": "", "optim": "", "notas": "Brida Bocheo, Brida ciego (T+); Colectora (plano 2017): Col. 1153; Pozo con cono (plano 2017); Nota plano: MP", "bateria": "USPA3", "colectora": "Col. 1153", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1153", "fecha": "22/08", "presion": "3 kg/cm2", "tablero": "MNA", "optim": "", "notas": "(T+); Colectora (plano 2017): Col. 1153; Pozo con cono (plano 2017); Nota plano: MP", "bateria": "USPA3", "colectora": "Col. 1153", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1155", "fecha": "22/08", "presion": "5 kg/cm2", "tablero": "MMA", "optim": "", "notas": "Brida Bocheo - Brida ciega (T+); Colectora (plano 2017): Col. 1143; Pozo con cono (plano 2017); Nota plano: junto a Ce-1181, BP", "bateria": "USPA3", "colectora": "Col. 1143", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1156", "fecha": "21/08", "presion": "16 kg/cm2", "tablero": "", "optim": "", "notas": "Brida Bocheo; Colectora (plano 2017): Col. 1156; Pozo con cono (plano 2017)", "bateria": "USPA3", "colectora": "Col. 1156", "estado": "", "ciclo": "", "horario": "Cerrar 02:00 / Abrir 04:00 - ... (dato cortado en la foto del mail)"}, {"pozo": "Ce-1157", "fecha": "22/08", "presion": "4,5 kg/cm2", "tablero": "MNA", "optim": "", "notas": "(T+); Colectora (plano 2017): Col. 1178; Nota plano: BP", "bateria": "USPA3", "colectora": "Col. 1178", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1158", "fecha": "21/08", "presion": "0 kg/cm2", "tablero": "ENSI", "optim": "", "notas": "Brida Bocheo, Brida ciego; MCBP (Hoerbiger) (T+); Colectora (plano 2017): Col. 1144; Nota plano: BP", "bateria": "USPA3", "colectora": "Col. 1144", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1166", "fecha": "21/08", "presion": "5 kg/cm2", "tablero": "", "optim": "", "notas": "(T+); Cronograma 12/09-13/09 (Sebastian Flores, mail 12/9 14:5x): 12/9 20:00:Abierto / 12/9 22:00:Abierto / 13/9 00:00:Cerrado", "bateria": "USPA3", "colectora": "", "estado": "Abierto", "ciclo": "6c x 18a", "horario": ""}, {"pozo": "Ce-1176", "fecha": "21/08", "presion": "3,5 kg/cm2", "tablero": "", "optim": "Optimizador MNA F/S", "notas": "Brida Bocheo, Brida ciego (T+)", "bateria": "USPA3", "colectora": "", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1181", "fecha": "21/08", "presion": "3,5 kg/cm2", "tablero": "MNA", "optim": "", "notas": "Brida Bocheo, Brida ciego; Colectora (plano 2017): Col. 1143; Pozo con cono (plano 2017); Nota plano: junto a Ce-1155, BP", "bateria": "USPA3", "colectora": "Col. 1143", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1183", "fecha": "22/08", "presion": "4,5 kg/cm2", "tablero": "MNA", "optim": "", "notas": "(T+); Colectora (plano 2017): Col. 1151", "bateria": "USPA3", "colectora": "Col. 1151", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1190", "fecha": "22/08", "presion": "4 kg/cm2", "tablero": "", "optim": "", "notas": "Iny. P.Quimico (vedio/wezol); Pack Off Sup 500 PSI / Inf s/o (roto), habilitado (T+); Colectora (plano 2017): Col. 1153; Pozo con cono (plano 2017); Nota plano: MP", "bateria": "USPA3", "colectora": "Col. 1153", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1195", "fecha": "22/08", "presion": "4 kg/cm2", "tablero": "MNA", "optim": "", "notas": "(T+); Colectora (plano 2017): Col. 1144; Nota plano: (d) BP; Cronograma 12/09-13/09 (Sebastian Flores, mail 12/9 14:5x): 12/9 20:00:Abierto / 12/9 22:00:Abierto / 13/9 00:00:Abierto / 13/9 02:00:Abierto / 13/9 04:00:Abierto / 13/9 06:00:Abierto / 13/9 08:00:Abierto", "bateria": "USPA3", "colectora": "Col. 1144", "estado": "Abierto", "ciclo": "2c x 46a", "horario": ""}, {"pozo": "Ce-1197", "fecha": "22/08", "presion": "3 kg/cm2", "tablero": "MNA", "optim": "", "notas": "Lubricador fijo; Brida Bocheo, Brida ciego, T. Surgencia (T+); Colectora (plano 2017): Col. 1153; Pozo con cono (plano 2017); Nota plano: BP", "bateria": "USPA3", "colectora": "Col. 1153", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1200", "fecha": "21/08", "presion": "4 kg/cm2", "tablero": "", "optim": "", "notas": "(T+); Colectora (plano 2017): Col. 1156; Cronograma 12/09-13/09 (Sebastian Flores, mail 12/9 14:5x): 12/9 20:00:Cerrado / 12/9 22:00:Cerrado / 13/9 00:00:Cerrado / 13/9 02:00:Abierto / 13/9 04:00:Abierto / 13/9 06:00:Abierto / 13/9 08:00:Abierto", "bateria": "USPA3", "colectora": "Col. 1156", "estado": "Cerrado", "ciclo": "48c x 24a", "horario": ""}, {"pozo": "Ce-1207", "fecha": "21/08", "presion": "0 kg/cm2", "tablero": "ENSI", "optim": "", "notas": "Brida Bocheo, Brida ciego; Colectora (plano 2017): Col. 1178; Pozo con cono (plano 2017); Nota plano: BP", "bateria": "USPA3", "colectora": "Col. 1178", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1208", "fecha": "22/08", "presion": "5 kg/cm2", "tablero": "", "optim": "", "notas": "(T+); Colectora (plano 2017): Col. 1136; Pozo con cono (plano 2017); Nota plano: (D) BP", "bateria": "USPA3", "colectora": "Col. 1136", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1214", "fecha": "22/08", "presion": "5 kg/cm2", "tablero": "ENSI", "optim": "", "notas": "(T+); Colectora (plano 2017): Col. 1136; Pozo con cono (plano 2017); Nota plano: BP", "bateria": "USPA3", "colectora": "Col. 1136", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1218", "fecha": "21/08", "presion": "3,5 kg/cm2", "tablero": "MMA", "optim": "", "notas": "Lubricador fijo; T. Surgencia; Colectora (plano 2017): Col. 1144; Nota plano: (d) BP", "bateria": "USPA3", "colectora": "Col. 1144", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1236", "fecha": "22/08", "presion": "4 kg/cm2", "tablero": "MMA", "optim": "", "notas": "Brida de Bocheo - Brida ciega (T+); Colectora (plano 2017): Col. 1153; Cronograma 12/09-13/09 (Sebastian Flores, mail 12/9 14:5x): 12/9 20:00:Abierto / 12/9 22:00:Abierto / 13/9 00:00:Abierto / 13/9 02:00:Abierto / 13/9 04:00:Abierto / 13/9 06:00:Abierto / 13/9 08:00:Abierto", "bateria": "USPA3", "colectora": "Col. 1153", "estado": "Abierto", "ciclo": "2c x 46a", "horario": ""}, {"pozo": "Ce-1249", "fecha": "22/08", "presion": "3,5 kg/cm2", "tablero": "MNA", "optim": "", "notas": "(T+); Colectora (plano 2017): Col. 26; Nota plano: BP", "bateria": "USPA3", "colectora": "Col. 26", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1252", "fecha": "21/08", "presion": "4,5 kg/cm2", "tablero": "ENSI", "optim": "Optimizador P. Cosing (Auto 6)", "notas": "Brida Bocheo (T+); Colectora (plano 2017): Col. 1144; Estado en plano 2017: nuevo; Nota plano: (d) BP", "bateria": "USPA3", "colectora": "Col. 1144", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1253", "fecha": "21/08", "presion": "3,5 kg/cm2", "tablero": "", "optim": "", "notas": "Lubricador fijo; Brida Bocheo, Brida ciego, T. Surgencia; Colectora (plano 2017): Col. 1253; Pozo con cono (plano 2017); Nota plano: BP", "bateria": "USPA3", "colectora": "Col. 1253", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1279", "fecha": "21/08", "presion": "3 kg/cm2", "tablero": "", "optim": "", "notas": "Colectora (plano 2017): Col. 1253; Pozo con cono (plano 2017); Nota plano: BP", "bateria": "USPA3", "colectora": "Col. 1253", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1280", "fecha": "22/08", "presion": "30 kg/cm2", "tablero": "", "optim": "", "notas": "Colectora (plano 2017): Col. 26; Nota plano: -d BP; Cronograma 12/09-13/09 (Sebastian Flores, mail 12/9 14:5x): 12/9 20:00:Cerrado / 12/9 22:00:Cerrado / 13/9 00:00:Cerrado / 13/9 02:00:Cerrado", "bateria": "USPA3", "colectora": "Col. 26", "estado": "Cerrado", "ciclo": "20c x 4a", "horario": ""}, {"pozo": "Ce-1297", "fecha": "22/08", "presion": "5 kg/cm2", "tablero": "ENSI", "optim": "", "notas": "Brida Bocheo, T. Surgencia (T+)", "bateria": "USPA3", "colectora": "", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1300", "fecha": "22/08", "presion": "5 kg/cm2", "tablero": "", "optim": "", "notas": "Iny. P.Quimico wezol; Pack Off Sup 0 / Inf 1000 PSI, habilitado (T+); Colectora (plano 2017): Col. 1136; Pozo con cono (plano 2017); Nota plano: -d BP", "bateria": "USPA3", "colectora": "Col. 1136", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1301", "fecha": "21/08", "presion": "BP 3,5 kg/cm2", "tablero": "", "optim": "Optimizado P. Cosing (Manual 6)", "notas": "Lubricador fijo, Tope surgencia (T+); Colectora (plano 2017): Col. 1253; Pozo con cono (plano 2017); Nota plano: -d BP", "bateria": "USPA3", "colectora": "Col. 1253", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1303", "fecha": "22/08", "presion": "3,5 kg/cm2", "tablero": "ENSI", "optim": "", "notas": "(T+); Colectora (plano 2017): Col. 1178; Pozo con cono (plano 2017); Nota plano: MP", "bateria": "USPA3", "colectora": "Col. 1178", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1335", "fecha": "22/08", "presion": "4 kg/cm2", "tablero": "ENSI", "optim": "", "notas": "Colectora (plano 2017): Col. 1253; Pozo con cono (plano 2017); Nota plano: (d) BP; Cronograma 12/09-13/09 (Sebastian Flores, mail 12/9 14:5x): 12/9 20:00:Abierto / 12/9 22:00:Abierto / 13/9 00:00:Abierto / 13/9 02:00:Abierto / 13/9 04:00:Abierto / 13/9 06:00:Abierto / 13/9 08:00:Abierto", "bateria": "USPA3", "colectora": "Col. 1253", "estado": "Abierto", "ciclo": "6c x 90a", "horario": ""}, {"pozo": "Ce-1337", "fecha": "21/08", "presion": "3 kg/cm2", "tablero": "", "optim": "", "notas": "Tope surgencia; Colectora (plano 2017): Col. 1253; Nota plano: BP; Cronograma 12/09-13/09 (Sebastian Flores, mail 12/9 14:5x): 12/9 20:00:Cerrado / 12/9 22:00:Cerrado / 13/9 00:00:Cerrado / 13/9 02:00:Abierto / 13/9 04:00:Abierto / 13/9 06:00:Abierto / 13/9 08:00:Cerrado", "bateria": "USPA3", "colectora": "Col. 1253", "estado": "Cerrado", "ciclo": "24c x 24a", "horario": ""}, {"pozo": "Ce-1356", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Aparece en la lista SCADA de USPA3 (CEN_USPA3_Ce_1356.FI) pero todavia no tenemos sus datos de la libreta (presion, tablero, optimizador).; Colectora (plano 2017): Col. 1153; Estado en plano 2017: nuevo; Pozo con cono (plano 2017); Nota plano: MP", "bateria": "USPA3", "colectora": "Col. 1153", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1369", "fecha": "21/08", "presion": "3,5 kg/cm2", "tablero": "MMA", "optim": "", "notas": "(T+); Colectora (plano 2017): Sin colectora especifica; Pozo con cono (plano 2017)", "bateria": "USPA3", "colectora": "Sin colectora especifica", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1370", "fecha": "22/08", "presion": "6 kg/cm2", "tablero": "MMA", "optim": "Optimizador Pompa (tachado / de baja)", "notas": "Plunger (Manual 6); Colectora (plano 2017): Col. 1079; Pozo con cono (plano 2017)", "bateria": "USPA3", "colectora": "Col. 1079", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1371", "fecha": "21/08", "presion": "4 kg/cm2", "tablero": "", "optim": "", "notas": "Colectora (plano 2017): Col. 1079; Pozo con cono (plano 2017)", "bateria": "USPA3", "colectora": "Col. 1079", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1372", "fecha": "21/08", "presion": "4 kg/cm2", "tablero": "", "optim": "", "notas": "(T+); Colectora (plano 2017): Col. 1079; Pozo con cono (plano 2017)", "bateria": "USPA3", "colectora": "Col. 1079", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1374", "fecha": "22/08", "presion": "3,5 kg/cm2", "tablero": "", "optim": "", "notas": "Segun libreta, conectado a la colectora de BAT4 (agrupacion fisica distinta de USPA4; no se asigna USPA por esto).; Colectora (plano 2017): Sin colectora especifica; Pozo con cono (plano 2017); Cronograma 12/09-13/09 (Sebastian Flores, mail 12/9 14:5x): 12/9 20:00:Abierto / 12/9 22:00:Abierto / 13/9 00:00:Cerrado / 13/9 02:00:Cerrado / 13/9 04:00:Cerrado / 13/9 06:00:Cerrado / 13/9 08:00:Cerrado", "bateria": "USPA3", "colectora": "Sin colectora especifica", "estado": "Abierto", "ciclo": "24c x 48a", "horario": ""}, {"pozo": "Ce-1376", "fecha": "21/08", "presion": "3,5 kg/cm2", "tablero": "", "optim": "", "notas": "Brida Bocheo, Brida ciego; Colectora (plano 2017): Col. 1079; Pozo con cono (plano 2017)", "bateria": "USPA3", "colectora": "Col. 1079", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1451", "fecha": "22/08", "presion": "4 kg/cm2", "tablero": "", "optim": "", "notas": "(T+); Segun libreta, conectado a la colectora de BAT4 (agrupacion fisica distinta de USPA4; no se asigna USPA por esto).; Colectora (plano 2017): Col. 1079; Pozo con cono (plano 2017); Cronograma 12/09-13/09 (Sebastian Flores, mail 12/9 14:5x): 12/9 20:00:Abierto / 12/9 22:00:Abierto / 13/9 00:00:Abierto / 13/9 02:00:Abierto / 13/9 04:00:Cerrado / 13/9 06:00:Cerrado / 13/9 08:00:Cerrado", "bateria": "USPA3", "colectora": "Col. 1079", "estado": "Abierto", "ciclo": "24c x 48a", "horario": ""}, {"pozo": "Ce-1458", "fecha": "29/06", "presion": "3 kg/cm2", "tablero": "", "optim": "", "notas": "Cat. A; (T+); Cronograma 12/09-13/09 (Sebastian Flores, mail 12/9 14:5x): 12/9 20:00:Abierto / 12/9 22:00:Abierto / 13/9 00:00:Cerrado / 13/9 02:00:Abierto / 13/9 04:00:Abierto / 13/9 06:00:Abierto / 13/9 08:00:Abierto", "bateria": "USPA3", "colectora": "", "estado": "Abierto", "ciclo": "2c x 22a", "horario": ""}, {"pozo": "Ce-1487", "fecha": "22/08", "presion": "3 kg/cm2", "tablero": "ENSI", "optim": "", "notas": "Brida Bocheo, Brida ciego (T+); Colectora (plano 2017): Col. 1153; Estado en plano 2017: nuevo; Pozo con cono (plano 2017); Nota plano: MP", "bateria": "USPA3", "colectora": "Col. 1153", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1494", "fecha": "22/08", "presion": "1,2 kg/cm2", "tablero": "ENSI", "optim": "Optimizador MNA", "notas": "MCBP (Hoerbiger) (T+); Colectora (plano 2017): Col. 1153; Estado en plano 2017: nuevo; Pozo con cono (plano 2017); Nota plano: BP", "bateria": "USPA3", "colectora": "Col. 1153", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1501", "fecha": "22/08", "presion": "20 kg/cm2", "tablero": "MNA", "optim": "Optimizado P. Cosing (Auto 6)", "notas": "Brida Bocheo, Brida ciego (T+); Colectora (plano 2017): Col. 1079; Pozo con cono (plano 2017)", "bateria": "USPA3", "colectora": "Col. 1079", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1513", "fecha": "22/08", "presion": "4,5 kg/cm2", "tablero": "", "optim": "", "notas": "Plunger pompa (Auto 2); Colectora (plano 2017): Col. 1079; Estado en plano 2017: nuevo; Nota plano: I", "bateria": "USPA3", "colectora": "Col. 1079", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1515", "fecha": "22/08", "presion": "4 kg/cm2", "tablero": "MMA", "optim": "", "notas": "Lubricador f/u; Tope surgencia (T+)", "bateria": "USPA3", "colectora": "", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1516", "fecha": "22/08", "presion": "12 kg/cm2", "tablero": "ENSI", "optim": "", "notas": "Plunger c/Piston (Auto 2); Colectora (plano 2017): Col. 1153; Estado en plano 2017: nuevo; Pozo con cono (plano 2017); Nota plano: MP", "bateria": "USPA3", "colectora": "Col. 1153", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1517", "fecha": "22/08", "presion": "8 kg/cm2", "tablero": "MNA", "optim": "", "notas": "Plunger y Piston (Auto 2)", "bateria": "USPA3", "colectora": "", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1202", "fecha": "29/06", "presion": "88 kg/cm2", "tablero": "", "optim": "", "notas": "Cat. C; desvinculado; Capilar WTF; Pack Off Sup 2400 PSI / Inf 2000 PSI; Tope de surgencia", "bateria": "USPA4", "colectora": "", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1338", "fecha": "29/06", "presion": "18 kg/cm2", "tablero": "", "optim": "", "notas": "Cat. C; Auto 2; Plunger sin Piston (B+); Brida Bocheo, Brida ciego, T. surgencia; Colectora (plano 2017): Col. GPI USPA II; Nota plano: caudalimetro", "bateria": "USPA4", "colectora": "Col. GPI USPA II", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1465", "fecha": "-", "presion": "8 kg/cm2", "tablero": "", "optim": "", "notas": "Cat. C; Plunger s/Piston (Auto 2) (B+); Colectora (plano 2017): Col. USPA IV; Pozo con cono (plano 2017)", "bateria": "USPA4", "colectora": "Col. USPA IV", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1466", "fecha": "-", "presion": "22 kg/cm2", "tablero": "", "optim": "Optimizador MNA", "notas": "Cat. C; (T+); Colectora (plano 2017): Col. USPA IV", "bateria": "USPA4", "colectora": "Col. USPA IV", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1468", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Agregado manualmente por Maxi, asignado a bateria; sin mas datos todavia.", "bateria": "USPA4", "colectora": "", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1471", "fecha": "-", "presion": "3 kg/cm2", "tablero": "", "optim": "", "notas": "Cat. A; Brida Bocheo, Brida ciego; Colectora (plano 2017): Col. USPA IV; Pozo con cono (plano 2017)", "bateria": "USPA4", "colectora": "Col. USPA IV", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1504", "fecha": "30/06", "presion": "3 kg/cm2", "tablero": "ENSI", "optim": "", "notas": "Cat. A; Brida c/reduccion a 2\"; Colectora (plano 2017): Col. 1163; Cronograma 12/09-13/09 (Sebastian Flores, mail 12/9 14:5x): 12/9 20:00:Abierto / 12/9 22:00:Cerrado / 13/9 00:00:Abierto / 13/9 02:00:Abierto / 13/9 04:00:Abierto / 13/9 06:00:Abierto / 13/9 08:00:Abierto", "bateria": "USPA4", "colectora": "Col. 1163", "estado": "Abierto", "ciclo": "2c x 46a", "horario": ""}, {"pozo": "Ce-1505", "fecha": "-", "presion": "70 kg/cm2", "tablero": "", "optim": "", "notas": "Cat. C; (T+); leve fuga entre valvulas Muestra y Sobremuestra; se coloco Abrac y manometro 150 a BP; Cronograma 12/09-13/09 (Sebastian Flores, mail 12/9 14:5x): 12/9 20:00:Abierto", "bateria": "USPA4", "colectora": "", "estado": "Abierto", "ciclo": "24c x 24a", "horario": ""}, {"pozo": "Ce-1506", "fecha": "30/06", "presion": "2,5 kg/cm2", "tablero": "", "optim": "", "notas": "Cat. A; Capilar W+F (sin Iny.); Pack Off Sup 1000 PSI / Inf 1000 PSI; Tope surgencia, Brida ciego; Colectora (plano 2017): Col. 1163", "bateria": "USPA4", "colectora": "Col. 1163", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1507", "fecha": "30/06", "presion": "3 kg/cm2", "tablero": "", "optim": "Optimizador Pompa", "notas": "Cat. A; (T+); bodega purgo lleno (B+)", "bateria": "USPA4", "colectora": "", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1508", "fecha": "-", "presion": "5 kg/cm2", "tablero": "ENSI", "optim": "Optimizador MNA", "notas": "Cat. A; (T+) (B+); Brida Bocheo, Brida ciego; tablero quedo prendido y en automatico; Colectora (plano 2017): Col. USPA IV; Estado en plano 2017: nuevo", "bateria": "USPA4", "colectora": "Col. USPA IV", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1556", "fecha": "-", "presion": "4 kg/cm2", "tablero": "MNA", "optim": "Optimizador MNA", "notas": "Cat. A; (T+); Colectora (plano 2017): Col. 1163", "bateria": "USPA4", "colectora": "Col. 1163", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1565", "fecha": "29/06", "presion": "48 kg/cm2", "tablero": "ENSI", "optim": "Optimizador Pompa", "notas": "Cat. C; (T+) (B+); Lubricador fijo", "bateria": "USPA4", "colectora": "", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1567", "fecha": "-", "presion": "2,5 kg/cm2", "tablero": "ENSI", "optim": "", "notas": "Cat. A; (T+); Colectora (plano 2017): Col. USPA IV; Cronograma 12/09-13/09 (Sebastian Flores, mail 12/9 14:5x): 12/9 20:00:Abierto / 12/9 22:00:Abierto / 13/9 00:00:Abierto / 13/9 02:00:Abierto / 13/9 04:00:Abierto / 13/9 06:00:Abierto / 13/9 08:00:Abierto", "bateria": "USPA4", "colectora": "Col. USPA IV", "estado": "Abierto", "ciclo": "24c x 48a", "horario": ""}, {"pozo": "Ce-1568", "fecha": "-", "presion": "2,5 kg/cm2", "tablero": "ENSI", "optim": "", "notas": "Cat. A; Colectora (plano 2017): Col. USPA IV; Cronograma 12/09-13/09 (Sebastian Flores, mail 12/9 14:5x): 12/9 20:00:Cerrado / 12/9 22:00:Cerrado / 13/9 00:00:Abierto / 13/9 02:00:Abierto / 13/9 04:00:Abierto / 13/9 06:00:Abierto / 13/9 08:00:Cerrado", "bateria": "USPA4", "colectora": "Col. USPA IV", "estado": "Cerrado", "ciclo": "8c x 88a", "horario": ""}, {"pozo": "Ce-1569", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Aparece en la lista SCADA de USPA4 (tag CEN_USPA4_Ce_1569.FI) pero todavia no tenemos sus datos de la libreta.", "bateria": "USPA4", "colectora": "", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1608", "fecha": "29/06", "presion": "40 kg/cm2", "tablero": "ENSI", "optim": "Optimizador Pompa", "notas": "Cat. C; (T+) (B+); Lubricador fijo", "bateria": "USPA4", "colectora": "", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1127", "fecha": "09/07", "presion": "3 kg/cm2", "tablero": "MNA", "optim": "", "notas": "Cat. A; (T+); mantenimiento (desmalezado); Cronograma 12/09-13/09 (Sebastian Flores, mail 12/9 14:5x): 12/9 20:00:Abierto / 12/9 22:00:Abierto / 13/9 00:00:Cerrado / 13/9 02:00:Abierto / 13/9 04:00:Abierto / 13/9 06:00:Abierto / 13/9 08:00:Abierto", "bateria": "USPA5", "colectora": "", "estado": "Abierto", "ciclo": "2c x 46a", "horario": ""}, {"pozo": "Ce-1135", "fecha": "09/07", "presion": "4 kg/cm2", "tablero": "", "optim": "", "notas": "Cat. A", "bateria": "USPA5", "colectora": "", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1489", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Aparece en la lista SCADA de USPA5 (tag CEN_USPA5_Ce_1489.FI) pero todavia no tenemos sus datos de la libreta.; Colectora (plano 2017): Col. 1296; Pozo con cono (plano 2017); Nota plano: BP", "bateria": "USPA5", "colectora": "Col. 1296", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1493", "fecha": "09/07", "presion": "3,5 kg/cm2", "tablero": "", "optim": "Optimizador Pompa", "notas": "Cat. A; (B+); Brida Bocheo, Brida ciego; Caudal medido en conjunto con Ce-1539 (mismo FI, tag CEN_USPA5_CE_1493_1539.FI).", "bateria": "USPA5", "colectora": "", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1532", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Aparece en la lista SCADA de USPA5 (tag CEN_USPA5_Ce_1532.FI) pero todavia no tenemos sus datos de la libreta.; Colectora (plano 2017): Col. USPA V; Pozo con cono (plano 2017); Nota plano: MP; Cronograma 12/09-13/09 (Sebastian Flores, mail 12/9 14:5x): 12/9 20:00:Abierto / 12/9 22:00:Abierto / 13/9 00:00:Abierto / 13/9 02:00:Cerrado / 13/9 04:00:Cerrado / 13/9 06:00:Cerrado / 13/9 08:00:Cerrado", "bateria": "USPA5", "colectora": "Col. USPA V", "estado": "Abierto", "ciclo": "48c x 24a", "horario": ""}, {"pozo": "Ce-1533", "fecha": "09/07", "presion": "3,5 kg/cm2", "tablero": "", "optim": "Optimizador Pompa", "notas": "Cat. A; (T+); Capilar WTF; Pack Off Sup 1000 PSI F/S / Inf 3500 PSI (B+); Colectora (plano 2017): Col. USPA V; Pozo con cono (plano 2017); Nota plano: MP", "bateria": "USPA5", "colectora": "Col. USPA V", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1534", "fecha": "09/07", "presion": "4 kg/cm2", "tablero": "", "optim": "", "notas": "Cat. A; (T+); Iny. P.Quimico habilitada; Capilar WTF; Pack Off S/SDV Sup 3500 PSI / Inf 3300 PSI; Colectora (plano 2017): Col. USPA V; Pozo con cono (plano 2017); Nota plano: MP", "bateria": "USPA5", "colectora": "Col. USPA V", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1535", "fecha": "09/07", "presion": "5 kg/cm2", "tablero": "ENSI", "optim": "Optimizador MNA", "notas": "Cat. A; OK (B+); Plunger; (T+); Tope surgencia; Colectora (plano 2017): Col. USPA V; Pozo con cono (plano 2017); Nota plano: MP", "bateria": "USPA5", "colectora": "Col. USPA V", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1539", "fecha": "09/07", "presion": "37 kg/cm2", "tablero": "MNA", "optim": "Optimizador Pompa", "notas": "Cat. C; (T+); OK (B+); Caudal medido en conjunto con Ce-1493 (mismo FI, tag CEN_USPA5_CE_1493_1539.FI).; Colectora (plano 2017): Col. USPA V; Pozo con cono (plano 2017); Nota plano: MP", "bateria": "USPA5", "colectora": "Col. USPA V", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1540", "fecha": "09/07", "presion": "17 kg/cm2", "tablero": "", "optim": "Optimizador MNA", "notas": "Cat. C; (T+) (B+); Colectora (plano 2017): Col. USPA V; Pozo con cono (plano 2017); Nota plano: MP", "bateria": "USPA5", "colectora": "Col. USPA V", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1541", "fecha": "09/07", "presion": "17 kg/cm2", "tablero": "ENSI", "optim": "", "notas": "Cat. C; Colectora (plano 2017): Col. USPA V; Pozo con cono (plano 2017); Nota plano: MP", "bateria": "USPA5", "colectora": "Col. USPA V", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1574", "fecha": "09/07", "presion": "22 kg/cm2", "tablero": "ENSI", "optim": "Optimizador Pompa", "notas": "Cat. C; (T+); OK; bateria 80%", "bateria": "USPA5", "colectora": "", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-26", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Colectora (plano 2017): Col. 26; Nota plano: a-26 BP", "bateria": "Sin bateria", "colectora": "Col. 26", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-30", "fecha": "09/07", "presion": "35 kg/cm2", "tablero": "", "optim": "", "notas": "Cat. C; desvinculado; (T+)", "bateria": "Sin bateria", "colectora": "", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-104", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Colectora (plano 2017): Col. 1178; Estado en plano 2017: cerrado; Nota plano: Linea cortada", "bateria": "Sin bateria", "colectora": "Col. 1178", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-117", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Colectora (plano 2017): Sin colectora especifica; Pozo con cono (plano 2017)", "bateria": "Sin bateria", "colectora": "Sin colectora especifica", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1123", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Colectora (plano 2017): Col. 1146; Pozo con cono (plano 2017)", "bateria": "Sin bateria", "colectora": "Col. 1146", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1159", "fecha": "22/08", "presion": "0,5 kg/cm2", "tablero": "", "optim": "", "notas": "Brida Bocheo", "bateria": "Sin bateria", "colectora": "", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1171", "fecha": "09/07", "presion": "6 kg/cm2", "tablero": "", "optim": "", "notas": "Cat. A", "bateria": "Sin bateria", "colectora": "", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1178", "fecha": "21/08", "presion": "3,5 kg/cm2", "tablero": "", "optim": "", "notas": "Segun libreta, conectado a la colectora de BAT4 (agrupacion fisica distinta de USPA4; no se asigna USPA por esto).; Colectora (plano 2017): Col. 1178; Nota plano: BP", "bateria": "Sin bateria", "colectora": "Col. 1178", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1191", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Colectora (plano 2017): Col. 1144; Nota plano: (d) BP", "bateria": "Sin bateria", "colectora": "Col. 1144", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1198", "fecha": "22/08", "presion": "7 kg/cm2", "tablero": "MNA", "optim": "", "notas": "Brida Bocheo (T+); Colectora (plano 2017): Col. 1151; Nota plano: BP", "bateria": "Sin bateria", "colectora": "Col. 1151", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1199", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Colectora (plano 2017): Col. 1151; Nota plano: BP", "bateria": "Sin bateria", "colectora": "Col. 1151", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1217", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Colectora (plano 2017): Col. 1151; Estado en plano 2017: cerrado", "bateria": "Sin bateria", "colectora": "Col. 1151", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1220", "fecha": "21/08", "presion": "3,5 kg/cm2", "tablero": "", "optim": "", "notas": "(T+); Colectora (plano 2017): Col. 1156; Estado en plano 2017: cerrado; Nota plano: linea cortada, junto a Ce-1120", "bateria": "Sin bateria", "colectora": "Col. 1156", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1266", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Colectora (plano 2017): Col. 29 - BP; Estado en plano 2017: cerrado", "bateria": "Sin bateria", "colectora": "Col. 29 - BP", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1302", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Colectora (plano 2017): Col. 26; Nota plano: BP", "bateria": "Sin bateria", "colectora": "Col. 26", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1350", "fecha": "22/08", "presion": "4 kg/cm2", "tablero": "", "optim": "", "notas": "Iny. P.Quimico (vedio-wezol); Pack Off Sup 1800 PSI / Inf 1200 PSI, habilitado (T+)", "bateria": "Sin bateria", "colectora": "", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1490", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Colectora (plano 2017): Col. 29 - BP; Nota plano: junto con Ce-1193", "bateria": "Sin bateria", "colectora": "Col. 29 - BP", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1572", "fecha": "09/07", "presion": "-", "tablero": "", "optim": "", "notas": "Cat. C; (T+); Brida Bocheo", "bateria": "Sin bateria", "colectora": "", "estado": "", "ciclo": "", "horario": ""}];</script><script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script>
+const BAT_COLORS = {
+  "USPA2": "#3d6ea8",
+  "USPA3": "#3f8f7a",
+  "USPA4": "#5f9e4a",
+  "USPA5": "#9a5fc0",
+  "Sin bateria": "#7a828d"
+};
+const USPA_ORDER = ["USPA2","USPA3","USPA4","USPA5","Sin bateria"];
+const USPA_TITLES = {
+  "USPA2": "USPA II", "USPA3": "USPA III", "USPA4": "USPA IV",
+  "USPA5": "USPA V", "Sin bateria": "Sin bateria confirmada"
+};
+
+// ---------------- Almacenamiento seguro (localStorage puede estar bloqueado en file://) ----------------
+let memoryStore = {};
+let storageBlocked = false;
+function safeGet(key, fallback){
+  try{
+    const v = localStorage.getItem(key);
+    return v !== null ? v : fallback;
+  }catch(e){
+    storageBlocked = true;
+    return (key in memoryStore) ? memoryStore[key] : fallback;
+  }
+}
+function safeSet(key, value){
+  try{
+    localStorage.setItem(key, value);
+  }catch(e){
+    storageBlocked = true;
+    memoryStore[key] = value;
+  }
+}
+
+// ---------------- Unidad de presion (kg/cm2 <-> psi) ----------------
+const KG_TO_PSI = 14.223343307;
+// ---------------- Operador (para saber quien hizo cada cambio) ----------------
+let operadorName = safeGet('pozos_operador', '');
+
+function mostrarEdicionOperador(){
+  document.getElementById('operadorTag').style.display = 'none';
+  const wrap = document.getElementById('operadorEditWrap');
+  wrap.style.display = '';
+  const input = document.getElementById('operadorInput');
+  input.value = operadorName || '';
+  input.focus();
+}
+function guardarOperador(){
+  const input = document.getElementById('operadorInput');
+  const v = (input.value || '').trim();
+  if(v){
+    operadorName = v;
+    safeSet('pozos_operador', operadorName);
+  }
+  document.getElementById('operadorEditWrap').style.display = 'none';
+  renderOperadorTag();
+}
+function renderOperadorTag(){
+  const tag = document.getElementById('operadorTag');
+  if(!tag) return;
+  tag.style.display = '';
+  tag.textContent = operadorName ? `Operador: ${operadorName} (cambiar)` : 'Tocá para poner tu nombre';
+}
+document.getElementById('operadorTag').addEventListener('click', mostrarEdicionOperador);
+document.getElementById('operadorSaveBtn').addEventListener('click', guardarOperador);
+document.getElementById('operadorInput').addEventListener('keydown', (e) => {
+  if(e.key === 'Enter') guardarOperador();
+});
+if(!operadorName){
+  mostrarEdicionOperador();
+} else {
+  renderOperadorTag();
+}
+
+// ---------------- Indicador de conexion ----------------
+function updateConnBadge(){
+  const badge = document.getElementById('connBadge');
+  if(!badge) return;
+  if(navigator.onLine){
+    badge.textContent = '● Conectado';
+    badge.className = 'conn-badge online';
+  } else {
+    badge.textContent = '● Sin conexion — se guarda en el celular y sincroniza solo al volver la señal';
+    badge.className = 'conn-badge offline';
+  }
+}
+window.addEventListener('online', updateConnBadge);
+window.addEventListener('offline', updateConnBadge);
+updateConnBadge();
+
+let pressureUnit = safeGet('pozos_unit', 'kg');
+
+function convertPresionText(raw, unit){
+  if(!raw) return raw;
+  if(raw === 's/d' || raw === '-') return raw;
+  const m = raw.match(/^(.*?)(-?\d+(?:[.,]\d+)?)\s*(kg\/?cm2|kg\/cm\u00b2|kg|psi)?\s*$/i);
+  if(!m) return raw;
+  const prefix = m[1] || '';
+  const numStr = m[2].replace(',', '.');
+  const num = parseFloat(numStr);
+  if(isNaN(num)) return raw;
+  const sourceUnit = (m[3] || 'kg').toLowerCase().startsWith('psi') ? 'psi' : 'kg';
+
+  let outNum, outUnitLabel;
+  if(unit === 'psi'){
+    outNum = sourceUnit === 'psi' ? num : num * KG_TO_PSI;
+    outUnitLabel = 'psi';
+  } else {
+    outNum = sourceUnit === 'psi' ? num / KG_TO_PSI : num;
+    outUnitLabel = 'kg/cm2';
+  }
+  const outStr = (Math.round(outNum * 10) / 10).toString().replace('.', ',');
+  return `${prefix}${outStr} ${outUnitLabel}`;
+}
+
+function setPressureUnit(u){
+  pressureUnit = u;
+  safeSet('pozos_unit', u);
+  document.getElementById('unitKg').classList.toggle('active', u === 'kg');
+  document.getElementById('unitPsi').classList.toggle('active', u === 'psi');
+  // si hay una ficha abierta en modo lectura, la re-renderizamos
+  if(document.getElementById('overlay').classList.contains('show') && document.getElementById('editBtn')){
+    renderCardView(window._currentCardRec, window._currentCardBat);
+  }
+  // si la pestana AIB esta a la vista, la re-renderizamos para que BP/PL tambien cambien de unidad
+  if(document.getElementById('aibMain').style.display !== 'none'){
+    renderAib();
+  }
+}
+document.getElementById('unitKg').addEventListener('click', () => setPressureUnit('kg'));
+document.getElementById('unitPsi').addEventListener('click', () => setPressureUnit('psi'));
+if(pressureUnit === 'psi'){
+  document.getElementById('unitKg').classList.remove('active');
+  document.getElementById('unitPsi').classList.add('active');
+}
+
+function groupByBateria(list){
+  const groups = {};
+  list.forEach(r => {
+    if(!groups[r.bateria]) groups[r.bateria] = [];
+    groups[r.bateria].push(r);
+  });
+  return groups;
+}
+
+function normalizarBateria(input){
+  const t = (input || '').trim();
+  if(!t) return 'Sin bateria';
+  if(/sin/i.test(t)) return 'Sin bateria';
+  const m = t.match(/([2-5])/);
+  if(m) return 'USPA' + m[1];
+  return t; // si escriben algo que no reconocemos, lo dejamos tal cual (mejor que perder el dato)
+}
+
+function render(filterText){
+  const main = document.getElementById('main');
+  main.innerHTML = `<div class="add-ciclaje-row">
+      <input type="text" id="addPozoNum" placeholder="Agregar pozo (ej: 1580)" class="edit-input" style="max-width:170px;">
+      <input type="text" id="addPozoBat" placeholder="Bateria (ej: USPA2)" class="edit-input" style="max-width:160px;">
+      <button id="addPozoBtn" class="add-ciclaje-btn">Agregar</button>
+    </div>`;
+
+  document.getElementById('addPozoBtn').addEventListener('click', () => {
+    const inpNum = document.getElementById('addPozoNum');
+    const inpBat = document.getElementById('addPozoBat');
+    let pozoNum = inpNum.value.trim().replace(/^ce-?/i, '').replace(/\//g, '-');
+    if(!pozoNum) return;
+    const pozoKey = 'Ce-' + pozoNum;
+    if(POZOS.find(p => p.pozo === pozoKey)){
+      alert('Ese pozo ya existe en la lista.');
+      return;
+    }
+    const bateria = normalizarBateria(inpBat.value);
+    if(!puedeModificar()) return;
+    saveEdit(pozoKey, {
+      bateria, presion: 's/d', colectora: '', ciclo: '', horario: '',
+      tablero: '', optim: '', notas: '', fecha: ''
+    });
+    inpNum.value = '';
+    inpBat.value = '';
+  });
+  document.getElementById('addPozoNum').addEventListener('keydown', (e) => {
+    if(e.key === 'Enter') document.getElementById('addPozoBtn').click();
+  });
+
+  const f = (filterText || '').trim().toLowerCase();
+  const filtered = f ? POZOS.filter(p => p.pozo.toLowerCase().includes(f)) : POZOS;
+
+  if(filtered.length === 0){
+    main.innerHTML += '<div class="empty-msg">No hay pozos que coincidan con esa busqueda.</div>';
+    return;
+  }
+
+  const groups = groupByBateria(filtered);
+  const order = ["USPA2","USPA3","USPA4","USPA5","Sin bateria"];
+
+  order.forEach(bat => {
+    if(!groups[bat]) return;
+    const items = groups[bat];
+    const section = document.createElement('div');
+    section.className = 'bat-group';
+    section.style.setProperty('--bat-color', BAT_COLORS[bat] || '#4c8fb0');
+
+    const label = document.createElement('div');
+    label.className = 'bat-label';
+    label.innerHTML = `${bat} <span class="count">(${items.length})</span>`;
+    section.appendChild(label);
+
+    const grid = document.createElement('div');
+    grid.className = 'grid';
+
+    items.forEach(rec => {
+      const chip = document.createElement('button');
+      const isMissing = rec.presion === 's/d';
+      const isOpt = !!(rec.optim && rec.optim.trim());
+      const estadoClass = rec.estado === 'Abierto' ? 'abierto' : (rec.estado === 'Cerrado' ? 'cerrado' : '');
+      const movHoy = (rec.historial || []).filter(h => h.fecha === todayStr()).length;
+      chip.className = 'pozo-chip' + (isOpt ? ' opt' : '') + (isMissing ? ' missing' : '') + (estadoClass ? ' '+estadoClass : '');
+      chip.style.setProperty('--bat-color', BAT_COLORS[bat] || '#4c8fb0');
+      chip.innerHTML = rec.pozo.replace('Ce-','')
+        + (isOpt ? '<span class="tag">optimizado</span>' : '')
+        + (estadoClass ? `<span class="tag estado-tag ${estadoClass}">${rec.estado}${movHoy > 0 ? ' · '+movHoy+(movHoy===1?' mov.':' movs.') : ''}</span>` : '')
+        + (rec._edited ? '<span class="tag edit-tag">editado</span>' : '');
+      chip.addEventListener('click', () => openCard(rec, bat));
+      grid.appendChild(chip);
+    });
+
+    section.appendChild(grid);
+    main.appendChild(section);
+  });
+}
+
+function crearNotasUspaBox(bat){
+  const notasBox = document.createElement('div');
+  notasBox.className = 'uspa-notas-box';
+  const abierto = uspaNotasAbiertas.has(bat);
+  const ultima = notaUspaDe(bat);
+  const preview = ultima ? `Ultima: ${ultima.hora ? ultima.hora + ' - ' : ''}${ultima.equipo ? ultima.equipo + ' - ' : ''}${ultima.texto}` : '';
+  notasBox.innerHTML = `
+    <button type="button" class="uspa-notas-toggle">${abierto ? '&#9662;' : '&#9656;'} Novedades de ${bat}${ultima ? ' &bull;' : ''}</button>
+    <div class="uspa-notas-body" style="display:${abierto ? '' : 'none'};">
+      ${preview ? `<div class="uspa-notas-preview">${preview}</div>` : ''}
+      <div class="aib-fields">
+        <div class="aib-field">
+          <div class="time-label">Hora de la novedad</div>
+          <input type="time" class="edit-input time-input uspa-notas-hora">
+        </div>
+        <div class="aib-field">
+          <div class="time-label">Equipo</div>
+          <input type="text" class="edit-input uspa-notas-equipo" placeholder="ej: SG 8">
+        </div>
+      </div>
+      <textarea class="edit-input edit-textarea uspa-notas-text" placeholder="Novedad para esta bateria..." style="margin-top:8px;"></textarea>
+      <button type="button" class="save-btn uspa-notas-save">Guardar novedad</button>
+    </div>
+  `;
+  const toggleBtn = notasBox.querySelector('.uspa-notas-toggle');
+  const body = notasBox.querySelector('.uspa-notas-body');
+  toggleBtn.addEventListener('click', () => {
+    if(uspaNotasAbiertas.has(bat)){
+      uspaNotasAbiertas.delete(bat);
+      body.style.display = 'none';
+      toggleBtn.innerHTML = `&#9656; Novedades de ${bat}${ultima ? ' &bull;' : ''}`;
+    } else {
+      uspaNotasAbiertas.add(bat);
+      body.style.display = '';
+      toggleBtn.innerHTML = `&#9662; Novedades de ${bat}${ultima ? ' &bull;' : ''}`;
+    }
+  });
+  notasBox.querySelector('.uspa-notas-save').addEventListener('click', () => {
+    const hora = notasBox.querySelector('.uspa-notas-hora').value;
+    const equipo = notasBox.querySelector('.uspa-notas-equipo').value.trim();
+    const textArea = notasBox.querySelector('.uspa-notas-text');
+    const texto = textArea.value;
+    if(!texto.trim()){
+      alert('Escribi la novedad antes de guardar.');
+      return;
+    }
+    if(!puedeModificar()) return;
+    guardarNotaUspa(bat, hora, equipo, texto);
+    // limpiamos para la proxima novedad (esto queda como un registro, no una nota fija que se pisa)
+    notasBox.querySelector('.uspa-notas-hora').value = '';
+    notasBox.querySelector('.uspa-notas-equipo').value = '';
+    textArea.value = '';
+  });
+  return notasBox;
+}
+
+// ---------------- Guardado compartido (Firebase Firestore) ----------------
+const firebaseConfig = {
+  apiKey: "AIzaSyBYgPZ48U1Oei6FtWmaruXgfmvgyKRHBJs",
+  authDomain: "pozos-centenario.firebaseapp.com",
+  projectId: "pozos-centenario",
+  storageBucket: "pozos-centenario.firebasestorage.app",
+  messagingSenderId: "1016276574997",
+  appId: "1:1016276574997:web:a5769cb155c9647888ff1c"
+};
+let db = null;
+let firestoreOk = false;
+try{
+  if(typeof firebase !== 'undefined'){
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.firestore();
+    try{ db.enablePersistence({ synchronizeTabs: true }).catch(() => {}); }catch(e){}
+    firestoreOk = true;
+  }
+}catch(e){ firestoreOk = false; }
+
+let lastOverridesCount = 0;
+let ultimoReporteTs = null; // fecha/hora (compartida entre dispositivos) del ultimo parte de campo enviado
+let ultimoReporteBateriasTs = null; // idem, para el reporte de Baterias (dia operativo 9am-9am)
+let ultimoReporteAguaTs = null; // idem, para el reporte de Agua / Pias 2 (dia operativo 9am-9am)
+let AIB_POZOS = []; // pozos de petroleo (AIB), viven enteramente en Firestore, no hay lista base
+let USPA_NOTAS = []; // ultima novedad general cargada por USPA (con hora), vive en su propia coleccion
+let uspaNotasAbiertas = new Set(); // que recuadros de notas estan desplegados en este momento (local, no se guarda)
+
+// ---------------- Tanques (Bateria 1/2/5) y Pias 2 ----------------
+const TANQUES_BATERIAS = {
+  'Bateria 1': ['TK-101 General','TK-102 Control','TK-103 Cortador','TK-104 Control','TK-105 Cortador'],
+  'Bateria 2': ['SG-211 General','SG-212 General','SG-400 Control','TK-201 Control','TK-202 General','TK-203 Cortador'],
+  'Bateria 5': ['TK-501 Cortador','TK-503 Control','TK-504 Control']
+};
+const PIAS2_TANQUES_NOMBRES = ['TK-101 Pulmon','TK-110 Skimmer','TK-111 Skimmer','TK-120 Stock','TK-121 Stock'];
+const COMPRESORES_PIAS2 = ['K-111','K-112'];
+const BOMBAS_PIAS2 = ['P-101A','P-101B','P-110B','P-110C','P-110D','P-111B','P-111C','P-120','P-121','P-150'];
+
+let TANQUES_DATA = []; // mediciones de tanques de Bateria 1/2/5 (coleccion 'baterias_tanques')
+let PIAS2_TANQUES_DATA = []; // mediciones de tanques de Pias 2 (coleccion 'pias2_tanques')
+let PIAS2_EQUIPOS_DATA = []; // bombas y compresores de Pias 2, con estado/novedad (coleccion 'pias2_equipos')
+let PIAS2_CAMIONES_DATA = []; // descargas de camiones de agua en Pias 2 (coleccion 'pias2_camiones')
+let bateriasAbiertas = new Set(); // que acordeones de bateria estan desplegados (local, no se guarda)
+
+function guardarMedicionTanque(coleccion, nombre, bateria, nivelTotal, nivelInterfaz){
+  if(!puedeModificar()) return;
+  if(!firestoreOk){
+    alert('No hay conexion con el guardado compartido. Revisa tu internet e intenta de nuevo.');
+    return;
+  }
+  db.collection(coleccion).doc(nombre).set({
+    nombre, bateria,
+    nivelTotal: nivelTotal || '',
+    nivelInterfaz: nivelInterfaz || '',
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    operador: operadorName || 'Sin nombre'
+  }, { merge: true }).catch((err) => {
+    alert('No se pudo guardar la medicion (' + err.message + '). Revisa tu conexion.');
+  });
+}
+
+function guardarEquipoPias2(nombre, tipo, estado, nota){
+  if(!puedeModificar()) return;
+  if(!firestoreOk){
+    alert('No hay conexion con el guardado compartido. Revisa tu internet e intenta de nuevo.');
+    return;
+  }
+  db.collection('pias2_equipos').doc(nombre).set({
+    nombre, tipo, estado,
+    nota: nota || '',
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    operador: operadorName || 'Sin nombre'
+  }, { merge: true }).catch((err) => {
+    alert('No se pudo guardar (' + err.message + '). Revisa tu conexion.');
+  });
+}
+
+function guardarCamionAgua(datos){
+  if(!puedeModificar()) return;
+  if(!firestoreOk){
+    alert('No hay conexion con el guardado compartido. Revisa tu internet e intenta de nuevo.');
+    return;
+  }
+  db.collection('pias2_camiones').add(Object.assign({}, datos, {
+    fecha: todayStr(),
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    operador: (datos.operador && datos.operador.trim()) || operadorName || 'Sin nombre'
+  })).catch((err) => {
+    alert('No se pudo guardar la descarga (' + err.message + '). Revisa tu conexion.');
+  });
+}
+
+function guardarNotaUspa(bat, hora, equipo, texto){
+  if(!firestoreOk){
+    alert('No hay conexion con el guardado compartido. Revisa tu internet e intenta de nuevo.');
+    return;
+  }
+  if(!texto || !texto.trim()){
+    alert('Escribi la novedad antes de guardar.');
+    return;
+  }
+  db.collection('uspa_notas').doc(bat).set({
+    bateria: bat,
+    hora: hora || '',
+    equipo: equipo || '',
+    texto: texto.trim(),
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    updatedFields: ['hora','equipo','texto'],
+    operador: operadorName || 'Sin nombre'
+  }, { merge: true }).catch((err) => {
+    alert('No se pudo guardar la nota (' + err.message + '). Revisa tu conexion.');
+  });
+}
+
+function notaUspaDe(bat){
+  return USPA_NOTAS.find(n => n.bateria === bat) || null;
+}
+
+// ---------------- Novedades generales de Baterias (1/2/5) y Pias 2: mismo esquema que USPA ----------------
+let EQUIPOS_NOTAS = [];
+let equiposNotasAbiertas = new Set();
+
+function guardarNotaEquipo(grupo, hora, equipo, texto){
+  if(!firestoreOk){
+    alert('No hay conexion con el guardado compartido. Revisa tu internet e intenta de nuevo.');
+    return;
+  }
+  if(!texto || !texto.trim()){
+    alert('Escribi la novedad antes de guardar.');
+    return;
+  }
+  db.collection('equipos_notas').doc(grupo).set({
+    grupo,
+    hora: hora || '',
+    equipo: equipo || '',
+    texto: texto.trim(),
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    updatedFields: ['hora','equipo','texto'],
+    operador: operadorName || 'Sin nombre'
+  }, { merge: true }).catch((err) => {
+    alert('No se pudo guardar la nota (' + err.message + '). Revisa tu conexion.');
+  });
+}
+
+function notaEquipoDe(grupo){
+  return EQUIPOS_NOTAS.find(n => n.grupo === grupo) || null;
+}
+
+function crearNotasEquipoBox(grupo){
+  const notasBox = document.createElement('div');
+  notasBox.className = 'uspa-notas-box';
+  const abierto = equiposNotasAbiertas.has(grupo);
+  const ultima = notaEquipoDe(grupo);
+  const preview = ultima ? `Ultima: ${ultima.hora ? ultima.hora + ' - ' : ''}${ultima.equipo ? ultima.equipo + ' - ' : ''}${ultima.texto}` : '';
+  notasBox.innerHTML = `
+    <button type="button" class="uspa-notas-toggle">${abierto ? '&#9662;' : '&#9656;'} Novedades de ${grupo}${ultima ? ' &bull;' : ''}</button>
+    <div class="uspa-notas-body" style="display:${abierto ? '' : 'none'};">
+      ${preview ? `<div class="uspa-notas-preview">${preview}</div>` : ''}
+      <div class="aib-fields">
+        <div class="aib-field">
+          <div class="time-label">Hora de la novedad</div>
+          <input type="time" class="edit-input time-input eq-notas-hora">
+        </div>
+        <div class="aib-field">
+          <div class="time-label">Equipo</div>
+          <input type="text" class="edit-input eq-notas-equipo" placeholder="ej: TK-101">
+        </div>
+      </div>
+      <textarea class="edit-input edit-textarea eq-notas-text" placeholder="Novedad para ${grupo}..." style="margin-top:8px;"></textarea>
+      <button type="button" class="save-btn eq-notas-save">Guardar novedad</button>
+    </div>
+  `;
+  const toggleBtn = notasBox.querySelector('.uspa-notas-toggle');
+  const body = notasBox.querySelector('.uspa-notas-body');
+  toggleBtn.addEventListener('click', () => {
+    if(equiposNotasAbiertas.has(grupo)){
+      equiposNotasAbiertas.delete(grupo);
+      body.style.display = 'none';
+      toggleBtn.innerHTML = `&#9656; Novedades de ${grupo}${ultima ? ' &bull;' : ''}`;
+    } else {
+      equiposNotasAbiertas.add(grupo);
+      body.style.display = '';
+      toggleBtn.innerHTML = `&#9662; Novedades de ${grupo}${ultima ? ' &bull;' : ''}`;
+    }
+  });
+  notasBox.querySelector('.eq-notas-save').addEventListener('click', () => {
+    const hora = notasBox.querySelector('.eq-notas-hora').value;
+    const equipo = notasBox.querySelector('.eq-notas-equipo').value.trim();
+    const textArea = notasBox.querySelector('.eq-notas-text');
+    const texto = textArea.value;
+    if(!texto.trim()){
+      alert('Escribi la novedad antes de guardar.');
+      return;
+    }
+    if(!puedeModificar()) return;
+    guardarNotaEquipo(grupo, hora, equipo, texto);
+    notasBox.querySelector('.eq-notas-hora').value = '';
+    notasBox.querySelector('.eq-notas-equipo').value = '';
+    textArea.value = '';
+  });
+  return notasBox;
+}
+
+function saveAibPozo(pozoKey, newFields){
+  if(!firestoreOk){
+    alert('No hay conexion con el guardado compartido. Revisa tu internet e intenta de nuevo.');
+    return;
+  }
+  const toSave = Object.assign({}, newFields, {
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    operador: newFields.operador || operadorName || 'Sin nombre'
+  });
+  db.collection('aib_pozos').doc(pozoKey).set(toSave, { merge: true }).catch((err) => {
+    alert('No se pudo guardar el cambio (' + err.message + '). Revisa tu conexion.');
+  });
+}
+function deleteAibPozo(pozoKey){
+  if(!firestoreOk) return;
+  db.collection('aib_pozos').doc(pozoKey).delete().catch(() => {});
+}
+
+function downloadFile(blob, fileName){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 3000);
+  alert('Se descargo el archivo "' + fileName + '". Buscalo en tus Descargas y compartilo desde ahi (WhatsApp, mail, etc.).');
+}
+
+function downloadOrShareBlob(blob, fileName, title){
+  const file = new File([blob], fileName, { type: blob.type });
+  if(navigator.canShare && navigator.canShare({ files: [file] })){
+    navigator.share({ title: title, files: [file] }).catch((err) => {
+      // si el usuario cancelo el share, no hacemos nada; si fue otro error, ofrecemos descargar
+      if(err && err.name === 'AbortError') return;
+      downloadFile(blob, fileName);
+    });
+    return;
+  }
+  downloadFile(blob, fileName);
+}
+
+// inicio del "dia operativo" vigente: 6:00 am de hoy, o de ayer si todavia no son las 6:00
+// (se usa solo para habilitar/deshabilitar el boton; ya NO se usa para descartar pendientes)
+function inicioDiaOperativo(fecha){
+  const d = fecha ? new Date(fecha) : new Date();
+  if(d.getHours() < 6){
+    d.setDate(d.getDate() - 1);
+  }
+  d.setHours(6, 0, 0, 0);
+  return d;
+}
+// corte real para "que es nuevo": el ultimo parte REALMENTE enviado. Si nunca se mando ninguno,
+// cuenta todo. Asi, si un dia no se llega a mandar el parte, los movimientos de ese dia NO se pierden:
+// siguen apareciendo como pendientes hasta que efectivamente se manden, sin importar que haya cambiado el dia.
+function corteDePendientes(){
+  return ultimoReporteTs || new Date(0);
+}
+
+// un pozo "cuenta" para el proximo parte si se modifico despues del corte vigente (dia operativo / ultimo envio)
+function pendientesDeReporte(){
+  const corte = corteDePendientes();
+  return POZOS.filter(p => (p.horaApertura || p.horaCierre) && p._updatedAtDate && p._updatedAtDate > corte)
+    .sort((a,b) => a._updatedAtDate - b._updatedAtDate);
+}
+
+function pendientesDeReporteNotas(){
+  const corte = corteDePendientes();
+  return USPA_NOTAS.filter(n => n.texto && n._updatedAtDate && n._updatedAtDate > corte)
+    .sort((a,b) => a._updatedAtDate - b._updatedAtDate);
+}
+
+function updatePendCount(){
+  const badge = document.getElementById('pendCount');
+  if(badge){
+    const n = pendientesDeReporte().length + pendientesDeReporteAib().length + pendientesDeReporteNotas().length;
+    if(n > 0){ badge.style.display = ''; badge.textContent = n; } else { badge.style.display = 'none'; }
+  }
+  const badgeBat = document.getElementById('pendCountBaterias');
+  if(badgeBat){
+    const nb = pendientesBaterias().length + pendientesNotasBaterias().length;
+    if(nb > 0){ badgeBat.style.display = ''; badgeBat.textContent = nb; } else { badgeBat.style.display = 'none'; }
+  }
+  const badgeAgua = document.getElementById('pendCountAgua');
+  if(badgeAgua){
+    const na = pendientesAguaTanques().length + pendientesAguaEquipos().length + pendientesAguaCamiones().length + pendientesNotaAguaPias2().length;
+    if(na > 0){ badgeAgua.style.display = ''; badgeAgua.textContent = na; } else { badgeAgua.style.display = 'none'; }
+  }
+}
+
+function refreshEverything(){
+  render(document.getElementById('searchBox').value);
+  updatePendCount();
+  if(document.getElementById('planoMain').style.display !== 'none'){
+    renderPlano();
+  }
+  if(document.getElementById('ciclajeMain').style.display !== 'none'){
+    renderCiclaje();
+  }
+  if(document.getElementById('movMain').style.display !== 'none'){
+    renderMovimientos();
+  }
+  if(document.getElementById('overlay').classList.contains('show') && window._currentCardRec){
+    // si hay una ficha abierta, la refrescamos tambien por si cambio desde otro dispositivo
+    if(document.getElementById('editBtn')){
+      renderCardView(window._currentCardRec, window._currentCardBat);
+    }
+  }
+}
+
+function startSync(){
+  if(!firestoreOk){
+    const warn = document.createElement('div');
+    warn.className = 'plano-note';
+    warn.style.margin = '10px 14px';
+    warn.textContent = 'No se pudo conectar con el guardado compartido (revisa tu conexion a internet). Los cambios que hagas ahora podrian no verse en otros dispositivos.';
+    document.body.insertBefore(warn, document.getElementById('main'));
+    render('');
+    return;
+  }
+  db.collection('pozos_overrides').onSnapshot((snapshot) => {
+    lastOverridesCount = snapshot.size;
+    snapshot.forEach((doc) => {
+      let rec = POZOS.find(p => p.pozo === doc.id);
+      const data = doc.data();
+      if(!rec){
+        // pozo nuevo, agregado desde la app (no estaba en el listado original): lo creamos con valores por defecto
+        rec = {
+          pozo: doc.id, bateria: data.bateria || 'Sin bateria', presion: 's/d',
+          colectora: '', ciclo: '', horario: '', tablero: '', optim: '', notas: '', fecha: ''
+        };
+        POZOS.push(rec);
+        ORIGINAL_POZOS[rec.pozo] = Object.assign({}, rec);
+      }
+      Object.assign(rec, data);
+      rec._edited = true;
+      rec._updatedAtDate = (data.updatedAt && data.updatedAt.toDate) ? data.updatedAt.toDate() : (rec._updatedAtDate || null);
+    });
+    refreshEverything();
+  }, (err) => {
+    console.error('Firestore sync error', err);
+  });
+
+  // fecha/hora del ultimo parte enviado (compartida): apenas cambia, todos los dispositivos recalculan solos
+  db.collection('pozos_meta').doc('estado').onSnapshot((doc) => {
+    const data = doc.data();
+    ultimoReporteTs = (data && data.lastReporteTs && data.lastReporteTs.toDate) ? data.lastReporteTs.toDate() : null;
+    refreshEverything();
+  }, (err) => {
+    console.error('Firestore sync error (meta)', err);
+  });
+
+  // novedades generales por USPA (con hora), en su propia coleccion, compartidas entre dispositivos
+  db.collection('uspa_notas').onSnapshot((snapshot) => {
+    USPA_NOTAS = [];
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      USPA_NOTAS.push(Object.assign({}, data, {
+        _updatedAtDate: (data.updatedAt && data.updatedAt.toDate) ? data.updatedAt.toDate() : null
+      }));
+    });
+    if(document.getElementById('planoMain').style.display !== 'none'){
+      renderPlano();
+    }
+    if(document.getElementById('movMain').style.display !== 'none'){
+      renderMovimientos();
+    }
+    updatePendCount();
+  }, (err) => {
+    console.error('Firestore sync error (notasUspa)', err);
+  });
+
+  // novedades generales de Baterias (1/2/5) y Pias 2, mismo esquema que las de USPA
+  db.collection('equipos_notas').onSnapshot((snapshot) => {
+    EQUIPOS_NOTAS = [];
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      EQUIPOS_NOTAS.push(Object.assign({}, data, {
+        _updatedAtDate: (data.updatedAt && data.updatedAt.toDate) ? data.updatedAt.toDate() : null
+      }));
+    });
+    if(document.getElementById('tanquesMain').style.display !== 'none'){ renderTanques(); }
+    if(document.getElementById('piasMain').style.display !== 'none'){ renderPias(); }
+    if(document.getElementById('movMain').style.display !== 'none'){ renderMovimientos(); }
+    updatePendCount();
+  }, (err) => {
+    console.error('Firestore sync error (equiposNotas)', err);
+  });
+
+  // pozos de petroleo (AIB) - coleccion propia, totalmente separada de los pozos de gas
+  db.collection('aib_pozos').onSnapshot((snapshot) => {
+    AIB_POZOS = [];
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      AIB_POZOS.push(Object.assign({ pozo: doc.id }, data, {
+        _updatedAtDate: (data.updatedAt && data.updatedAt.toDate) ? data.updatedAt.toDate() : null
+      }));
+    });
+    if(snapshot.size === 0 && !safeGet('aib_seeded_v1', '')){
+      sembrarAibInicial();
+    }
+    if(document.getElementById('aibMain').style.display !== 'none'){
+      renderAib();
+    }
+    if(document.getElementById('movMain').style.display !== 'none'){
+      renderMovimientos();
+    }
+    updatePendCount();
+  }, (err) => {
+    console.error('Firestore sync error (aib)', err);
+  });
+
+  // dia operativo 9am-9am: ultimo envio de Baterias y de Agua/Pias 2 (compartidos)
+  db.collection('pozos_meta').doc('estado9am').onSnapshot((doc) => {
+    const data = doc.data();
+    ultimoReporteBateriasTs = (data && data.lastReporteBateriasTs && data.lastReporteBateriasTs.toDate) ? data.lastReporteBateriasTs.toDate() : null;
+    ultimoReporteAguaTs = (data && data.lastReporteAguaTs && data.lastReporteAguaTs.toDate) ? data.lastReporteAguaTs.toDate() : null;
+    refreshEverything();
+  }, (err) => {
+    console.error('Firestore sync error (meta9am)', err);
+  });
+
+  // mediciones de tanques de Bateria 1/2/5
+  db.collection('baterias_tanques').onSnapshot((snapshot) => {
+    TANQUES_DATA = [];
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      TANQUES_DATA.push(Object.assign({}, data, {
+        _updatedAtDate: (data.updatedAt && data.updatedAt.toDate) ? data.updatedAt.toDate() : null
+      }));
+    });
+    if(document.getElementById('tanquesMain').style.display !== 'none'){ renderTanques(); }
+    updatePendCount();
+  }, (err) => { console.error('Firestore sync error (baterias_tanques)', err); });
+
+  // mediciones de tanques de Pias 2
+  db.collection('pias2_tanques').onSnapshot((snapshot) => {
+    PIAS2_TANQUES_DATA = [];
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      PIAS2_TANQUES_DATA.push(Object.assign({}, data, {
+        _updatedAtDate: (data.updatedAt && data.updatedAt.toDate) ? data.updatedAt.toDate() : null
+      }));
+    });
+    if(document.getElementById('piasMain').style.display !== 'none'){ renderPias(); }
+    updatePendCount();
+  }, (err) => { console.error('Firestore sync error (pias2_tanques)', err); });
+
+  // bombas y compresores de Pias 2 (estado + novedad)
+  db.collection('pias2_equipos').onSnapshot((snapshot) => {
+    PIAS2_EQUIPOS_DATA = [];
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      PIAS2_EQUIPOS_DATA.push(Object.assign({}, data, {
+        _updatedAtDate: (data.updatedAt && data.updatedAt.toDate) ? data.updatedAt.toDate() : null
+      }));
+    });
+    if(document.getElementById('piasMain').style.display !== 'none'){ renderPias(); }
+    updatePendCount();
+  }, (err) => { console.error('Firestore sync error (pias2_equipos)', err); });
+
+  // descargas de camiones de agua en Pias 2 (solo los ultimos 200, ordenados por fecha, para no
+  // leer la coleccion entera cada vez que crezca con los años)
+  db.collection('pias2_camiones').orderBy('updatedAt', 'desc').limit(200).onSnapshot((snapshot) => {
+    PIAS2_CAMIONES_DATA = [];
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      PIAS2_CAMIONES_DATA.push(Object.assign({ id: doc.id }, data, {
+        _updatedAtDate: (data.updatedAt && data.updatedAt.toDate) ? data.updatedAt.toDate() : null
+      }));
+    });
+    PIAS2_CAMIONES_DATA.sort((a,b) => (b._updatedAtDate||0) - (a._updatedAtDate||0));
+    if(document.getElementById('piasMain').style.display !== 'none'){ renderPias(); }
+    updatePendCount();
+  }, (err) => { console.error('Firestore sync error (pias2_camiones)', err); });
+}
+
+// carga inicial de pozos de petroleo (solo corre una vez, la primera vez que la coleccion esta vacia)
+const AIB_SEED = [
+  { pozo: 'Ce-1314', bateria: 'Bateria 5', bp: '8', pl: '5,5', perdidas: false, hora: '02:28' },
+  { pozo: 'Ce-1273', bateria: 'Bateria 1', bp: '14,7', pl: '3', perdidas: false, hora: '19:53' },
+  { pozo: 'Ce-1351', bateria: 'Bateria 5', bp: '14', pl: '4', perdidas: false, hora: '23:20' },
+  { pozo: 'Ce-1272', bateria: 'Bateria 5', bp: '17,2', pl: '7,5', perdidas: false, hora: '23:27' },
+  { pozo: 'Ce-1093', bateria: 'Bateria 5', bp: '12,27', pl: '7,5', perdidas: false, hora: '01:04' },
+  { pozo: 'Ce-1101', bateria: 'Bateria 5', bp: '3', pl: '3', perdidas: false, hora: '01:00' },
+  { pozo: 'Ce-1390', bateria: 'Bateria 5', bp: '16', pl: '3', perdidas: false, hora: '04:00' },
+  { pozo: 'Ce-1318', bateria: 'Bateria 5', bp: '26,2', pl: '3', perdidas: false, hora: '00:22' },
+  { pozo: 'Ce-1316', bateria: 'Bateria 5', bp: '4', pl: 'S/D', perdidas: false, hora: '00:22' },
+  { pozo: 'Ce-1345', bateria: 'Bateria 5', bp: '5', pl: '3,5', perdidas: false, hora: '00:07' },
+  { pozo: 'Ce-1378', bateria: 'Bateria 5', bp: '4', pl: 'S/D', perdidas: false, hora: '23:40' },
+  { pozo: 'Ce-1379', bateria: 'Bateria 5', bp: '', pl: '', perdidas: false, hora: '23:42' }
+];
+function sembrarAibInicial(){
+  safeSet('aib_seeded_v1', '1');
+  AIB_SEED.forEach(w => {
+    const { pozo, ...datos } = w;
+    saveAibPozo(pozo, datos);
+  });
+}
+
+function saveEdit(pozoKey, newFields){
+  if(!firestoreOk){
+    alert('No hay conexion con el guardado compartido. Revisa tu internet e intenta de nuevo.');
+    return;
+  }
+  const toSave = Object.assign({}, newFields, {
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    updatedFields: Object.keys(newFields),
+    operador: newFields.operador || operadorName || 'Sin nombre'
+  });
+  db.collection('pozos_overrides').doc(pozoKey).set(toSave, { merge: true }).catch((err) => {
+    alert('No se pudo guardar el cambio (' + err.message + '). Revisa tu conexion.');
+  });
+}
+
+// ---------------- Historico de aperturas (para el grafico por pozo) ----------------
+function registrarAperturaHistorial(rec, hora){
+  if(!firestoreOk) return;
+  db.collection('pozos_historial').add({
+    pozo: rec.pozo,
+    bateria: rec.bateria || 'Sin bateria',
+    fecha: todayStr(),
+    hora: hora,
+    operador: operadorName || 'Sin nombre',
+    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+  }).catch((err) => {
+    console.error('No se pudo registrar el historico', err);
+  });
+}
+
+function verHistoricoPozo(rec){
+  const cont = document.getElementById('historicoBox');
+  if(!cont) return;
+  cont.innerHTML = '<div class="hist-loading">Cargando historico...</div>';
+  cont.style.display = '';
+  if(!firestoreOk){
+    cont.innerHTML = '<div class="hist-loading">Sin conexion, no se pudo cargar.</div>';
+    return;
+  }
+  db.collection('pozos_historial').where('pozo', '==', rec.pozo).get().then((snapshot) => {
+    const porDia = {};
+    snapshot.forEach((doc) => {
+      const d = doc.data();
+      porDia[d.fecha] = (porDia[d.fecha] || 0) + 1;
+    });
+    renderHistoricoChart(cont, porDia, rec.pozo);
+  }).catch((err) => {
+    cont.innerHTML = '<div class="hist-loading">No se pudo cargar el historico (' + err.message + ').</div>';
+  });
+}
+
+function renderHistoricoChart(cont, porDia, pozoNombre){
+  // ordenamos las fechas (formato DD/MM/YYYY) cronologicamente y nos quedamos con los ultimos 14 dias con datos
+  const entries = Object.keys(porDia).map(f => {
+    const [d, m, y] = f.split('/').map(Number);
+    return { fecha: f, count: porDia[f], ts: new Date(y, m - 1, d).getTime() };
+  }).sort((a, b) => a.ts - b.ts).slice(-14);
+
+  if(entries.length === 0){
+    cont.innerHTML = '<div class="hist-loading">Todavia no hay aperturas registradas para este pozo.</div>';
+    return;
+  }
+
+  const maxCount = Math.max(...entries.map(e => e.count));
+  const W = 560, H = 200, padL = 30, padB = 40, padT = 15, padR = 10;
+  const chartW = W - padL - padR, chartH = H - padT - padB;
+  const barGap = 8;
+  const barW = (chartW / entries.length) - barGap;
+
+  let bars = '';
+  entries.forEach((e, i) => {
+    const barH = maxCount > 0 ? (e.count / maxCount) * chartH : 0;
+    const x = padL + i * (barW + barGap);
+    const y = padT + (chartH - barH);
+    bars += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${barH.toFixed(1)}" rx="3" fill="var(--amber)"></rect>`;
+    bars += `<text x="${(x + barW/2).toFixed(1)}" y="${(y - 5).toFixed(1)}" font-size="11" fill="var(--text)" text-anchor="middle">${e.count}</text>`;
+    const diaCorto = e.fecha.split('/').slice(0,2).join('/');
+    bars += `<text x="${(x + barW/2).toFixed(1)}" y="${H - padB + 16}" font-size="9.5" fill="var(--muted)" text-anchor="middle">${diaCorto}</text>`;
+  });
+
+  const totalAperturas = entries.reduce((s, e) => s + e.count, 0);
+  cont.innerHTML = `
+    <div class="hist-title">Aperturas por dia &mdash; ${pozoNombre} <span class="hist-total">(${totalAperturas} en los ultimos ${entries.length} dias con datos)</span></div>
+    <svg viewBox="0 0 ${W} ${H}" class="hist-svg">${bars}</svg>
+  `;
+}
+
+let clearArmed = null; // pozo que esta esperando el segundo toque para confirmar limpieza
+
+function clearPozoData(rec, bat){
+  const btn = document.getElementById('clearBtn');
+  if(clearArmed !== rec.pozo){
+    // primer toque: armamos la confirmacion, sin depender de confirm()
+    clearArmed = rec.pozo;
+    if(btn){
+      btn.textContent = 'Toca de nuevo para confirmar';
+      btn.classList.add('armed');
+    }
+    setTimeout(() => {
+      if(clearArmed === rec.pozo){
+        clearArmed = null;
+        if(btn && document.body.contains(btn)){
+          btn.textContent = 'Limpiar datos de este pozo';
+          btn.classList.remove('armed');
+        }
+      }
+    }, 4000);
+    return;
+  }
+
+  // segundo toque: confirmado, limpiamos de verdad
+  if(!puedeModificar()) return;
+  clearArmed = null;
+  if(firestoreOk){
+    db.collection('pozos_overrides').doc(rec.pozo).delete().catch(() => {});
+  }
+
+  const original = ORIGINAL_POZOS[rec.pozo];
+  if(original){
+    Object.keys(rec).forEach(k => delete rec[k]);
+    Object.assign(rec, original);
+  }
+  rec._edited = false;
+
+  renderCardView(rec, bat);
+  render(document.getElementById('searchBox').value);
+  if(document.getElementById('planoMain').style.display !== 'none'){
+    renderPlano();
+  }
+}
+
+let modalHistoryPushed = false; // asi el boton/gesto "atras" del celular cierra la ficha en vez de sacarte de la app
+
+function openCard(rec, bat){
+  window._currentCardRec = rec;
+  window._currentCardBat = bat;
+  clearArmed = null;
+  renderCardView(rec, bat);
+  document.getElementById('overlay').classList.add('show');
+  if(!modalHistoryPushed){
+    history.pushState({ pozosModal: true }, '');
+    modalHistoryPushed = true;
+  }
+}
+
+function todayStr(){
+  const d = new Date();
+  return d.toLocaleDateString('es-AR'); // DD/MM/YYYY
+}
+function nowTimeStr(){
+  const d = new Date();
+  return d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+}
+
+function calcDuracion(hIni, hFin){
+  const [h1,m1] = hIni.split(':').map(Number);
+  const [h2,m2] = hFin.split(':').map(Number);
+  let mins = (h2*60+m2) - (h1*60+m1);
+  if(mins < 0) mins += 24*60;
+  const hh = Math.floor(mins/60), mm = mins%60;
+  return `${hh}h${mm>0 ? ' '+mm+'m' : ''}`;
+}
+// igual que calcDuracion, pero en horas decimales (ej: 4.5) para poder sumarlas en el reporte
+function calcDuracionDecimal(hIni, hFin){
+  const [h1,m1] = hIni.split(':').map(Number);
+  const [h2,m2] = hFin.split(':').map(Number);
+  let mins = (h2*60+m2) - (h1*60+m1);
+  if(mins < 0) mins += 24*60;
+  return Math.round((mins/60) * 10) / 10;
+}
+function calcDuracionDesde(hIni){
+  const now = new Date();
+  const [h1,m1] = hIni.split(':').map(Number);
+  let mins = (now.getHours()*60+now.getMinutes()) - (h1*60+m1);
+  if(mins < 0) mins += 24*60;
+  const hh = Math.floor(mins/60), mm = mins%60;
+  return `${hh}h${mm>0 ? ' '+mm+'m' : ''}`;
+}
+function horarioInfo(rec){
+  if(!rec.horaApertura && !rec.horaCierre){
+    return { text: rec.horario || '', colorClass: '', label: 'Horario de maniobra' };
+  }
+  let text = '';
+  let colorClass = '';
+  if(rec.horaCierre){
+    colorClass = 'cerrado';
+    const dur = rec.horaApertura ? calcDuracion(rec.horaApertura, rec.horaCierre) : null;
+    text = `${rec.horaApertura || '??'} - ${rec.horaCierre}` + (dur ? ` (estuvo abierto ${dur})` : '');
+  } else if(rec.horaApertura){
+    colorClass = 'abierto';
+    text = `Abrio a las ${rec.horaApertura} (lleva abierto ${calcDuracionDesde(rec.horaApertura)})`;
+  }
+  if(rec.horarioNota) text += ` - ${rec.horarioNota}`;
+  return { text, colorClass, label: 'Horario de maniobra' };
+}
+
+
+function renderCardView(rec, bat){
+  const card = document.getElementById('card');
+  const isMissing = rec.presion === 's/d';
+  const presionMostrada = isMissing ? 'Sin dato todavia' : convertPresionText(rec.presion, pressureUnit);
+  const hInfo = horarioInfo(rec);
+
+  function field(label, value, cls){
+    const empty = !value || !value.trim();
+    return `<div class="field ${cls||''}">
+      <div class="k">${label}</div>
+      <div class="v ${empty ? 'empty' : ''}">${empty ? 'Sin dato' : value}</div>
+    </div>`;
+  }
+
+  const estadoClass = rec.estado === 'Abierto' ? 'abierto' : (rec.estado === 'Cerrado' ? 'cerrado' : '');
+  const estadoLabel = rec.estado || 'Sin definir (cargá un horario)';
+
+  card.innerHTML = `
+    <div class="card-head">
+      <div>
+        <h2>${rec.pozo}</h2>
+        <span class="bat-pill" style="background:${BAT_COLORS[bat] || '#4c8fb0'}">${bat}</span>
+        ${rec._edited ? '<div class="edited-note">Editado en este celular</div>' : ''}
+      </div>
+      <button class="close-btn" id="closeBtn">&times;</button>
+    </div>
+    <div class="estado-badge ${estadoClass}">${estadoLabel.toUpperCase()}</div>
+    ${field('Presion', presionMostrada, 'presion')}
+    ${field('Colectora', rec.colectora)}
+    ${field('Ciclo', rec.ciclo)}
+    <div class="field horario-field ${hInfo.colorClass}">
+      <div class="k">${hInfo.label}</div>
+      <div class="v ${!hInfo.text ? 'empty' : ''}">${hInfo.text || 'Sin dato'}</div>
+    </div>
+    ${typeof rec.horasTotalNum === 'number' ? `<div class="field">
+      <div class="k">Horas para el reporte</div>
+      <div class="v">${rec.horasTotalNum.toString().replace('.',',')} hs &middot; ${rec.horasTotalTipo === 'cerrado' ? 'PERDIDA' : 'PRODUCCION'}</div>
+    </div>` : ''}
+    ${field('Tablero', rec.tablero)}
+    ${field('Optimizador', rec.optim, 'optim')}
+    ${field('Ultima visita', rec.fecha)}
+    ${field('Notas / accesorios', rec.notas)}
+    <button class="edit-btn" id="editBtn">Editar datos / horario</button>
+    <button class="hist-btn" id="histBtn">Ver historico de aperturas</button>
+    <div id="historicoBox" class="hist-box" style="display:none;"></div>
+    ${rec._edited ? '<button class="clear-btn" id="clearBtn">Limpiar datos de este pozo</button>' : ''}
+  `;
+  document.getElementById('closeBtn').addEventListener('click', closeCard);
+  document.getElementById('editBtn').addEventListener('click', () => renderCardEdit(rec, bat));
+  document.getElementById('histBtn').addEventListener('click', () => verHistoricoPozo(rec));
+  const clearBtn = document.getElementById('clearBtn');
+  if(clearBtn) clearBtn.addEventListener('click', () => clearPozoData(rec, bat));
+}
+
+function parseCiclo(cicloText){
+  if(!cicloText) return null;
+  const UNIDAD = '(?:horas|hora|hs|h)?';
+  // 1) preferimos entender el texto en palabras, buscando "apertura" y "cierre" (asi no importa el orden ni hace falta memorizar formato)
+  const mA = cicloText.match(new RegExp(`(\\d+)\\s*${UNIDAD}\\s*(?:de\\s*)?(?:apertura|abiert[oa])`, 'i'));
+  const mC = cicloText.match(new RegExp(`(\\d+)\\s*${UNIDAD}\\s*(?:de\\s*)?(?:cierre|cerrad[oa])`, 'i'));
+  if(mA && mC){
+    return { horasAbierto: parseInt(mA[1], 10), horasCerrado: parseInt(mC[1], 10) };
+  }
+  // 2) si no hay esas palabras, caemos al patron corto "NxM" => asumimos horas abierto x horas cerrado
+  const m = cicloText.match(new RegExp(`(\\d+)\\s*${UNIDAD}\\s*[xX]\\s*(\\d+)\\s*${UNIDAD}`));
+  if(!m) return null;
+  return { horasAbierto: parseInt(m[1], 10), horasCerrado: parseInt(m[2], 10) };
+}
+
+
+function renderCardEdit(rec, bat){
+  const card = document.getElementById('card');
+
+  function inputField(label, key, value){
+    return `<div class="field">
+      <div class="k">${label}</div>
+      <div class="input-with-clear">
+        <input class="edit-input" data-key="${key}" value="${(value||'').replace(/"/g,'&quot;')}">
+        <button type="button" class="field-clear-btn" data-clear-target="${key}" title="Borrar este dato">&times;</button>
+      </div>
+    </div>`;
+  }
+  function textareaField(label, key, value){
+    return `<div class="field">
+      <div class="k">${label}</div>
+      <div class="input-with-clear">
+        <textarea class="edit-input edit-textarea" data-key="${key}">${value||''}</textarea>
+        <button type="button" class="field-clear-btn" data-clear-target="${key}" title="Borrar este dato">&times;</button>
+      </div>
+    </div>`;
+  }
+
+  // precargamos desde los campos separados (si el pozo viene de datos viejos sin estos campos, intentamos rescatar del texto)
+  let horaAperturaVal = rec.horaApertura || '';
+  let horaCierreVal = rec.horaCierre || '';
+  let notaVal = rec.horarioNota || '';
+  if(!horaAperturaVal && !horaCierreVal && rec.horario){
+    const m = rec.horario.match(/(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})/);
+    if(m){
+      horaAperturaVal = m[1];
+      horaCierreVal = m[2];
+      notaVal = rec.horario.replace(m[0], '').replace(/^[\s\/\-]+|[\s\/\-]+$/g, '').replace(/^\(|\)$/g, '');
+    } else {
+      notaVal = rec.horario;
+    }
+  }
+  // guardamos el valor ORIGINAL con el que abrimos el formulario, para comparar al guardar
+  // y asi saber si realmente tocaste el horario o si estabas editando otra cosa
+  const horaAperturaOriginal = horaAperturaVal;
+  const horaCierreOriginal = horaCierreVal;
+
+  card.innerHTML = `
+    <div class="card-head">
+      <div>
+        <h2>${rec.pozo}</h2>
+        <span class="bat-pill" style="background:${BAT_COLORS[bat] || '#4c8fb0'}">${bat}</span>
+      </div>
+      <button class="close-btn" id="closeBtn">&times;</button>
+    </div>
+    ${inputField('Presion', 'presion', rec.presion === 's/d' ? '' : rec.presion)}
+    ${inputField('Colectora', 'colectora', rec.colectora)}
+    ${inputField('Ciclo', 'ciclo', rec.ciclo)}
+    <div class="field">
+      <div class="k">Horario de maniobra</div>
+      <div class="edit-hint">Solo apertura = queda ABIERTO (verde). Agregar cierre = pasa a CERRADO (rojo).</div>
+      <div class="time-row">
+        <div>
+          <div class="time-label">Apertura</div>
+          <div class="input-with-clear">
+            <input type="time" class="edit-input time-input" id="horaApertura" value="${horaAperturaVal}">
+            <button type="button" class="field-clear-btn" id="clearHoraApertura" title="Borrar apertura">&times;</button>
+          </div>
+        </div>
+        <div>
+          <div class="time-label">Cierre</div>
+          <div class="input-with-clear">
+            <input type="time" class="edit-input time-input" id="horaCierre" value="${horaCierreVal}">
+            <button type="button" class="field-clear-btn" id="clearHoraCierre" title="Borrar cierre">&times;</button>
+          </div>
+        </div>
+      </div>
+      <input class="edit-input" id="horarioNota" placeholder="Nota (ej: prueba 2hs, ciclo 8x8)" value="${notaVal.replace(/"/g,'&quot;')}" style="margin-top:8px;">
+    </div>
+    <div class="field">
+      <div class="k">Horas para el reporte (corregir a mano)</div>
+      <div class="edit-hint">Se calcula solo. Solo tocalo si el numero quedo mal por algun error de carga.</div>
+      <div class="aib-fields">
+        <div class="aib-field">
+          <div class="time-label">Horas</div>
+          <input type="text" class="edit-input" id="horasManualNum" value="${typeof rec.horasTotalNum === 'number' ? rec.horasTotalNum.toString().replace('.',',') : ''}" placeholder="ej: 2,5">
+        </div>
+        <div class="aib-field">
+          <div class="time-label">Tipo</div>
+          <select class="edit-input" id="horasManualTipo">
+            <option value="">-- sin cambios --</option>
+            <option value="cerrado" ${rec.horasTotalTipo==='cerrado'?'selected':''}>Perdida (cerrado)</option>
+            <option value="abierto" ${rec.horasTotalTipo==='abierto'?'selected':''}>Produccion (abierto)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    ${inputField('Tablero', 'tablero', rec.tablero)}
+    ${inputField('Optimizador', 'optim', rec.optim)}
+    ${inputField('Ultima visita', 'fecha', rec.fecha)}
+    ${textareaField('Notas / accesorios', 'notas', rec.notas)}
+    <div class="edit-actions">
+      <button class="save-btn" id="saveBtn">Guardar</button>
+      <button class="cancel-btn" id="cancelBtn">Cancelar</button>
+    </div>
+  `;
+  document.getElementById('closeBtn').addEventListener('click', closeCard);
+  document.getElementById('cancelBtn').addEventListener('click', () => renderCardView(rec, bat));
+  card.querySelectorAll('.field-clear-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.clearTarget;
+      const input = card.querySelector(`.edit-input[data-key="${key}"]`);
+      if(input) input.value = '';
+    });
+  });
+  document.getElementById('clearHoraApertura').addEventListener('click', () => {
+    document.getElementById('horaApertura').value = '';
+  });
+  document.getElementById('clearHoraCierre').addEventListener('click', () => {
+    document.getElementById('horaCierre').value = '';
+  });
+  document.getElementById('saveBtn').addEventListener('click', () => {
+    if(!puedeModificar()) return;
+    const inputs = card.querySelectorAll('.edit-input[data-key]');
+    const newFields = {};
+    inputs.forEach(inp => { newFields[inp.dataset.key] = inp.value; });
+    if(newFields.presion === '') newFields.presion = 's/d';
+
+    const hA = document.getElementById('horaApertura').value;
+    const hC = document.getElementById('horaCierre').value;
+    const nota = document.getElementById('horarioNota').value.trim();
+
+    const aperturaCambio = hA !== horaAperturaOriginal;
+    const cierreCambio = hC !== horaCierreOriginal;
+
+    // si cambiaste la apertura pero dejaste el cierre TAL CUAL estaba (sin tocarlo) y el pozo ya
+    // habia completado un ciclo (estaba Cerrado), ese cierre es viejo: asumimos que estas arrancando
+    // un ciclo nuevo y no lo tenemos en cuenta (evita que quede mal marcado como Cerrado de nuevo).
+    let hcEfectivo = hC;
+    if(aperturaCambio && !cierreCambio && rec.estado === 'Cerrado'){
+      hcEfectivo = '';
+    }
+
+    newFields.horaApertura = hA;
+    newFields.horaCierre = hcEfectivo;
+    newFields.horarioNota = nota;
+    let horario = '';
+    if(hA || hcEfectivo){
+      horario = `${hA || '??'} - ${hcEfectivo || '??'}`;
+      if(nota) horario += ` (${nota})`;
+    } else if(nota){
+      horario = nota;
+    }
+    newFields.horario = horario;
+
+    // el estado solo se reevalua si REALMENTE tocaste apertura o cierre. Si solo editaste otro campo
+    // (presion, notas, etc.) sin tocar el horario, el estado actual queda como estaba, sin pisarlo.
+    if(aperturaCambio || cierreCambio){
+      if(hcEfectivo){
+        newFields.estado = 'Cerrado';
+      } else if(hA){
+        newFields.estado = 'Abierto';
+      }
+    }
+
+    // Hs total de la maniobra que se acaba de completar (para el reporte, a pedido de Sebastian):
+    // si recien se cerro, cuenta cuanto estuvo ABIERTO antes; si recien se reabrio, cuenta cuanto estuvo CERRADO.
+    // ademas guardamos el rango de horas exacto, para que la columna HORA del reporte muestre de que
+    // hora a que hora fue esa perdida/produccion (no solo el numero).
+    // si no sabemos la hora exacta del evento anterior (nunca se cargo), asumimos que viene asi desde
+    // el arranque del dia operativo (6am) en vez de dejar el calculo en blanco. Esto vale tambien
+    // para un pozo que nunca tuvo estado guardado (primera vez que se le carga horario): si se esta
+    // cerrando, asumimos que venia abierto; si se esta abriendo, asumimos que venia cerrado.
+    if(cierreCambio && hcEfectivo && rec.estado !== 'Cerrado'){
+      const referenciaApertura = horaAperturaOriginal || '06:00';
+      newFields.horasTotalNum = calcDuracionDecimal(referenciaApertura, hcEfectivo);
+      newFields.horasTotalTipo = 'abierto';
+      newFields.horasRangoDesde = referenciaApertura;
+      newFields.horasRangoHasta = hcEfectivo;
+      // el numero SIEMPRE se calcula (haga falta o no la referencia de las 6am), pero la columna HORA
+      // del reporte solo muestra el rango completo si la hora anterior era real, no inventada
+      newFields.horasRangoConfirmado = !!horaAperturaOriginal;
+    } else if(aperturaCambio && !cierreCambio && rec.estado !== 'Abierto'){
+      const referenciaCierre = horaCierreOriginal || '06:00';
+      newFields.horasTotalNum = calcDuracionDecimal(referenciaCierre, hA);
+      newFields.horasTotalTipo = 'cerrado';
+      newFields.horasRangoDesde = referenciaCierre;
+      newFields.horasRangoHasta = hA;
+      newFields.horasRangoConfirmado = !!horaCierreOriginal;
+      // marca aparte, solo para el texto de la novedad: si de verdad SABIAMOS que estaba cerrado
+      // (no un pozo nuevo que nunca tuvo estado), para no decir "Cerrado, recupera presion" de mas
+      newFields.veniaDeCerradoConfirmado = rec.estado === 'Cerrado';
+    }
+
+    // correccion manual (si se cargo): pisa el calculo automatico de arriba
+    const horasManualVal = document.getElementById('horasManualNum').value.trim();
+    const horasManualTipo = document.getElementById('horasManualTipo').value;
+    if(horasManualVal && horasManualTipo){
+      const num = parseFloat(horasManualVal.replace(',', '.'));
+      if(!isNaN(num)){
+        newFields.horasTotalNum = Math.round(num * 10) / 10;
+        newFields.horasTotalTipo = horasManualTipo;
+      }
+    }
+
+    Object.assign(rec, newFields);
+    rec._edited = true;
+    saveEdit(rec.pozo, newFields);
+    // registramos esta apertura en el historico (solo cuando REALMENTE se cargo una apertura nueva)
+    if(aperturaCambio && hA){
+      registrarAperturaHistorial(rec, hA);
+    }
+    renderCardView(rec, bat);
+    render(document.getElementById('searchBox').value);
+    if(document.getElementById('planoMain').style.display !== 'none'){
+      renderPlano();
+    }
+  });
+}
+
+function closeCard(){
+  document.getElementById('overlay').classList.remove('show');
+  if(modalHistoryPushed){
+    modalHistoryPushed = false;
+    history.back(); // consume el estado que agregamos al abrir, para que no quede un "atras" de mas colgado
+  }
+}
+window.addEventListener('popstate', () => {
+  // se dispara tanto si el usuario toca "atras" en el celular como si lo llamamos nosotros arriba
+  if(modalHistoryPushed){
+    modalHistoryPushed = false;
+    document.getElementById('overlay').classList.remove('show');
+  }
+});
+
+const FIELD_LABELS = {
+  presion: 'Presion', colectora: 'Colectora', tablero: 'Tablero',
+  optim: 'Optimizador', fecha: 'Ultima visita', notas: 'Notas',
+  estado: 'Estado', ciclo: 'Ciclo', horario: 'Horario'
+};
+
+
+document.getElementById('overlay').addEventListener('click', (e) => {
+  if(e.target.id === 'overlay') closeCard();
+});
+document.addEventListener('keydown', (e) => {
+  if(e.key === 'Escape') closeCard();
+});
+document.getElementById('searchBox').addEventListener('input', (e) => {
+  render(e.target.value);
+  if(document.getElementById('planoMain').style.display !== 'none'){
+    renderPlano();
+  }
+});
+document.getElementById('parteBtn').addEventListener('click', () => {
+  try { exportParteDeCampo(); } catch(err) { alert('Error al generar el parte: ' + (err && err.message ? err.message : err)); }
+});
+document.getElementById('exportarTodoBtn').addEventListener('click', () => {
+  try { exportarTodoExcel(); } catch(err) { alert('Error al generar el respaldo: ' + (err && err.message ? err.message : err)); }
+});
+
+// el boton de enviar parte se habilita recien a partir de las 6:00 am (asi no se manda antes de que
+// termine de cargarse el dia operativo, que va de 6am a 6am del dia siguiente), y SOLO se muestra en
+// el dispositivo marcado como "principal" (por dispositivo, guardado en este navegador nada mas).
+let esDispositivoPrimario = safeGet('es_dispositivo_primario', '') === '1';
+
+function esMovil(){
+  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+}
+
+// en compu, pide clave antes de guardar cualquier cambio (para evitar que alguien modifique algo
+// sin querer al pasar por la compu). En el celular no pide nada, los operadores siguen igual.
+const CLAVE_MODIFICAR_PC = '091218';
+function puedeModificar(){
+  if(esMovil()) return true;
+  const clave = prompt('Ingresa la clave para guardar cambios desde esta compu:');
+  if(clave === null) return false; // cancelo
+  if(clave !== CLAVE_MODIFICAR_PC){
+    alert('Clave incorrecta. No se guardo el cambio.');
+    return false;
+  }
+  return true;
+}
+
+function renderPrimarioTag(){
+  const tag = document.getElementById('primarioTag');
+  if(!tag) return;
+  // en el celular, escondemos la opcion de marcar/sacar principal (para que un operador no la toque
+  // sin querer) salvo que ese mismo celular ya este marcado como principal, para poder sacarlo
+  if(esMovil() && !esDispositivoPrimario){
+    tag.style.display = 'none';
+    return;
+  }
+  tag.style.display = '';
+  tag.textContent = esDispositivoPrimario
+    ? '★ Compu principal (tocar para sacar)'
+    : 'Marcar esta compu como principal';
+}
+document.getElementById('primarioTag').addEventListener('click', () => {
+  esDispositivoPrimario = !esDispositivoPrimario;
+  safeSet('es_dispositivo_primario', esDispositivoPrimario ? '1' : '0');
+  renderPrimarioTag();
+  actualizarBotonParte();
+});
+renderPrimarioTag();
+
+function actualizarBotonParte(){
+  const btn = document.getElementById('parteBtn');
+  const exportarBtn = document.getElementById('exportarTodoBtn');
+  const bateriasBtn = document.getElementById('reporteBateriasBtn');
+  const aguaBtn = document.getElementById('reporteAguaBtn');
+  if(exportarBtn) exportarBtn.style.display = esDispositivoPrimario ? '' : 'none';
+  // sin restriccion horaria: con la clave para guardar cambios ya alcanza, quien maneja la compu
+  // puede mandar estos reportes en cualquier momento
+  if(bateriasBtn) bateriasBtn.style.display = esDispositivoPrimario ? '' : 'none';
+  if(aguaBtn) aguaBtn.style.display = esDispositivoPrimario ? '' : 'none';
+  if(!btn) return;
+  if(!esDispositivoPrimario){
+    btn.style.display = 'none';
+    return;
+  }
+  // sin restriccion horaria: con la clave para guardar cambios ya alcanza, quien maneja la compu
+  // puede mandar el parte en cualquier momento
+  btn.style.display = '';
+}
+actualizarBotonParte();
+setInterval(actualizarBotonParte, 60000);
+
+document.getElementById('reporteBateriasBtn').addEventListener('click', () => {
+  try { exportReporteBaterias(); } catch(err) { alert('Error al generar el reporte de Baterias: ' + (err && err.message ? err.message : err)); }
+});
+document.getElementById('reporteAguaBtn').addEventListener('click', () => {
+  try { exportReporteAgua(); } catch(err) { alert('Error al generar el reporte de Agua: ' + (err && err.message ? err.message : err)); }
+});
+
+function bateriaToInstalacion(bat){
+  if(!bat) return '';
+  const m = bat.match(/USPA(\d)/i);
+  return m ? `Uspa ${m[1]}` : bat;
+}
+
+function buildNovedad(rec){
+  // el pozo que cierra y despues reabre va en UNA sola fila, con la novedad combinada (cerro y abrio).
+  // pero si es la PRIMERA vez que abre (sin un cierre previo registrado), no corresponde decir
+  // "Cerrado, recupera presion" antes, porque nunca estuvo cerrado.
+  const presionTxt = (rec.presion && rec.presion !== 's/d') ? convertPresionText(rec.presion, pressureUnit) : null;
+  let base;
+  if(rec.estado === 'Abierto'){
+    const veniaDeCerrado = rec.veniaDeCerradoConfirmado === true;
+    base = veniaDeCerrado
+      ? `Cerrado, recupera presion. Abierto${presionTxt ? ' con presion estatica de ' + presionTxt : ''}.`
+      : `Abierto${presionTxt ? ' con presion estatica de ' + presionTxt : ''}.`;
+  } else if(rec.estado === 'Cerrado'){
+    base = 'Cerrado recuperando presion.';
+  } else {
+    base = 'Maniobra registrada.';
+  }
+  // nota adicional (la que esta debajo del horario de maniobra en la ficha), si el operador cargo algo
+  if(rec.horarioNota && rec.horarioNota.trim()){
+    base += ' ' + rec.horarioNota.trim();
+  }
+  return base;
+}
+
+function buildHoraColumna(rec){
+  // rango completo de la maniobra (desde que abrio/cerro la vez anterior, hasta ahora), igual al
+  // reporte real - pero solo si esa hora anterior era real, no la referencia de las 6am inventada
+  if(rec.horasRangoDesde && rec.horasRangoHasta && rec.horasRangoConfirmado) return `${rec.horasRangoDesde}-${rec.horasRangoHasta}`;
+  const hA = rec.horaApertura || '';
+  const hC = rec.horaCierre || '';
+  if(hA && hC) return `${hA}-${hC}`;
+  if(hA) return hA;
+  if(hC) return hC;
+  return '';
+}
+
+function marcarReporteEnviado(){
+  if(!firestoreOk) return;
+  db.collection('pozos_meta').doc('estado').set({
+    lastReporteTs: firebase.firestore.FieldValue.serverTimestamp()
+  }, { merge: true }).catch((err) => {
+    console.error('No se pudo marcar el reporte como enviado', err);
+  });
+}
+
+function pendientesDeReporteAib(){
+  const corte = corteDePendientes();
+  return AIB_POZOS.filter(p => (p.bp || p.pl) && p._updatedAtDate && p._updatedAtDate > corte)
+    .sort((a,b) => a._updatedAtDate - b._updatedAtDate);
+}
+
+// ---------------- Dia operativo de Baterias y Agua/Pias 2: 9am a 9am (independiente del de gas/oil) ----------------
+function corteDePendientesBaterias(){
+  return ultimoReporteBateriasTs || new Date(0);
+}
+function corteDePendientesAgua(){
+  return ultimoReporteAguaTs || new Date(0);
+}
+function habilitado9am(){
+  return new Date().getHours() >= 9;
+}
+function marcarReporteBateriasEnviado(){
+  if(!firestoreOk) return;
+  db.collection('pozos_meta').doc('estado9am').set({
+    lastReporteBateriasTs: firebase.firestore.FieldValue.serverTimestamp()
+  }, { merge: true }).catch((err) => { console.error('No se pudo marcar el reporte de baterias como enviado', err); });
+}
+function marcarReporteAguaEnviado(){
+  if(!firestoreOk) return;
+  db.collection('pozos_meta').doc('estado9am').set({
+    lastReporteAguaTs: firebase.firestore.FieldValue.serverTimestamp()
+  }, { merge: true }).catch((err) => { console.error('No se pudo marcar el reporte de agua como enviado', err); });
+}
+function pendientesBaterias(){
+  const corte = corteDePendientesBaterias();
+  return TANQUES_DATA.filter(t => t._updatedAtDate && t._updatedAtDate > corte)
+    .sort((a,b) => a._updatedAtDate - b._updatedAtDate);
+}
+function pendientesNotasBaterias(){
+  const corte = corteDePendientesBaterias();
+  return EQUIPOS_NOTAS.filter(n => n.grupo !== 'Pias 2' && n.texto && n._updatedAtDate && n._updatedAtDate > corte)
+    .sort((a,b) => a._updatedAtDate - b._updatedAtDate);
+}
+function pendientesAguaTanques(){
+  const corte = corteDePendientesAgua();
+  return PIAS2_TANQUES_DATA.filter(t => t._updatedAtDate && t._updatedAtDate > corte)
+    .sort((a,b) => a._updatedAtDate - b._updatedAtDate);
+}
+function pendientesAguaEquipos(){
+  const corte = corteDePendientesAgua();
+  return PIAS2_EQUIPOS_DATA.filter(t => t._updatedAtDate && t._updatedAtDate > corte)
+    .sort((a,b) => a._updatedAtDate - b._updatedAtDate);
+}
+function pendientesAguaCamiones(){
+  const corte = corteDePendientesAgua();
+  return PIAS2_CAMIONES_DATA.filter(t => t._updatedAtDate && t._updatedAtDate > corte)
+    .sort((a,b) => a._updatedAtDate - b._updatedAtDate);
+}
+function pendientesNotaAguaPias2(){
+  const corte = corteDePendientesAgua();
+  return EQUIPOS_NOTAS.filter(n => n.grupo === 'Pias 2' && n.texto && n._updatedAtDate && n._updatedAtDate > corte)
+    .sort((a,b) => a._updatedAtDate - b._updatedAtDate);
+}
+
+function exportReporteBaterias(forzarTodos){
+  if(typeof ExcelJS === 'undefined'){
+    alert('No se pudo generar el Excel (falta conexion a internet para cargar la libreria).');
+    return;
+  }
+  const base = forzarTodos ? TANQUES_DATA.filter(t => t.nivelTotal || t.nivelInterfaz) : pendientesBaterias();
+  const notasBase = forzarTodos ? EQUIPOS_NOTAS.filter(n => n.grupo !== 'Pias 2' && n.texto) : pendientesNotasBaterias();
+  if(base.length === 0 && notasBase.length === 0){
+    if(!forzarTodos){
+      const quiere = confirm('No hay mediciones ni novedades de Baterias nuevas desde el ultimo reporte enviado.\n\n¿Generar igual el reporte con TODO lo cargado?');
+      if(quiere) exportReporteBaterias(true);
+      return;
+    }
+    alert('No hay ninguna medicion ni novedad de Bateria cargada todavia.');
+    return;
+  }
+  const filas = base.map(t => [
+    t._updatedAtDate ? t._updatedAtDate.toTimeString().slice(0,5) : '',
+    t.bateria || '',
+    t.nombre || '',
+    `Medicion: Nivel Total ${t.nivelTotal || '?'}cm / Nivel Interfaz ${t.nivelInterfaz || '?'}cm`
+  ]);
+  notasBase.forEach(n => filas.push([
+    n.hora || (n._updatedAtDate ? n._updatedAtDate.toTimeString().slice(0,5) : ''),
+    n.grupo || '', n.equipo || 'General', n.texto || ''
+  ]));
+  filas.sort((a,b) => (a[0]||'').localeCompare(b[0]||''));
+  const wb = new ExcelJS.Workbook();
+  agregarHojaTabla(wb, 'OIL', ['HORA','INSTALACION','EQUIPO','NOVEDAD'], filas, [12,14,18,50]);
+  wb.xlsx.writeBuffer().then(buffer => {
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    downloadOrShareBlob(blob, `Reporte_Baterias_${todayStr().replace(/\//g,'-')}.xlsx`, 'Reporte de Baterias');
+  });
+  marcarReporteBateriasEnviado();
+}
+
+function exportReporteAgua(forzarTodos){
+  if(typeof ExcelJS === 'undefined'){
+    alert('No se pudo generar el Excel (falta conexion a internet para cargar la libreria).');
+    return;
+  }
+  const tanquesBase = forzarTodos ? PIAS2_TANQUES_DATA.filter(t => t.nivelTotal || t.nivelInterfaz) : pendientesAguaTanques();
+  const equiposBase = forzarTodos ? PIAS2_EQUIPOS_DATA.filter(t => t.estado || t.nota) : pendientesAguaEquipos();
+  const camionesBase = forzarTodos ? PIAS2_CAMIONES_DATA : pendientesAguaCamiones();
+  const notasBase = forzarTodos ? EQUIPOS_NOTAS.filter(n => n.grupo === 'Pias 2' && n.texto) : pendientesNotaAguaPias2();
+
+  if(tanquesBase.length === 0 && equiposBase.length === 0 && camionesBase.length === 0 && notasBase.length === 0){
+    if(!forzarTodos){
+      const quiere = confirm('No hay novedades de Agua/Pias 2 nuevas desde el ultimo reporte enviado.\n\n¿Generar igual el reporte con TODO lo cargado?');
+      if(quiere) exportReporteAgua(true);
+      return;
+    }
+    alert('No hay ninguna novedad de Agua/Pias 2 cargada todavia.');
+    return;
+  }
+
+  const filasOil = [];
+  tanquesBase.forEach(t => filasOil.push([
+    t._updatedAtDate ? t._updatedAtDate.toTimeString().slice(0,5) : '',
+    'Pias 2', t.nombre || '',
+    `Medicion: Nivel Total ${t.nivelTotal || '?'}cm / Nivel Interfaz ${t.nivelInterfaz || '?'}cm`
+  ]));
+  equiposBase.forEach(e => filasOil.push([
+    e._updatedAtDate ? e._updatedAtDate.toTimeString().slice(0,5) : '',
+    'Pias 2', e.nombre || '',
+    e.estado === 'Falla' ? `En falla${e.nota ? ': ' + e.nota : ''}` : `Operativa${e.nota ? ' - ' + e.nota : ''}`
+  ]));
+  notasBase.forEach(n => filasOil.push([
+    n.hora || (n._updatedAtDate ? n._updatedAtDate.toTimeString().slice(0,5) : ''),
+    'Pias 2', n.equipo || 'General', n.texto || ''
+  ]));
+  filasOil.sort((a,b) => (a[0]||'').localeCompare(b[0]||''));
+
+  const filasCamiones = camionesBase.map(c => [
+    c.fecha || '', c.horaEntrada || '', c.horaSalida || '', c.yacProcedencia || '',
+    c.volumen || '', c.chofer || '', c.operador || '', c.tanqueDestino || ''
+  ]);
+
+  const wb = new ExcelJS.Workbook();
+  if(filasOil.length){
+    agregarHojaTabla(wb, 'OIL', ['HORA','INSTALACION','EQUIPO','NOVEDAD'], filasOil, [12,14,18,50]);
+  }
+  if(filasCamiones.length){
+    agregarHojaTabla(wb, 'Camiones de agua', ['Fecha','Hs entrada','Hs salida','Yac. Procedencia','Volumen (m3)','Chofer','Operador','Tanque destino'], filasCamiones, [10,10,10,14,12,14,14,14]);
+  }
+  wb.xlsx.writeBuffer().then(buffer => {
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    downloadOrShareBlob(blob, `Reporte_Agua_Pias2_${todayStr().replace(/\//g,'-')}.xlsx`, 'Reporte de Agua Pias 2');
+  });
+  marcarReporteAguaEnviado();
+}
+
+// ---------------- Respaldo completo a Excel (foto de todo, no solo lo pendiente) ----------------
+function agregarHojaTabla(wb, nombreHoja, headers, filas, anchos){
+  const ws = wb.addWorksheet(nombreHoja);
+  ws.columns = headers.map((h, i) => ({ width: (anchos && anchos[i]) || 16 }));
+
+  headers.forEach((h, i) => {
+    const cell = ws.getCell(1, i + 1);
+    cell.value = h;
+    cell.font = { name: 'Calibri', size: 11, bold: true };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9D9D9' } };
+    cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+  });
+
+  filas.forEach((fila, r) => {
+    fila.forEach((val, i) => {
+      const cell = ws.getCell(r + 2, i + 1);
+      cell.value = val;
+      cell.font = { name: 'Calibri', size: 10.5 };
+      cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+      cell.alignment = { vertical: 'middle', wrapText: true };
+    });
+  });
+}
+
+function exportarTodoExcel(){
+  if(typeof ExcelJS === 'undefined'){
+    alert('No se pudo generar el Excel (falta conexion a internet para cargar la libreria).');
+    return;
+  }
+
+  const wb = new ExcelJS.Workbook();
+
+  const pozosOrdenados = [...POZOS].sort((a,b) => (a.bateria||'').localeCompare(b.bateria||'') || a.pozo.localeCompare(b.pozo, undefined, {numeric:true}));
+  const filasGas = pozosOrdenados.map(p => [
+    p.pozo, p.bateria || '', p.colectora || '', p.presion === 's/d' ? '' : (p.presion || ''),
+    p.estado || '', p.horario || '', p.ciclo || '', p.tablero || '', p.optim || '', p.fecha || '', p.notas || ''
+  ]);
+  agregarHojaTabla(wb, 'GAS', ['Pozo','Bateria','Colectora','Presion','Estado','Horario','Ciclo','Tablero','Optimizador','Ultima visita','Notas'], filasGas, [12,10,12,10,10,16,10,10,14,12,30]);
+
+  const aibOrdenados = [...AIB_POZOS].sort((a,b) => (a.bateria||'').localeCompare(b.bateria||'') || a.pozo.localeCompare(b.pozo, undefined, {numeric:true}));
+  const filasOil = aibOrdenados.map(p => [
+    p.pozo, p.bateria || '', p.estado === 'Parado' ? 'Parado' : 'Marcha', p.motivoParo || '',
+    p.bp || '', p.pl || '', p.perdidas ? 'Si' : 'No', p.hora || '', p.nota || ''
+  ]);
+  agregarHojaTabla(wb, 'OIL', ['Pozo','Bateria','Estado','Motivo de paro','BP','PL','Perdidas por vastago','Hora','Nota'], filasOil, [12,10,10,16,10,10,14,10,30]);
+
+  const notasOrdenadas = [...USPA_NOTAS].sort((a,b) => (a.bateria||'').localeCompare(b.bateria||''));
+  const filasNotas = notasOrdenadas.map(n => [
+    n.bateria || '', n.hora || '', n.equipo || '', n.texto || '', n.operador || '',
+    n._updatedAtDate ? n._updatedAtDate.toLocaleString('es-AR') : ''
+  ]);
+  agregarHojaTabla(wb, 'Notas USPA', ['Bateria','Hora','Equipo','Novedad','Operador','Ultima actualizacion'], filasNotas, [12,10,14,40,14,18]);
+
+  const fileName = `Respaldo_completo_pozos_${new Date().toISOString().slice(0,10)}.xlsx`;
+  wb.xlsx.writeBuffer().then(buffer => {
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    downloadOrShareBlob(blob, fileName, 'Respaldo completo');
+  }).catch((err) => {
+    alert('No se pudo generar el Excel (' + (err && err.message ? err.message : 'error desconocido') + ').');
+  });
+}
+
+function agregarHojaParte(wb, nombreHoja, tituloHoja, filas, hoy, FONT_NAME, FONT_SIZE){
+  const ws = wb.addWorksheet(nombreHoja);
+  ws.columns = [
+    { width: 3 }, { width: 14 }, { width: 12 }, { width: 12 }, { width: 55 }, { width: 19 }, { width: 19 }
+  ];
+
+  ws.getCell('B2').value = tituloHoja;
+  ws.getCell('B2').font = { name: FONT_NAME, size: 13, bold: true };
+
+  let r = 10;
+  ws.getCell(`B${r}`).value = 'HORA';
+  ws.getCell(`C${r}`).value = 'INSTALACION';
+  ws.getCell(`D${r}`).value = 'EQUIPO';
+  ws.getCell(`E${r}`).value = 'NOVEDAD';
+  ws.getCell(`F${r}`).value = 'HORAS DE CIERRE';
+  ws.getCell(`G${r}`).value = 'HORAS DE PRODUCCION';
+  ['B','C','D','E','F','G'].forEach(col => {
+    const cell = ws.getCell(`${col}${r}`);
+    cell.font = { name: FONT_NAME, size: FONT_SIZE, bold: true };
+    cell.border = { top:{style:'thin'}, left:{style:'thin'}, bottom:{style:'thin'}, right:{style:'thin'} };
+    cell.fill = { type:'pattern', pattern:'solid', fgColor:{ argb: 'FFD9D9D9' } };
+  });
+  r++;
+
+  ws.getCell(`B${r}`).value = `PARTE DE CAMPO ${hoy}`;
+  ws.getCell(`B${r}`).font = { name: FONT_NAME, size: FONT_SIZE, bold: true };
+  r++;
+
+  filas.forEach(f => {
+    ws.getCell(`B${r}`).value = f.hora;
+    ws.getCell(`C${r}`).value = f.instalacion;
+    ws.getCell(`D${r}`).value = f.pozo;
+    ws.getCell(`E${r}`).value = f.novedad;
+
+    if(typeof f.horasPerdida === 'number'){
+      const cellP = ws.getCell(`F${r}`);
+      cellP.value = f.horasPerdida;
+      cellP.numFmt = '0.0';
+      cellP.fill = { type:'pattern', pattern:'solid', fgColor:{ argb: 'FFFFC7CE' } };
+    } else {
+      ws.getCell(`F${r}`).value = '';
+    }
+    if(typeof f.horasProduccion === 'number'){
+      const cellQ = ws.getCell(`G${r}`);
+      cellQ.value = f.horasProduccion;
+      cellQ.numFmt = '0.0';
+      cellQ.fill = { type:'pattern', pattern:'solid', fgColor:{ argb: 'FFC6EFCE' } };
+    } else {
+      ws.getCell(`G${r}`).value = '';
+    }
+
+    ['B','C','D','E','F','G'].forEach(col => {
+      const cell = ws.getCell(`${col}${r}`);
+      cell.border = { top:{style:'thin'}, left:{style:'thin'}, bottom:{style:'thin'}, right:{style:'thin'} };
+      cell.alignment = { vertical:'middle', wrapText: true };
+      cell.font = { name: FONT_NAME, size: FONT_SIZE, bold: true };
+    });
+    r++;
+  });
+}
+
+// para pozos que quedan abiertos o cerrados SIN completar el ciclo, calculamos las horas hasta el
+// corte del dia operativo (6am), en vez de dejarlo en blanco. Ej: abre 18:00 -> 12hs de produccion
+// hasta las 6am; cierra 21:00 -> 9hs de perdida hasta las 6am.
+function calcularHsHastaCorte(rec){
+  const CORTE = '06:00';
+  if(rec.estado === 'Abierto' && rec.horaApertura){
+    return { num: calcDuracionDecimal(rec.horaApertura, CORTE), tipo: 'abierto' };
+  } else if(rec.estado === 'Cerrado' && rec.horaCierre){
+    return { num: calcDuracionDecimal(rec.horaCierre, CORTE), tipo: 'cerrado' };
+  }
+  return null;
+}
+
+function exportParteDeCampo(forzarTodos){
+  // GAS: solo pozos con hora de apertura/cierre modificados DESPUES del ultimo parte enviado
+  // (o TODOS los que tengan horario cargado, si el usuario elige forzar)
+  const gasBase = forzarTodos ? POZOS.filter(p => p.horaApertura || p.horaCierre).sort((a,b) => (a._updatedAtDate||0) - (b._updatedAtDate||0)) : pendientesDeReporte();
+  const filasGas = gasBase
+    .map(rec => {
+      let horasPerdida = null, horasProduccion = null;
+      if(typeof rec.horasTotalNum === 'number' && rec.horasTotalTipo){
+        if(rec.horasTotalTipo === 'cerrado') horasPerdida = rec.horasTotalNum;
+        else horasProduccion = rec.horasTotalNum;
+      } else {
+        // si no hay un ciclo COMPLETO calculado (recien abrio o recien cerro y sigue asi), usamos el corte de las 6am
+        const calc = calcularHsHastaCorte(rec);
+        if(calc){
+          if(calc.tipo === 'abierto') horasProduccion = calc.num;
+          else horasPerdida = calc.num;
+        }
+      }
+      // completamos el otro lado como el resto de las 24hs del dia operativo (igual que la planilla
+      // vieja: cerrado = 24 - abierto), asi se ve el reparto completo del dia, no solo un lado
+      if(horasProduccion !== null && horasPerdida === null){
+        horasPerdida = Math.max(0, Math.round((24 - horasProduccion) * 10) / 10);
+      } else if(horasPerdida !== null && horasProduccion === null){
+        horasProduccion = Math.max(0, Math.round((24 - horasPerdida) * 10) / 10);
+      }
+      return {
+        hora: buildHoraColumna(rec),
+        instalacion: bateriaToInstalacion(rec.bateria),
+        pozo: rec.pozo,
+        novedad: buildNovedad(rec),
+        horasPerdida,
+        horasProduccion
+      };
+    });
+
+  // OIL: pozos de AIB con BP/PL cargados, modificados desde el ultimo parte (o todos, si se fuerza)
+  const oilBase = forzarTodos ? AIB_POZOS.filter(p => p.bp || p.pl).sort((a,b) => (a._updatedAtDate||0) - (b._updatedAtDate||0)) : pendientesDeReporteAib();
+  const filasOil = oilBase
+    .map(rec => ({
+      hora: rec.hora || '',
+      instalacion: rec.bateria || '',
+      pozo: rec.pozo,
+      novedad: buildAibNovedad(rec),
+      horasPerdida: null,
+      horasProduccion: null
+    }));
+
+  // NOVEDADES GENERALES de USPA (sin pozo especifico), modificadas desde el ultimo parte (o todas, si se fuerza)
+  const notasBase = forzarTodos ? USPA_NOTAS.filter(n => n.texto).sort((a,b) => (a._updatedAtDate||0) - (b._updatedAtDate||0)) : pendientesDeReporteNotas();
+  const filasNotas = notasBase
+    .map(n => ({
+      hora: n.hora || '',
+      instalacion: bateriaToInstalacion(n.bateria),
+      pozo: n.equipo && n.equipo.trim() ? n.equipo.trim() : 'General',
+      novedad: n.texto,
+      horasPerdida: null,
+      horasProduccion: null
+    }));
+
+  const filasGasConNotas = [...filasGas, ...filasNotas];
+
+  if(filasGasConNotas.length === 0 && filasOil.length === 0){
+    if(!forzarTodos){
+      const quiere = confirm('No hay movimientos nuevos desde el ultimo parte enviado.\n\n¿Generar igual el reporte con TODOS los pozos que tengan datos cargados, sin importar si ya se mandaron antes?');
+      if(quiere) exportParteDeCampo(true);
+      return;
+    }
+    alert('No hay ningun pozo con datos cargados todavia (ni gas ni petroleo).');
+    return;
+  }
+
+  const hoy = todayStr();
+
+  if(typeof ExcelJS === 'undefined'){
+    let text = `PARTE DE CAMPO ${hoy}\n\n`;
+    if(filasGasConNotas.length){
+      text += 'GAS:\n';
+      filasGasConNotas.forEach(f => { text += `${f.hora} | ${f.instalacion} | ${f.pozo} | ${f.novedad}\n`; });
+    }
+    if(filasOil.length){
+      text += '\nOIL:\n';
+      filasOil.forEach(f => { text += `${f.hora} | ${f.instalacion} | ${f.pozo} | ${f.novedad}\n`; });
+    }
+    if(navigator.share){ navigator.share({ title: 'Parte de campo', text }).catch(()=>{}); }
+    else if(navigator.clipboard){ navigator.clipboard.writeText(text).then(()=>alert('Copiado.')); }
+    else { prompt('Copia este texto:', text); }
+    marcarReporteEnviado();
+    return;
+  }
+
+  const wb = new ExcelJS.Workbook();
+  const FONT_NAME = 'Calibri';
+  const FONT_SIZE = 11.5;
+
+  if(filasGasConNotas.length){
+    agregarHojaParte(wb, 'GAS', 'REPORTE GAS - YAC. CENTENARIO', filasGasConNotas, hoy, FONT_NAME, FONT_SIZE);
+  }
+  if(filasOil.length){
+    agregarHojaParte(wb, 'OIL', 'REPORTE OIL - YAC. CENTENARIO', filasOil, hoy, FONT_NAME, FONT_SIZE);
+  }
+
+  const fileName = `Parte_de_campo_${new Date().toISOString().slice(0,10)}.xlsx`;
+  wb.xlsx.writeBuffer().then(buffer => {
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    downloadOrShareBlob(blob, fileName, 'Parte de campo');
+    marcarReporteEnviado();
+  }).catch((err) => {
+    alert('No se pudo generar el Excel (' + (err && err.message ? err.message : 'error desconocido') + '). Probá de nuevo con conexion a internet.');
+  });
+}
+
+// copia de los valores originales (antes de cualquier edicion), para poder mostrar el "antes -> despues"
+const ORIGINAL_POZOS = {};
+POZOS.forEach(p => { ORIGINAL_POZOS[p.pozo] = Object.assign({}, p); });
+
+render('');
+startSync();
+updatePendCount();
+if(storageBlocked){
+  const warn = document.createElement('div');
+  warn.className = 'plano-note';
+  warn.style.margin = '10px 14px';
+  warn.textContent = 'Ojo: este navegador no permite guardar datos de forma permanente en este archivo. Tus cambios van a funcionar mientras tengas esta pestaña abierta, pero se pueden perder si cerrás o recargás la pagina. Si podés, abrí el archivo desde Chrome (no desde WhatsApp/Drive directo) para que guarde mejor.';
+  document.body.insertBefore(warn, document.getElementById('main'));
+}
+
+// ---------------- Vista Plano (colectoras) ----------------
+function renderPlano(){
+  const planoMain = document.getElementById('planoMain');
+  const f = (document.getElementById('searchBox').value || '').trim().toLowerCase();
+  planoMain.innerHTML = `<div class="plano-note">Colectoras segun el plano de red "RED DE CAPTACION DE GAS - YACIMIENTO CENTENARIO" (Act. Agosto 2017). Puede estar desactualizado: confirmar estado real de cada pozo antes de operar. Los pozos sin colectora cargada todavia aparecen en su propio grupo "Sin colectora" dentro de cada USPA.</div>`;
+
+  // agrupar por colectora (los que no tienen colectora cargada van a un grupo aparte, por bateria,
+  // para que no desaparezcan silenciosamente mientras se va completando ese dato)
+  const colectoras = {};
+  POZOS.forEach(p => {
+    const key = p.colectora ? p.colectora : `Sin colectora (${p.bateria || 'Sin bateria'})`;
+    if(!colectoras[key]) colectoras[key] = [];
+    colectoras[key].push(p);
+  });
+
+  // si hay busqueda, nos quedamos solo con las colectoras que tengan algun pozo que coincida
+  let colectorasKeys = Object.keys(colectoras);
+  if(f){
+    colectorasKeys = colectorasKeys.filter(name => colectoras[name].some(w => w.pozo.toLowerCase().includes(f)));
+    if(colectorasKeys.length === 0){
+      planoMain.innerHTML += '<div class="empty-msg">No hay pozos que coincidan con esa busqueda.</div>';
+      return;
+    }
+  }
+
+  // determinar bateria dominante de cada colectora
+  function dominantBat(wells){
+    const counts = {};
+    wells.forEach(w => { counts[w.bateria] = (counts[w.bateria]||0) + 1; });
+    let best = "Sin bateria", bestN = -1;
+    for(const k in counts){ if(counts[k] > bestN){ best = k; bestN = counts[k]; } }
+    return best;
+  }
+
+  const byUspa = {};
+  colectorasKeys.forEach(colName => {
+    const wells = colectoras[colName];
+    const bat = dominantBat(wells);
+    if(!byUspa[bat]) byUspa[bat] = [];
+    byUspa[bat].push({ name: colName, wells });
+  });
+
+  USPA_ORDER.forEach(bat => {
+    if(!byUspa[bat]) return;
+    const block = document.createElement('div');
+    block.className = 'uspa-block';
+
+    const title = document.createElement('div');
+    title.className = 'uspa-title';
+    title.textContent = USPA_TITLES[bat] || bat;
+    title.style.background = BAT_COLORS[bat] || '#7a828d';
+    block.appendChild(title);
+
+    block.appendChild(crearNotasUspaBox(bat));
+
+    const grid = document.createElement('div');
+    grid.className = 'colector-grid';
+
+    byUspa[bat].sort((a,b) => a.name.localeCompare(b.name)).forEach(col => {
+      const card = document.createElement('div');
+      card.className = 'colector-card';
+      card.innerHTML = `
+        <div class="name">${col.name}</div>
+        <div class="count">${col.wells.length} pozo${col.wells.length>1?'s':''}</div>
+        <div class="colector-wells"></div>
+      `;
+      const wellsBox = card.querySelector('.colector-wells');
+      col.wells.sort((a,b) => a.pozo.localeCompare(b.pozo, undefined, {numeric:true})).forEach(w => {
+        const isOpt = !!(w.optim && w.optim.trim());
+        const isMatch = f && w.pozo.toLowerCase().includes(f);
+        const chip = document.createElement('span');
+        chip.className = 'well-chip-sm' + (isOpt ? ' opt' : '') + (isMatch ? ' match' : '');
+        chip.textContent = w.pozo.replace('Ce-','');
+        chip.addEventListener('click', (ev) => { ev.stopPropagation(); openCard(w, w.bateria); });
+        wellsBox.appendChild(chip);
+      });
+      if(f) wellsBox.classList.add('show'); // con busqueda activa, mostramos los pozos ya desplegados
+      card.addEventListener('click', () => wellsBox.classList.toggle('show'));
+      grid.appendChild(card);
+    });
+
+    block.appendChild(grid);
+    planoMain.appendChild(block);
+  });
+}
+
+// ---------------- Manejo de pestañas (helper generico) ----------------
+const TAB_IDS = ['tabLista','tabPlano','tabCiclaje','tabMov','tabAib','tabTanques','tabPias'];
+const MAIN_IDS = ['main','planoMain','ciclajeMain','movMain','aibMain','tanquesMain','piasMain'];
+function switchTab(activeTabId, activeMainId){
+  TAB_IDS.forEach(id => document.getElementById(id).classList.toggle('active', id === activeTabId));
+  MAIN_IDS.forEach(id => document.getElementById(id).style.display = (id === activeMainId) ? '' : 'none');
+}
+
+document.getElementById('tabPlano').addEventListener('click', () => {
+  switchTab('tabPlano', 'planoMain');
+  renderPlano(); // siempre redibuja (barato) para respetar la busqueda vigente y datos frescos
+});
+
+// ---------------- Vista Ciclaje ----------------
+function isEnCiclaje(p){
+  if(p.enCiclaje === true) return true;
+  if(p.enCiclaje === false) return false;
+  // sin marca manual todavia: usamos el criterio viejo (automatico) como punto de partida
+  return !!(
+    (p.ciclo && p.ciclo.trim()) ||
+    (p.horario && p.horario.trim()) ||
+    (p.optim && p.optim.toLowerCase().includes('manual')) ||
+    (p.notas && p.notas.toLowerCase().includes('manual'))
+  );
+}
+
+function renderCiclaje(){
+  const ciclajeMain = document.getElementById('ciclajeMain');
+  ciclajeMain.innerHTML = `<div class="plano-note">Pozos en ciclaje hoy. Agregalos o sacalos con los controles de abajo, ya que van cambiando.</div>
+    <div class="add-ciclaje-row">
+      <input type="text" id="addCiclajeInput" placeholder="Agregar pozo (ej: 1580)" class="edit-input">
+      <button id="addCiclajeBtn" class="add-ciclaje-btn">Agregar</button>
+    </div>`;
+
+  document.getElementById('addCiclajeBtn').addEventListener('click', () => {
+    const inp = document.getElementById('addCiclajeInput');
+    const q = inp.value.trim().replace(/^ce-?/i, '');
+    if(!q) return;
+    const rec = POZOS.find(p => p.pozo.replace(/^Ce-/i,'').toLowerCase() === q.toLowerCase());
+    if(!rec){
+      alert('No encontre ningun pozo "' + inp.value + '" en la lista.');
+      return;
+    }
+    if(!puedeModificar()) return;
+    rec.enCiclaje = true;
+    rec._edited = true;
+    saveEdit(rec.pozo, { enCiclaje: true });
+    inp.value = '';
+    renderCiclaje();
+  });
+  document.getElementById('addCiclajeInput').addEventListener('keydown', (e) => {
+    if(e.key === 'Enter') document.getElementById('addCiclajeBtn').click();
+  });
+
+  const enCiclaje = POZOS.filter(isEnCiclaje);
+
+  const groups = groupByBateria(enCiclaje);
+  const order = ["USPA2","USPA3","USPA4","USPA5","Sin bateria"];
+
+  order.forEach(bat => {
+    if(!groups[bat]) return;
+    const items = groups[bat].sort((a,b) => a.pozo.localeCompare(b.pozo, undefined, {numeric:true}));
+    const block = document.createElement('div');
+    block.className = 'uspa-block';
+
+    const title = document.createElement('div');
+    title.className = 'uspa-title';
+    title.textContent = `${USPA_TITLES[bat] || bat} (${items.length})`;
+    title.style.background = BAT_COLORS[bat] || '#7a828d';
+    block.appendChild(title);
+
+    items.forEach(rec => {
+      const isManual = (rec.optim && rec.optim.toLowerCase().includes('manual')) || (rec.notas && rec.notas.toLowerCase().includes('manual'));
+      const estadoClass = rec.estado === 'Abierto' ? 'abierto' : (rec.estado === 'Cerrado' ? 'cerrado' : 'sd');
+      const estadoLabel = rec.estado || 'sin dato';
+      const detailBits = [];
+      if(rec.ciclo) detailBits.push(`Ciclo: ${rec.ciclo}`);
+      if(rec.horario) detailBits.push(`Horario: ${rec.horario}`);
+      if(isManual) detailBits.push(`<span class="cr-manual">Con optimizador, operado en manual</span>`);
+
+      const row = document.createElement('div');
+      row.className = 'ciclaje-row';
+      row.innerHTML = `
+        <div class="cr-left">
+          <div class="cr-pozo">${rec.pozo}</div>
+          <div class="cr-detail">${detailBits.join(' &middot; ') || 'Sin detalle de ciclo'}</div>
+        </div>
+        <div class="cr-estado ${estadoClass}">${estadoLabel}</div>
+        <button class="cr-remove" title="Quitar de ciclaje">&times;</button>
+      `;
+      row.querySelector('.cr-left').addEventListener('click', () => openCard(rec, bat));
+      row.querySelector('.cr-estado').addEventListener('click', () => openCard(rec, bat));
+      row.querySelector('.cr-remove').addEventListener('click', (e) => {
+        e.stopPropagation();
+        if(!puedeModificar()) return;
+        rec.enCiclaje = false;
+        rec._edited = true;
+        saveEdit(rec.pozo, { enCiclaje: false });
+        renderCiclaje();
+      });
+      block.appendChild(row);
+    });
+
+    ciclajeMain.appendChild(block);
+  });
+
+  if(enCiclaje.length === 0){
+    ciclajeMain.innerHTML += '<div class="empty-msg">No hay pozos marcados en ciclaje todavia.</div>';
+  }
+}
+
+document.getElementById('tabCiclaje').addEventListener('click', () => {
+  switchTab('tabCiclaje', 'ciclajeMain');
+  renderCiclaje();
+});
+document.getElementById('tabLista').addEventListener('click', () => {
+  switchTab('tabLista', 'main');
+});
+
+// ---------------- Vista Ultimos movimientos ----------------
+function tiempoRelativo(date){
+  if(!date) return '';
+  const diffMs = Date.now() - date.getTime();
+  const mins = Math.floor(diffMs / 60000);
+  if(mins < 1) return 'recien';
+  if(mins < 60) return `hace ${mins} min`;
+  const horas = Math.floor(mins / 60);
+  if(horas < 24) return `hace ${horas} h`;
+  const dias = Math.floor(horas / 24);
+  return `hace ${dias} d`;
+}
+
+function renderMovimientos(){
+  const movMain = document.getElementById('movMain');
+  movMain.innerHTML = `<div class="plano-note">Pozos y novedades de USPA (gas, petroleo y notas) ordenados por la ultima modificacion (de cualquier dispositivo), la mas reciente primero.</div>`;
+
+  const gasConMov = POZOS.filter(p => p._updatedAtDate).map(p => Object.assign({ _tipo: 'gas' }, p));
+  const oilConMov = AIB_POZOS.filter(p => p._updatedAtDate).map(p => Object.assign({ _tipo: 'oil' }, p));
+  const notasConMov = USPA_NOTAS.filter(n => n._updatedAtDate).map(n => Object.assign({ _tipo: 'nota' }, n));
+  const notasEquipoConMov = EQUIPOS_NOTAS.filter(n => n._updatedAtDate).map(n => Object.assign({ _tipo: 'notaEquipo' }, n));
+  const conMovimiento = [...gasConMov, ...oilConMov, ...notasConMov, ...notasEquipoConMov].sort((a,b) => b._updatedAtDate - a._updatedAtDate);
+
+  if(conMovimiento.length === 0){
+    movMain.innerHTML += '<div class="empty-msg">Todavia no hay movimientos registrados.</div>';
+    return;
+  }
+
+  const FIELD_LABELS_MOV = {
+    presion: 'presion', colectora: 'colectora', tablero: 'tablero', optim: 'optimizador',
+    fecha: 'ultima visita', notas: 'notas', estado: 'estado', ciclo: 'ciclo',
+    horario: 'horario', horaApertura: 'hora apertura', horaCierre: 'hora cierre',
+    horarioNota: 'nota horario', enCiclaje: 'ciclaje',
+    bp: 'BP', pl: 'PL', perdidas: 'perdidas', hora: 'hora', bateria: 'bateria', motivoParo: 'motivo de paro', nota: 'nota',
+    texto: 'novedad'
+  };
+
+  conMovimiento.forEach(rec => {
+    const esOil = rec._tipo === 'oil';
+    const esNota = rec._tipo === 'nota';
+    const bat = rec.bateria || 'Sin bateria';
+
+    if(rec._tipo === 'notaEquipo'){
+      const row = document.createElement('div');
+      row.className = 'ciclaje-row';
+      row.innerHTML = `
+        <div class="cr-left">
+          <div class="cr-pozo">Novedad ${rec.grupo}${rec.equipo ? ' &middot; '+rec.equipo : ''}</div>
+          <div class="cr-detail">${rec.operador ? `<b>${rec.operador}</b> &middot; ` : ''}${tiempoRelativo(rec._updatedAtDate)}${rec.hora ? ' &middot; hora: '+rec.hora : ''} &middot; ${rec.texto}</div>
+        </div>
+        <div class="cr-estado sd">Nota</div>
+      `;
+      row.addEventListener('click', () => {
+        equiposNotasAbiertas.add(rec.grupo);
+        if(rec.grupo === 'Pias 2'){
+          switchTab('tabPias', 'piasMain');
+          renderPias();
+        } else {
+          bateriasAbiertas.add(rec.grupo);
+          switchTab('tabTanques', 'tanquesMain');
+          renderTanques();
+        }
+      });
+      movMain.appendChild(row);
+      return;
+    }
+
+    if(esNota){
+      const row = document.createElement('div');
+      row.className = 'ciclaje-row';
+      row.innerHTML = `
+        <div class="cr-left">
+          <div class="cr-pozo">Novedad ${bat}${rec.equipo ? ' &middot; '+rec.equipo : ''}</div>
+          <div class="cr-detail">${rec.operador ? `<b>${rec.operador}</b> &middot; ` : ''}${tiempoRelativo(rec._updatedAtDate)}${rec.hora ? ' &middot; hora: '+rec.hora : ''} &middot; ${rec.texto}</div>
+        </div>
+        <div class="cr-estado sd">Nota</div>
+      `;
+      row.addEventListener('click', () => {
+        switchTab('tabPlano', 'planoMain');
+        uspaNotasAbiertas.add(bat);
+        renderPlano();
+      });
+      movMain.appendChild(row);
+      return;
+    }
+
+    const estadoLabel = esOil ? (rec.estado === 'Parado' ? 'Parado' : 'Marcha') : (rec.estado || 'sin dato');
+    const estadoClass = esOil
+      ? (rec.estado === 'Parado' ? 'cerrado' : 'abierto')
+      : (rec.estado === 'Abierto' ? 'abierto' : (rec.estado === 'Cerrado' ? 'cerrado' : 'sd'));
+    const camposTocados = (rec.updatedFields || [])
+      .filter(k => k !== 'updatedAt')
+      .map(k => FIELD_LABELS_MOV[k] || k)
+      .join(', ');
+
+    const row = document.createElement('div');
+    row.className = 'ciclaje-row';
+    row.innerHTML = `
+      <div class="cr-left">
+        <div class="cr-pozo">${rec.pozo} <span style="color:var(--muted); font-weight:400; font-size:0.75rem;">${bat}${esOil ? ' &middot; Petroleo (AIB)' : ''}</span></div>
+        <div class="cr-detail">${rec.operador ? `<b>${rec.operador}</b> &middot; ` : ''}${tiempoRelativo(rec._updatedAtDate)}${camposTocados ? ' &middot; se modifico: ' + camposTocados : ''}</div>
+      </div>
+      <div class="cr-estado ${estadoClass}">${estadoLabel}</div>
+    `;
+    row.addEventListener('click', () => {
+      if(esOil){
+        switchTab('tabAib', 'aibMain');
+        renderAib();
+      } else {
+        openCard(rec, bat);
+      }
+    });
+    movMain.appendChild(row);
+  });
+}
+
+document.getElementById('tabMov').addEventListener('click', () => {
+  switchTab('tabMov', 'movMain');
+  renderMovimientos();
+});
+
+// ---------------- Vista AIB (pozos de petroleo) ----------------
+function formatAibPresion(raw){
+  if(!raw || raw.toString().trim().toUpperCase() === 'S/D') return 'S/D';
+  return convertPresionText(raw.toString(), pressureUnit);
+}
+// valor SIN unidad (solo el numero) convertido a la unidad actual, para mostrar en los inputs editables de BP/PL
+function aibPresionDisplayValue(raw){
+  if(!raw || raw.toString().trim().toUpperCase() === 'S/D') return raw || '';
+  const num = parseFloat(raw.toString().replace(',', '.'));
+  if(isNaN(num)) return raw;
+  const out = pressureUnit === 'psi' ? num * KG_TO_PSI : num;
+  return (Math.round(out * 10) / 10).toString().replace('.', ',');
+}
+// inverso: lo que el usuario tipeo (en la unidad actual) vuelve a kg/cm2, que es como se guarda siempre
+function aibPresionToKg(displayVal){
+  if(!displayVal || displayVal.toString().trim().toUpperCase() === 'S/D') return displayVal || '';
+  const num = parseFloat(displayVal.toString().replace(',', '.'));
+  if(isNaN(num)) return displayVal;
+  const kg = pressureUnit === 'psi' ? num / KG_TO_PSI : num;
+  return (Math.round(kg * 10) / 10).toString().replace('.', ',');
+}
+
+function buildAibNovedad(rec){
+  const bpTxt = formatAibPresion(rec.bp);
+  const plTxt = formatAibPresion(rec.pl);
+
+  if(rec.estado === 'Parado'){
+    const motivo = rec.motivoParo || 'sin especificar';
+    let texto = `Se verifica AIB, PARADO - Motivo: ${motivo}. #BP: ${bpTxt} / #PL: ${plTxt}.`;
+    if(rec.nota && rec.nota.trim()) texto += ` ${rec.nota.trim()}`;
+    return texto;
+  }
+
+  const perdidasTxt = rec.perdidas ? 'Con perdidas por vastago.' : 'Sin perdidas.';
+  let texto = `Se verifica AIB, en marcha OK - #BP: ${bpTxt} / #PL: ${plTxt}. ${perdidasTxt}`;
+  if(rec.nota && rec.nota.trim()) texto += ` ${rec.nota.trim()}`;
+  return texto;
+}
+
+function renderAib(){
+  const aibMain = document.getElementById('aibMain');
+  aibMain.innerHTML = `<div class="plano-note">Pozos de petroleo (AIB). Agregalos con el numero de pozo y la bateria, despues cargales BP/PL desde cada fila.</div>
+    <div class="add-ciclaje-row">
+      <input type="text" id="addAibPozo" placeholder="Pozo (ej: 1314)" class="edit-input" style="max-width:130px;">
+      <input type="text" id="addAibBat" placeholder="Bateria (ej: Bateria 5)" class="edit-input">
+      <button id="addAibBtn" class="add-ciclaje-btn">Agregar</button>
+    </div>`;
+
+  document.getElementById('addAibBtn').addEventListener('click', () => {
+    const inpPozo = document.getElementById('addAibPozo');
+    const inpBat = document.getElementById('addAibBat');
+    let pozoNum = inpPozo.value.trim().replace(/^ce-?/i, '').replace(/\//g, '-');
+    if(!pozoNum) return;
+    const pozoKey = 'Ce-' + pozoNum;
+    if(AIB_POZOS.find(p => p.pozo === pozoKey)){
+      alert('Ese pozo ya esta cargado en AIB.');
+      return;
+    }
+    const bateria = inpBat.value.trim() || 'Sin bateria';
+    if(!puedeModificar()) return;
+    saveAibPozo(pozoKey, { bateria: bateria, bp: '', pl: '', perdidas: false, nota: '' });
+    inpPozo.value = '';
+    inpBat.value = '';
+  });
+  document.getElementById('addAibPozo').addEventListener('keydown', (e) => {
+    if(e.key === 'Enter') document.getElementById('addAibBtn').click();
+  });
+
+  if(AIB_POZOS.length === 0){
+    aibMain.innerHTML += '<div class="empty-msg">Todavia no cargaste ningun pozo de petroleo.</div>';
+    return;
+  }
+
+  const ordenados = [...AIB_POZOS].sort((a,b) => (a.bateria||'').localeCompare(b.bateria||'') || a.pozo.localeCompare(b.pozo, undefined, {numeric:true}));
+
+  const MOTIVOS_PARO = ['Paro ecologico', 'Corte de vastago', 'Sobrecarga', 'Sobrevelocidad'];
+
+  ordenados.forEach(rec => {
+    const row = document.createElement('div');
+    row.className = 'aib-row';
+    const estadoActual = rec.estado === 'Parado' ? 'Parado' : 'Marcha';
+    const motivoOptions = MOTIVOS_PARO.map(m => `<option value="${m}" ${rec.motivoParo===m?'selected':''}>${m}</option>`).join('');
+    row.innerHTML = `
+      <div class="aib-row-top">
+        <div class="aib-pozo">${rec.pozo}</div>
+        <button class="cr-remove" title="Quitar pozo">&times;</button>
+      </div>
+      <div class="estado-toggle">
+        <button type="button" class="estado-btn abierto aib-estado-btn ${estadoActual==='Marcha'?'active':''}" data-val="Marcha">MARCHA</button>
+        <button type="button" class="estado-btn cerrado aib-estado-btn ${estadoActual==='Parado'?'active':''}" data-val="Parado">PARADO</button>
+      </div>
+      <div class="aib-motivo-wrap" style="display:${estadoActual==='Parado'?'':'none'}; margin-top:8px;">
+        <div class="time-label">Motivo del paro</div>
+        <select class="edit-input aib-motivo">
+          <option value="">-- seleccionar --</option>
+          ${motivoOptions}
+        </select>
+      </div>
+      <div class="aib-fields" style="margin-top:8px;">
+        <div class="aib-field">
+          <div class="time-label">Bateria</div>
+          <input type="text" class="edit-input aib-bateria" value="${(rec.bateria||'').replace(/"/g,'&quot;')}" placeholder="ej: Bateria 1">
+        </div>
+        <div class="aib-field">
+          <div class="time-label">Hora de verificacion</div>
+          <input type="time" class="edit-input time-input aib-hora" value="${rec.hora || ''}">
+        </div>
+      </div>
+      <div class="aib-fields">
+        <div class="aib-field">
+          <div class="time-label">BP (${pressureUnit === 'psi' ? 'psi' : 'kg/cm2'})</div>
+          <input type="text" class="edit-input aib-bp" value="${aibPresionDisplayValue(rec.bp).toString().replace(/"/g,'&quot;')}" placeholder="ej: 14,7">
+        </div>
+        <div class="aib-field">
+          <div class="time-label">PL (${pressureUnit === 'psi' ? 'psi' : 'kg/cm2'})</div>
+          <input type="text" class="edit-input aib-pl" value="${aibPresionDisplayValue(rec.pl).toString().replace(/"/g,'&quot;')}" placeholder="ej: 3">
+        </div>
+      </div>
+      <label class="aib-perdidas-check" style="display:${estadoActual==='Parado'?'none':''};">
+        <input type="checkbox" class="aib-perdidas" ${rec.perdidas ? 'checked' : ''}> Con perdidas por vastago
+      </label>
+      <input type="text" class="edit-input aib-nota" value="${(rec.nota||'').replace(/"/g,'&quot;')}" placeholder="Nota extra (opcional)" style="margin-top:6px;">
+      <div class="aib-preview">${buildAibNovedad(Object.assign({}, rec, { estado: estadoActual }))}</div>
+      <button class="save-btn aib-save-btn">Guardar</button>
+    `;
+    row.querySelector('.cr-remove').addEventListener('click', () => {
+      if(!puedeModificar()) return;
+      deleteAibPozo(rec.pozo);
+    });
+
+    let estadoSeleccionado = estadoActual;
+    const motivoWrap = row.querySelector('.aib-motivo-wrap');
+    const perdidasLabel = row.querySelector('.aib-perdidas-check');
+    row.querySelectorAll('.aib-estado-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        estadoSeleccionado = btn.dataset.val;
+        row.querySelectorAll('.aib-estado-btn').forEach(b => b.classList.toggle('active', b.dataset.val === estadoSeleccionado));
+        motivoWrap.style.display = estadoSeleccionado === 'Parado' ? '' : 'none';
+        perdidasLabel.style.display = estadoSeleccionado === 'Parado' ? 'none' : '';
+        updatePreview();
+      });
+    });
+
+    const previewEl = row.querySelector('.aib-preview');
+    function updatePreview(){
+      previewEl.textContent = buildAibNovedad({
+        estado: estadoSeleccionado,
+        motivoParo: row.querySelector('.aib-motivo').value,
+        bp: aibPresionToKg(row.querySelector('.aib-bp').value.trim()),
+        pl: aibPresionToKg(row.querySelector('.aib-pl').value.trim()),
+        perdidas: row.querySelector('.aib-perdidas').checked,
+        nota: row.querySelector('.aib-nota').value.trim()
+      });
+    }
+    row.querySelector('.aib-bp').addEventListener('input', updatePreview);
+    row.querySelector('.aib-pl').addEventListener('input', updatePreview);
+    row.querySelector('.aib-perdidas').addEventListener('change', updatePreview);
+    row.querySelector('.aib-nota').addEventListener('input', updatePreview);
+    row.querySelector('.aib-motivo').addEventListener('change', updatePreview);
+    row.querySelector('.aib-save-btn').addEventListener('click', () => {
+      if(!puedeModificar()) return;
+      const bateria = row.querySelector('.aib-bateria').value.trim() || 'Sin bateria';
+      const hora = row.querySelector('.aib-hora').value;
+      const bp = aibPresionToKg(row.querySelector('.aib-bp').value.trim());
+      const pl = aibPresionToKg(row.querySelector('.aib-pl').value.trim());
+      const perdidas = row.querySelector('.aib-perdidas').checked;
+      const nota = row.querySelector('.aib-nota').value.trim();
+      const motivoParo = row.querySelector('.aib-motivo').value;
+      saveAibPozo(rec.pozo, { hora, bp, pl, perdidas, nota, bateria, estado: estadoSeleccionado, motivoParo });
+    });
+    aibMain.appendChild(row);
+  });
+}
+
+document.getElementById('tabAib').addEventListener('click', () => {
+  switchTab('tabAib', 'aibMain');
+  renderAib();
+});
+
+// ---------------- Tanques (Bateria 1/2/5) y Pias 2 ----------------
+function crearTarjetaTanque(nombre, bateria, coleccion, datos){
+  const rec = datos.find(d => d.nombre === nombre);
+  const card = document.createElement('div');
+  card.className = 'tk-card';
+  const ultimaTxt = rec && rec._updatedAtDate
+    ? `${rec.nivelTotal || '?'} / ${rec.nivelInterfaz || '?'} cm &middot; ${tiempoRelativo(rec._updatedAtDate)}${rec.operador ? ' &middot; ' + rec.operador : ''}`
+    : 'sin datos';
+  card.innerHTML = `
+    <div class="tk-top">
+      <p class="tk-nombre">${nombre}</p>
+      <p class="tk-ultima">${ultimaTxt}</p>
+    </div>
+    <div class="tk-fields">
+      <div class="tk-field"><label>Nivel Total (cm)</label><input type="text" class="tk-total" placeholder="ej: 90,23" value="${rec ? (rec.nivelTotal||'') : ''}"></div>
+      <div class="tk-field"><label>Nivel Interfaz (cm)</label><input type="text" class="tk-interfaz" placeholder="ej: 30,00" value="${rec ? (rec.nivelInterfaz||'') : ''}"></div>
+    </div>
+    <button class="tk-save">Guardar medicion</button>
+  `;
+  card.querySelector('.tk-save').addEventListener('click', () => {
+    const nt = card.querySelector('.tk-total').value.trim();
+    const ni = card.querySelector('.tk-interfaz').value.trim();
+    guardarMedicionTanque(coleccion, nombre, bateria, nt, ni);
+  });
+  return card;
+}
+
+function crearTarjetaEquipo(nombre, tipo, datos){
+  const rec = datos.find(d => d.nombre === nombre);
+  const estadoActual = rec ? rec.estado : 'Operativa';
+  const card = document.createElement('div');
+  card.className = 'eq-card';
+  card.innerHTML = `
+    <div class="eq-top">
+      <p class="eq-nombre">${nombre}</p>
+      <button type="button" class="eq-badge ${estadoActual === 'Falla' ? 'falla' : 'op'}">${estadoActual === 'Falla' ? 'EN FALLA' : 'OPERATIVA'}</button>
+    </div>
+    <textarea class="eq-nota" rows="2" placeholder="Cargar novedad si entra en falla...">${rec ? (rec.nota||'') : ''}</textarea>
+    <button class="eq-save">Guardar</button>
+  `;
+  const badge = card.querySelector('.eq-badge');
+  let estadoLocal = estadoActual;
+  badge.addEventListener('click', () => {
+    estadoLocal = estadoLocal === 'Falla' ? 'Operativa' : 'Falla';
+    badge.classList.toggle('falla', estadoLocal === 'Falla');
+    badge.classList.toggle('op', estadoLocal !== 'Falla');
+    badge.textContent = estadoLocal === 'Falla' ? 'EN FALLA' : 'OPERATIVA';
+  });
+  card.querySelector('.eq-save').addEventListener('click', () => {
+    guardarEquipoPias2(nombre, tipo, estadoLocal, card.querySelector('.eq-nota').value.trim());
+  });
+  return card;
+}
+
+function renderTanques(){
+  const main = document.getElementById('tanquesMain');
+  main.innerHTML = '<p class="seccion-titulo">Baterias</p><div id="bateriasAcordeon"></div>';
+  const cont = document.getElementById('bateriasAcordeon');
+  Object.keys(TANQUES_BATERIAS).forEach(bat => {
+    const abierto = bateriasAbiertas.has(bat);
+    const header = document.createElement('div');
+    header.className = 'bat-header';
+    header.innerHTML = `<p>${bat}</p><span class="chev">${abierto ? '&#9662;' : '&#9656;'}</span>`;
+    const body = document.createElement('div');
+    body.className = 'bat-body' + (abierto ? '' : ' closed');
+    body.appendChild(crearNotasEquipoBox(bat));
+    TANQUES_BATERIAS[bat].forEach(tk => body.appendChild(crearTarjetaTanque(tk, bat, 'baterias_tanques', TANQUES_DATA)));
+    header.addEventListener('click', () => {
+      if(bateriasAbiertas.has(bat)){ bateriasAbiertas.delete(bat); } else { bateriasAbiertas.add(bat); }
+      renderTanques();
+    });
+    cont.appendChild(header);
+    cont.appendChild(body);
+  });
+}
+
+function renderPias(){
+  const main = document.getElementById('piasMain');
+  main.innerHTML = `
+    <p class="seccion-titulo">Novedades generales</p>
+    <div id="piasNotasCont"></div>
+    <p class="seccion-titulo">Tanques Pias 2</p>
+    <div id="piasTanquesCont"></div>
+    <p class="seccion-titulo">Compresores de aire</p>
+    <div id="compresoresCont"></div>
+    <p class="seccion-titulo">Bombas Pias 2</p>
+    <div id="bombasCont"></div>
+    <div class="camion-box">
+      <p class="camion-titulo">Carga de camion de agua</p>
+      <div class="camion-grid">
+        <div class="camion-field"><label>Hora entrada</label><input type="time" id="camHoraEntrada"></div>
+        <div class="camion-field"><label>Hora salida</label><input type="time" id="camHoraSalida"></div>
+        <div class="camion-field"><label>Yac. procedencia</label><input type="text" id="camYac" placeholder="ej: LJE"></div>
+        <div class="camion-field"><label>Volumen (m3)</label><input type="text" id="camVolumen" placeholder="ej: 30"></div>
+        <div class="camion-field"><label>Chofer</label><input type="text" id="camChofer" placeholder="nombre"></div>
+        <div class="camion-field"><label>Operador</label><input type="text" id="camOperador" placeholder="nombre" value="${operadorName || ''}"></div>
+        <div class="camion-field" style="grid-column:1/-1"><label>Tanque destino</label>
+          <select id="camTanque">
+            ${PIAS2_TANQUES_NOMBRES.map(t => `<option>${t}</option>`).join('')}
+            <option>PTC (TK206)</option>
+          </select>
+        </div>
+      </div>
+      <button class="camion-save" id="camionSaveBtn">Guardar descarga</button>
+      <div class="camion-lista" id="camionLista"></div>
+    </div>
+  `;
+  document.getElementById('piasNotasCont').appendChild(crearNotasEquipoBox('Pias 2'));
+  const piasTanquesCont = document.getElementById('piasTanquesCont');
+  PIAS2_TANQUES_NOMBRES.forEach(tk => piasTanquesCont.appendChild(crearTarjetaTanque(tk, 'Pias 2', 'pias2_tanques', PIAS2_TANQUES_DATA)));
+
+  const compresoresCont = document.getElementById('compresoresCont');
+  COMPRESORES_PIAS2.forEach(k => compresoresCont.appendChild(crearTarjetaEquipo(k, 'compresor', PIAS2_EQUIPOS_DATA)));
+
+  const bombasCont = document.getElementById('bombasCont');
+  BOMBAS_PIAS2.forEach(p => bombasCont.appendChild(crearTarjetaEquipo(p, 'bomba', PIAS2_EQUIPOS_DATA)));
+
+  document.getElementById('camionSaveBtn').addEventListener('click', () => {
+    const datos = {
+      horaEntrada: document.getElementById('camHoraEntrada').value,
+      horaSalida: document.getElementById('camHoraSalida').value,
+      yacProcedencia: document.getElementById('camYac').value.trim(),
+      volumen: document.getElementById('camVolumen').value.trim(),
+      chofer: document.getElementById('camChofer').value.trim(),
+      operador: document.getElementById('camOperador').value.trim(),
+      tanqueDestino: document.getElementById('camTanque').value
+    };
+    if(!datos.horaEntrada || !datos.volumen){
+      alert('Cargá al menos la hora de entrada y el volumen.');
+      return;
+    }
+    guardarCamionAgua(datos);
+  });
+
+  const lista = document.getElementById('camionLista');
+  PIAS2_CAMIONES_DATA.slice(0, 8).forEach(c => {
+    const row = document.createElement('div');
+    row.className = 'camion-row';
+    row.innerHTML = `<span>${c.fecha} ${c.horaEntrada}${c.horaSalida ? '-'+c.horaSalida : ''}</span> <b>${c.volumen} m3</b> <span>${c.chofer || ''} &rarr; ${c.tanqueDestino || ''} &middot; ${c.operador || ''}</span>`;
+    lista.appendChild(row);
+  });
+}
+
+document.getElementById('tabTanques').addEventListener('click', () => {
+  switchTab('tabTanques', 'tanquesMain');
+  renderTanques();
+});
+document.getElementById('tabPias').addEventListener('click', () => {
+  switchTab('tabPias', 'piasMain');
+  renderPias();
+});
+
+// arranca mostrando el Plano por defecto (ya con todo declarado)
+renderPlano();
+
+</script>
+
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
