@@ -2712,14 +2712,15 @@ if(storageBlocked){
 function renderPlano(){
   const planoMain = document.getElementById('planoMain');
   const f = (document.getElementById('searchBox').value || '').trim().toLowerCase();
-  planoMain.innerHTML = `<div class="plano-note">Colectoras segun el plano de red "RED DE CAPTACION DE GAS - YACIMIENTO CENTENARIO" (Act. Agosto 2017). Puede estar desactualizado: confirmar estado real de cada pozo antes de operar. Los pozos sin colectora identificada en el plano no aparecen aca (ver pestana Lista).</div>`;
+  planoMain.innerHTML = `<div class="plano-note">Colectoras segun el plano de red "RED DE CAPTACION DE GAS - YACIMIENTO CENTENARIO" (Act. Agosto 2017). Puede estar desactualizado: confirmar estado real de cada pozo antes de operar. Los pozos sin colectora cargada todavia aparecen en su propio grupo "Sin colectora" dentro de cada USPA.</div>`;
 
-  // agrupar por colectora
+  // agrupar por colectora (los que no tienen colectora cargada van a un grupo aparte, por bateria,
+  // para que no desaparezcan silenciosamente mientras se va completando ese dato)
   const colectoras = {};
   POZOS.forEach(p => {
-    if(!p.colectora) return;
-    if(!colectoras[p.colectora]) colectoras[p.colectora] = [];
-    colectoras[p.colectora].push(p);
+    const key = p.colectora ? p.colectora : `Sin colectora (${p.bateria || 'Sin bateria'})`;
+    if(!colectoras[key]) colectoras[key] = [];
+    colectoras[key].push(p);
   });
 
   // si hay busqueda, nos quedamos solo con las colectoras que tengan algun pozo que coincida
