@@ -1610,8 +1610,9 @@ function startSync(){
     updatePendCount();
   }, (err) => { console.error('Firestore sync error (pias2_equipos)', err); });
 
-  // descargas de camiones de agua en Pias 2
-  db.collection('pias2_camiones').onSnapshot((snapshot) => {
+  // descargas de camiones de agua en Pias 2 (solo los ultimos 200, ordenados por fecha, para no
+  // leer la coleccion entera cada vez que crezca con los años)
+  db.collection('pias2_camiones').orderBy('updatedAt', 'desc').limit(200).onSnapshot((snapshot) => {
     PIAS2_CAMIONES_DATA = [];
     snapshot.forEach((doc) => {
       const data = doc.data();
