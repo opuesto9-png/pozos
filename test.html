@@ -2096,7 +2096,10 @@ function renderCardEdit(rec, bat){
       newFields.horasRangoHasta = hcEfectivo;
       newFields.horasRangoConfirmado = true;
       newFields.veniaDeCerradoConfirmado = false; // no afirmamos que venia cerrado, no lo sabemos
-    } else if(cierreCambio && hcEfectivo && rec.estado !== 'Cerrado'){
+    } else if(cierreCambio && hcEfectivo){
+      // el cierre cambio (aperturaCambio ya se cubrio arriba). No restringimos por el estado
+      // anterior: esto tambien cubre corregir la hora de cierre en un pozo que YA estaba
+      // cerrado de antes (sin tocar la apertura), que antes se quedaba con el dato viejo.
       const referenciaApertura = horaAperturaOriginal || '06:00';
       newFields.horasTotalNum = calcDuracionDecimal(referenciaApertura, hcEfectivo);
       newFields.horasTotalTipo = 'abierto';
