@@ -2068,10 +2068,27 @@ function renderCardEdit(rec, bat){
     }
     newFields.horario = horario;
 
+    // si se cargan apertura Y cierre juntos en un solo guardado, no sabemos por el texto solo cual
+    // de las dos paso despues. Lo resolvemos por la lectura mas logica: entre las dos formas posibles
+    // de leer la secuencia (cierre->apertura o apertura->cierre), nos quedamos con la que da el tramo
+    // MAS CORTO entre las dos horas - un pozo que cambia de estado suele ser un ciclo de pocas horas,
+    // no de casi un dia entero. Esto no depende de la hora real del reloj al guardar, solo de las
+    // dos horas que se cargaron.
+    let terminaAbierto = null; // solo se usa cuando cambian los dos horarios juntos
+    if(aperturaCambio && cierreCambio && hA && hcEfectivo){
+      const siCierraPrimero = calcDuracionDecimal(hcEfectivo, hA); // cierre -> apertura (termina abierto)
+      const siAbrePrimero = calcDuracionDecimal(hA, hcEfectivo); // apertura -> cierre (termina cerrado)
+      terminaAbierto = siCierraPrimero <= siAbrePrimero;
+    }
+
     // el estado solo se reevalua si REALMENTE tocaste apertura o cierre. Si solo editaste otro campo
     // (presion, notas, etc.) sin tocar el horario, el estado actual queda como estaba, sin pisarlo.
     if(aperturaCambio || cierreCambio){
-      if(hcEfectivo){
+      if(terminaAbierto === true){
+        newFields.estado = 'Abierto';
+      } else if(terminaAbierto === false){
+        newFields.estado = 'Cerrado';
+      } else if(hcEfectivo){
         newFields.estado = 'Cerrado';
       } else if(hA){
         newFields.estado = 'Abierto';
@@ -2086,16 +2103,26 @@ function renderCardEdit(rec, bat){
     // el arranque del dia operativo (6am) en vez de dejar el calculo en blanco. Esto vale tambien
     // para un pozo que nunca tuvo estado guardado (primera vez que se le carga horario): si se esta
     // cerrando, asumimos que venia abierto; si se esta abriendo, asumimos que venia cerrado.
-    if(aperturaCambio && cierreCambio && hcEfectivo){
+    if(aperturaCambio && cierreCambio && hcEfectivo && terminaAbierto !== null){
       // se cargaron apertura Y cierre juntos, en un solo guardado (ej: cargando un dato pasado de
-      // una sola vez). Calculamos directo entre esos dos horarios nuevos, sin importar el estado
-      // anterior (que puede ser viejo/irrelevante y no debe pisar este calculo).
-      newFields.horasTotalNum = calcDuracionDecimal(hA, hcEfectivo);
-      newFields.horasTotalTipo = 'abierto';
-      newFields.horasRangoDesde = hA;
-      newFields.horasRangoHasta = hcEfectivo;
+      // una sola vez). Calculamos directo entre esos dos horarios nuevos, en el orden que realmente
+      // paso (segun cual es mas reciente), sin importar el estado anterior (que puede ser viejo).
+      if(terminaAbierto){
+        // cerro primero, abrio despues: termina Abierto. Contamos cuanto estuvo cerrado.
+        newFields.horasTotalNum = calcDuracionDecimal(hcEfectivo, hA);
+        newFields.horasTotalTipo = 'cerrado';
+        newFields.horasRangoDesde = hcEfectivo;
+        newFields.horasRangoHasta = hA;
+        newFields.veniaDeCerradoConfirmado = true; // sabemos que paso por un cierre real, recien cargado
+      } else {
+        // abrio primero, cerro despues: termina Cerrado. Contamos cuanto estuvo abierto.
+        newFields.horasTotalNum = calcDuracionDecimal(hA, hcEfectivo);
+        newFields.horasTotalTipo = 'abierto';
+        newFields.horasRangoDesde = hA;
+        newFields.horasRangoHasta = hcEfectivo;
+        newFields.veniaDeCerradoConfirmado = false; // no afirmamos que venia cerrado antes de esto, no lo sabemos
+      }
       newFields.horasRangoConfirmado = true;
-      newFields.veniaDeCerradoConfirmado = false; // no afirmamos que venia cerrado, no lo sabemos
     } else if(cierreCambio && hcEfectivo){
       // el cierre cambio (aperturaCambio ya se cubrio arriba). No restringimos por el estado
       // anterior: esto tambien cubre corregir la hora de cierre en un pozo que YA estaba
