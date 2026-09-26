@@ -2069,20 +2069,16 @@ function renderCardEdit(rec, bat){
     newFields.horario = horario;
 
     // si se cargan apertura Y cierre juntos en un solo guardado, no sabemos por el texto solo cual
-    // de las dos paso despues - lo resolvemos viendo cual de las dos horas es mas reciente respecto
-    // al momento real en que se esta guardando (la mas cercana "hacia atras" desde ahora es la ultima
-    // maniobra que paso de verdad).
-    function ultimaOcurrencia(horaTxt, ahora){
-      const [h, m] = horaTxt.split(':').map(Number);
-      const d = new Date(ahora);
-      d.setHours(h, m, 0, 0);
-      if(d > ahora) d.setDate(d.getDate() - 1); // si esa hora todavia no paso hoy, fue ayer
-      return d;
-    }
+    // de las dos paso despues. Lo resolvemos por la lectura mas logica: entre las dos formas posibles
+    // de leer la secuencia (cierre->apertura o apertura->cierre), nos quedamos con la que da el tramo
+    // MAS CORTO entre las dos horas - un pozo que cambia de estado suele ser un ciclo de pocas horas,
+    // no de casi un dia entero. Esto no depende de la hora real del reloj al guardar, solo de las
+    // dos horas que se cargaron.
     let terminaAbierto = null; // solo se usa cuando cambian los dos horarios juntos
     if(aperturaCambio && cierreCambio && hA && hcEfectivo){
-      const ahora = new Date();
-      terminaAbierto = ultimaOcurrencia(hA, ahora) >= ultimaOcurrencia(hcEfectivo, ahora);
+      const siCierraPrimero = calcDuracionDecimal(hcEfectivo, hA); // cierre -> apertura (termina abierto)
+      const siAbrePrimero = calcDuracionDecimal(hA, hcEfectivo); // apertura -> cierre (termina cerrado)
+      terminaAbierto = siCierraPrimero <= siAbrePrimero;
     }
 
     // el estado solo se reevalua si REALMENTE tocaste apertura o cierre. Si solo editaste otro campo
