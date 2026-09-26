@@ -2263,7 +2263,12 @@ function buildNovedad(rec){
       ? `Cerrado, recupera presion. Abierto${presionTxt ? ' con presion estatica de ' + presionTxt : ''}.`
       : `Abierto${presionTxt ? ' con presion estatica de ' + presionTxt : ''}.`;
   } else if(rec.estado === 'Cerrado'){
-    base = 'Cerrado recuperando presion.';
+    // si justo se completo un ciclo (estaba abierto y ahora cierra), mencionamos tambien la apertura
+    // anterior con su presion - si no, es la primera vez que se cierra y no hay nada que mencionar antes.
+    const abrioAntes = rec.horasTotalTipo === 'abierto';
+    base = abrioAntes
+      ? `Abierto${presionTxt ? ' con presion estatica de ' + presionTxt : ''}. Cerrado, recuperando presion.`
+      : 'Cerrado recuperando presion.';
   } else {
     base = 'Maniobra registrada.';
   }
