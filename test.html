@@ -1991,18 +1991,21 @@ function renderCardEdit(rec, bat){
     </div>
     <div class="field">
       <div class="k">Horas para el reporte (corregir a mano)</div>
-      <div class="edit-hint">Se calcula solo. Solo tocalo si el numero quedo mal por algun error de carga.</div>
+      <div class="edit-hint">
+        Se calcula solo${typeof rec.horasTotalNum === 'number' ? ` (actual: ${rec.horasTotalNum.toString().replace('.',',')} hs, ${rec.horasTotalTipo === 'cerrado' ? 'perdida' : 'produccion'})` : ''}.
+        Dejalo vacio para no tocarlo - solo completa si el numero quedo mal por algun error de carga.
+      </div>
       <div class="aib-fields">
         <div class="aib-field">
           <div class="time-label">Horas</div>
-          <input type="text" class="edit-input" id="horasManualNum" value="${typeof rec.horasTotalNum === 'number' ? rec.horasTotalNum.toString().replace('.',',') : ''}" placeholder="ej: 2,5">
+          <input type="text" class="edit-input" id="horasManualNum" value="" placeholder="ej: 2,5">
         </div>
         <div class="aib-field">
           <div class="time-label">Tipo</div>
           <select class="edit-input" id="horasManualTipo">
             <option value="">-- sin cambios --</option>
-            <option value="cerrado" ${rec.horasTotalTipo==='cerrado'?'selected':''}>Perdida (cerrado)</option>
-            <option value="abierto" ${rec.horasTotalTipo==='abierto'?'selected':''}>Produccion (abierto)</option>
+            <option value="cerrado">Perdida (cerrado)</option>
+            <option value="abierto">Produccion (abierto)</option>
           </select>
         </div>
       </div>
@@ -2083,7 +2086,17 @@ function renderCardEdit(rec, bat){
     // el arranque del dia operativo (6am) en vez de dejar el calculo en blanco. Esto vale tambien
     // para un pozo que nunca tuvo estado guardado (primera vez que se le carga horario): si se esta
     // cerrando, asumimos que venia abierto; si se esta abriendo, asumimos que venia cerrado.
-    if(cierreCambio && hcEfectivo && rec.estado !== 'Cerrado'){
+    if(aperturaCambio && cierreCambio && hcEfectivo){
+      // se cargaron apertura Y cierre juntos, en un solo guardado (ej: cargando un dato pasado de
+      // una sola vez). Calculamos directo entre esos dos horarios nuevos, sin importar el estado
+      // anterior (que puede ser viejo/irrelevante y no debe pisar este calculo).
+      newFields.horasTotalNum = calcDuracionDecimal(hA, hcEfectivo);
+      newFields.horasTotalTipo = 'abierto';
+      newFields.horasRangoDesde = hA;
+      newFields.horasRangoHasta = hcEfectivo;
+      newFields.horasRangoConfirmado = true;
+      newFields.veniaDeCerradoConfirmado = false; // no afirmamos que venia cerrado, no lo sabemos
+    } else if(cierreCambio && hcEfectivo && rec.estado !== 'Cerrado'){
       const referenciaApertura = horaAperturaOriginal || '06:00';
       newFields.horasTotalNum = calcDuracionDecimal(referenciaApertura, hcEfectivo);
       newFields.horasTotalTipo = 'abierto';
