@@ -1938,6 +1938,19 @@ function renderCardEdit(rec, bat){
     </div>`;
   }
 
+  // ciclo: lo guardamos como texto "Xc x Ya" (X hs cerrado, Y hs abierto) pero lo editamos con
+  // dos casilleros numericos, para que el supervisor solo tenga que poner los numeros
+  let cicloCerradoVal = '';
+  let cicloAbiertoVal = '';
+  if(rec.ciclo){
+    const mc = rec.ciclo.match(/(\d+(?:[.,]\d+)?)\s*c\s*x\s*(\d+(?:[.,]\d+)?)\s*a/i);
+    if(mc){
+      cicloCerradoVal = mc[1].replace(',', '.');
+      cicloAbiertoVal = mc[2].replace(',', '.');
+    }
+  }
+  const cicloOriginal = rec.ciclo || '';
+
   // precargamos desde los campos separados (si el pozo viene de datos viejos sin estos campos, intentamos rescatar del texto)
   let horaAperturaVal = rec.horaApertura || '';
   let horaCierreVal = rec.horaCierre || '';
@@ -1967,7 +1980,26 @@ function renderCardEdit(rec, bat){
     </div>
     ${inputField('Presion', 'presion', rec.presion === 's/d' ? '' : rec.presion)}
     ${inputField('Colectora', 'colectora', rec.colectora)}
-    ${inputField('Ciclo', 'ciclo', rec.ciclo)}
+    <div class="field">
+      <div class="k">Ciclo (si esta en ciclaje manual)</div>
+      <div class="edit-hint">Poné solo los números de horas. Se arma solo como "Xc x Ya" para el reporte.</div>
+      <div class="time-row">
+        <div>
+          <div class="time-label">Horas cerrado</div>
+          <div class="input-with-clear">
+            <input type="number" inputmode="decimal" min="0" step="0.5" class="edit-input time-input" id="cicloCerrado" value="${cicloCerradoVal}">
+            <button type="button" class="field-clear-btn" id="clearCicloCerrado" title="Borrar horas cerrado">&times;</button>
+          </div>
+        </div>
+        <div>
+          <div class="time-label">Horas abierto</div>
+          <div class="input-with-clear">
+            <input type="number" inputmode="decimal" min="0" step="0.5" class="edit-input time-input" id="cicloAbierto" value="${cicloAbiertoVal}">
+            <button type="button" class="field-clear-btn" id="clearCicloAbierto" title="Borrar horas abierto">&times;</button>
+          </div>
+        </div>
+      </div>
+    </div>
     <div class="field">
       <div class="k">Horario de maniobra</div>
       <div class="edit-hint">Solo apertura = queda ABIERTO (verde). Agregar cierre = pasa a CERRADO (rojo).</div>
@@ -2034,6 +2066,12 @@ function renderCardEdit(rec, bat){
   document.getElementById('clearHoraCierre').addEventListener('click', () => {
     document.getElementById('horaCierre').value = '';
   });
+  document.getElementById('clearCicloCerrado').addEventListener('click', () => {
+    document.getElementById('cicloCerrado').value = '';
+  });
+  document.getElementById('clearCicloAbierto').addEventListener('click', () => {
+    document.getElementById('cicloAbierto').value = '';
+  });
   document.getElementById('saveBtn').addEventListener('click', () => {
     if(!puedeModificar()) return;
     const inputs = card.querySelectorAll('.edit-input[data-key]');
@@ -2044,6 +2082,14 @@ function renderCardEdit(rec, bat){
     const hA = document.getElementById('horaApertura').value;
     const hC = document.getElementById('horaCierre').value;
     const nota = document.getElementById('horarioNota').value.trim();
+
+    const cicloCerradoNum = document.getElementById('cicloCerrado').value.trim();
+    const cicloAbiertoNum = document.getElementById('cicloAbierto').value.trim();
+    if(cicloCerradoNum && cicloAbiertoNum){
+      newFields.ciclo = `${cicloCerradoNum}c x ${cicloAbiertoNum}a`;
+    } else {
+      newFields.ciclo = '';
+    }
 
     const aperturaCambio = hA !== horaAperturaOriginal;
     const cierreCambio = hC !== horaCierreOriginal;
