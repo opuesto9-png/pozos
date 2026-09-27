@@ -1987,6 +1987,7 @@ function renderCardEdit(rec, bat){
       </div>
       <button class="close-btn" id="closeBtn">&times;</button>
     </div>
+    ${inputField('Bateria', 'bateria', rec.bateria === 'Sin bateria' ? '' : rec.bateria)}
     ${inputField('Presion', 'presion', rec.presion === 's/d' ? '' : rec.presion)}
     ${inputField('Colectora', 'colectora', rec.colectora)}
     <div class="field">
@@ -2087,6 +2088,9 @@ function renderCardEdit(rec, bat){
     const newFields = {};
     inputs.forEach(inp => { newFields[inp.dataset.key] = inp.value; });
     if(newFields.presion === '') newFields.presion = 's/d';
+    if(newFields.bateria !== undefined){
+      newFields.bateria = newFields.bateria.trim() ? normalizarBateria(newFields.bateria) : 'Sin bateria';
+    }
 
     const hA = document.getElementById('horaApertura').value;
     const hC = document.getElementById('horaCierre').value;
