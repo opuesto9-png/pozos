@@ -2868,44 +2868,45 @@ function isEnCiclaje(p){
   );
 }
 
+function agregarPozoCiclaje(){
+  const inp = document.getElementById('addCiclajeInput');
+  if(!inp) return;
+  const q = inp.value.trim().replace(/^ce-?/i, '').replace(/\//g, '-');
+  if(!q) return;
+  if(!puedeModificar()) return;
+  const rec = POZOS.find(p => p.pozo.replace(/^Ce-/i,'').toLowerCase() === q.toLowerCase());
+  if(rec){
+    rec.enCiclaje = true;
+    rec._edited = true;
+    saveEdit(rec.pozo, { enCiclaje: true });
+    inp.value = '';
+    renderCiclaje();
+    return;
+  }
+  // no esta en la lista (solapa Lista): ofrecemos crearlo como pozo nuevo, igual que "Agregar pozo" alla
+  const quiereCrear = confirm('No encontre el pozo "' + inp.value + '" en la lista. Queres agregarlo como pozo nuevo y ponerlo en ciclaje?');
+  if(!quiereCrear) return;
+  const batInput = prompt('Bateria del pozo (ej: USPA2, USPA3, USPA4, USPA5):', '');
+  if(batInput === null) return; // cancelo
+  const bateria = normalizarBateria(batInput);
+  const pozoKey = 'Ce-' + q;
+  saveEdit(pozoKey, {
+    bateria, presion: 's/d', colectora: '', ciclo: '', horario: '',
+    tablero: '', optim: '', notas: '', fecha: '', enCiclaje: true
+  });
+  inp.value = '';
+}
+function onCiclajeInputKeydown(e){
+  if(e.key === 'Enter') agregarPozoCiclaje();
+}
+
 function renderCiclaje(){
   const ciclajeMain = document.getElementById('ciclajeMain');
   ciclajeMain.innerHTML = `<div class="plano-note">Pozos en ciclaje hoy. Agregalos o sacalos con los controles de abajo, ya que van cambiando.</div>
     <div class="add-ciclaje-row">
-      <input type="text" id="addCiclajeInput" placeholder="Agregar pozo (ej: 1580)" class="edit-input">
-      <button id="addCiclajeBtn" class="add-ciclaje-btn">Agregar</button>
+      <input type="text" id="addCiclajeInput" placeholder="Agregar pozo (ej: 1580)" class="edit-input" onkeydown="onCiclajeInputKeydown(event)">
+      <button id="addCiclajeBtn" class="add-ciclaje-btn" onclick="agregarPozoCiclaje()">Agregar</button>
     </div>`;
-
-  document.getElementById('addCiclajeBtn').addEventListener('click', () => {
-    const inp = document.getElementById('addCiclajeInput');
-    const q = inp.value.trim().replace(/^ce-?/i, '').replace(/\//g, '-');
-    if(!q) return;
-    if(!puedeModificar()) return;
-    const rec = POZOS.find(p => p.pozo.replace(/^Ce-/i,'').toLowerCase() === q.toLowerCase());
-    if(rec){
-      rec.enCiclaje = true;
-      rec._edited = true;
-      saveEdit(rec.pozo, { enCiclaje: true });
-      inp.value = '';
-      renderCiclaje();
-      return;
-    }
-    // no esta en la lista (solapa Lista): ofrecemos crearlo como pozo nuevo, igual que "Agregar pozo" alla
-    const quiereCrear = confirm('No encontre el pozo "' + inp.value + '" en la lista. Queres agregarlo como pozo nuevo y ponerlo en ciclaje?');
-    if(!quiereCrear) return;
-    const batInput = prompt('Bateria del pozo (ej: USPA2, USPA3, USPA4, USPA5):', '');
-    if(batInput === null) return; // cancelo
-    const bateria = normalizarBateria(batInput);
-    const pozoKey = 'Ce-' + q;
-    saveEdit(pozoKey, {
-      bateria, presion: 's/d', colectora: '', ciclo: '', horario: '',
-      tablero: '', optim: '', notas: '', fecha: '', enCiclaje: true
-    });
-    inp.value = '';
-  });
-  document.getElementById('addCiclajeInput').addEventListener('keydown', (e) => {
-    if(e.key === 'Enter') document.getElementById('addCiclajeBtn').click();
-  });
 
   const enCiclaje = POZOS.filter(isEnCiclaje);
 
