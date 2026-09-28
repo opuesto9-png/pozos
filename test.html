@@ -2195,6 +2195,21 @@ function renderCardEdit(rec, bat){
       { tipo: 'Oil', numero: document.getElementById('velaNumOil').value.trim() }
     ].filter(v => v.numero);
 
+    // Vela/s "pendiente/s de mostrar en el parte": las vamos acumulando en el propio pozo (no en la
+    // coleccion aparte VELAS, que se pisaba con cada parte enviado aunque el pozo siguiera cerrado).
+    // Asi, si se manda un parte con el pozo TODAVIA cerrado (solo la vela), la cantidad/hora quedan
+    // guardadas en el pozo mismo y sobreviven hasta que de verdad se reabra, sin importar cuantos
+    // partes se manden mientras tanto.
+    const velaPendienteAcum = {
+      Agua: parseFloat(rec.velaPendienteAgua) || 0,
+      Gas: parseFloat(rec.velaPendienteGas) || 0,
+      Oil: parseFloat(rec.velaPendienteOil) || 0
+    };
+    velasACargar.forEach(v => {
+      velaPendienteAcum[v.tipo] += parseFloat(v.numero) || 0;
+    });
+    const hayVelaPendienteAcum = velaPendienteAcum.Agua || velaPendienteAcum.Gas || velaPendienteAcum.Oil;
+
     const aperturaCambio = hA !== horaAperturaOriginal;
     const cierreCambio = hC !== horaCierreOriginal;
 
@@ -2217,6 +2232,13 @@ function renderCardEdit(rec, bat){
       horario = nota;
     }
     newFields.horario = horario;
+
+    // Hora de la vela: si se cargo la vela en esta misma tanda, usamos el horario que se cargo junto
+    // con ella (cierre si se cerro, o apertura si no hay cierre) - asi "16:00" es de verdad las 16 y
+    // no el reloj real del guardado. Si no se cargo ningun horario junto con la vela, cae al reloj.
+    const velaPendienteHoraAcum = velasACargar.length
+      ? (hcEfectivo || hA || nowTimeStr())
+      : (rec.velaPendienteHora || '');
 
     // si se cargan apertura Y cierre juntos en un solo guardado, no sabemos por el texto solo cual
     // de las dos paso despues. Lo resolvemos por la lectura mas logica: entre las dos formas posibles
@@ -2295,6 +2317,27 @@ function renderCardEdit(rec, bat){
       // marca aparte, solo para el texto de la novedad: si de verdad SABIAMOS que estaba cerrado
       // (no un pozo nuevo que nunca tuvo estado), para no decir "Cerrado, recupera presion" de mas
       newFields.veniaDeCerradoConfirmado = rec.estado === 'Cerrado';
+    }
+
+    // Vela/s pendiente/s: recien ACA sabemos si este guardado es la reapertura de verdad (el pozo
+    // pasa de no-Abierto a Abierto). Si es asi, combinamos toda la vela acumulada hasta ahora (aunque
+    // se haya mandado un parte de campo mientras el pozo seguia cerrado - eso ya no la hace desaparecer,
+    // porque queda guardada en el pozo mismo, no en un parte ya enviado) en un solo texto listo para la
+    // novedad ("Se lanzan velas a las 16 hs: ... Abierto con presion estatica de 22."), y limpiamos el
+    // acumulado. Si todavia NO es la reapertura (sigue cerrado, o esta abierto y solo se cargo la vela
+    // sin tocar el horario), la vela se queda pendiente, sumada a la que ya hubiera.
+    const seAbreAhora = newFields.estado === 'Abierto' && rec.estado !== 'Abierto';
+    if(seAbreAhora){
+      newFields.velaEnAperturaTxt = hayVelaPendienteAcum ? fraseVelasPozo(velaPendienteAcum, velaPendienteHoraAcum) : '';
+      newFields.velaPendienteAgua = 0;
+      newFields.velaPendienteGas = 0;
+      newFields.velaPendienteOil = 0;
+      newFields.velaPendienteHora = '';
+    } else if(velasACargar.length){
+      newFields.velaPendienteAgua = velaPendienteAcum.Agua;
+      newFields.velaPendienteGas = velaPendienteAcum.Gas;
+      newFields.velaPendienteOil = velaPendienteAcum.Oil;
+      newFields.velaPendienteHora = velaPendienteHoraAcum;
     }
 
     // correccion manual (si se cargo): pisa el calculo automatico de arriba
@@ -2825,18 +2868,12 @@ function calcularHsHastaCorte(rec){
 }
 
 function exportParteDeCampo(forzarTodos){
-  // LANZAMIENTO DE VELAS (agua/gas/oil): las agrupamos por pozo ANTES de armar las novedades de GAS,
-  // sumando cantidades si se cargaron en mas de una tanda dentro de la misma ventana del parte. Esto
-  // se integra en la MISMA novedad del pozo (igual que se viene informando siempre en el parte real:
-  // "Se lanzan velas: ... Abierto con presion estatica de ...") en vez de ir en una fila aparte.
-  const velasBase = forzarTodos ? [...VELAS] : pendientesDeVelas();
-  const velasPorPozo = {};
-  velasBase.forEach(v => {
-    if(!velasPorPozo[v.pozo]) velasPorPozo[v.pozo] = { bateria: v.bateria, cantidades: {}, ultimaFecha: null };
-    const info = velasPorPozo[v.pozo];
-    info.cantidades[v.tipo] = (parseFloat(info.cantidades[v.tipo] || 0)) + (parseFloat(v.numero) || 0);
-    if(!info.ultimaFecha || (v._updatedAtDate && v._updatedAtDate > info.ultimaFecha)) info.ultimaFecha = v._updatedAtDate;
-  });
+  // LANZAMIENTO DE VELAS (agua/gas/oil): ya NO se agrupan desde la coleccion VELAS filtrada por el
+  // corte del ultimo parte enviado (eso se perdia si se mandaba un parte con el pozo TODAVIA cerrado:
+  // el corte avanzaba y la vela desaparecia antes de que el pozo llegara a reabrir). Ahora la vela
+  // vive pegada al pozo mismo (velaEnAperturaTxt, ya combinada, cargada por saveEdit en el momento
+  // exacto en que el pozo pasa a Abierto) o pendiente sin combinar (velaPendienteAgua/Gas/Oil/Hora,
+  // mientras sigue cerrado), asi que sobrevive sin importar cuantos partes se manden mientras tanto.
   const pozosConVelaUsada = new Set();
 
   // GAS: solo pozos con hora de apertura/cierre modificados DESPUES del ultimo parte enviado
@@ -2863,11 +2900,23 @@ function exportParteDeCampo(forzarTodos){
       } else if(horasPerdida !== null && horasProduccion === null){
         horasProduccion = Math.max(0, Math.round((24 - horasPerdida) * 10) / 10);
       }
-      const velaInfo = velasPorPozo[rec.pozo];
-      const horaVela = velaInfo && velaInfo.ultimaFecha
-        ? `${String(velaInfo.ultimaFecha.getHours()).padStart(2,'0')}:${String(velaInfo.ultimaFecha.getMinutes()).padStart(2,'0')}`
-        : '';
-      const velaTxt = velaInfo ? fraseVelasPozo(velaInfo.cantidades, horaVela) : '';
+      // esta fila sale de un guardado que SI toco horaApertura/horaCierre (eso es lo que exige
+      // pendientesDeReporte). Si ese mismo guardado tambien dejo una vela:
+      // - ya combinada con una reapertura (velaEnAperturaTxt) -> la usamos tal cual.
+      // - o recien cargada mientras el pozo se cierra en esta misma tanda (velaPendienteX sin combinar
+      //   todavia) -> armamos el texto de la vela sola, para que la fila diga SOLO eso (sin "Cerrado,
+      //   recuperando presion" de mas), tal como se informa siempre en el parte real.
+      const uf = rec.updatedFields || [];
+      let velaTxt = '';
+      if(uf.includes('velaEnAperturaTxt') && rec.velaEnAperturaTxt){
+        velaTxt = rec.velaEnAperturaTxt;
+      } else if(['velaPendienteAgua','velaPendienteGas','velaPendienteOil'].some(k => uf.includes(k))){
+        velaTxt = fraseVelasPozo({
+          Agua: parseFloat(rec.velaPendienteAgua)||0,
+          Gas: parseFloat(rec.velaPendienteGas)||0,
+          Oil: parseFloat(rec.velaPendienteOil)||0
+        }, rec.velaPendienteHora || '');
+      }
       if(velaTxt) pozosConVelaUsada.add(rec.pozo);
       return {
         hora: buildHoraColumna(rec),
@@ -2903,18 +2952,21 @@ function exportParteDeCampo(forzarTodos){
       horasProduccion: null
     }));
 
-  // si un pozo tuvo vela pero NO tuvo cambio de horario en esta ventana (caso raro: se cargo la vela
-  // pero todavia no se registro la apertura/cierre), no se pierde: va como fila propia
-  const filasVelasSueltas = Object.keys(velasPorPozo)
-    .filter(pozo => !pozosConVelaUsada.has(pozo))
-    .map(pozo => {
-      const info = velasPorPozo[pozo];
-      const hora = info.ultimaFecha ? info.ultimaFecha.toTimeString().slice(0,5) : '';
+  // si un pozo tiene vela pendiente pero todavia NO se combino con una reapertura (caso raro: se
+  // cargo la vela y el pozo sigue cerrado, o quedo abierto sin que se vuelva a tocar el horario), no
+  // se pierde: va como fila propia, leida directo del pozo (no de un parte ya enviado).
+  const corte = corteDePendientes();
+  const filasVelasSueltas = POZOS
+    .filter(p => !pozosConVelaUsada.has(p.pozo) && (parseFloat(p.velaPendienteAgua)||0 || parseFloat(p.velaPendienteGas)||0 || parseFloat(p.velaPendienteOil)||0))
+    .filter(p => forzarTodos || (p._updatedAtDate && p._updatedAtDate > corte && p.updatedFields && ['velaPendienteAgua','velaPendienteGas','velaPendienteOil'].some(k => p.updatedFields.includes(k))))
+    .map(p => {
+      const cantidades = { Agua: parseFloat(p.velaPendienteAgua)||0, Gas: parseFloat(p.velaPendienteGas)||0, Oil: parseFloat(p.velaPendienteOil)||0 };
+      const hora = p.velaPendienteHora || '';
       return {
         hora,
-        instalacion: bateriaToInstalacion(info.bateria),
-        pozo,
-        novedad: fraseVelasPozo(info.cantidades, hora),
+        instalacion: bateriaToInstalacion(p.bateria),
+        pozo: p.pozo,
+        novedad: fraseVelasPozo(cantidades, hora),
         horasPerdida: null,
         horasProduccion: null
       };
