@@ -2514,10 +2514,11 @@ function fraseVela(tipo, cantidad){
 // condensado." a partir de un objeto { Gas: cant, Agua: cant, Oil: cant } y la hora del lanzamiento
 // (opcional); '' si no hay ninguna cantidad cargada
 function fraseVelasPozo(cantidades, hora){
+  // la hora de lanzamiento ya no se informa en la novedad (a pedido de Maxi): el parametro "hora"
+  // se sigue recibiendo (se usa para otros calculos internos) pero no se imprime en el texto.
   const frases = ['Gas', 'Agua', 'Oil'].filter(t => cantidades[t]).map(t => fraseVela(t, cantidades[t]));
   if(frases.length === 0) return '';
-  const prefijo = hora ? `Se lanzan velas a las ${hora} hs: ` : 'Se lanzan velas: ';
-  return prefijo + frases.join(' + ') + '.';
+  return 'Se lanzan velas: ' + frases.join(' + ') + '.';
 }
 
 function buildNovedad(rec, velaTxt){
