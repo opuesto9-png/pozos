@@ -1179,6 +1179,7 @@ let ultimoReporteTs = null; // fecha/hora (compartida entre dispositivos) del ul
 let ultimoReporteBateriasTs = null; // idem, para el reporte de Baterias (dia operativo 9am-9am)
 let ultimoReporteAguaTs = null; // idem, para el reporte de Agua / Pias 2 (dia operativo 9am-9am)
 let AIB_POZOS = []; // pozos de petroleo (AIB), viven enteramente en Firestore, no hay lista base
+let VELAS = []; // lanzamientos de velas (agua/gas/oil) por pozo, historial de eventos, coleccion 'pozos_velas'
 let USPA_NOTAS = []; // ultima novedad general cargada por USPA (con hora), vive en su propia coleccion
 let uspaNotasAbiertas = new Set(); // que recuadros de notas estan desplegados en este momento (local, no se guarda)
 
@@ -1430,10 +1431,16 @@ function pendientesDeReporteNotas(){
     .sort((a,b) => a._updatedAtDate - b._updatedAtDate);
 }
 
+function pendientesDeVelas(){
+  const corte = corteDePendientes();
+  return VELAS.filter(v => v._updatedAtDate && v._updatedAtDate > corte)
+    .sort((a,b) => a._updatedAtDate - b._updatedAtDate);
+}
+
 function updatePendCount(){
   const badge = document.getElementById('pendCount');
   if(badge){
-    const n = pendientesDeReporte().length + pendientesDeReporteAib().length + pendientesDeReporteNotas().length;
+    const n = pendientesDeReporte().length + pendientesDeReporteAib().length + pendientesDeReporteNotas().length + pendientesDeVelas().length;
     if(n > 0){ badge.style.display = ''; badge.textContent = n; } else { badge.style.display = 'none'; }
   }
   const badgeBat = document.getElementById('pendCountBaterias');
@@ -1570,6 +1577,24 @@ function startSync(){
     console.error('Firestore sync error (aib)', err);
   });
 
+  // lanzamientos de velas (agua/gas/oil) por pozo - coleccion propia, historial de eventos
+  db.collection('pozos_velas').onSnapshot((snapshot) => {
+    VELAS = [];
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      VELAS.push(Object.assign({ id: doc.id }, data, {
+        _updatedAtDate: (data.updatedAt && data.updatedAt.toDate) ? data.updatedAt.toDate() : null
+      }));
+    });
+    if(document.getElementById('overlay').classList.contains('show') && window._currentCardRec && document.getElementById('editBtn')){
+      renderCardView(window._currentCardRec, window._currentCardBat);
+    }
+    if(document.getElementById('movMain').style.display !== 'none'){
+      renderMovimientos();
+    }
+    updatePendCount();
+  }, (err) => { console.error('Firestore sync error (velas)', err); });
+
   // dia operativo 9am-9am: ultimo envio de Baterias y de Agua/Pias 2 (compartidos)
   db.collection('pozos_meta').doc('estado9am').onSnapshot((doc) => {
     const data = doc.data();
@@ -1658,19 +1683,41 @@ function sembrarAibInicial(){
   });
 }
 
-function saveEdit(pozoKey, newFields){
+function saveEdit(pozoKey, newFields, changedKeys){
   if(!firestoreOk){
     alert('No hay conexion con el guardado compartido. Revisa tu internet e intenta de nuevo.');
     return;
   }
   const toSave = Object.assign({}, newFields, {
     updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-    updatedFields: Object.keys(newFields),
+    // si nos pasan la lista de campos que REALMENTE cambiaron la usamos (para que Movimientos sea
+    // preciso); si no, dejamos el comportamiento viejo (todos los campos que se mandaron)
+    updatedFields: changedKeys !== undefined ? changedKeys : Object.keys(newFields),
     operador: newFields.operador || operadorName || 'Sin nombre'
   });
   db.collection('pozos_overrides').doc(pozoKey).set(toSave, { merge: true }).catch((err) => {
     alert('No se pudo guardar el cambio (' + err.message + '). Revisa tu conexion.');
   });
+}
+
+// ---------------- Velas (agua/gas/oil) lanzadas a un pozo ----------------
+function registrarVela(pozo, bateria, tipo, numero){
+  if(!firestoreOk){
+    alert('No hay conexion con el guardado compartido. Revisa tu internet e intenta de nuevo.');
+    return;
+  }
+  db.collection('pozos_velas').add({
+    pozo, bateria: bateria || 'Sin bateria', tipo, numero,
+    fecha: todayStr(),
+    operador: operadorName || 'Sin nombre',
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  }).catch((err) => {
+    alert('No se pudo registrar la vela (' + err.message + '). Revisa tu conexion.');
+  });
+}
+
+function velasDePozo(pozo){
+  return VELAS.filter(v => v.pozo === pozo).sort((a,b) => (b._updatedAtDate||0) - (a._updatedAtDate||0));
 }
 
 // ---------------- Historico de aperturas (para el grafico por pozo) ----------------
@@ -1871,6 +1918,8 @@ function renderCardView(rec, bat){
 
   const estadoClass = rec.estado === 'Abierto' ? 'abierto' : (rec.estado === 'Cerrado' ? 'cerrado' : '');
   const estadoLabel = rec.estado || 'Sin definir (cargá un horario)';
+  const ultimaVela = velasDePozo(rec.pozo)[0];
+  const ultimaVelaTxt = ultimaVela ? `${ultimaVela.tipo} N°${ultimaVela.numero}${ultimaVela.fecha ? ' (' + ultimaVela.fecha + ')' : ''}` : '';
 
   card.innerHTML = `
     <div class="card-head">
@@ -1885,6 +1934,7 @@ function renderCardView(rec, bat){
     ${field('Presion', presionMostrada, 'presion')}
     ${field('Colectora', rec.colectora)}
     ${field('Ciclo', rec.ciclo)}
+    ${ultimaVelaTxt ? field('Ultima vela lanzada', ultimaVelaTxt) : ''}
     <div class="field horario-field ${hInfo.colorClass}">
       <div class="k">${hInfo.label}</div>
       <div class="v ${!hInfo.text ? 'empty' : ''}">${hInfo.text || 'Sin dato'}</div>
@@ -1979,6 +2029,12 @@ function renderCardEdit(rec, bat){
   const horaAperturaOriginal = horaAperturaVal;
   const horaCierreOriginal = horaCierreVal;
 
+  // ultimas velas lanzadas a este pozo (solo para mostrar como referencia, no se editan aca)
+  const ultimasVelas = velasDePozo(rec.pozo).slice(0, 3);
+  const ultimasVelasHtml = ultimasVelas.length
+    ? `<div class="edit-hint" style="margin-top:8px;">Ultimas velas: ${ultimasVelas.map(v => `${v.tipo} N°${v.numero}${v.fecha ? ' ('+v.fecha+')' : ''}`).join(' &middot; ')}</div>`
+    : '';
+
   card.innerHTML = `
     <div class="card-head">
       <div>
@@ -2009,6 +2065,27 @@ function renderCardEdit(rec, bat){
           </div>
         </div>
       </div>
+    </div>
+    <div class="field">
+      <div class="k">Vela lanzada (si corresponde)</div>
+      <div class="edit-hint">Si le tiraron una vela a este pozo, elegi el tipo y poné el numero. Va a aparecer como novedad al levantar el proximo parte.</div>
+      <div class="time-row">
+        <div>
+          <div class="time-label">Tipo</div>
+          <select class="edit-input" id="velaTipo">
+            <option value="">-- ninguna --</option>
+            <option value="Agua">Agua</option>
+            <option value="Gas">Gas</option>
+            <option value="Oil">Oil</option>
+          </select>
+        </div>
+        <div>
+          <div class="time-label">Numero</div>
+          <input type="number" inputmode="numeric" min="0" step="1" class="edit-input time-input" id="velaNumero" placeholder="ej: 45">
+        </div>
+      </div>
+      <button type="button" class="save-btn" id="registrarVelaBtn" style="margin-top:8px; width:100%;">Registrar vela</button>
+      ${ultimasVelasHtml}
     </div>
     <div class="field">
       <div class="k">Horario de maniobra</div>
@@ -2082,8 +2159,23 @@ function renderCardEdit(rec, bat){
   document.getElementById('clearCicloAbierto').addEventListener('click', () => {
     document.getElementById('cicloAbierto').value = '';
   });
+  document.getElementById('registrarVelaBtn').addEventListener('click', () => {
+    if(!puedeModificar()) return;
+    const tipo = document.getElementById('velaTipo').value;
+    const numero = document.getElementById('velaNumero').value.trim();
+    if(!tipo || !numero){
+      alert('Elegi el tipo de vela y poné el numero antes de registrar.');
+      return;
+    }
+    registrarVela(rec.pozo, rec.bateria, tipo, numero);
+    alert('Vela registrada. Va a aparecer en las novedades del proximo parte.');
+    renderCardEdit(rec, bat);
+  });
   document.getElementById('saveBtn').addEventListener('click', () => {
     if(!puedeModificar()) return;
+    // valores ANTES de este guardado, para saber despues cuales campos cambiaron de verdad
+    // (y no listar en Movimientos todo el formulario aunque solo se haya tocado un dato)
+    const before = Object.assign({}, rec);
     const inputs = card.querySelectorAll('.edit-input[data-key]');
     const newFields = {};
     inputs.forEach(inp => { newFields[inp.dataset.key] = inp.value; });
@@ -2217,9 +2309,16 @@ function renderCardEdit(rec, bat){
       }
     }
 
+    // solo listamos en Movimientos los campos que realmente cambiaron de valor (no todo el formulario)
+    const changedKeys = Object.keys(newFields).filter(k => {
+      const antes = (before[k] === undefined || before[k] === null) ? '' : before[k];
+      const despues = (newFields[k] === undefined || newFields[k] === null) ? '' : newFields[k];
+      return String(antes) !== String(despues);
+    });
+
     Object.assign(rec, newFields);
     rec._edited = true;
-    saveEdit(rec.pozo, newFields);
+    saveEdit(rec.pozo, newFields, changedKeys);
     // registramos esta apertura en el historico (solo cuando REALMENTE se cargo una apertura nueva)
     if(aperturaCambio && hA){
       registrarAperturaHistorial(rec, hA);
@@ -2748,7 +2847,20 @@ function exportParteDeCampo(forzarTodos){
       horasProduccion: null
     }));
 
-  const filasGasConNotas = [...filasGas, ...filasNotas];
+  // LANZAMIENTO DE VELAS (agua/gas/oil) en pozos, modificadas desde el ultimo parte (o todas, si se fuerza)
+  // se listan como novedad aparte, sin depender de que el pozo haya cambiado de estado ese dia
+  const velasBase = forzarTodos ? [...VELAS].sort((a,b) => (a._updatedAtDate||0) - (b._updatedAtDate||0)) : pendientesDeVelas();
+  const filasVelas = velasBase
+    .map(v => ({
+      hora: v._updatedAtDate ? v._updatedAtDate.toTimeString().slice(0,5) : '',
+      instalacion: bateriaToInstalacion(v.bateria),
+      pozo: v.pozo,
+      novedad: `Lanzamiento de vela de ${(v.tipo || '').toLowerCase()}, N° ${v.numero}.`,
+      horasPerdida: null,
+      horasProduccion: null
+    }));
+
+  const filasGasConNotas = [...filasGas, ...filasNotas, ...filasVelas];
 
   if(filasGasConNotas.length === 0 && filasOil.length === 0){
     if(!forzarTodos){
@@ -3053,7 +3165,8 @@ function renderMovimientos(){
   const oilConMov = AIB_POZOS.filter(p => p._updatedAtDate).map(p => Object.assign({ _tipo: 'oil' }, p));
   const notasConMov = USPA_NOTAS.filter(n => n._updatedAtDate).map(n => Object.assign({ _tipo: 'nota' }, n));
   const notasEquipoConMov = EQUIPOS_NOTAS.filter(n => n._updatedAtDate).map(n => Object.assign({ _tipo: 'notaEquipo' }, n));
-  const conMovimiento = [...gasConMov, ...oilConMov, ...notasConMov, ...notasEquipoConMov].sort((a,b) => b._updatedAtDate - a._updatedAtDate);
+  const velasConMov = VELAS.filter(v => v._updatedAtDate).map(v => Object.assign({ _tipo: 'vela' }, v));
+  const conMovimiento = [...gasConMov, ...oilConMov, ...notasConMov, ...notasEquipoConMov, ...velasConMov].sort((a,b) => b._updatedAtDate - a._updatedAtDate);
 
   if(conMovimiento.length === 0){
     movMain.innerHTML += '<div class="empty-msg">Todavia no hay movimientos registrados.</div>';
@@ -3068,11 +3181,42 @@ function renderMovimientos(){
     bp: 'BP', pl: 'PL', perdidas: 'perdidas', hora: 'hora', bateria: 'bateria', motivoParo: 'motivo de paro', nota: 'nota',
     texto: 'novedad'
   };
+  // campos internos de calculo (no se muestran en Movimientos: ya se reflejan en hora apertura/cierre)
+  const HIDDEN_MOV_FIELDS = ['horasTotalNum', 'horasTotalTipo', 'horasRangoDesde', 'horasRangoHasta', 'horasRangoConfirmado', 'veniaDeCerradoConfirmado'];
+
+  function formatMovValue(k, rec){
+    let v = rec[k];
+    if(k === 'presion') return (v && v !== 's/d') ? convertPresionText(v, pressureUnit) : 'sin dato';
+    if(k === 'bateria') return v || 'Sin bateria';
+    if(k === 'enCiclaje') return v ? 'agregado' : 'sacado';
+    if(v === undefined || v === null || v === '') return '';
+    v = v.toString();
+    if(v.length > 40) v = v.slice(0, 40) + '...';
+    return v;
+  }
 
   conMovimiento.forEach(rec => {
     const esOil = rec._tipo === 'oil';
     const esNota = rec._tipo === 'nota';
     const bat = rec.bateria || 'Sin bateria';
+
+    if(rec._tipo === 'vela'){
+      const row = document.createElement('div');
+      row.className = 'ciclaje-row';
+      row.innerHTML = `
+        <div class="cr-left">
+          <div class="cr-pozo">${rec.pozo} <span style="color:var(--muted); font-weight:400; font-size:0.75rem;">${bat}</span></div>
+          <div class="cr-detail">${rec.operador ? `<b>${rec.operador}</b> &middot; ` : ''}${tiempoRelativo(rec._updatedAtDate)} &middot; vela de ${(rec.tipo||'').toLowerCase()}, N&deg;${rec.numero}</div>
+        </div>
+        <div class="cr-estado sd">Vela</div>
+      `;
+      row.addEventListener('click', () => {
+        const target = POZOS.find(p => p.pozo === rec.pozo);
+        if(target) openCard(target, target.bateria || 'Sin bateria');
+      });
+      movMain.appendChild(row);
+      return;
+    }
 
     if(rec._tipo === 'notaEquipo'){
       const row = document.createElement('div');
@@ -3123,8 +3267,12 @@ function renderMovimientos(){
       ? (rec.estado === 'Parado' ? 'cerrado' : 'abierto')
       : (rec.estado === 'Abierto' ? 'abierto' : (rec.estado === 'Cerrado' ? 'cerrado' : 'sd'));
     const camposTocados = (rec.updatedFields || [])
-      .filter(k => k !== 'updatedAt')
-      .map(k => FIELD_LABELS_MOV[k] || k)
+      .filter(k => k !== 'updatedAt' && !HIDDEN_MOV_FIELDS.includes(k))
+      .map(k => {
+        const label = FIELD_LABELS_MOV[k] || k;
+        const val = formatMovValue(k, rec);
+        return val ? `${label}: ${val}` : label;
+      })
       .join(', ');
 
     const row = document.createElement('div');
