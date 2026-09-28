@@ -1418,10 +1418,13 @@ function corteDePendientes(){
   return ultimoReporteTs || new Date(0);
 }
 
-// un pozo "cuenta" para el proximo parte si se modifico despues del corte vigente (dia operativo / ultimo envio)
+// un pozo "cuenta" para el proximo parte si el ULTIMO guardado realmente toco el horario (apertura o
+// cierre) despues del corte vigente - no alcanza con que el pozo TENGA horario viejo cargado y se haya
+// tocado cualquier otro dato (vela, tablero, etc.): eso repetiria el Abierto/Cerrado ya informado antes
 function pendientesDeReporte(){
   const corte = corteDePendientes();
-  return POZOS.filter(p => (p.horaApertura || p.horaCierre) && p._updatedAtDate && p._updatedAtDate > corte)
+  return POZOS.filter(p => (p.horaApertura || p.horaCierre) && p._updatedAtDate && p._updatedAtDate > corte
+    && p.updatedFields && (p.updatedFields.includes('horaApertura') || p.updatedFields.includes('horaCierre')))
     .sort((a,b) => a._updatedAtDate - b._updatedAtDate);
 }
 
@@ -2068,7 +2071,7 @@ function renderCardEdit(rec, bat){
     </div>
     <div class="field">
       <div class="k">Vela lanzada (si corresponde)</div>
-      <div class="edit-hint">Si le tiraron vela/s a este pozo, poné la cantidad en el tipo que corresponda (se pueden cargar las tres juntas). Al tocar Guardar (abajo de todo) quedan registradas y el pozo pasa a Cerrado, recuperando presion, salvo que tambien cargues un horario en esta misma edicion.</div>
+      <div class="edit-hint">Si le tiraron vela/s a este pozo, poné la cantidad en el tipo que corresponda (se pueden cargar las tres juntas). Al tocar Guardar (abajo de todo) quedan registradas como novedad, sin tocar el horario del pozo. Si tambien cerro/abrio, cargalo aparte en Horario de maniobra.</div>
       <div class="aib-fields">
         <div class="aib-field">
           <div class="time-label">Agua</div>
@@ -2170,8 +2173,8 @@ function renderCardEdit(rec, bat){
       newFields.bateria = newFields.bateria.trim() ? normalizarBateria(newFields.bateria) : 'Sin bateria';
     }
 
-    let hA = document.getElementById('horaApertura').value;
-    let hC = document.getElementById('horaCierre').value;
+    const hA = document.getElementById('horaApertura').value;
+    const hC = document.getElementById('horaCierre').value;
     const nota = document.getElementById('horarioNota').value.trim();
 
     const cicloCerradoNum = document.getElementById('cicloCerrado').value.trim();
@@ -2183,19 +2186,14 @@ function renderCardEdit(rec, bat){
     }
 
     // Vela/s lanzadas: alcanza con poner la cantidad y tocar Guardar (no hace falta un boton aparte).
-    // Si se cargo alguna cantidad y en este mismo guardado NO se toco el horario, el pozo se cierra
-    // solo (con la hora actual) porque para tirar vela hay que cerrar el pozo - asi despues, cuando
-    // se cargue la apertura, la novedad combinada sale bien ("Se lanzan velas: ... Cerrado, recupera
-    // presion. Abierto..."). Si ademas se cargo horario en esta misma edicion, se respeta ese horario.
+    // OJO: esto NO toca el horario ni el estado del pozo para nada - si el operador quiere marcarlo
+    // Cerrado tiene que cargar el horario el mismo, como siempre. Asi la novedad de la vela sale sola
+    // ("Se lanzan velas: ...") sin mezclarse con un Abierto/Cerrado que no se cargo en este guardado.
     const velasACargar = [
       { tipo: 'Agua', numero: document.getElementById('velaNumAgua').value.trim() },
       { tipo: 'Gas', numero: document.getElementById('velaNumGas').value.trim() },
       { tipo: 'Oil', numero: document.getElementById('velaNumOil').value.trim() }
     ].filter(v => v.numero);
-    if(velasACargar.length > 0 && hA === horaAperturaOriginal && hC === horaCierreOriginal){
-      const d = new Date();
-      hC = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-    }
 
     const aperturaCambio = hA !== horaAperturaOriginal;
     const cierreCambio = hC !== horaCierreOriginal;
