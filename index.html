@@ -1176,9 +1176,11 @@ try{
 
 let lastOverridesCount = 0;
 let ultimoReporteTs = null; // fecha/hora (compartida entre dispositivos) del ultimo parte de campo enviado
+let ultimoMovLimpiadoTs = null; // fecha/hora (compartida) en que se limpio la lista de "Ultimos movimientos"
 let ultimoReporteBateriasTs = null; // idem, para el reporte de Baterias (dia operativo 9am-9am)
 let ultimoReporteAguaTs = null; // idem, para el reporte de Agua / Pias 2 (dia operativo 9am-9am)
 let AIB_POZOS = []; // pozos de petroleo (AIB), viven enteramente en Firestore, no hay lista base
+let VELAS = []; // lanzamientos de velas (agua/gas/oil) por pozo, historial de eventos, coleccion 'pozos_velas'
 let USPA_NOTAS = []; // ultima novedad general cargada por USPA (con hora), vive en su propia coleccion
 let uspaNotasAbiertas = new Set(); // que recuadros de notas estan desplegados en este momento (local, no se guarda)
 
@@ -1417,10 +1419,13 @@ function corteDePendientes(){
   return ultimoReporteTs || new Date(0);
 }
 
-// un pozo "cuenta" para el proximo parte si se modifico despues del corte vigente (dia operativo / ultimo envio)
+// un pozo "cuenta" para el proximo parte si el ULTIMO guardado realmente toco el horario (apertura o
+// cierre) despues del corte vigente - no alcanza con que el pozo TENGA horario viejo cargado y se haya
+// tocado cualquier otro dato (vela, tablero, etc.): eso repetiria el Abierto/Cerrado ya informado antes
 function pendientesDeReporte(){
   const corte = corteDePendientes();
-  return POZOS.filter(p => (p.horaApertura || p.horaCierre) && p._updatedAtDate && p._updatedAtDate > corte)
+  return POZOS.filter(p => (p.horaApertura || p.horaCierre) && p._updatedAtDate && p._updatedAtDate > corte
+    && p.updatedFields && (p.updatedFields.includes('horaApertura') || p.updatedFields.includes('horaCierre')))
     .sort((a,b) => a._updatedAtDate - b._updatedAtDate);
 }
 
@@ -1430,10 +1435,16 @@ function pendientesDeReporteNotas(){
     .sort((a,b) => a._updatedAtDate - b._updatedAtDate);
 }
 
+function pendientesDeVelas(){
+  const corte = corteDePendientes();
+  return VELAS.filter(v => v._updatedAtDate && v._updatedAtDate > corte)
+    .sort((a,b) => a._updatedAtDate - b._updatedAtDate);
+}
+
 function updatePendCount(){
   const badge = document.getElementById('pendCount');
   if(badge){
-    const n = pendientesDeReporte().length + pendientesDeReporteAib().length + pendientesDeReporteNotas().length;
+    const n = pendientesDeReporte().length + pendientesDeReporteAib().length + pendientesDeReporteNotas().length + pendientesDeVelas().length;
     if(n > 0){ badge.style.display = ''; badge.textContent = n; } else { badge.style.display = 'none'; }
   }
   const badgeBat = document.getElementById('pendCountBaterias');
@@ -1505,6 +1516,7 @@ function startSync(){
   db.collection('pozos_meta').doc('estado').onSnapshot((doc) => {
     const data = doc.data();
     ultimoReporteTs = (data && data.lastReporteTs && data.lastReporteTs.toDate) ? data.lastReporteTs.toDate() : null;
+    ultimoMovLimpiadoTs = (data && data.lastMovLimpiadoTs && data.lastMovLimpiadoTs.toDate) ? data.lastMovLimpiadoTs.toDate() : null;
     refreshEverything();
   }, (err) => {
     console.error('Firestore sync error (meta)', err);
@@ -1569,6 +1581,24 @@ function startSync(){
   }, (err) => {
     console.error('Firestore sync error (aib)', err);
   });
+
+  // lanzamientos de velas (agua/gas/oil) por pozo - coleccion propia, historial de eventos
+  db.collection('pozos_velas').onSnapshot((snapshot) => {
+    VELAS = [];
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      VELAS.push(Object.assign({ id: doc.id }, data, {
+        _updatedAtDate: (data.updatedAt && data.updatedAt.toDate) ? data.updatedAt.toDate() : null
+      }));
+    });
+    if(document.getElementById('overlay').classList.contains('show') && window._currentCardRec && document.getElementById('editBtn')){
+      renderCardView(window._currentCardRec, window._currentCardBat);
+    }
+    if(document.getElementById('movMain').style.display !== 'none'){
+      renderMovimientos();
+    }
+    updatePendCount();
+  }, (err) => { console.error('Firestore sync error (velas)', err); });
 
   // dia operativo 9am-9am: ultimo envio de Baterias y de Agua/Pias 2 (compartidos)
   db.collection('pozos_meta').doc('estado9am').onSnapshot((doc) => {
@@ -1658,19 +1688,41 @@ function sembrarAibInicial(){
   });
 }
 
-function saveEdit(pozoKey, newFields){
+function saveEdit(pozoKey, newFields, changedKeys){
   if(!firestoreOk){
     alert('No hay conexion con el guardado compartido. Revisa tu internet e intenta de nuevo.');
     return;
   }
   const toSave = Object.assign({}, newFields, {
     updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-    updatedFields: Object.keys(newFields),
+    // si nos pasan la lista de campos que REALMENTE cambiaron la usamos (para que Movimientos sea
+    // preciso); si no, dejamos el comportamiento viejo (todos los campos que se mandaron)
+    updatedFields: changedKeys !== undefined ? changedKeys : Object.keys(newFields),
     operador: newFields.operador || operadorName || 'Sin nombre'
   });
   db.collection('pozos_overrides').doc(pozoKey).set(toSave, { merge: true }).catch((err) => {
     alert('No se pudo guardar el cambio (' + err.message + '). Revisa tu conexion.');
   });
+}
+
+// ---------------- Velas (agua/gas/oil) lanzadas a un pozo ----------------
+function registrarVela(pozo, bateria, tipo, numero){
+  if(!firestoreOk){
+    alert('No hay conexion con el guardado compartido. Revisa tu internet e intenta de nuevo.');
+    return;
+  }
+  db.collection('pozos_velas').add({
+    pozo, bateria: bateria || 'Sin bateria', tipo, numero,
+    fecha: todayStr(),
+    operador: operadorName || 'Sin nombre',
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  }).catch((err) => {
+    alert('No se pudo registrar la vela (' + err.message + '). Revisa tu conexion.');
+  });
+}
+
+function velasDePozo(pozo){
+  return VELAS.filter(v => v.pozo === pozo).sort((a,b) => (b._updatedAtDate||0) - (a._updatedAtDate||0));
 }
 
 // ---------------- Historico de aperturas (para el grafico por pozo) ----------------
@@ -1871,6 +1923,8 @@ function renderCardView(rec, bat){
 
   const estadoClass = rec.estado === 'Abierto' ? 'abierto' : (rec.estado === 'Cerrado' ? 'cerrado' : '');
   const estadoLabel = rec.estado || 'Sin definir (cargá un horario)';
+  const ultimaVela = velasDePozo(rec.pozo)[0];
+  const ultimaVelaTxt = ultimaVela ? `${fraseVela(ultimaVela.tipo, ultimaVela.numero)}${ultimaVela.fecha ? ' (' + ultimaVela.fecha + ')' : ''}` : '';
 
   card.innerHTML = `
     <div class="card-head">
@@ -1885,6 +1939,7 @@ function renderCardView(rec, bat){
     ${field('Presion', presionMostrada, 'presion')}
     ${field('Colectora', rec.colectora)}
     ${field('Ciclo', rec.ciclo)}
+    ${ultimaVelaTxt ? field('Ultima vela lanzada', ultimaVelaTxt) : ''}
     <div class="field horario-field ${hInfo.colorClass}">
       <div class="k">${hInfo.label}</div>
       <div class="v ${!hInfo.text ? 'empty' : ''}">${hInfo.text || 'Sin dato'}</div>
@@ -1979,6 +2034,12 @@ function renderCardEdit(rec, bat){
   const horaAperturaOriginal = horaAperturaVal;
   const horaCierreOriginal = horaCierreVal;
 
+  // ultimas velas lanzadas a este pozo (solo para mostrar como referencia, no se editan aca)
+  const ultimasVelas = velasDePozo(rec.pozo).slice(0, 3);
+  const ultimasVelasHtml = ultimasVelas.length
+    ? `<div class="edit-hint" style="margin-top:8px;">Ultimas velas: ${ultimasVelas.map(v => `${fraseVela(v.tipo, v.numero)}${v.fecha ? ' ('+v.fecha+')' : ''}`).join(' &middot; ')}</div>`
+    : '';
+
   card.innerHTML = `
     <div class="card-head">
       <div>
@@ -2009,6 +2070,25 @@ function renderCardEdit(rec, bat){
           </div>
         </div>
       </div>
+    </div>
+    <div class="field">
+      <div class="k">Vela lanzada (si corresponde)</div>
+      <div class="edit-hint">Si le tiraron vela/s a este pozo, poné la cantidad en el tipo que corresponda (se pueden cargar las tres juntas). Al tocar Guardar (abajo de todo) quedan registradas como novedad, sin tocar el horario del pozo. Si tambien cerro/abrio, cargalo aparte en Horario de maniobra.</div>
+      <div class="aib-fields">
+        <div class="aib-field">
+          <div class="time-label">Agua</div>
+          <input type="number" inputmode="numeric" min="0" step="1" class="edit-input" id="velaNumAgua" placeholder="cantidad">
+        </div>
+        <div class="aib-field">
+          <div class="time-label">Gas</div>
+          <input type="number" inputmode="numeric" min="0" step="1" class="edit-input" id="velaNumGas" placeholder="cantidad">
+        </div>
+        <div class="aib-field">
+          <div class="time-label">Oil</div>
+          <input type="number" inputmode="numeric" min="0" step="1" class="edit-input" id="velaNumOil" placeholder="cantidad">
+        </div>
+      </div>
+      ${ultimasVelasHtml}
     </div>
     <div class="field">
       <div class="k">Horario de maniobra</div>
@@ -2084,6 +2164,9 @@ function renderCardEdit(rec, bat){
   });
   document.getElementById('saveBtn').addEventListener('click', () => {
     if(!puedeModificar()) return;
+    // valores ANTES de este guardado, para saber despues cuales campos cambiaron de verdad
+    // (y no listar en Movimientos todo el formulario aunque solo se haya tocado un dato)
+    const before = Object.assign({}, rec);
     const inputs = card.querySelectorAll('.edit-input[data-key]');
     const newFields = {};
     inputs.forEach(inp => { newFields[inp.dataset.key] = inp.value; });
@@ -2103,6 +2186,31 @@ function renderCardEdit(rec, bat){
     } else {
       newFields.ciclo = '';
     }
+
+    // Vela/s lanzadas: alcanza con poner la cantidad y tocar Guardar (no hace falta un boton aparte).
+    // OJO: esto NO toca el horario ni el estado del pozo para nada - si el operador quiere marcarlo
+    // Cerrado tiene que cargar el horario el mismo, como siempre. Asi la novedad de la vela sale sola
+    // ("Se lanzan velas: ...") sin mezclarse con un Abierto/Cerrado que no se cargo en este guardado.
+    const velasACargar = [
+      { tipo: 'Agua', numero: document.getElementById('velaNumAgua').value.trim() },
+      { tipo: 'Gas', numero: document.getElementById('velaNumGas').value.trim() },
+      { tipo: 'Oil', numero: document.getElementById('velaNumOil').value.trim() }
+    ].filter(v => v.numero);
+
+    // Vela/s "pendiente/s de mostrar en el parte": las vamos acumulando en el propio pozo (no en la
+    // coleccion aparte VELAS, que se pisaba con cada parte enviado aunque el pozo siguiera cerrado).
+    // Asi, si se manda un parte con el pozo TODAVIA cerrado (solo la vela), la cantidad/hora quedan
+    // guardadas en el pozo mismo y sobreviven hasta que de verdad se reabra, sin importar cuantos
+    // partes se manden mientras tanto.
+    const velaPendienteAcum = {
+      Agua: parseFloat(rec.velaPendienteAgua) || 0,
+      Gas: parseFloat(rec.velaPendienteGas) || 0,
+      Oil: parseFloat(rec.velaPendienteOil) || 0
+    };
+    velasACargar.forEach(v => {
+      velaPendienteAcum[v.tipo] += parseFloat(v.numero) || 0;
+    });
+    const hayVelaPendienteAcum = velaPendienteAcum.Agua || velaPendienteAcum.Gas || velaPendienteAcum.Oil;
 
     const aperturaCambio = hA !== horaAperturaOriginal;
     const cierreCambio = hC !== horaCierreOriginal;
@@ -2126,6 +2234,13 @@ function renderCardEdit(rec, bat){
       horario = nota;
     }
     newFields.horario = horario;
+
+    // Hora de la vela: si se cargo la vela en esta misma tanda, usamos el horario que se cargo junto
+    // con ella (cierre si se cerro, o apertura si no hay cierre) - asi "16:00" es de verdad las 16 y
+    // no el reloj real del guardado. Si no se cargo ningun horario junto con la vela, cae al reloj.
+    const velaPendienteHoraAcum = velasACargar.length
+      ? (hcEfectivo || hA || nowTimeStr())
+      : (rec.velaPendienteHora || '');
 
     // si se cargan apertura Y cierre juntos en un solo guardado, no sabemos por el texto solo cual
     // de las dos paso despues. Lo resolvemos por la lectura mas logica: entre las dos formas posibles
@@ -2206,6 +2321,27 @@ function renderCardEdit(rec, bat){
       newFields.veniaDeCerradoConfirmado = rec.estado === 'Cerrado';
     }
 
+    // Vela/s pendiente/s: recien ACA sabemos si este guardado es la reapertura de verdad (el pozo
+    // pasa de no-Abierto a Abierto). Si es asi, combinamos toda la vela acumulada hasta ahora (aunque
+    // se haya mandado un parte de campo mientras el pozo seguia cerrado - eso ya no la hace desaparecer,
+    // porque queda guardada en el pozo mismo, no en un parte ya enviado) en un solo texto listo para la
+    // novedad ("Se lanzan velas a las 16 hs: ... Abierto con presion estatica de 22."), y limpiamos el
+    // acumulado. Si todavia NO es la reapertura (sigue cerrado, o esta abierto y solo se cargo la vela
+    // sin tocar el horario), la vela se queda pendiente, sumada a la que ya hubiera.
+    const seAbreAhora = newFields.estado === 'Abierto' && rec.estado !== 'Abierto';
+    if(seAbreAhora){
+      newFields.velaEnAperturaTxt = hayVelaPendienteAcum ? fraseVelasPozo(velaPendienteAcum, velaPendienteHoraAcum) : '';
+      newFields.velaPendienteAgua = 0;
+      newFields.velaPendienteGas = 0;
+      newFields.velaPendienteOil = 0;
+      newFields.velaPendienteHora = '';
+    } else if(velasACargar.length){
+      newFields.velaPendienteAgua = velaPendienteAcum.Agua;
+      newFields.velaPendienteGas = velaPendienteAcum.Gas;
+      newFields.velaPendienteOil = velaPendienteAcum.Oil;
+      newFields.velaPendienteHora = velaPendienteHoraAcum;
+    }
+
     // correccion manual (si se cargo): pisa el calculo automatico de arriba
     const horasManualVal = document.getElementById('horasManualNum').value.trim();
     const horasManualTipo = document.getElementById('horasManualTipo').value;
@@ -2217,13 +2353,22 @@ function renderCardEdit(rec, bat){
       }
     }
 
+    // solo listamos en Movimientos los campos que realmente cambiaron de valor (no todo el formulario)
+    const changedKeys = Object.keys(newFields).filter(k => {
+      const antes = (before[k] === undefined || before[k] === null) ? '' : before[k];
+      const despues = (newFields[k] === undefined || newFields[k] === null) ? '' : newFields[k];
+      return String(antes) !== String(despues);
+    });
+
     Object.assign(rec, newFields);
     rec._edited = true;
-    saveEdit(rec.pozo, newFields);
+    saveEdit(rec.pozo, newFields, changedKeys);
     // registramos esta apertura en el historico (solo cuando REALMENTE se cargo una apertura nueva)
     if(aperturaCambio && hA){
       registrarAperturaHistorial(rec, hA);
     }
+    // vela/s cargadas en este mismo guardado: quedan como su propio movimiento
+    velasACargar.forEach(v => registrarVela(rec.pozo, rec.bateria, v.tipo, v.numero));
     renderCardView(rec, bat);
     render(document.getElementById('searchBox').value);
     if(document.getElementById('planoMain').style.display !== 'none'){
@@ -2353,11 +2498,47 @@ function bateriaToInstalacion(bat){
   return m ? `Uspa ${m[1]}` : bat;
 }
 
-function buildNovedad(rec){
+// ---------------- Texto de velas (agua/gas/oil) para novedades y movimientos ----------------
+// mismo formato que se viene usando en el parte real (REPORTE_CE): "X generadoras en gas + Y
+// surfactantes en agua + Z velas de condensado" - el tipo "Oil" del formulario es lo que en el
+// parte de toda la vida se llama "condensado"
+const VELA_FRASE = {
+  Gas: (n) => `${n} generadora${n === 1 ? '' : 's'} en gas`,
+  Agua: (n) => `${n} surfactante${n === 1 ? '' : 's'} en agua`,
+  Oil: (n) => `${n} vela${n === 1 ? '' : 's'} de condensado`
+};
+function fraseVela(tipo, cantidad){
+  const n = Number(cantidad) || cantidad;
+  const fn = VELA_FRASE[tipo];
+  return fn ? fn(n) : `${cantidad} de ${(tipo || '').toLowerCase()}`;
+}
+// arma "Se lanzan velas a las 16 hs: X generadoras en gas + Y surfactantes en agua + Z velas de
+// condensado." a partir de un objeto { Gas: cant, Agua: cant, Oil: cant } y la hora del lanzamiento
+// (opcional); '' si no hay ninguna cantidad cargada
+function fraseVelasPozo(cantidades, hora){
+  // la hora de lanzamiento ya no se informa en la novedad (a pedido de Maxi): el parametro "hora"
+  // se sigue recibiendo (se usa para otros calculos internos) pero no se imprime en el texto.
+  const frases = ['Gas', 'Agua', 'Oil'].filter(t => cantidades[t]).map(t => fraseVela(t, cantidades[t]));
+  if(frases.length === 0) return '';
+  return 'Se lanzan velas: ' + frases.join(' + ') + '.';
+}
+
+function buildNovedad(rec, velaTxt){
+  const presionTxt = (rec.presion && rec.presion !== 's/d') ? convertPresionText(rec.presion, pressureUnit) : null;
+
+  if(velaTxt){
+    // si el pozo REABRIO despues de tirar la vela (esta fila es la apertura), se suma "Abierto con
+    // presion..." a continuacion de la vela, sin repetir "Cerrado, recuperando presion" (ya se sabe
+    // que estuvo cerrado por la vela). Si todavia sigue cerrado (esperando reabrir), va SOLO la vela.
+    if(rec.estado === 'Abierto'){
+      return `${velaTxt} Abierto${presionTxt ? ' con presion estatica de ' + presionTxt : ''}.`;
+    }
+    return velaTxt;
+  }
+
   // el pozo que cierra y despues reabre va en UNA sola fila, con la novedad combinada (cerro y abrio).
   // pero si es la PRIMERA vez que abre (sin un cierre previo registrado), no corresponde decir
   // "Cerrado, recupera presion" antes, porque nunca estuvo cerrado.
-  const presionTxt = (rec.presion && rec.presion !== 's/d') ? convertPresionText(rec.presion, pressureUnit) : null;
   let base;
   if(rec.estado === 'Abierto'){
     const veniaDeCerrado = rec.veniaDeCerradoConfirmado === true;
@@ -2399,6 +2580,24 @@ function marcarReporteEnviado(){
     lastReporteTs: firebase.firestore.FieldValue.serverTimestamp()
   }, { merge: true }).catch((err) => {
     console.error('No se pudo marcar el reporte como enviado', err);
+  });
+}
+
+// "Limpiar movimientos": no borra ningun dato real del pozo/nota/vela, solo mueve el corte de la
+// lista "Ultimos movimientos" a ahora, asi los items viejos dejan de aparecer (compartido entre
+// dispositivos, igual que el corte del parte de campo).
+function corteMovimientos(){
+  return ultimoMovLimpiadoTs || new Date(0);
+}
+function marcarMovimientosLimpios(){
+  if(!firestoreOk){
+    alert('No hay conexion con el guardado compartido. Revisa tu internet e intenta de nuevo.');
+    return;
+  }
+  db.collection('pozos_meta').doc('estado').set({
+    lastMovLimpiadoTs: firebase.firestore.FieldValue.serverTimestamp()
+  }, { merge: true }).catch((err) => {
+    alert('No se pudo limpiar los movimientos (' + err.message + '). Revisa tu conexion.');
   });
 }
 
@@ -2690,6 +2889,14 @@ function calcularHsHastaCorte(rec){
 }
 
 function exportParteDeCampo(forzarTodos){
+  // LANZAMIENTO DE VELAS (agua/gas/oil): ya NO se agrupan desde la coleccion VELAS filtrada por el
+  // corte del ultimo parte enviado (eso se perdia si se mandaba un parte con el pozo TODAVIA cerrado:
+  // el corte avanzaba y la vela desaparecia antes de que el pozo llegara a reabrir). Ahora la vela
+  // vive pegada al pozo mismo (velaEnAperturaTxt, ya combinada, cargada por saveEdit en el momento
+  // exacto en que el pozo pasa a Abierto) o pendiente sin combinar (velaPendienteAgua/Gas/Oil/Hora,
+  // mientras sigue cerrado), asi que sobrevive sin importar cuantos partes se manden mientras tanto.
+  const pozosConVelaUsada = new Set();
+
   // GAS: solo pozos con hora de apertura/cierre modificados DESPUES del ultimo parte enviado
   // (o TODOS los que tengan horario cargado, si el usuario elige forzar)
   const gasBase = forzarTodos ? POZOS.filter(p => p.horaApertura || p.horaCierre).sort((a,b) => (a._updatedAtDate||0) - (b._updatedAtDate||0)) : pendientesDeReporte();
@@ -2714,11 +2921,29 @@ function exportParteDeCampo(forzarTodos){
       } else if(horasPerdida !== null && horasProduccion === null){
         horasProduccion = Math.max(0, Math.round((24 - horasPerdida) * 10) / 10);
       }
+      // esta fila sale de un guardado que SI toco horaApertura/horaCierre (eso es lo que exige
+      // pendientesDeReporte). Si ese mismo guardado tambien dejo una vela:
+      // - ya combinada con una reapertura (velaEnAperturaTxt) -> la usamos tal cual.
+      // - o recien cargada mientras el pozo se cierra en esta misma tanda (velaPendienteX sin combinar
+      //   todavia) -> armamos el texto de la vela sola, para que la fila diga SOLO eso (sin "Cerrado,
+      //   recuperando presion" de mas), tal como se informa siempre en el parte real.
+      const uf = rec.updatedFields || [];
+      let velaTxt = '';
+      if(uf.includes('velaEnAperturaTxt') && rec.velaEnAperturaTxt){
+        velaTxt = rec.velaEnAperturaTxt;
+      } else if(['velaPendienteAgua','velaPendienteGas','velaPendienteOil'].some(k => uf.includes(k))){
+        velaTxt = fraseVelasPozo({
+          Agua: parseFloat(rec.velaPendienteAgua)||0,
+          Gas: parseFloat(rec.velaPendienteGas)||0,
+          Oil: parseFloat(rec.velaPendienteOil)||0
+        }, rec.velaPendienteHora || '');
+      }
+      if(velaTxt) pozosConVelaUsada.add(rec.pozo);
       return {
         hora: buildHoraColumna(rec),
         instalacion: bateriaToInstalacion(rec.bateria),
         pozo: rec.pozo,
-        novedad: buildNovedad(rec),
+        novedad: buildNovedad(rec, velaTxt),
         horasPerdida,
         horasProduccion
       };
@@ -2748,7 +2973,27 @@ function exportParteDeCampo(forzarTodos){
       horasProduccion: null
     }));
 
-  const filasGasConNotas = [...filasGas, ...filasNotas];
+  // si un pozo tiene vela pendiente pero todavia NO se combino con una reapertura (caso raro: se
+  // cargo la vela y el pozo sigue cerrado, o quedo abierto sin que se vuelva a tocar el horario), no
+  // se pierde: va como fila propia, leida directo del pozo (no de un parte ya enviado).
+  const corte = corteDePendientes();
+  const filasVelasSueltas = POZOS
+    .filter(p => !pozosConVelaUsada.has(p.pozo) && (parseFloat(p.velaPendienteAgua)||0 || parseFloat(p.velaPendienteGas)||0 || parseFloat(p.velaPendienteOil)||0))
+    .filter(p => forzarTodos || (p._updatedAtDate && p._updatedAtDate > corte && p.updatedFields && ['velaPendienteAgua','velaPendienteGas','velaPendienteOil'].some(k => p.updatedFields.includes(k))))
+    .map(p => {
+      const cantidades = { Agua: parseFloat(p.velaPendienteAgua)||0, Gas: parseFloat(p.velaPendienteGas)||0, Oil: parseFloat(p.velaPendienteOil)||0 };
+      const hora = p.velaPendienteHora || '';
+      return {
+        hora,
+        instalacion: bateriaToInstalacion(p.bateria),
+        pozo: p.pozo,
+        novedad: fraseVelasPozo(cantidades, hora),
+        horasPerdida: null,
+        horasProduccion: null
+      };
+    });
+
+  const filasGasConNotas = [...filasGas, ...filasNotas, ...filasVelasSueltas];
 
   if(filasGasConNotas.length === 0 && filasOil.length === 0){
     if(!forzarTodos){
@@ -3047,13 +3292,23 @@ function tiempoRelativo(date){
 
 function renderMovimientos(){
   const movMain = document.getElementById('movMain');
-  movMain.innerHTML = `<div class="plano-note">Pozos y novedades de USPA (gas, petroleo y notas) ordenados por la ultima modificacion (de cualquier dispositivo), la mas reciente primero.</div>`;
+  movMain.innerHTML = `<div class="plano-note" style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+    <span>Pozos y novedades de USPA (gas, petroleo y notas) ordenados por la ultima modificacion (de cualquier dispositivo), la mas reciente primero.</span>
+    <button type="button" id="limpiarMovBtn" class="clear-btn" style="white-space:nowrap;">Limpiar movimientos</button>
+  </div>`;
+  document.getElementById('limpiarMovBtn').addEventListener('click', () => {
+    if(confirm('¿Limpiar la lista de Ultimos movimientos? No borra ningun dato de los pozos, solo oculta lo que ya se vio (para todos los dispositivos).')){
+      marcarMovimientosLimpios();
+    }
+  });
 
-  const gasConMov = POZOS.filter(p => p._updatedAtDate).map(p => Object.assign({ _tipo: 'gas' }, p));
-  const oilConMov = AIB_POZOS.filter(p => p._updatedAtDate).map(p => Object.assign({ _tipo: 'oil' }, p));
-  const notasConMov = USPA_NOTAS.filter(n => n._updatedAtDate).map(n => Object.assign({ _tipo: 'nota' }, n));
-  const notasEquipoConMov = EQUIPOS_NOTAS.filter(n => n._updatedAtDate).map(n => Object.assign({ _tipo: 'notaEquipo' }, n));
-  const conMovimiento = [...gasConMov, ...oilConMov, ...notasConMov, ...notasEquipoConMov].sort((a,b) => b._updatedAtDate - a._updatedAtDate);
+  const corte = corteMovimientos();
+  const gasConMov = POZOS.filter(p => p._updatedAtDate && p._updatedAtDate > corte).map(p => Object.assign({ _tipo: 'gas' }, p));
+  const oilConMov = AIB_POZOS.filter(p => p._updatedAtDate && p._updatedAtDate > corte).map(p => Object.assign({ _tipo: 'oil' }, p));
+  const notasConMov = USPA_NOTAS.filter(n => n._updatedAtDate && n._updatedAtDate > corte).map(n => Object.assign({ _tipo: 'nota' }, n));
+  const notasEquipoConMov = EQUIPOS_NOTAS.filter(n => n._updatedAtDate && n._updatedAtDate > corte).map(n => Object.assign({ _tipo: 'notaEquipo' }, n));
+  const velasConMov = VELAS.filter(v => v._updatedAtDate && v._updatedAtDate > corte).map(v => Object.assign({ _tipo: 'vela' }, v));
+  const conMovimiento = [...gasConMov, ...oilConMov, ...notasConMov, ...notasEquipoConMov, ...velasConMov].sort((a,b) => b._updatedAtDate - a._updatedAtDate);
 
   if(conMovimiento.length === 0){
     movMain.innerHTML += '<div class="empty-msg">Todavia no hay movimientos registrados.</div>';
@@ -3068,11 +3323,42 @@ function renderMovimientos(){
     bp: 'BP', pl: 'PL', perdidas: 'perdidas', hora: 'hora', bateria: 'bateria', motivoParo: 'motivo de paro', nota: 'nota',
     texto: 'novedad'
   };
+  // campos internos de calculo (no se muestran en Movimientos: ya se reflejan en hora apertura/cierre)
+  const HIDDEN_MOV_FIELDS = ['horasTotalNum', 'horasTotalTipo', 'horasRangoDesde', 'horasRangoHasta', 'horasRangoConfirmado', 'veniaDeCerradoConfirmado'];
+
+  function formatMovValue(k, rec){
+    let v = rec[k];
+    if(k === 'presion') return (v && v !== 's/d') ? convertPresionText(v, pressureUnit) : 'sin dato';
+    if(k === 'bateria') return v || 'Sin bateria';
+    if(k === 'enCiclaje') return v ? 'agregado' : 'sacado';
+    if(v === undefined || v === null || v === '') return '';
+    v = v.toString();
+    if(v.length > 40) v = v.slice(0, 40) + '...';
+    return v;
+  }
 
   conMovimiento.forEach(rec => {
     const esOil = rec._tipo === 'oil';
     const esNota = rec._tipo === 'nota';
     const bat = rec.bateria || 'Sin bateria';
+
+    if(rec._tipo === 'vela'){
+      const row = document.createElement('div');
+      row.className = 'ciclaje-row';
+      row.innerHTML = `
+        <div class="cr-left">
+          <div class="cr-pozo">${rec.pozo} <span style="color:var(--muted); font-weight:400; font-size:0.75rem;">${bat}</span></div>
+          <div class="cr-detail">${rec.operador ? `<b>${rec.operador}</b> &middot; ` : ''}${tiempoRelativo(rec._updatedAtDate)} &middot; ${fraseVela(rec.tipo, rec.numero)}</div>
+        </div>
+        <div class="cr-estado sd">Vela</div>
+      `;
+      row.addEventListener('click', () => {
+        const target = POZOS.find(p => p.pozo === rec.pozo);
+        if(target) openCard(target, target.bateria || 'Sin bateria');
+      });
+      movMain.appendChild(row);
+      return;
+    }
 
     if(rec._tipo === 'notaEquipo'){
       const row = document.createElement('div');
@@ -3123,8 +3409,12 @@ function renderMovimientos(){
       ? (rec.estado === 'Parado' ? 'cerrado' : 'abierto')
       : (rec.estado === 'Abierto' ? 'abierto' : (rec.estado === 'Cerrado' ? 'cerrado' : 'sd'));
     const camposTocados = (rec.updatedFields || [])
-      .filter(k => k !== 'updatedAt')
-      .map(k => FIELD_LABELS_MOV[k] || k)
+      .filter(k => k !== 'updatedAt' && !HIDDEN_MOV_FIELDS.includes(k))
+      .map(k => {
+        const label = FIELD_LABELS_MOV[k] || k;
+        const val = formatMovValue(k, rec);
+        return val ? `${label}: ${val}` : label;
+      })
       .join(', ');
 
     const row = document.createElement('div');
