@@ -1919,7 +1919,7 @@ function renderCardView(rec, bat){
   const estadoClass = rec.estado === 'Abierto' ? 'abierto' : (rec.estado === 'Cerrado' ? 'cerrado' : '');
   const estadoLabel = rec.estado || 'Sin definir (cargá un horario)';
   const ultimaVela = velasDePozo(rec.pozo)[0];
-  const ultimaVelaTxt = ultimaVela ? `${ultimaVela.tipo} N°${ultimaVela.numero}${ultimaVela.fecha ? ' (' + ultimaVela.fecha + ')' : ''}` : '';
+  const ultimaVelaTxt = ultimaVela ? `${fraseVela(ultimaVela.tipo, ultimaVela.numero)}${ultimaVela.fecha ? ' (' + ultimaVela.fecha + ')' : ''}` : '';
 
   card.innerHTML = `
     <div class="card-head">
@@ -2032,7 +2032,7 @@ function renderCardEdit(rec, bat){
   // ultimas velas lanzadas a este pozo (solo para mostrar como referencia, no se editan aca)
   const ultimasVelas = velasDePozo(rec.pozo).slice(0, 3);
   const ultimasVelasHtml = ultimasVelas.length
-    ? `<div class="edit-hint" style="margin-top:8px;">Ultimas velas: ${ultimasVelas.map(v => `${v.tipo} N°${v.numero}${v.fecha ? ' ('+v.fecha+')' : ''}`).join(' &middot; ')}</div>`
+    ? `<div class="edit-hint" style="margin-top:8px;">Ultimas velas: ${ultimasVelas.map(v => `${fraseVela(v.tipo, v.numero)}${v.fecha ? ' ('+v.fecha+')' : ''}`).join(' &middot; ')}</div>`
     : '';
 
   card.innerHTML = `
@@ -2068,23 +2068,22 @@ function renderCardEdit(rec, bat){
     </div>
     <div class="field">
       <div class="k">Vela lanzada (si corresponde)</div>
-      <div class="edit-hint">Si le tiraron una vela a este pozo, elegi el tipo y poné el numero. Va a aparecer como novedad al levantar el proximo parte.</div>
-      <div class="time-row">
-        <div>
-          <div class="time-label">Tipo</div>
-          <select class="edit-input" id="velaTipo">
-            <option value="">-- ninguna --</option>
-            <option value="Agua">Agua</option>
-            <option value="Gas">Gas</option>
-            <option value="Oil">Oil</option>
-          </select>
+      <div class="edit-hint">Si le tiraron vela/s a este pozo, poné la cantidad en el tipo que corresponda (se pueden cargar las tres juntas). Van a aparecer como novedad al levantar el proximo parte.</div>
+      <div class="aib-fields">
+        <div class="aib-field">
+          <div class="time-label">Agua</div>
+          <input type="number" inputmode="numeric" min="0" step="1" class="edit-input" id="velaNumAgua" placeholder="cantidad">
         </div>
-        <div>
-          <div class="time-label">Numero</div>
-          <input type="number" inputmode="numeric" min="0" step="1" class="edit-input time-input" id="velaNumero" placeholder="ej: 45">
+        <div class="aib-field">
+          <div class="time-label">Gas</div>
+          <input type="number" inputmode="numeric" min="0" step="1" class="edit-input" id="velaNumGas" placeholder="cantidad">
+        </div>
+        <div class="aib-field">
+          <div class="time-label">Oil</div>
+          <input type="number" inputmode="numeric" min="0" step="1" class="edit-input" id="velaNumOil" placeholder="cantidad">
         </div>
       </div>
-      <button type="button" class="save-btn" id="registrarVelaBtn" style="margin-top:8px; width:100%;">Registrar vela</button>
+      <button type="button" class="save-btn" id="registrarVelaBtn" style="margin-top:8px; width:100%;">Registrar vela/s</button>
       ${ultimasVelasHtml}
     </div>
     <div class="field">
@@ -2161,14 +2160,17 @@ function renderCardEdit(rec, bat){
   });
   document.getElementById('registrarVelaBtn').addEventListener('click', () => {
     if(!puedeModificar()) return;
-    const tipo = document.getElementById('velaTipo').value;
-    const numero = document.getElementById('velaNumero').value.trim();
-    if(!tipo || !numero){
-      alert('Elegi el tipo de vela y poné el numero antes de registrar.');
+    const tipos = [
+      { tipo: 'Agua', numero: document.getElementById('velaNumAgua').value.trim() },
+      { tipo: 'Gas', numero: document.getElementById('velaNumGas').value.trim() },
+      { tipo: 'Oil', numero: document.getElementById('velaNumOil').value.trim() }
+    ].filter(v => v.numero);
+    if(tipos.length === 0){
+      alert('Poné el numero en al menos un tipo de vela antes de registrar.');
       return;
     }
-    registrarVela(rec.pozo, rec.bateria, tipo, numero);
-    alert('Vela registrada. Va a aparecer en las novedades del proximo parte.');
+    tipos.forEach(v => registrarVela(rec.pozo, rec.bateria, v.tipo, v.numero));
+    alert(tipos.length > 1 ? 'Velas registradas. Van a aparecer en las novedades del proximo parte.' : 'Vela registrada. Va a aparecer en las novedades del proximo parte.');
     renderCardEdit(rec, bat);
   });
   document.getElementById('saveBtn').addEventListener('click', () => {
@@ -2452,7 +2454,28 @@ function bateriaToInstalacion(bat){
   return m ? `Uspa ${m[1]}` : bat;
 }
 
-function buildNovedad(rec){
+// ---------------- Texto de velas (agua/gas/oil) para novedades y movimientos ----------------
+// mismo formato que se viene usando en el parte real (REPORTE_CE): "X generadoras en gas + Y
+// surfactantes en agua + Z velas de condensado" - el tipo "Oil" del formulario es lo que en el
+// parte de toda la vida se llama "condensado"
+const VELA_FRASE = {
+  Gas: (n) => `${n} generadora${n === 1 ? '' : 's'} en gas`,
+  Agua: (n) => `${n} surfactante${n === 1 ? '' : 's'} en agua`,
+  Oil: (n) => `${n} vela${n === 1 ? '' : 's'} de condensado`
+};
+function fraseVela(tipo, cantidad){
+  const n = Number(cantidad) || cantidad;
+  const fn = VELA_FRASE[tipo];
+  return fn ? fn(n) : `${cantidad} de ${(tipo || '').toLowerCase()}`;
+}
+// arma "Se lanzan velas: X generadoras en gas + Y surfactantes en agua + Z velas de condensado."
+// a partir de un objeto { Gas: cant, Agua: cant, Oil: cant }; '' si no hay ninguna cantidad cargada
+function fraseVelasPozo(cantidades){
+  const frases = ['Gas', 'Agua', 'Oil'].filter(t => cantidades[t]).map(t => fraseVela(t, cantidades[t]));
+  return frases.length ? 'Se lanzan velas: ' + frases.join(' + ') + '.' : '';
+}
+
+function buildNovedad(rec, velaTxt){
   // el pozo que cierra y despues reabre va en UNA sola fila, con la novedad combinada (cerro y abrio).
   // pero si es la PRIMERA vez que abre (sin un cierre previo registrado), no corresponde decir
   // "Cerrado, recupera presion" antes, porque nunca estuvo cerrado.
@@ -2477,6 +2500,9 @@ function buildNovedad(rec){
   if(rec.horarioNota && rec.horarioNota.trim()){
     base += ' ' + rec.horarioNota.trim();
   }
+  // si se lanzaron velas, van ADELANTE de todo, igual que se viene informando siempre en el parte real
+  // (ej: "Se lanzan velas: 4 generadoras en gas + 2 surfactantes en agua + 4 velas de condensado. Abierto con presion estatica de 14 kg/cm².")
+  if(velaTxt) base = velaTxt + ' ' + base;
   return base;
 }
 
@@ -2789,6 +2815,20 @@ function calcularHsHastaCorte(rec){
 }
 
 function exportParteDeCampo(forzarTodos){
+  // LANZAMIENTO DE VELAS (agua/gas/oil): las agrupamos por pozo ANTES de armar las novedades de GAS,
+  // sumando cantidades si se cargaron en mas de una tanda dentro de la misma ventana del parte. Esto
+  // se integra en la MISMA novedad del pozo (igual que se viene informando siempre en el parte real:
+  // "Se lanzan velas: ... Abierto con presion estatica de ...") en vez de ir en una fila aparte.
+  const velasBase = forzarTodos ? [...VELAS] : pendientesDeVelas();
+  const velasPorPozo = {};
+  velasBase.forEach(v => {
+    if(!velasPorPozo[v.pozo]) velasPorPozo[v.pozo] = { bateria: v.bateria, cantidades: {}, ultimaFecha: null };
+    const info = velasPorPozo[v.pozo];
+    info.cantidades[v.tipo] = (parseFloat(info.cantidades[v.tipo] || 0)) + (parseFloat(v.numero) || 0);
+    if(!info.ultimaFecha || (v._updatedAtDate && v._updatedAtDate > info.ultimaFecha)) info.ultimaFecha = v._updatedAtDate;
+  });
+  const pozosConVelaUsada = new Set();
+
   // GAS: solo pozos con hora de apertura/cierre modificados DESPUES del ultimo parte enviado
   // (o TODOS los que tengan horario cargado, si el usuario elige forzar)
   const gasBase = forzarTodos ? POZOS.filter(p => p.horaApertura || p.horaCierre).sort((a,b) => (a._updatedAtDate||0) - (b._updatedAtDate||0)) : pendientesDeReporte();
@@ -2813,11 +2853,14 @@ function exportParteDeCampo(forzarTodos){
       } else if(horasPerdida !== null && horasProduccion === null){
         horasProduccion = Math.max(0, Math.round((24 - horasPerdida) * 10) / 10);
       }
+      const velaInfo = velasPorPozo[rec.pozo];
+      const velaTxt = velaInfo ? fraseVelasPozo(velaInfo.cantidades) : '';
+      if(velaTxt) pozosConVelaUsada.add(rec.pozo);
       return {
         hora: buildHoraColumna(rec),
         instalacion: bateriaToInstalacion(rec.bateria),
         pozo: rec.pozo,
-        novedad: buildNovedad(rec),
+        novedad: buildNovedad(rec, velaTxt),
         horasPerdida,
         horasProduccion
       };
@@ -2847,20 +2890,23 @@ function exportParteDeCampo(forzarTodos){
       horasProduccion: null
     }));
 
-  // LANZAMIENTO DE VELAS (agua/gas/oil) en pozos, modificadas desde el ultimo parte (o todas, si se fuerza)
-  // se listan como novedad aparte, sin depender de que el pozo haya cambiado de estado ese dia
-  const velasBase = forzarTodos ? [...VELAS].sort((a,b) => (a._updatedAtDate||0) - (b._updatedAtDate||0)) : pendientesDeVelas();
-  const filasVelas = velasBase
-    .map(v => ({
-      hora: v._updatedAtDate ? v._updatedAtDate.toTimeString().slice(0,5) : '',
-      instalacion: bateriaToInstalacion(v.bateria),
-      pozo: v.pozo,
-      novedad: `Lanzamiento de vela de ${(v.tipo || '').toLowerCase()}, N° ${v.numero}.`,
-      horasPerdida: null,
-      horasProduccion: null
-    }));
+  // si un pozo tuvo vela pero NO tuvo cambio de horario en esta ventana (caso raro: se cargo la vela
+  // pero todavia no se registro la apertura/cierre), no se pierde: va como fila propia
+  const filasVelasSueltas = Object.keys(velasPorPozo)
+    .filter(pozo => !pozosConVelaUsada.has(pozo))
+    .map(pozo => {
+      const info = velasPorPozo[pozo];
+      return {
+        hora: info.ultimaFecha ? info.ultimaFecha.toTimeString().slice(0,5) : '',
+        instalacion: bateriaToInstalacion(info.bateria),
+        pozo,
+        novedad: fraseVelasPozo(info.cantidades),
+        horasPerdida: null,
+        horasProduccion: null
+      };
+    });
 
-  const filasGasConNotas = [...filasGas, ...filasNotas, ...filasVelas];
+  const filasGasConNotas = [...filasGas, ...filasNotas, ...filasVelasSueltas];
 
   if(filasGasConNotas.length === 0 && filasOil.length === 0){
     if(!forzarTodos){
@@ -3206,7 +3252,7 @@ function renderMovimientos(){
       row.innerHTML = `
         <div class="cr-left">
           <div class="cr-pozo">${rec.pozo} <span style="color:var(--muted); font-weight:400; font-size:0.75rem;">${bat}</span></div>
-          <div class="cr-detail">${rec.operador ? `<b>${rec.operador}</b> &middot; ` : ''}${tiempoRelativo(rec._updatedAtDate)} &middot; vela de ${(rec.tipo||'').toLowerCase()}, N&deg;${rec.numero}</div>
+          <div class="cr-detail">${rec.operador ? `<b>${rec.operador}</b> &middot; ` : ''}${tiempoRelativo(rec._updatedAtDate)} &middot; ${fraseVela(rec.tipo, rec.numero)}</div>
         </div>
         <div class="cr-estado sd">Vela</div>
       `;
