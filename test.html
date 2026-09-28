@@ -1176,6 +1176,7 @@ try{
 
 let lastOverridesCount = 0;
 let ultimoReporteTs = null; // fecha/hora (compartida entre dispositivos) del ultimo parte de campo enviado
+let ultimoMovLimpiadoTs = null; // fecha/hora (compartida) en que se limpio la lista de "Ultimos movimientos"
 let ultimoReporteBateriasTs = null; // idem, para el reporte de Baterias (dia operativo 9am-9am)
 let ultimoReporteAguaTs = null; // idem, para el reporte de Agua / Pias 2 (dia operativo 9am-9am)
 let AIB_POZOS = []; // pozos de petroleo (AIB), viven enteramente en Firestore, no hay lista base
@@ -1515,6 +1516,7 @@ function startSync(){
   db.collection('pozos_meta').doc('estado').onSnapshot((doc) => {
     const data = doc.data();
     ultimoReporteTs = (data && data.lastReporteTs && data.lastReporteTs.toDate) ? data.lastReporteTs.toDate() : null;
+    ultimoMovLimpiadoTs = (data && data.lastMovLimpiadoTs && data.lastMovLimpiadoTs.toDate) ? data.lastMovLimpiadoTs.toDate() : null;
     refreshEverything();
   }, (err) => {
     console.error('Firestore sync error (meta)', err);
@@ -2581,6 +2583,24 @@ function marcarReporteEnviado(){
   });
 }
 
+// "Limpiar movimientos": no borra ningun dato real del pozo/nota/vela, solo mueve el corte de la
+// lista "Ultimos movimientos" a ahora, asi los items viejos dejan de aparecer (compartido entre
+// dispositivos, igual que el corte del parte de campo).
+function corteMovimientos(){
+  return ultimoMovLimpiadoTs || new Date(0);
+}
+function marcarMovimientosLimpios(){
+  if(!firestoreOk){
+    alert('No hay conexion con el guardado compartido. Revisa tu internet e intenta de nuevo.');
+    return;
+  }
+  db.collection('pozos_meta').doc('estado').set({
+    lastMovLimpiadoTs: firebase.firestore.FieldValue.serverTimestamp()
+  }, { merge: true }).catch((err) => {
+    alert('No se pudo limpiar los movimientos (' + err.message + '). Revisa tu conexion.');
+  });
+}
+
 function pendientesDeReporteAib(){
   const corte = corteDePendientes();
   return AIB_POZOS.filter(p => (p.bp || p.pl) && p._updatedAtDate && p._updatedAtDate > corte)
@@ -3272,13 +3292,22 @@ function tiempoRelativo(date){
 
 function renderMovimientos(){
   const movMain = document.getElementById('movMain');
-  movMain.innerHTML = `<div class="plano-note">Pozos y novedades de USPA (gas, petroleo y notas) ordenados por la ultima modificacion (de cualquier dispositivo), la mas reciente primero.</div>`;
+  movMain.innerHTML = `<div class="plano-note" style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+    <span>Pozos y novedades de USPA (gas, petroleo y notas) ordenados por la ultima modificacion (de cualquier dispositivo), la mas reciente primero.</span>
+    <button type="button" id="limpiarMovBtn" class="clear-btn" style="white-space:nowrap;">Limpiar movimientos</button>
+  </div>`;
+  document.getElementById('limpiarMovBtn').addEventListener('click', () => {
+    if(confirm('¿Limpiar la lista de Ultimos movimientos? No borra ningun dato de los pozos, solo oculta lo que ya se vio (para todos los dispositivos).')){
+      marcarMovimientosLimpios();
+    }
+  });
 
-  const gasConMov = POZOS.filter(p => p._updatedAtDate).map(p => Object.assign({ _tipo: 'gas' }, p));
-  const oilConMov = AIB_POZOS.filter(p => p._updatedAtDate).map(p => Object.assign({ _tipo: 'oil' }, p));
-  const notasConMov = USPA_NOTAS.filter(n => n._updatedAtDate).map(n => Object.assign({ _tipo: 'nota' }, n));
-  const notasEquipoConMov = EQUIPOS_NOTAS.filter(n => n._updatedAtDate).map(n => Object.assign({ _tipo: 'notaEquipo' }, n));
-  const velasConMov = VELAS.filter(v => v._updatedAtDate).map(v => Object.assign({ _tipo: 'vela' }, v));
+  const corte = corteMovimientos();
+  const gasConMov = POZOS.filter(p => p._updatedAtDate && p._updatedAtDate > corte).map(p => Object.assign({ _tipo: 'gas' }, p));
+  const oilConMov = AIB_POZOS.filter(p => p._updatedAtDate && p._updatedAtDate > corte).map(p => Object.assign({ _tipo: 'oil' }, p));
+  const notasConMov = USPA_NOTAS.filter(n => n._updatedAtDate && n._updatedAtDate > corte).map(n => Object.assign({ _tipo: 'nota' }, n));
+  const notasEquipoConMov = EQUIPOS_NOTAS.filter(n => n._updatedAtDate && n._updatedAtDate > corte).map(n => Object.assign({ _tipo: 'notaEquipo' }, n));
+  const velasConMov = VELAS.filter(v => v._updatedAtDate && v._updatedAtDate > corte).map(v => Object.assign({ _tipo: 'vela' }, v));
   const conMovimiento = [...gasConMov, ...oilConMov, ...notasConMov, ...notasEquipoConMov, ...velasConMov].sort((a,b) => b._updatedAtDate - a._updatedAtDate);
 
   if(conMovimiento.length === 0){
