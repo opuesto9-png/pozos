@@ -2068,7 +2068,7 @@ function renderCardEdit(rec, bat){
     </div>
     <div class="field">
       <div class="k">Vela lanzada (si corresponde)</div>
-      <div class="edit-hint">Si le tiraron vela/s a este pozo, poné la cantidad en el tipo que corresponda (se pueden cargar las tres juntas). Van a aparecer como novedad al levantar el proximo parte.</div>
+      <div class="edit-hint">Si le tiraron vela/s a este pozo, poné la cantidad en el tipo que corresponda (se pueden cargar las tres juntas). Al tocar Guardar (abajo de todo) quedan registradas y el pozo pasa a Cerrado, recuperando presion, salvo que tambien cargues un horario en esta misma edicion.</div>
       <div class="aib-fields">
         <div class="aib-field">
           <div class="time-label">Agua</div>
@@ -2083,7 +2083,6 @@ function renderCardEdit(rec, bat){
           <input type="number" inputmode="numeric" min="0" step="1" class="edit-input" id="velaNumOil" placeholder="cantidad">
         </div>
       </div>
-      <button type="button" class="save-btn" id="registrarVelaBtn" style="margin-top:8px; width:100%;">Registrar vela/s</button>
       ${ultimasVelasHtml}
     </div>
     <div class="field">
@@ -2158,21 +2157,6 @@ function renderCardEdit(rec, bat){
   document.getElementById('clearCicloAbierto').addEventListener('click', () => {
     document.getElementById('cicloAbierto').value = '';
   });
-  document.getElementById('registrarVelaBtn').addEventListener('click', () => {
-    if(!puedeModificar()) return;
-    const tipos = [
-      { tipo: 'Agua', numero: document.getElementById('velaNumAgua').value.trim() },
-      { tipo: 'Gas', numero: document.getElementById('velaNumGas').value.trim() },
-      { tipo: 'Oil', numero: document.getElementById('velaNumOil').value.trim() }
-    ].filter(v => v.numero);
-    if(tipos.length === 0){
-      alert('Poné el numero en al menos un tipo de vela antes de registrar.');
-      return;
-    }
-    tipos.forEach(v => registrarVela(rec.pozo, rec.bateria, v.tipo, v.numero));
-    alert(tipos.length > 1 ? 'Velas registradas. Van a aparecer en las novedades del proximo parte.' : 'Vela registrada. Va a aparecer en las novedades del proximo parte.');
-    renderCardEdit(rec, bat);
-  });
   document.getElementById('saveBtn').addEventListener('click', () => {
     if(!puedeModificar()) return;
     // valores ANTES de este guardado, para saber despues cuales campos cambiaron de verdad
@@ -2186,8 +2170,8 @@ function renderCardEdit(rec, bat){
       newFields.bateria = newFields.bateria.trim() ? normalizarBateria(newFields.bateria) : 'Sin bateria';
     }
 
-    const hA = document.getElementById('horaApertura').value;
-    const hC = document.getElementById('horaCierre').value;
+    let hA = document.getElementById('horaApertura').value;
+    let hC = document.getElementById('horaCierre').value;
     const nota = document.getElementById('horarioNota').value.trim();
 
     const cicloCerradoNum = document.getElementById('cicloCerrado').value.trim();
@@ -2196,6 +2180,21 @@ function renderCardEdit(rec, bat){
       newFields.ciclo = `${cicloCerradoNum}c x ${cicloAbiertoNum}a`;
     } else {
       newFields.ciclo = '';
+    }
+
+    // Vela/s lanzadas: alcanza con poner la cantidad y tocar Guardar (no hace falta un boton aparte).
+    // Si se cargo alguna cantidad y en este mismo guardado NO se toco el horario, el pozo se cierra
+    // solo (con la hora actual) porque para tirar vela hay que cerrar el pozo - asi despues, cuando
+    // se cargue la apertura, la novedad combinada sale bien ("Se lanzan velas: ... Cerrado, recupera
+    // presion. Abierto..."). Si ademas se cargo horario en esta misma edicion, se respeta ese horario.
+    const velasACargar = [
+      { tipo: 'Agua', numero: document.getElementById('velaNumAgua').value.trim() },
+      { tipo: 'Gas', numero: document.getElementById('velaNumGas').value.trim() },
+      { tipo: 'Oil', numero: document.getElementById('velaNumOil').value.trim() }
+    ].filter(v => v.numero);
+    if(velasACargar.length > 0 && hA === horaAperturaOriginal && hC === horaCierreOriginal){
+      const d = new Date();
+      hC = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
     }
 
     const aperturaCambio = hA !== horaAperturaOriginal;
@@ -2325,6 +2324,8 @@ function renderCardEdit(rec, bat){
     if(aperturaCambio && hA){
       registrarAperturaHistorial(rec, hA);
     }
+    // vela/s cargadas en este mismo guardado: quedan como su propio movimiento
+    velasACargar.forEach(v => registrarVela(rec.pozo, rec.bateria, v.tipo, v.numero));
     renderCardView(rec, bat);
     render(document.getElementById('searchBox').value);
     if(document.getElementById('planoMain').style.display !== 'none'){
