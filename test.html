@@ -2475,6 +2475,10 @@ function fraseVelasPozo(cantidades){
 }
 
 function buildNovedad(rec, velaTxt){
+  // si se lanzaron velas en este pozo, la novedad es SOLO eso (nada de Abierto/Cerrado ni el resto):
+  // "Se lanzan velas: 4 generadoras en gas + 2 surfactantes en agua + 4 velas de condensado."
+  if(velaTxt) return velaTxt;
+
   // el pozo que cierra y despues reabre va en UNA sola fila, con la novedad combinada (cerro y abrio).
   // pero si es la PRIMERA vez que abre (sin un cierre previo registrado), no corresponde decir
   // "Cerrado, recupera presion" antes, porque nunca estuvo cerrado.
@@ -2499,9 +2503,6 @@ function buildNovedad(rec, velaTxt){
   if(rec.horarioNota && rec.horarioNota.trim()){
     base += ' ' + rec.horarioNota.trim();
   }
-  // si se lanzaron velas, van ADELANTE de todo, igual que se viene informando siempre en el parte real
-  // (ej: "Se lanzan velas: 4 generadoras en gas + 2 surfactantes en agua + 4 velas de condensado. Abierto con presion estatica de 14 kg/cm².")
-  if(velaTxt) base = velaTxt + ' ' + base;
   return base;
 }
 
