@@ -616,6 +616,42 @@
   .clear-btn:hover{ background: #2a1917; }
   .clear-btn.armed{ background:#4a231f; border-color:#d98a82; color:#fff; font-weight:700; }
 
+  .parte-otro-disp-banner{
+    position: sticky;
+    top: 0;
+    z-index: 500;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    background: var(--amber-dim);
+    border-bottom: 1px solid var(--amber);
+    color: var(--text);
+    padding: 8px 14px;
+    font-size: 0.85rem;
+  }
+  .parte-otro-disp-banner span#parteOtroDispTexto{ flex: 1; }
+  #parteOtroDispBajarBtn{
+    background: var(--amber);
+    border: none;
+    color: #1a1a1a;
+    font-weight: 700;
+    padding: 7px 12px;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  #parteOtroDispCerrarBtn{
+    background: none;
+    border: none;
+    color: var(--text);
+    font-size: 1.2rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 4px;
+  }
+
   .unit-toggle{
     display:flex;
     border: 1px solid var(--line);
@@ -809,6 +845,12 @@
 </style>
 </head>
 <body>
+
+<div id="parteOtroDispBanner" class="parte-otro-disp-banner" style="display:none;">
+  <span id="parteOtroDispTexto"></span>
+  <button type="button" id="parteOtroDispBajarBtn">Descargar yo tambien</button>
+  <button type="button" id="parteOtroDispCerrarBtn" title="Cerrar" aria-label="Cerrar">&times;</button>
+</div>
 
 <header>
   <h1>Pozos por bateria</h1>
@@ -1176,7 +1218,28 @@ try{
 
 let lastOverridesCount = 0;
 let ultimoReporteTs = null; // fecha/hora (compartida entre dispositivos) del ultimo parte de campo enviado
+                            // en CUALQUIER compu - solo se usa para avisarle a las demas compus, ya no
+                            // para decidir que esta pendiente (ver ultimoReporteLocalTs, mas abajo).
 let ultimoMovLimpiadoTs = null; // fecha/hora (compartida) en que se limpio la lista de "Ultimos movimientos"
+// corte para "que es nuevo" (que pozos/notas/velas entran al PROXIMO parte de campo que arme ESTA
+// compu). A pedido de Maxi: esto es POR DISPOSITIVO (guardado en este navegador, no en Firestore).
+// Si en OTRA compu ya se genero y bajo el parte, esta compu sigue viendo todo pendiente igual, como
+// si nadie lo hubiese bajado, hasta que ELLA MISMA lo genere - asi cada compu se asegura su propia
+// copia sin depender de que otra ya la haya bajado.
+let ultimoReporteLocalTs = (() => {
+  // leemos localStorage a mano aca (en vez de con safeGet) porque esto corre antes de que se declaren
+  // safeGet/memoryStore mas abajo en el archivo - asi evitamos depender de ese orden.
+  try{
+    const v = localStorage.getItem('ultimo_reporte_local_ts');
+    const d = v ? new Date(v) : null;
+    return (d && !isNaN(d.getTime())) ? d : null;
+  }catch(e){
+    return null;
+  }
+})();
+let miAccionParteEnCurso = false; // true mientras ESTA compu esta generando/marcando su propio parte
+                                   // (para no mostrarse a si misma el aviso de "otra compu bajo el parte")
+let metaEstadoYaCargada = false; // para no disparar el aviso con el primer dato que llega al abrir la app
 let ultimoReporteBateriasTs = null; // idem, para el reporte de Baterias (dia operativo 9am-9am)
 let ultimoReporteAguaTs = null; // idem, para el reporte de Agua / Pias 2 (dia operativo 9am-9am)
 let AIB_POZOS = []; // pozos de petroleo (AIB), viven enteramente en Firestore, no hay lista base
@@ -1416,7 +1479,7 @@ function inicioDiaOperativo(fecha){
 // cuenta todo. Asi, si un dia no se llega a mandar el parte, los movimientos de ese dia NO se pierden:
 // siguen apareciendo como pendientes hasta que efectivamente se manden, sin importar que haya cambiado el dia.
 function corteDePendientes(){
-  return ultimoReporteTs || new Date(0);
+  return ultimoReporteLocalTs || new Date(0);
 }
 
 // un pozo "cuenta" para el proximo parte si el ULTIMO guardado realmente toco el horario (apertura o
@@ -1515,8 +1578,21 @@ function startSync(){
   // fecha/hora del ultimo parte enviado (compartida): apenas cambia, todos los dispositivos recalculan solos
   db.collection('pozos_meta').doc('estado').onSnapshot((doc) => {
     const data = doc.data();
-    ultimoReporteTs = (data && data.lastReporteTs && data.lastReporteTs.toDate) ? data.lastReporteTs.toDate() : null;
+    const nuevoReporteTs = (data && data.lastReporteTs && data.lastReporteTs.toDate) ? data.lastReporteTs.toDate() : null;
+    // si cambio de verdad (no es la primera carga, y la fecha es distinta a la que ya teniamos): alguien
+    // genero un parte. Si fui yo mismo (este mismo click, en esta compu) no me lo aviso a mi mismo.
+    const cambioDeVerdad = metaEstadoYaCargada && nuevoReporteTs
+      && (!ultimoReporteTs || nuevoReporteTs.getTime() !== ultimoReporteTs.getTime());
+    ultimoReporteTs = nuevoReporteTs;
     ultimoMovLimpiadoTs = (data && data.lastMovLimpiadoTs && data.lastMovLimpiadoTs.toDate) ? data.lastMovLimpiadoTs.toDate() : null;
+    metaEstadoYaCargada = true;
+    if(cambioDeVerdad){
+      if(miAccionParteEnCurso){
+        miAccionParteEnCurso = false;
+      } else {
+        mostrarAvisoParteOtroDispositivo(nuevoReporteTs);
+      }
+    }
     refreshEverything();
   }, (err) => {
     console.error('Firestore sync error (meta)', err);
@@ -2414,6 +2490,25 @@ document.getElementById('searchBox').addEventListener('input', (e) => {
 document.getElementById('parteBtn').addEventListener('click', () => {
   try { exportParteDeCampo(); } catch(err) { alert('Error al generar el parte: ' + (err && err.message ? err.message : err)); }
 });
+
+// Aviso "se genero un parte en otra compu": como el corte de pendientes ahora es POR DISPOSITIVO,
+// esta compu sigue viendo todo pendiente igual que antes - este cartel es solo para que el operador
+// se entere y, si quiere, lo baje el tambien (con un solo toque).
+function mostrarAvisoParteOtroDispositivo(ts){
+  const banner = document.getElementById('parteOtroDispBanner');
+  const texto = document.getElementById('parteOtroDispTexto');
+  if(!banner || !texto) return;
+  const hora = ts ? `${String(ts.getHours()).padStart(2,'0')}:${String(ts.getMinutes()).padStart(2,'0')}` : '';
+  texto.textContent = `Se generó un parte de campo en otro dispositivo${hora ? ' a las ' + hora : ''}. Todavia esta pendiente en esta compu.`;
+  banner.style.display = '';
+}
+document.getElementById('parteOtroDispBajarBtn').addEventListener('click', () => {
+  document.getElementById('parteOtroDispBanner').style.display = 'none';
+  try { exportParteDeCampo(); } catch(err) { alert('Error al generar el parte: ' + (err && err.message ? err.message : err)); }
+});
+document.getElementById('parteOtroDispCerrarBtn').addEventListener('click', () => {
+  document.getElementById('parteOtroDispBanner').style.display = 'none';
+});
 document.getElementById('exportarTodoBtn').addEventListener('click', () => {
   try { exportarTodoExcel(); } catch(err) { alert('Error al generar el respaldo: ' + (err && err.message ? err.message : err)); }
 });
@@ -2575,7 +2670,13 @@ function buildHoraColumna(rec){
 }
 
 function marcarReporteEnviado(){
+  // corte LOCAL de esta compu (ver comentario junto a ultimoReporteLocalTs): recien a partir de ahora
+  // esta compu deja de considerar "pendiente" lo que ya incluyo en el parte que acaba de generar.
+  ultimoReporteLocalTs = new Date();
+  safeSet('ultimo_reporte_local_ts', ultimoReporteLocalTs.toISOString());
   if(!firestoreOk) return;
+  // ademas avisamos (compartido) que esta compu genero un parte, solo para que las OTRAS compus vean
+  // el cartel de "se genero un parte en otro dispositivo" - no afecta lo que cada una ve como pendiente.
   db.collection('pozos_meta').doc('estado').set({
     lastReporteTs: firebase.firestore.FieldValue.serverTimestamp()
   }, { merge: true }).catch((err) => {
@@ -3020,6 +3121,7 @@ function exportParteDeCampo(forzarTodos){
     if(navigator.share){ navigator.share({ title: 'Parte de campo', text }).catch(()=>{}); }
     else if(navigator.clipboard){ navigator.clipboard.writeText(text).then(()=>alert('Copiado.')); }
     else { prompt('Copia este texto:', text); }
+    miAccionParteEnCurso = true;
     marcarReporteEnviado();
     return;
   }
@@ -3039,6 +3141,7 @@ function exportParteDeCampo(forzarTodos){
   wb.xlsx.writeBuffer().then(buffer => {
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     downloadOrShareBlob(blob, fileName, 'Parte de campo');
+    miAccionParteEnCurso = true;
     marcarReporteEnviado();
   }).catch((err) => {
     alert('No se pudo generar el Excel (' + (err && err.message ? err.message : 'error desconocido') + '). Probá de nuevo con conexion a internet.');
