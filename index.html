@@ -444,12 +444,37 @@
     border: 1px solid var(--line);
     border-radius: 10px;
     padding: 10px;
-    overflow-x: auto;
+    position: relative;
+    overflow: hidden;
   }
   .red-stage figure{ margin:0; }
-  .red-stage svg{ display:block; height:auto; }
+  .red-stage svg{ display:block; height:auto; touch-action: none; cursor: grab; }
   .red-stage svg.fit{ width:100%; }
+  .red-stage svg.dragging{ cursor: grabbing; }
   .red-stage figcaption{ margin: 4px 4px 0; font-size: 0.74rem; color: var(--muted); }
+  .red-zoom-controls{
+    position: absolute;
+    right: 18px;
+    bottom: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    z-index: 2;
+  }
+  .red-zoom-controls button{
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: var(--panel-2, var(--bg));
+    border: 1px solid var(--line);
+    color: var(--text);
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  }
+  .red-zoom-controls button:active{ background: var(--amber-dim); }
+  .red-zoom-hint{ font-size: 0.68rem; color: var(--muted); text-align: center; padding-top: 2px; }
   .rnode{ cursor:pointer; }
   .rnode:focus-visible rect, .rnode:focus-visible circle{ outline: 2px solid var(--amber); outline-offset: 2px; }
   .redge{ fill:none; stroke: var(--line); stroke-width: 1.5; transition: stroke .2s, stroke-width .2s, opacity .2s; }
@@ -3435,6 +3460,7 @@ function redVisibleGrupos(grupos){
 
 function buildRedTree(grupos){
   const visibles = redVisibleGrupos(grupos);
+  const nodePos = {}; // pozo -> {x,y}, para poder centrar el zoom en un pozo buscado
   const spacing = 36, colGap = 18, grupoGap = 50, marginX = 28;
   let x = marginX;
   const grupoPos = [];
@@ -3518,17 +3544,21 @@ function buildRedTree(grupos){
         lab.textContent = p.pozo.replace('Ce-', '');
         ng.appendChild(lab);
         nodesLayer.appendChild(ng);
+        nodePos[p.pozo] = { x: p.x, y: yPozo };
       });
     });
   });
 
   svg.appendChild(edgesLayer);
   svg.appendChild(nodesLayer);
+  svg._redViewBox = { x: 0, y: 0, w: width, h: height };
+  svg._redNodePos = nodePos;
   return svg;
 }
 
 function buildRedRadial(grupos){
   const visibles = redVisibleGrupos(grupos);
+  const nodePos = {}; // pozo -> {x,y}, para poder centrar el zoom en un pozo buscado
   const size = visibles.length <= 1 ? 440 : 780;
   const cx = size/2, cy = size/2;
   const rKti = visibles.length <= 1 ? 40 : 54;
@@ -3630,12 +3660,15 @@ function buildRedRadial(grupos){
         lab.textContent = w.pozo.replace('Ce-', '');
         ng.appendChild(lab);
         nodesLayer.appendChild(ng);
+        nodePos[w.pozo] = { x: wp.x, y: wp.y };
       });
     });
   });
 
   svg.appendChild(edgesLayer);
   svg.appendChild(nodesLayer);
+  svg._redViewBox = { x: 0, y: 0, w: size, h: size };
+  svg._redNodePos = nodePos;
   return svg;
 }
 
@@ -3722,6 +3755,156 @@ function setRedFiltro(id){
   renderRedPanel(grupos);
 }
 
+// ---------------- Zoom / pan del diagrama (rueda+ctrl o pellizco en celu, arrastrar, botones +/-) ----------------
+// Trabajamos directo sobre el viewBox del SVG (no con CSS transform): mas simple y no depende de
+// medir el contenedor en pixeles para cada operacion.
+function redClampZoomW(state, w){
+  return Math.min(state.maxW, Math.max(state.minW, w));
+}
+function redApplyViewBox(state){
+  state.svg.setAttribute('viewBox', `${state.x} ${state.y} ${state.w} ${state.h}`);
+}
+function redZoomAtPoint(state, factor, pivotX, pivotY){
+  const newW = redClampZoomW(state, state.w * factor);
+  const actual = newW / state.w;
+  const newH = state.h * actual;
+  state.x = pivotX - (pivotX - state.x) * actual;
+  state.y = pivotY - (pivotY - state.y) * actual;
+  state.w = newW; state.h = newH;
+  redApplyViewBox(state);
+}
+function redZoomReset(state){
+  state.x = state.baseX; state.y = state.baseY; state.w = state.baseW; state.h = state.baseH;
+  redApplyViewBox(state);
+}
+function redZoomToPoint(state, cx, cy, targetW){
+  const aspect = state.baseH / state.baseW;
+  const w = redClampZoomW(state, targetW);
+  const h = w * aspect;
+  state.w = w; state.h = h;
+  state.x = cx - w/2;
+  state.y = cy - h/2;
+  redApplyViewBox(state);
+}
+
+function redSetupZoomPan(svg, stage, controlsWrap){
+  const base = svg._redViewBox || { x: 0, y: 0, w: 100, h: 100 };
+  const state = {
+    svg, baseX: base.x, baseY: base.y, baseW: base.w, baseH: base.h,
+    x: base.x, y: base.y, w: base.w, h: base.h,
+    minW: Math.max(70, base.w * 0.035), maxW: base.w
+  };
+  redApplyViewBox(state);
+
+  function svgPointFromClient(clientX, clientY){
+    const rect = svg.getBoundingClientRect();
+    if(!rect.width || !rect.height) return { x: state.x + state.w/2, y: state.y + state.h/2 };
+    return {
+      x: state.x + ((clientX - rect.left) / rect.width) * state.w,
+      y: state.y + ((clientY - rect.top) / rect.height) * state.h
+    };
+  }
+
+  // arrastrar con mouse (desktop)
+  let dragging = false, dragStartClient = null, dragStartState = null, dragMoved = 0;
+  svg.addEventListener('mousedown', e => {
+    if(e.button !== 0) return;
+    dragging = true; dragMoved = 0;
+    dragStartClient = { x: e.clientX, y: e.clientY };
+    dragStartState = { x: state.x, y: state.y };
+    svg.classList.add('dragging');
+  });
+  window.addEventListener('mousemove', e => {
+    if(!dragging) return;
+    const rect = svg.getBoundingClientRect();
+    if(!rect.width || !rect.height) return;
+    const dx = (e.clientX - dragStartClient.x) * (state.w / rect.width);
+    const dy = (e.clientY - dragStartClient.y) * (state.h / rect.height);
+    dragMoved = Math.max(dragMoved, Math.abs(e.clientX - dragStartClient.x), Math.abs(e.clientY - dragStartClient.y));
+    state.x = dragStartState.x - dx;
+    state.y = dragStartState.y - dy;
+    redApplyViewBox(state);
+  });
+  window.addEventListener('mouseup', () => {
+    if(!dragging) return;
+    dragging = false;
+    svg.classList.remove('dragging');
+    if(dragMoved > 4) redSuppressClick = true;
+  });
+
+  // rueda: ctrl+scroll o pellizco de trackpad (el navegador manda ctrlKey:true solo)
+  svg.addEventListener('wheel', e => {
+    if(!e.ctrlKey) return; // scroll comun: dejamos que la pagina scrollee normal
+    e.preventDefault();
+    const pivot = svgPointFromClient(e.clientX, e.clientY);
+    const factor = Math.exp(e.deltaY * 0.012);
+    redZoomAtPoint(state, factor, pivot.x, pivot.y);
+  }, { passive: false });
+
+  // touch: un dedo arrastra, dos dedos hacen pellizco de zoom
+  let touchMode = null; // 'pan' | 'pinch'
+  let touchStart = null;
+  svg.addEventListener('touchstart', e => {
+    if(e.touches.length === 1){
+      touchMode = 'pan';
+      touchStart = { clientX: e.touches[0].clientX, clientY: e.touches[0].clientY, stateX: state.x, stateY: state.y, moved: 0 };
+    } else if(e.touches.length === 2){
+      touchMode = 'pinch';
+      const [t1, t2] = e.touches;
+      const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+      const midClient = { x: (t1.clientX + t2.clientX)/2, y: (t1.clientY + t2.clientY)/2 };
+      touchStart = { dist, mid: svgPointFromClient(midClient.x, midClient.y), stateW: state.w, stateH: state.h, stateX: state.x, stateY: state.y };
+    }
+    e.preventDefault();
+  }, { passive: false });
+  svg.addEventListener('touchmove', e => {
+    if(touchMode === 'pan' && e.touches.length === 1){
+      const rect = svg.getBoundingClientRect();
+      if(!rect.width || !rect.height) return;
+      const dx = (e.touches[0].clientX - touchStart.clientX) * (state.w / rect.width);
+      const dy = (e.touches[0].clientY - touchStart.clientY) * (state.h / rect.height);
+      touchStart.moved = Math.max(touchStart.moved, Math.abs(e.touches[0].clientX - touchStart.clientX), Math.abs(e.touches[0].clientY - touchStart.clientY));
+      state.x = touchStart.stateX - dx;
+      state.y = touchStart.stateY - dy;
+      redApplyViewBox(state);
+    } else if(touchMode === 'pinch' && e.touches.length === 2){
+      const [t1, t2] = e.touches;
+      const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+      const factor = touchStart.dist / Math.max(1, dist);
+      const newW = redClampZoomW(state, touchStart.stateW * factor);
+      const actual = newW / touchStart.stateW;
+      state.w = newW;
+      state.h = touchStart.stateH * actual;
+      state.x = touchStart.mid.x - (touchStart.mid.x - touchStart.stateX) * actual;
+      state.y = touchStart.mid.y - (touchStart.mid.y - touchStart.stateY) * actual;
+      redApplyViewBox(state);
+    }
+    e.preventDefault();
+  }, { passive: false });
+  svg.addEventListener('touchend', e => {
+    if(touchMode === 'pan' && touchStart && touchStart.moved > 4) redSuppressClick = true;
+    if(e.touches.length === 0){ touchMode = null; touchStart = null; }
+    else if(e.touches.length === 1){
+      // de pellizco a un solo dedo: reiniciamos el arrastre para que no salte
+      touchMode = 'pan';
+      touchStart = { clientX: e.touches[0].clientX, clientY: e.touches[0].clientY, stateX: state.x, stateY: state.y, moved: 0 };
+    }
+  });
+
+  if(controlsWrap){
+    const btnIn = controlsWrap.querySelector('[data-zoom="in"]');
+    const btnOut = controlsWrap.querySelector('[data-zoom="out"]');
+    const btnReset = controlsWrap.querySelector('[data-zoom="reset"]');
+    if(btnIn) btnIn.addEventListener('click', () => redZoomAtPoint(state, 0.65, state.x + state.w/2, state.y + state.h/2));
+    if(btnOut) btnOut.addEventListener('click', () => redZoomAtPoint(state, 1/0.65, state.x + state.w/2, state.y + state.h/2));
+    if(btnReset) btnReset.addEventListener('click', () => redZoomReset(state));
+  }
+
+  return state;
+}
+
+let redSuppressClick = false; // true justo despues de un arrastre/pellizco, para no abrir un pozo sin querer
+
 function renderRedStage(grupos){
   const stage = document.getElementById('redStage');
   if(!stage) return;
@@ -3731,7 +3914,7 @@ function renderRedStage(grupos){
     return;
   }
   const svg = redView === 'tree' ? buildRedTree(grupos) : buildRedRadial(grupos);
-  if(redView === 'radial') svg.classList.add('fit');
+  svg.classList.add('fit');
   const fig = document.createElement('figure');
   fig.appendChild(svg);
   const cap = document.createElement('figcaption');
@@ -3739,14 +3922,38 @@ function renderRedStage(grupos){
   fig.appendChild(cap);
   stage.appendChild(fig);
 
+  const controls = document.createElement('div');
+  controls.className = 'red-zoom-controls';
+  controls.innerHTML = `
+    <button type="button" data-zoom="in" title="Acercar" aria-label="Acercar">+</button>
+    <button type="button" data-zoom="out" title="Alejar" aria-label="Alejar">&minus;</button>
+    <button type="button" data-zoom="reset" title="Ver todo" aria-label="Ver todo" style="font-size:0.85rem;">&#9678;</button>
+  `;
+  stage.appendChild(controls);
+  const zoomState = redSetupZoomPan(svg, stage, controls);
+
   stage.querySelectorAll('.rnode.pozo').forEach(ng => {
-    ng.addEventListener('click', () => selectRedPozo(ng.getAttribute('data-pozo')));
+    ng.addEventListener('click', () => {
+      if(redSuppressClick){ redSuppressClick = false; return; }
+      selectRedPozo(ng.getAttribute('data-pozo'));
+    });
     ng.addEventListener('keydown', e => {
       if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); selectRedPozo(ng.getAttribute('data-pozo')); }
     });
   });
 
   applyRedSelection(grupos);
+
+  // con busqueda activa y un solo pozo a la vista, enfocamos el zoom ahi directamente
+  // (asi no hay que buscarlo a ojo entre las lineas de toda la USPA)
+  if(redSearchTerm){
+    const matches = Array.from(stage.querySelectorAll('.rnode.pozo.match'));
+    if(matches.length === 1){
+      const pozoName = matches[0].getAttribute('data-pozo');
+      const pos = svg._redNodePos && svg._redNodePos[pozoName];
+      if(pos) redZoomToPoint(zoomState, pos.x, pos.y, zoomState.baseW * 0.16);
+    }
+  }
 }
 
 function applyRedSelection(grupos){
