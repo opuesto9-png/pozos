@@ -459,6 +459,7 @@
   .rwell.abierto{ fill:#1d3a22; stroke:#5fa85f; }
   .rwell.cerrado{ fill:#3a2220; stroke:#c0524a; }
   .rwell.sd{ fill: var(--bg); stroke: var(--line); }
+  .rwell.match{ stroke: var(--amber); stroke-width: 2.4; }
   .rnode.dim{ opacity: 0.32; }
   .rnode.lit .rwell{ stroke-width: 2.2; }
   .rnode.selected .rwell{ fill: var(--amber); stroke: var(--amber); }
@@ -3361,6 +3362,7 @@ const RED_USPA_ORDEN = ['USPA2','USPA5','USPA3','USPA4'];
 let redView = 'radial';
 let redSelected = null; // nombre de pozo
 let redFiltro = 'all';  // 'all' o una bateria (USPA2, USPA3...)
+let redSearchTerm = ''; // texto del buscador de arriba (searchBox), en minusculas
 
 function buildRedGrupos(){
   const grupos = [];
@@ -3419,7 +3421,16 @@ function redSvgEl(tag, attrs){
 }
 
 function redVisibleGrupos(grupos){
-  return redFiltro === 'all' ? grupos : grupos.filter(g => g.id === redFiltro);
+  let list = redFiltro === 'all' ? grupos : grupos.filter(g => g.id === redFiltro);
+  if(redSearchTerm){
+    // con busqueda activa, solo mostramos las colectoras que tengan algun pozo que coincida
+    // (igual criterio que la pestaña Plano), para no tener que buscar a ojo en toda la red
+    list = list.map(g => {
+      const colectoras = g.colectoras.filter(c => c.wells.some(w => w.pozo.toLowerCase().includes(redSearchTerm)));
+      return Object.assign({}, g, { colectoras });
+    }).filter(g => g.colectoras.length > 0);
+  }
+  return list;
 }
 
 function buildRedTree(grupos){
@@ -3499,9 +3510,10 @@ function buildRedTree(grupos){
           class: 'redge', 'data-pozo': p.pozo, 'data-grupo': g.id,
           d: `M${p.x},${yPozo + 11} L${c.x},${yTrunk - 11}`, 'marker-end': 'url(#redArrowTree)'
         }));
-        const ng = redSvgEl('g', { class: 'rnode pozo', 'data-pozo': p.pozo, 'data-colectora': c.name, 'data-grupo': g.id,
+        const pMatch = redSearchTerm && p.pozo.toLowerCase().includes(redSearchTerm);
+        const ng = redSvgEl('g', { class: 'rnode pozo' + (pMatch ? ' match' : ''), 'data-pozo': p.pozo, 'data-colectora': c.name, 'data-grupo': g.id,
           tabindex: '0', role: 'button', 'aria-label': `Pozo ${p.pozo}, colectora ${c.name}, estado ${p.rec.estado || 'sin dato'}` });
-        ng.appendChild(redSvgEl('rect', { class: 'rwell ' + redEstadoClass(p.rec), x: p.x - 18, y: yPozo - 11, width: 36, height: 22, rx: 5 }));
+        ng.appendChild(redSvgEl('rect', { class: 'rwell ' + redEstadoClass(p.rec) + (pMatch ? ' match' : ''), x: p.x - 18, y: yPozo - 11, width: 36, height: 22, rx: 5 }));
         const lab = redSvgEl('text', { class: 'rwell-label', x: p.x, y: yPozo + 3 });
         lab.textContent = p.pozo.replace('Ce-', '');
         ng.appendChild(lab);
@@ -3610,9 +3622,10 @@ function buildRedRadial(grupos){
           class: 'redge', 'data-pozo': w.pozo, 'data-grupo': g.id,
           d: `M${cp.x},${cp.y} L${wp.x},${wp.y}`, 'marker-end': 'url(#redArrowRadial)'
         }));
-        const ng = redSvgEl('g', { class: 'rnode pozo', 'data-pozo': w.pozo, 'data-colectora': c.name, 'data-grupo': g.id,
+        const wMatch = redSearchTerm && w.pozo.toLowerCase().includes(redSearchTerm);
+        const ng = redSvgEl('g', { class: 'rnode pozo' + (wMatch ? ' match' : ''), 'data-pozo': w.pozo, 'data-colectora': c.name, 'data-grupo': g.id,
           tabindex: '0', role: 'button', 'aria-label': `Pozo ${w.pozo}, colectora ${c.name}, estado ${w.estado || 'sin dato'}` });
-        ng.appendChild(redSvgEl('rect', { class: 'rwell ' + redEstadoClass(w), x: wp.x - 17, y: wp.y - 10, width: 34, height: 20, rx: 5 }));
+        ng.appendChild(redSvgEl('rect', { class: 'rwell ' + redEstadoClass(w) + (wMatch ? ' match' : ''), x: wp.x - 17, y: wp.y - 10, width: 34, height: 20, rx: 5 }));
         const lab = redSvgEl('text', { class: 'rwell-label', x: wp.x, y: wp.y + 2.8, style: 'font-size:7px' });
         lab.textContent = w.pozo.replace('Ce-', '');
         ng.appendChild(lab);
@@ -3634,6 +3647,7 @@ function redCaptionFor(v){
 
 function renderRed(){
   const redMain = document.getElementById('redMain');
+  redSearchTerm = (document.getElementById('searchBox').value || '').trim().toLowerCase();
   const grupos = buildRedGrupos();
   window._redGrupos = grupos;
   window._redPozoInfo = redPozoInfo(grupos);
@@ -3712,6 +3726,10 @@ function renderRedStage(grupos){
   const stage = document.getElementById('redStage');
   if(!stage) return;
   stage.innerHTML = '';
+  if(redVisibleGrupos(grupos).length === 0){
+    stage.innerHTML = '<div class="empty-msg">No hay pozos que coincidan con esa busqueda en esta red.</div>';
+    return;
+  }
   const svg = redView === 'tree' ? buildRedTree(grupos) : buildRedRadial(grupos);
   if(redView === 'radial') svg.classList.add('fit');
   const fig = document.createElement('figure');
