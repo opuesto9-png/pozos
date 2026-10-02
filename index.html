@@ -3882,7 +3882,23 @@ function redSetupZoomPan(svg, stage, controlsWrap){
     e.preventDefault();
   }, { passive: false });
   svg.addEventListener('touchend', e => {
-    if(touchMode === 'pan' && touchStart && touchStart.moved > 4) redSuppressClick = true;
+    // con touch-action:none (necesario para que el arrastre/pellizco no scrollee la pagina), el
+    // celular muchas veces NO sintetiza el "click" de siempre despues de tocar - asi que si fue un
+    // toque simple (no un arrastre) lo resolvemos nosotros mismos, buscando que elemento quedo bajo
+    // el dedo y abriendo el pozo directo, sin esperar a un click que puede no llegar nunca.
+    if(touchMode === 'pan' && touchStart){
+      if(touchStart.moved > 4){
+        redSuppressClick = true;
+      } else {
+        const ct = e.changedTouches && e.changedTouches[0];
+        const el = ct && document.elementFromPoint ? document.elementFromPoint(ct.clientX, ct.clientY) : null;
+        const nodeEl = el && el.closest ? el.closest('.rnode.pozo') : null;
+        if(nodeEl){
+          redSuppressClick = true; // por si el navegador igual dispara el click sintetico despues
+          selectRedPozo(nodeEl.getAttribute('data-pozo'));
+        }
+      }
+    }
     if(e.touches.length === 0){ touchMode = null; touchStart = null; }
     else if(e.touches.length === 1){
       // de pellizco a un solo dedo: reiniciamos el arrastre para que no salte
