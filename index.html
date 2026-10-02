@@ -422,6 +422,72 @@
   .well-chip-sm.match{ border-color: var(--amber); box-shadow: 0 0 0 2px var(--amber-dim); font-weight:700; }
   .well-chip-sm:hover{ border-color: var(--amber); }
 
+  /* ---------------- Pestaña Red (diagrama interactivo de la red de captacion) ---------------- */
+  .red-wrap{ display:flex; flex-direction:column; gap:14px; }
+  .red-toolbar{ display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
+  .red-filter{ display:flex; flex-wrap:wrap; gap:6px; }
+  .red-filter button{
+    font-family: 'Consolas','SF Mono',monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 5px 10px;
+    cursor: pointer;
+  }
+  .red-filter button.active{ background: var(--amber-dim); color: var(--text); border-color: var(--amber); }
+  .red-legend{ display:flex; flex-wrap:wrap; gap:12px; font-size:0.74rem; color: var(--muted); align-items:center; }
+  .red-legend .dot{ display:inline-block; width:9px; height:9px; border-radius:3px; margin-right:4px; vertical-align:middle; }
+  .red-stage{
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px;
+    overflow-x: auto;
+  }
+  .red-stage figure{ margin:0; }
+  .red-stage svg{ display:block; height:auto; }
+  .red-stage svg.fit{ width:100%; }
+  .red-stage figcaption{ margin: 4px 4px 0; font-size: 0.74rem; color: var(--muted); }
+  .rnode{ cursor:pointer; }
+  .rnode:focus-visible rect, .rnode:focus-visible circle{ outline: 2px solid var(--amber); outline-offset: 2px; }
+  .redge{ fill:none; stroke: var(--line); stroke-width: 1.5; transition: stroke .2s, stroke-width .2s, opacity .2s; }
+  .redge.lit{ stroke: var(--amber); stroke-width: 2.6; }
+  .redge.dim{ opacity: 0.2; }
+  .rwell{ stroke-width: 1.3; transition: fill .2s, stroke .2s, opacity .2s; }
+  .rwell.abierto{ fill:#1d3a22; stroke:#5fa85f; }
+  .rwell.cerrado{ fill:#3a2220; stroke:#c0524a; }
+  .rwell.sd{ fill: var(--bg); stroke: var(--line); }
+  .rnode.dim{ opacity: 0.32; }
+  .rnode.lit .rwell{ stroke-width: 2.2; }
+  .rnode.selected .rwell{ fill: var(--amber); stroke: var(--amber); }
+  .rnode.selected .rwell-label{ fill: var(--bg); font-weight:700; }
+  .rwell-label{ font-family:'Consolas','SF Mono',monospace; font-size:7.5px; fill: var(--text); text-anchor:middle; pointer-events:none; }
+  .rtrunk{ fill: var(--bg); stroke: var(--line); stroke-width: 1.3; }
+  .rnode.trunk.lit .rtrunk{ stroke: var(--amber); stroke-width: 1.8; }
+  .rtrunk-label{ font-family:'Segoe UI',sans-serif; font-size:8.5px; font-weight:600; fill: var(--muted); text-anchor:middle; pointer-events:none; }
+  .rnode.trunk.lit .rtrunk-label{ fill: var(--text); }
+  .rbat{ fill: var(--amber); opacity:0.16; stroke: var(--amber); stroke-width:1.8; }
+  .rbat-label{ font-weight:700; fill: var(--text); text-anchor:middle; pointer-events:none; }
+  .rnode.bateria.lit .rbat{ opacity:0.3; stroke-width:2.4; }
+  .rbat-sub{ font-family:'Consolas','SF Mono',monospace; font-size:8px; fill: var(--amber); text-anchor:middle; pointer-events:none; }
+  .rkti{ fill: var(--amber-dim); stroke: var(--amber); stroke-width:2; }
+  .rkti-label{ font-weight:700; fill: var(--text); text-anchor:middle; pointer-events:none; }
+  .red-panel{
+    background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+    padding: 12px 14px; display:flex; flex-direction:column; gap:8px; min-height: 80px;
+  }
+  .red-panel.empty{ align-items:center; justify-content:center; text-align:center; color: var(--muted); font-size:0.84rem; }
+  .red-panel .pname{ font-size:1.25rem; font-weight:700; }
+  .red-trail{ display:flex; flex-wrap:wrap; align-items:center; gap:6px; font-family:'Consolas','SF Mono',monospace; font-size:0.78rem; color: var(--muted); }
+  .red-trail b{ color: var(--text); font-weight:600; }
+  .red-trail .arrow{ color: var(--muted); }
+  .red-panel .rfoot{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .red-open-btn, .red-clear-btn{ font-size:0.78rem; border-radius:7px; padding:6px 12px; cursor:pointer; }
+  .red-open-btn{ background: var(--amber-dim); border:1px solid var(--amber); color: var(--text); font-weight:600; }
+  .red-clear-btn{ background:none; border:1px solid var(--line); color: var(--amber); }
+
   .tag.edit-tag{ color: #7fb0e0; }
   .export-btn{ border-color: #7fb0e0; color: #7fb0e0; }
   .export-btn:disabled{ border-color: var(--line); color: var(--muted); cursor: not-allowed; opacity: 0.6; }
@@ -873,6 +939,7 @@
   <div class="tabs">
     <button class="tab-btn" id="tabLista">Gas</button>
     <button class="tab-btn active" id="tabPlano">Plano (colectoras)</button>
+    <button class="tab-btn" id="tabRed">Red</button>
     <button class="tab-btn" id="tabCiclaje">Ciclaje</button>
     <button class="tab-btn" id="tabMov">Últimos movimientos</button>
     <button class="tab-btn" id="tabAib">AIB</button>
@@ -894,6 +961,7 @@
 
 <main id="main" style="display:none;"></main>
 <main id="planoMain"></main>
+<main id="redMain" style="display:none;"></main>
 <main id="ciclajeMain" style="display:none;"></main>
 <main id="movMain" style="display:none;"></main>
 <main id="aibMain" style="display:none;"></main>
@@ -1528,6 +1596,9 @@ function refreshEverything(){
   if(document.getElementById('planoMain').style.display !== 'none'){
     renderPlano();
   }
+  if(document.getElementById('redMain').style.display !== 'none'){
+    renderRed();
+  }
   if(document.getElementById('ciclajeMain').style.display !== 'none'){
     renderCiclaje();
   }
@@ -1589,7 +1660,9 @@ function startSync(){
     if(cambioDeVerdad){
       if(miAccionParteEnCurso){
         miAccionParteEnCurso = false;
-      } else {
+      } else if(esDispositivoPrimario){
+        // solo le avisamos a otras compus marcadas como "principal": a los celulares de los
+        // operadores (no primarios) este aviso no les sirve de nada, ellos no mandan el parte.
         mostrarAvisoParteOtroDispositivo(nuevoReporteTs);
       }
     }
@@ -1609,6 +1682,9 @@ function startSync(){
     });
     if(document.getElementById('planoMain').style.display !== 'none'){
       renderPlano();
+    }
+    if(document.getElementById('redMain').style.display !== 'none'){
+      renderRed();
     }
     if(document.getElementById('movMain').style.display !== 'none'){
       renderMovimientos();
@@ -1914,6 +1990,9 @@ function clearPozoData(rec, bat){
   render(document.getElementById('searchBox').value);
   if(document.getElementById('planoMain').style.display !== 'none'){
     renderPlano();
+  }
+  if(document.getElementById('redMain').style.display !== 'none'){
+    renderRed();
   }
 }
 
@@ -2450,6 +2529,9 @@ function renderCardEdit(rec, bat){
     if(document.getElementById('planoMain').style.display !== 'none'){
       renderPlano();
     }
+    if(document.getElementById('redMain').style.display !== 'none'){
+      renderRed();
+    }
   });
 }
 
@@ -2485,6 +2567,9 @@ document.getElementById('searchBox').addEventListener('input', (e) => {
   render(e.target.value);
   if(document.getElementById('planoMain').style.display !== 'none'){
     renderPlano();
+  }
+  if(document.getElementById('redMain').style.display !== 'none'){
+    renderRed();
   }
 });
 document.getElementById('parteBtn').addEventListener('click', () => {
@@ -3078,9 +3163,10 @@ function exportParteDeCampo(forzarTodos){
   // cargo la vela y el pozo sigue cerrado, o quedo abierto sin que se vuelva a tocar el horario), no
   // se pierde: va como fila propia, leida directo del pozo (no de un parte ya enviado).
   const corte = corteDePendientes();
-  const filasVelasSueltas = POZOS
+  const velaSueltaBase = POZOS
     .filter(p => !pozosConVelaUsada.has(p.pozo) && (parseFloat(p.velaPendienteAgua)||0 || parseFloat(p.velaPendienteGas)||0 || parseFloat(p.velaPendienteOil)||0))
-    .filter(p => forzarTodos || (p._updatedAtDate && p._updatedAtDate > corte && p.updatedFields && ['velaPendienteAgua','velaPendienteGas','velaPendienteOil'].some(k => p.updatedFields.includes(k))))
+    .filter(p => forzarTodos || (p._updatedAtDate && p._updatedAtDate > corte && p.updatedFields && ['velaPendienteAgua','velaPendienteGas','velaPendienteOil'].some(k => p.updatedFields.includes(k))));
+  const filasVelasSueltas = velaSueltaBase
     .map(p => {
       const cantidades = { Agua: parseFloat(p.velaPendienteAgua)||0, Gas: parseFloat(p.velaPendienteGas)||0, Oil: parseFloat(p.velaPendienteOil)||0 };
       const hora = p.velaPendienteHora || '';
@@ -3106,7 +3192,17 @@ function exportParteDeCampo(forzarTodos){
     return;
   }
 
-  const hoy = todayStr();
+  // Fecha del parte: la del DIA OPERATIVO (6am a 6am) al que corresponden los cambios que se estan
+  // informando - NO la fecha/hora en que se genera o descarga el archivo (que puede ser mas tarde,
+  // o ya al dia siguiente). Usamos el cambio mas reciente entre todo lo que entra en este parte.
+  const fechasDeCambios = [...gasBase, ...oilBase, ...notasBase, ...velaSueltaBase]
+    .map(r => r._updatedAtDate)
+    .filter(Boolean);
+  const fechaRefParte = fechasDeCambios.length
+    ? new Date(Math.max(...fechasDeCambios.map(d => d.getTime())))
+    : new Date();
+  const fechaOperativaParte = inicioDiaOperativo(fechaRefParte);
+  const hoy = fechaOperativaParte.toLocaleDateString('es-AR');
 
   if(typeof ExcelJS === 'undefined'){
     let text = `PARTE DE CAMPO ${hoy}\n\n`;
@@ -3137,7 +3233,7 @@ function exportParteDeCampo(forzarTodos){
     agregarHojaParte(wb, 'OIL', 'REPORTE OIL - YAC. CENTENARIO', filasOil, hoy, FONT_NAME, FONT_SIZE);
   }
 
-  const fileName = `Parte_de_campo_${new Date().toISOString().slice(0,10)}.xlsx`;
+  const fileName = `Parte_de_campo_${fechaOperativaParte.toISOString().slice(0,10)}.xlsx`;
   wb.xlsx.writeBuffer().then(buffer => {
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     downloadOrShareBlob(blob, fileName, 'Parte de campo');
@@ -3249,9 +3345,477 @@ function renderPlano(){
   });
 }
 
+// ---------------- Pestaña Red: diagrama interactivo de la red de captacion, con estado en vivo ----------------
+// Quien capta el gas de cada USPA, segun el plano "RED DE CAPTACION DE GAS - YAC. CENTENARIO" (Act. Agosto 2017).
+// Solo esto es fijo (la estructura de la red no cambia dia a dia); todo lo demas (pozos, colectoras, estado
+// abierto/cerrado) sale de POZOS en vivo, asi que si se agrega o edita un pozo el diagrama se actualiza solo.
+const RED_KTI_LABEL = 'KTI / Planta de Gas';
+const RED_USPA_PC = {
+  USPA2: { label: 'Batería USPA II', compresora: 'PC IV', destino: 'KTI' },
+  USPA5: { label: 'Batería USPA V',  compresora: null,    destino: 'USPA2' }, // sin PC propia: se suma a la linea de USPA II
+  USPA3: { label: 'Batería USPA III', compresora: 'PC II', destino: 'KTI' },
+  USPA4: { label: 'Batería USPA IV',  compresora: 'PC II', destino: 'KTI' }
+};
+const RED_USPA_ORDEN = ['USPA2','USPA5','USPA3','USPA4'];
+
+let redView = 'radial';
+let redSelected = null; // nombre de pozo
+let redFiltro = 'all';  // 'all' o una bateria (USPA2, USPA3...)
+
+function buildRedGrupos(){
+  const grupos = [];
+  RED_USPA_ORDEN.forEach(bat => {
+    const meta = RED_USPA_PC[bat];
+    const wells = POZOS.filter(p => p.bateria === bat);
+    if(wells.length === 0) return;
+    const colMap = {};
+    wells.forEach(w => {
+      const cname = (w.colectora && w.colectora.trim()) ? w.colectora.trim() : 'Sin colectora cargada';
+      if(!colMap[cname]) colMap[cname] = [];
+      colMap[cname].push(w);
+    });
+    const colectoras = Object.keys(colMap)
+      .sort((a,b) => a === 'Sin colectora cargada' ? 1 : (b === 'Sin colectora cargada' ? -1 : a.localeCompare(b)))
+      .map(name => ({
+        name,
+        wells: colMap[name].slice().sort((a,b) => a.pozo.localeCompare(b.pozo, undefined, {numeric:true}))
+      }));
+    grupos.push({ id: bat, label: meta.label, compresora: meta.compresora, destino: meta.destino, colectoras });
+  });
+  return grupos;
+}
+
+function redGrupoById(grupos, id){ return grupos.find(g => g.id === id) || null; }
+function redSubLabel(grupos, g){
+  if(g.compresora) return g.compresora;
+  const dest = g.destino === 'KTI' ? 'KTI' : (redGrupoById(grupos, g.destino) || {}).label;
+  return '→ ' + (dest || g.destino);
+}
+function redChainFrom(grupos, id){
+  const chain = []; let cur = id, guard = 0;
+  while(cur && cur !== 'KTI' && guard < 10){
+    chain.push(cur);
+    const g = redGrupoById(grupos, cur);
+    cur = g ? g.destino : null;
+    guard++;
+  }
+  return chain;
+}
+function redPozoInfo(grupos){
+  const info = {};
+  grupos.forEach(g => g.colectoras.forEach(c => c.wells.forEach(w => {
+    info[w.pozo] = { colectora: c.name, grupoId: g.id, rec: w };
+  })));
+  return info;
+}
+function redEstadoClass(rec){
+  return rec.estado === 'Abierto' ? 'abierto' : (rec.estado === 'Cerrado' ? 'cerrado' : 'sd');
+}
+
+function redSvgEl(tag, attrs){
+  const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  for(const k in attrs) el.setAttribute(k, attrs[k]);
+  return el;
+}
+
+function redVisibleGrupos(grupos){
+  return redFiltro === 'all' ? grupos : grupos.filter(g => g.id === redFiltro);
+}
+
+function buildRedTree(grupos){
+  const visibles = redVisibleGrupos(grupos);
+  const spacing = 36, colGap = 18, grupoGap = 50, marginX = 28;
+  let x = marginX;
+  const grupoPos = [];
+  visibles.forEach(g => {
+    const colPos = [];
+    g.colectoras.forEach(c => {
+      const pozosPos = c.wells.map(w => { const px = x; x += spacing; return { pozo: w.pozo, rec: w, x: px }; });
+      x += colGap;
+      const cx = (pozosPos[0].x + pozosPos[pozosPos.length-1].x) / 2;
+      colPos.push({ name: c.name, x: cx, pozos: pozosPos });
+    });
+    x += (grupoGap - colGap);
+    const gx = (colPos[0].x + colPos[colPos.length-1].x) / 2;
+    grupoPos.push({ id: g.id, label: g.label, compresora: g.compresora, destino: g.destino, x: gx, colectoras: colPos });
+  });
+  const width = Math.max(340, x - grupoGap + marginX);
+  const yPozo = 30, yTrunk = 102, yBateria = 180, yKti = 248, height = 284;
+  const ktiX = (grupoPos[0].x + grupoPos[grupoPos.length-1].x) / 2;
+
+  const svg = redSvgEl('svg', { viewBox: `0 0 ${width} ${height}`, role: 'img',
+    'aria-label': 'Diagrama esquematico de la red: pozos arriba convergen por colectora y bateria hasta la planta compresora y KTI abajo' });
+  const defs = redSvgEl('defs', {});
+  const marker = redSvgEl('marker', { id: 'redArrowTree', markerWidth: 7, markerHeight: 7, refX: 3.5, refY: 3.5, orient: 'auto' });
+  marker.appendChild(redSvgEl('path', { d: 'M0,0 L7,3.5 L0,7 Z', fill: 'currentColor' }));
+  defs.appendChild(marker);
+  svg.appendChild(defs);
+
+  const edgesLayer = redSvgEl('g', {});
+  const nodesLayer = redSvgEl('g', {});
+
+  const kGroup = redSvgEl('g', { class: 'rnode kti', tabindex: '0', role: 'img', 'aria-label': RED_KTI_LABEL });
+  kGroup.appendChild(redSvgEl('rect', { class: 'rkti', x: ktiX - 80, y: yKti - 20, width: 160, height: 40, rx: 8 }));
+  const kLabel = redSvgEl('text', { class: 'rkti-label', x: ktiX, y: yKti + 4, style: 'font-size:11px' });
+  kLabel.textContent = RED_KTI_LABEL;
+  kGroup.appendChild(kLabel);
+  nodesLayer.appendChild(kGroup);
+
+  grupoPos.forEach(g => {
+    const otherPos = grupoPos.find(x2 => x2.id === g.destino);
+    const destPt = g.destino === 'KTI' ? { x: ktiX, y: yKti - 20 } : (otherPos ? { x: otherPos.x, y: yBateria - 22 } : null);
+    if(destPt){
+      edgesLayer.appendChild(redSvgEl('path', {
+        class: 'redge', 'data-grupo': g.id,
+        d: `M${g.x},${yBateria + 22} L${destPt.x},${destPt.y}`, 'marker-end': 'url(#redArrowTree)'
+      }));
+    }
+    const bGroup = redSvgEl('g', { class: 'rnode bateria', 'data-grupo': g.id, tabindex: '0', role: 'img',
+      'aria-label': `Bateria ${g.label}, ${g.compresora || ('va hacia ' + g.destino)}` });
+    bGroup.appendChild(redSvgEl('rect', { class: 'rbat', x: g.x - 68, y: yBateria - 22, width: 136, height: 44, rx: 7 }));
+    const bLabel = redSvgEl('text', { class: 'rbat-label', x: g.x, y: yBateria - 2, style: 'font-size:10.5px' });
+    bLabel.textContent = g.label;
+    const bSub = redSvgEl('text', { class: 'rbat-sub', x: g.x, y: yBateria + 14 });
+    bSub.textContent = g.compresora || ('→ ' + g.destino);
+    bGroup.appendChild(bLabel); bGroup.appendChild(bSub);
+    nodesLayer.appendChild(bGroup);
+
+    g.colectoras.forEach(c => {
+      edgesLayer.appendChild(redSvgEl('path', {
+        class: 'redge', 'data-colectora': c.name, 'data-grupo': g.id,
+        d: `M${c.x},${yTrunk + 11} L${g.x},${yBateria - 22}`, 'marker-end': 'url(#redArrowTree)'
+      }));
+      const tg = redSvgEl('g', { class: 'rnode trunk', 'data-colectora': c.name, 'data-grupo': g.id, tabindex: '0', role: 'img',
+        'aria-label': 'Colectora ' + c.name });
+      const tw = Math.max(60, c.name.length * 5.2);
+      tg.appendChild(redSvgEl('rect', { class: 'rtrunk', x: c.x - tw/2, y: yTrunk - 11, width: tw, height: 22, rx: 5 }));
+      const tl = redSvgEl('text', { class: 'rtrunk-label', x: c.x, y: yTrunk + 3 });
+      tl.textContent = c.name;
+      tg.appendChild(tl);
+      nodesLayer.appendChild(tg);
+
+      c.pozos.forEach(p => {
+        edgesLayer.appendChild(redSvgEl('path', {
+          class: 'redge', 'data-pozo': p.pozo, 'data-grupo': g.id,
+          d: `M${p.x},${yPozo + 11} L${c.x},${yTrunk - 11}`, 'marker-end': 'url(#redArrowTree)'
+        }));
+        const ng = redSvgEl('g', { class: 'rnode pozo', 'data-pozo': p.pozo, 'data-colectora': c.name, 'data-grupo': g.id,
+          tabindex: '0', role: 'button', 'aria-label': `Pozo ${p.pozo}, colectora ${c.name}, estado ${p.rec.estado || 'sin dato'}` });
+        ng.appendChild(redSvgEl('rect', { class: 'rwell ' + redEstadoClass(p.rec), x: p.x - 18, y: yPozo - 11, width: 36, height: 22, rx: 5 }));
+        const lab = redSvgEl('text', { class: 'rwell-label', x: p.x, y: yPozo + 3 });
+        lab.textContent = p.pozo.replace('Ce-', '');
+        ng.appendChild(lab);
+        nodesLayer.appendChild(ng);
+      });
+    });
+  });
+
+  svg.appendChild(edgesLayer);
+  svg.appendChild(nodesLayer);
+  return svg;
+}
+
+function buildRedRadial(grupos){
+  const visibles = redVisibleGrupos(grupos);
+  const size = visibles.length <= 1 ? 440 : 780;
+  const cx = size/2, cy = size/2;
+  const rKti = visibles.length <= 1 ? 40 : 54;
+  const rBateria = visibles.length <= 1 ? 112 : 142;
+  const rColectora = visibles.length <= 1 ? 198 : 262;
+  const rPozo = visibles.length <= 1 ? 300 : 378;
+  const gapDeg = 7;
+
+  let totalPozos = 0;
+  visibles.forEach(g => g.colectoras.forEach(c => { totalPozos += c.wells.length; }));
+  if(totalPozos === 0) totalPozos = 1;
+
+  const svg = redSvgEl('svg', { viewBox: `0 0 ${size} ${size}`, role: 'img',
+    'aria-label': 'Diagrama radial de la red: KTI en el centro, baterias y compresoras en el anillo interno, colectoras en el medio, pozos en la punta' });
+  const defs = redSvgEl('defs', {});
+  const marker = redSvgEl('marker', { id: 'redArrowRadial', markerWidth: 7, markerHeight: 7, refX: 3.5, refY: 3.5, orient: 'auto' });
+  marker.appendChild(redSvgEl('path', { d: 'M0,0 L7,3.5 L0,7 Z', fill: 'currentColor' }));
+  defs.appendChild(marker);
+  svg.appendChild(defs);
+
+  const edgesLayer = redSvgEl('g', {});
+  const nodesLayer = redSvgEl('g', {});
+  function pt(r, deg){ const rad = deg * Math.PI / 180; return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) }; }
+
+  const usableDeg = 360 - gapDeg * visibles.length;
+  let angle = -90 - usableDeg/2;
+  const grupoGeo = [];
+  visibles.forEach(g => {
+    let gPozos = 0; g.colectoras.forEach(c => { gPozos += c.wells.length; });
+    const sweep = usableDeg * (gPozos / totalPozos);
+    const a0 = angle, a1 = angle + sweep;
+    grupoGeo.push({ id: g.id, label: g.label, compresora: g.compresora, destino: g.destino, a0, a1, aMid: (a0+a1)/2, colectoras: g.colectoras });
+    angle = a1 + gapDeg;
+  });
+
+  const kGroup = redSvgEl('g', { class: 'rnode kti', tabindex: '0', role: 'img', 'aria-label': RED_KTI_LABEL });
+  kGroup.appendChild(redSvgEl('circle', { class: 'rkti', cx, cy, r: rKti }));
+  const kl1 = redSvgEl('text', { class: 'rkti-label', x: cx, y: cy - 3, style: 'font-size:12px' }); kl1.textContent = 'KTI';
+  const kl2 = redSvgEl('text', { class: 'rbat-sub', x: cx, y: cy + 12 }); kl2.textContent = 'Planta de Gas';
+  kGroup.appendChild(kl1); kGroup.appendChild(kl2);
+  nodesLayer.appendChild(kGroup);
+
+  const bateriaPt = {};
+  grupoGeo.forEach(g => { bateriaPt[g.id] = pt(rBateria, g.aMid); });
+
+  grupoGeo.forEach(g => {
+    const bp = bateriaPt[g.id];
+    const destPt = g.destino === 'KTI' ? { x: cx, y: cy } : bateriaPt[g.destino];
+    if(destPt){
+      edgesLayer.appendChild(redSvgEl('path', {
+        class: 'redge', 'data-grupo': g.id,
+        d: `M${bp.x},${bp.y} L${destPt.x},${destPt.y}`, 'marker-end': 'url(#redArrowRadial)'
+      }));
+    }
+    const bGroup = redSvgEl('g', { class: 'rnode bateria', 'data-grupo': g.id, tabindex: '0', role: 'img',
+      'aria-label': `Bateria ${g.label}, ${g.compresora || ('va hacia ' + g.destino)}` });
+    bGroup.appendChild(redSvgEl('rect', { class: 'rbat', x: bp.x - 50, y: bp.y - 17, width: 100, height: 34, rx: 7 }));
+    const bLabel = redSvgEl('text', { class: 'rbat-label', x: bp.x, y: bp.y - 1, style: 'font-size:10px' });
+    bLabel.textContent = g.label.replace('Batería ', '');
+    const bSub = redSvgEl('text', { class: 'rbat-sub', x: bp.x, y: bp.y + 12, style: 'font-size:7.5px' });
+    bSub.textContent = g.compresora || ('→ ' + g.destino);
+    bGroup.appendChild(bLabel); bGroup.appendChild(bSub);
+    nodesLayer.appendChild(bGroup);
+
+    const n = g.colectoras.length;
+    g.colectoras.forEach((c, ci) => {
+      const cFrac = n === 1 ? 0.5 : ci / (n - 1);
+      const cDeg = g.a0 + (g.a1 - g.a0) * cFrac;
+      const cp = pt(rColectora, cDeg);
+      edgesLayer.appendChild(redSvgEl('path', {
+        class: 'redge', 'data-colectora': c.name, 'data-grupo': g.id,
+        d: `M${bp.x},${bp.y} L${cp.x},${cp.y}`, 'marker-end': 'url(#redArrowRadial)'
+      }));
+      const tg = redSvgEl('g', { class: 'rnode trunk', 'data-colectora': c.name, 'data-grupo': g.id, tabindex: '0', role: 'img',
+        'aria-label': 'Colectora ' + c.name });
+      const tw = Math.max(56, c.name.length * 4.8);
+      tg.appendChild(redSvgEl('rect', { class: 'rtrunk', x: cp.x - tw/2, y: cp.y - 10, width: tw, height: 20, rx: 5 }));
+      const tl = redSvgEl('text', { class: 'rtrunk-label', x: cp.x, y: cp.y + 3, style: 'font-size:7.5px' });
+      tl.textContent = c.name.length > 13 ? c.name.slice(0,12) + '…' : c.name;
+      tg.appendChild(tl);
+      nodesLayer.appendChild(tg);
+
+      const m = c.wells.length;
+      const subSweep = (g.a1 - g.a0) / n;
+      const cA0 = g.a0 + ci * subSweep, cA1 = cA0 + subSweep;
+      c.wells.forEach((w, i) => {
+        const frac = m === 1 ? 0.5 : i / (m - 1);
+        const deg = cA0 + (cA1 - cA0) * frac;
+        const wp = pt(rPozo, deg);
+        edgesLayer.appendChild(redSvgEl('path', {
+          class: 'redge', 'data-pozo': w.pozo, 'data-grupo': g.id,
+          d: `M${cp.x},${cp.y} L${wp.x},${wp.y}`, 'marker-end': 'url(#redArrowRadial)'
+        }));
+        const ng = redSvgEl('g', { class: 'rnode pozo', 'data-pozo': w.pozo, 'data-colectora': c.name, 'data-grupo': g.id,
+          tabindex: '0', role: 'button', 'aria-label': `Pozo ${w.pozo}, colectora ${c.name}, estado ${w.estado || 'sin dato'}` });
+        ng.appendChild(redSvgEl('rect', { class: 'rwell ' + redEstadoClass(w), x: wp.x - 17, y: wp.y - 10, width: 34, height: 20, rx: 5 }));
+        const lab = redSvgEl('text', { class: 'rwell-label', x: wp.x, y: wp.y + 2.8, style: 'font-size:7px' });
+        lab.textContent = w.pozo.replace('Ce-', '');
+        ng.appendChild(lab);
+        nodesLayer.appendChild(ng);
+      });
+    });
+  });
+
+  svg.appendChild(edgesLayer);
+  svg.appendChild(nodesLayer);
+  return svg;
+}
+
+function redCaptionFor(v){
+  return v === 'tree'
+    ? 'Los pozos (arriba) convergen por colectora y batería hasta su planta compresora y KTI (abajo).'
+    : 'KTI en el centro; cada batería con su compresora real, las colectoras y los pozos en la punta de cada rayo.';
+}
+
+function renderRed(){
+  const redMain = document.getElementById('redMain');
+  const grupos = buildRedGrupos();
+  window._redGrupos = grupos;
+  window._redPozoInfo = redPozoInfo(grupos);
+
+  if(grupos.length === 0){
+    redMain.innerHTML = '<div class="plano-note">Todavia no hay pozos con bateria USPA2-USPA5 cargada para armar el diagrama.</div>';
+    return;
+  }
+
+  redMain.innerHTML = '';
+  const wrap = document.createElement('div');
+  wrap.className = 'red-wrap';
+  wrap.innerHTML = `
+    <div class="plano-note">Red de captación con el estado en vivo de cada pozo, segun el plano "RED DE CAPTACION DE GAS - YAC. CENTENARIO" (Act. Agosto 2017). El agrupamiento por compresora es una lectura del plano y puede tener alguna imprecision; el estado de cada pozo sale de la lista de pozos, en vivo. Tocá un pozo para ver su recorrido.</div>
+    <div class="red-toolbar">
+      <div class="red-filter" id="redViewTabs" role="group" aria-label="Forma del diagrama">
+        <button type="button" class="tab-btn" id="redTabRadial" style="border-radius:20px;">Vista radial</button>
+        <button type="button" class="tab-btn" id="redTabTree" style="border-radius:20px;">Vista esquemática</button>
+      </div>
+      <div class="red-filter" id="redFilter" role="group" aria-label="Filtrar por bateria"></div>
+    </div>
+    <div class="red-legend">
+      <span><span class="dot" style="background:#5fa85f"></span>Abierto</span>
+      <span><span class="dot" style="background:#c0524a"></span>Cerrado</span>
+      <span><span class="dot" style="background:#2b323b;border:1px solid var(--line);"></span>Sin dato</span>
+    </div>
+    <div class="red-stage" id="redStage"></div>
+    <div class="red-panel empty" id="redPanel">Elegí un pozo en el diagrama para ver su recorrido completo hasta KTI.</div>
+  `;
+  redMain.appendChild(wrap);
+
+  const tabRadialBtn = document.getElementById('redTabRadial');
+  const tabTreeBtn = document.getElementById('redTabTree');
+  tabRadialBtn.classList.toggle('active', redView === 'radial');
+  tabTreeBtn.classList.toggle('active', redView === 'tree');
+  tabRadialBtn.addEventListener('click', () => {
+    tabRadialBtn.classList.add('active'); tabTreeBtn.classList.remove('active');
+    setRedView('radial');
+  });
+  tabTreeBtn.addEventListener('click', () => {
+    tabTreeBtn.classList.add('active'); tabRadialBtn.classList.remove('active');
+    setRedView('tree');
+  });
+
+  buildRedFilter(grupos);
+  renderRedStage(grupos);
+  renderRedPanel(grupos);
+}
+
+function buildRedFilter(grupos){
+  const el = document.getElementById('redFilter');
+  el.innerHTML = '';
+  const allBtn = document.createElement('button');
+  allBtn.type = 'button'; allBtn.textContent = 'Toda la red';
+  allBtn.className = redFiltro === 'all' ? 'active' : '';
+  allBtn.addEventListener('click', () => setRedFiltro('all'));
+  el.appendChild(allBtn);
+  grupos.forEach(g => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.textContent = g.label.replace('Batería ', '');
+    b.className = redFiltro === g.id ? 'active' : '';
+    b.addEventListener('click', () => setRedFiltro(g.id));
+    el.appendChild(b);
+  });
+}
+function setRedFiltro(id){
+  redFiltro = id;
+  redSelected = null;
+  const grupos = window._redGrupos || buildRedGrupos();
+  buildRedFilter(grupos);
+  renderRedStage(grupos);
+  renderRedPanel(grupos);
+}
+
+function renderRedStage(grupos){
+  const stage = document.getElementById('redStage');
+  if(!stage) return;
+  stage.innerHTML = '';
+  const svg = redView === 'tree' ? buildRedTree(grupos) : buildRedRadial(grupos);
+  if(redView === 'radial') svg.classList.add('fit');
+  const fig = document.createElement('figure');
+  fig.appendChild(svg);
+  const cap = document.createElement('figcaption');
+  cap.textContent = redCaptionFor(redView);
+  fig.appendChild(cap);
+  stage.appendChild(fig);
+
+  stage.querySelectorAll('.rnode.pozo').forEach(ng => {
+    ng.addEventListener('click', () => selectRedPozo(ng.getAttribute('data-pozo')));
+    ng.addEventListener('keydown', e => {
+      if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); selectRedPozo(ng.getAttribute('data-pozo')); }
+    });
+  });
+
+  applyRedSelection(grupos);
+}
+
+function applyRedSelection(grupos){
+  const stage = document.getElementById('redStage');
+  if(!stage) return;
+  const nodes = stage.querySelectorAll('.rnode');
+  const edges = stage.querySelectorAll('.redge');
+  if(!redSelected){
+    nodes.forEach(n => n.classList.remove('lit','dim','selected'));
+    edges.forEach(e => e.classList.remove('lit','dim'));
+    return;
+  }
+  const info = (window._redPozoInfo || {})[redSelected];
+  if(!info){ redSelected = null; return; }
+  const chainIds = redChainFrom(grupos, info.grupoId);
+  nodes.forEach(n => {
+    const isThisPozo = n.classList.contains('pozo') && n.getAttribute('data-pozo') === redSelected;
+    const isItsColectora = n.classList.contains('trunk') && n.getAttribute('data-colectora') === info.colectora && n.getAttribute('data-grupo') === info.grupoId;
+    const isChainBateria = n.classList.contains('bateria') && chainIds.indexOf(n.getAttribute('data-grupo')) !== -1;
+    const isKti = n.classList.contains('kti');
+    if(isThisPozo){ n.classList.add('selected'); n.classList.remove('dim','lit'); }
+    else if(isItsColectora || isChainBateria || isKti){ n.classList.add('lit'); n.classList.remove('dim','selected'); }
+    else { n.classList.add('dim'); n.classList.remove('lit','selected'); }
+  });
+  edges.forEach(e => {
+    const isPozoEdge = e.getAttribute('data-pozo') === redSelected;
+    const isColectoraEdge = e.getAttribute('data-colectora') === info.colectora && e.getAttribute('data-grupo') === info.grupoId && !e.hasAttribute('data-pozo');
+    const isChainEdge = !e.hasAttribute('data-pozo') && !e.hasAttribute('data-colectora') && chainIds.indexOf(e.getAttribute('data-grupo')) !== -1;
+    if(isPozoEdge || isColectoraEdge || isChainEdge){ e.classList.add('lit'); e.classList.remove('dim'); }
+    else { e.classList.add('dim'); e.classList.remove('lit'); }
+  });
+}
+
+function selectRedPozo(pozo){
+  redSelected = pozo;
+  const grupos = window._redGrupos || buildRedGrupos();
+  applyRedSelection(grupos);
+  renderRedPanel(grupos);
+}
+
+function renderRedPanel(grupos){
+  const panel = document.getElementById('redPanel');
+  if(!panel) return;
+  if(!redSelected){
+    panel.className = 'red-panel empty';
+    panel.innerHTML = 'Elegí un pozo en el diagrama para ver su recorrido completo hasta KTI.';
+    return;
+  }
+  const info = (window._redPozoInfo || {})[redSelected];
+  if(!info){ panel.className = 'red-panel empty'; panel.innerHTML = 'Elegí un pozo en el diagrama para ver su recorrido completo hasta KTI.'; return; }
+  const chainIds = redChainFrom(grupos, info.grupoId);
+  const parts = [redSelected, info.colectora];
+  chainIds.forEach(id => {
+    const g = redGrupoById(grupos, id);
+    if(!g) return;
+    parts.push(g.label);
+    if(g.compresora) parts.push(g.compresora);
+  });
+  parts.push(RED_KTI_LABEL);
+
+  panel.className = 'red-panel';
+  let html = `<div class="pname">${info.rec.pozo}</div><div class="red-trail">`;
+  parts.forEach((part, i) => {
+    html += `<b>${part}</b>`;
+    if(i < parts.length - 1) html += '<span class="arrow">&rarr;</span>';
+  });
+  html += '</div>';
+  html += `<div class="rfoot">
+      <button type="button" class="red-open-btn" id="redOpenBtn">Ver ficha del pozo</button>
+      <button type="button" class="red-clear-btn" id="redClearBtn">Ver toda la red</button>
+    </div>`;
+  panel.innerHTML = html;
+  document.getElementById('redOpenBtn').addEventListener('click', () => openCard(info.rec, info.rec.bateria));
+  document.getElementById('redClearBtn').addEventListener('click', () => {
+    redSelected = null; applyRedSelection(grupos); renderRedPanel(grupos);
+  });
+}
+
+function setRedView(v){
+  redView = v;
+  const grupos = window._redGrupos || buildRedGrupos();
+  renderRedStage(grupos);
+}
+
 // ---------------- Manejo de pestañas (helper generico) ----------------
-const TAB_IDS = ['tabLista','tabPlano','tabCiclaje','tabMov','tabAib','tabTanques','tabPias'];
-const MAIN_IDS = ['main','planoMain','ciclajeMain','movMain','aibMain','tanquesMain','piasMain'];
+const TAB_IDS = ['tabLista','tabPlano','tabRed','tabCiclaje','tabMov','tabAib','tabTanques','tabPias'];
+const MAIN_IDS = ['main','planoMain','redMain','ciclajeMain','movMain','aibMain','tanquesMain','piasMain'];
 function switchTab(activeTabId, activeMainId){
   TAB_IDS.forEach(id => document.getElementById(id).classList.toggle('active', id === activeTabId));
   MAIN_IDS.forEach(id => document.getElementById(id).style.display = (id === activeMainId) ? '' : 'none');
@@ -3260,6 +3824,11 @@ function switchTab(activeTabId, activeMainId){
 document.getElementById('tabPlano').addEventListener('click', () => {
   switchTab('tabPlano', 'planoMain');
   renderPlano(); // siempre redibuja (barato) para respetar la busqueda vigente y datos frescos
+});
+
+document.getElementById('tabRed').addEventListener('click', () => {
+  switchTab('tabRed', 'redMain');
+  renderRed();
 });
 
 // ---------------- Vista Ciclaje ----------------
