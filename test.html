@@ -444,12 +444,37 @@
     border: 1px solid var(--line);
     border-radius: 10px;
     padding: 10px;
-    overflow-x: auto;
+    position: relative;
+    overflow: hidden;
   }
   .red-stage figure{ margin:0; }
-  .red-stage svg{ display:block; height:auto; }
+  .red-stage svg{ display:block; height:auto; touch-action: none; cursor: grab; }
   .red-stage svg.fit{ width:100%; }
+  .red-stage svg.dragging{ cursor: grabbing; }
   .red-stage figcaption{ margin: 4px 4px 0; font-size: 0.74rem; color: var(--muted); }
+  .red-zoom-controls{
+    position: absolute;
+    right: 18px;
+    bottom: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    z-index: 2;
+  }
+  .red-zoom-controls button{
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: var(--panel-2, var(--bg));
+    border: 1px solid var(--line);
+    color: var(--text);
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  }
+  .red-zoom-controls button:active{ background: var(--amber-dim); }
+  .red-zoom-hint{ font-size: 0.68rem; color: var(--muted); text-align: center; padding-top: 2px; }
   .rnode{ cursor:pointer; }
   .rnode:focus-visible rect, .rnode:focus-visible circle{ outline: 2px solid var(--amber); outline-offset: 2px; }
   .redge{ fill:none; stroke: var(--line); stroke-width: 1.5; transition: stroke .2s, stroke-width .2s, opacity .2s; }
@@ -459,6 +484,7 @@
   .rwell.abierto{ fill:#1d3a22; stroke:#5fa85f; }
   .rwell.cerrado{ fill:#3a2220; stroke:#c0524a; }
   .rwell.sd{ fill: var(--bg); stroke: var(--line); }
+  .rwell.match{ stroke: var(--amber); stroke-width: 2.4; }
   .rnode.dim{ opacity: 0.32; }
   .rnode.lit .rwell{ stroke-width: 2.2; }
   .rnode.selected .rwell{ fill: var(--amber); stroke: var(--amber); }
@@ -1660,7 +1686,9 @@ function startSync(){
     if(cambioDeVerdad){
       if(miAccionParteEnCurso){
         miAccionParteEnCurso = false;
-      } else {
+      } else if(esDispositivoPrimario){
+        // solo le avisamos a otras compus marcadas como "principal": a los celulares de los
+        // operadores (no primarios) este aviso no les sirve de nada, ellos no mandan el parte.
         mostrarAvisoParteOtroDispositivo(nuevoReporteTs);
       }
     }
@@ -2202,7 +2230,6 @@ function renderCardEdit(rec, bat){
       <button class="close-btn" id="closeBtn">&times;</button>
     </div>
     ${inputField('Bateria', 'bateria', rec.bateria === 'Sin bateria' ? '' : rec.bateria)}
-    ${inputField('Presion', 'presion', rec.presion === 's/d' ? '' : rec.presion)}
     ${inputField('Colectora', 'colectora', rec.colectora)}
     <div class="field">
       <div class="k">Ciclo (si esta en ciclaje manual)</div>
@@ -2253,12 +2280,22 @@ function renderCardEdit(rec, bat){
             <input type="time" class="edit-input time-input" id="horaApertura" value="${horaAperturaVal}">
             <button type="button" class="field-clear-btn" id="clearHoraApertura" title="Borrar apertura">&times;</button>
           </div>
+          <div class="time-label" style="margin-top:8px;">Presion apertura (${pressureUnit === 'psi' ? 'psi' : 'kg/cm2'})</div>
+          <div class="input-with-clear">
+            <input type="text" inputmode="decimal" class="edit-input" data-key="presion" value="${(rec.presion === 's/d' || !rec.presion ? '' : rec.presion).toString().replace(/"/g,'&quot;')}">
+            <button type="button" class="field-clear-btn" data-clear-target="presion" title="Borrar presion de apertura">&times;</button>
+          </div>
         </div>
         <div>
           <div class="time-label">Cierre</div>
           <div class="input-with-clear">
             <input type="time" class="edit-input time-input" id="horaCierre" value="${horaCierreVal}">
             <button type="button" class="field-clear-btn" id="clearHoraCierre" title="Borrar cierre">&times;</button>
+          </div>
+          <div class="time-label" style="margin-top:8px;">Presion cierre (${pressureUnit === 'psi' ? 'psi' : 'kg/cm2'})</div>
+          <div class="input-with-clear">
+            <input type="text" inputmode="decimal" class="edit-input" id="presionCierre" placeholder="${rec.presionCierre ? convertPresionText(rec.presionCierre + ' kg/cm2', pressureUnit) : ''}">
+            <button type="button" class="field-clear-btn" id="clearPresionCierre" title="Borrar">&times;</button>
           </div>
         </div>
       </div>
@@ -2305,6 +2342,9 @@ function renderCardEdit(rec, bat){
   });
   document.getElementById('clearHoraApertura').addEventListener('click', () => {
     document.getElementById('horaApertura').value = '';
+  });
+  document.getElementById('clearPresionCierre').addEventListener('click', () => {
+    document.getElementById('presionCierre').value = '';
   });
   document.getElementById('clearHoraCierre').addEventListener('click', () => {
     document.getElementById('horaCierre').value = '';
@@ -2420,6 +2460,17 @@ function renderCardEdit(rec, bat){
       } else if(hA){
         newFields.estado = 'Abierto';
       }
+    }
+
+    // Presion al cerrar (queda en kg/cm2, igual que BP/PL): si este guardado es un cierre nuevo, la presion
+    // cargada reemplaza a la del cierre anterior (vacia = sin dato, no arrastramos la vieja). Si no hay
+    // cierre nuevo, solo se pisa cuando se escribio algo (para corregirla o cargarla despues).
+    const presionCierreIn = document.getElementById('presionCierre').value.trim();
+    const cierreNuevo = newFields.estado === 'Cerrado' && cierreCambio && !!hcEfectivo;
+    if(cierreNuevo){
+      newFields.presionCierre = presionCierreIn ? aibPresionToKg(presionCierreIn) : '';
+    } else if(presionCierreIn && rec.estado === 'Cerrado'){
+      newFields.presionCierre = aibPresionToKg(presionCierreIn);
     }
 
     // Hs total de la maniobra que se acaba de completar (para el reporte, a pedido de Sebastian):
@@ -2717,19 +2768,22 @@ function buildNovedad(rec, velaTxt){
   // el pozo que cierra y despues reabre va en UNA sola fila, con la novedad combinada (cerro y abrio).
   // pero si es la PRIMERA vez que abre (sin un cierre previo registrado), no corresponde decir
   // "Cerrado, recupera presion" antes, porque nunca estuvo cerrado.
+  // presion con la que se cerro el pozo (la carga el operador al cerrar): "recuperando presion 4 kg/cm2"
+  const presionCierreTxt = rec.presionCierre ? convertPresionText(String(rec.presionCierre) + ' kg/cm2', pressureUnit) : '';
+  const sufPresionCierre = presionCierreTxt ? ' ' + presionCierreTxt : '';
   let base;
   if(rec.estado === 'Abierto'){
     const veniaDeCerrado = rec.veniaDeCerradoConfirmado === true;
     base = veniaDeCerrado
-      ? `Cerrado, recupera presion. Abierto${presionTxt ? ' con presion estatica de ' + presionTxt : ''}.`
+      ? `Cerrado, recupera presion${sufPresionCierre}. Abierto${presionTxt ? ' con presion estatica de ' + presionTxt : ''}.`
       : `Abierto${presionTxt ? ' con presion estatica de ' + presionTxt : ''}.`;
   } else if(rec.estado === 'Cerrado'){
     // si justo se completo un ciclo (estaba abierto y ahora cierra), mencionamos tambien la apertura
     // anterior con su presion - si no, es la primera vez que se cierra y no hay nada que mencionar antes.
     const abrioAntes = rec.horasTotalTipo === 'abierto';
     base = abrioAntes
-      ? `Abierto${presionTxt ? ' con presion estatica de ' + presionTxt : ''}. Cerrado, recuperando presion.`
-      : 'Cerrado recuperando presion.';
+      ? `Abierto${presionTxt ? ' con presion estatica de ' + presionTxt : ''}. Cerrado, recuperando presion${sufPresionCierre}.`
+      : `Cerrado recuperando presion${sufPresionCierre}.`;
   } else {
     base = 'Maniobra registrada.';
   }
@@ -3359,6 +3413,7 @@ const RED_USPA_ORDEN = ['USPA2','USPA5','USPA3','USPA4'];
 let redView = 'radial';
 let redSelected = null; // nombre de pozo
 let redFiltro = 'all';  // 'all' o una bateria (USPA2, USPA3...)
+let redSearchTerm = ''; // texto del buscador de arriba (searchBox), en minusculas
 
 function buildRedGrupos(){
   const grupos = [];
@@ -3417,11 +3472,21 @@ function redSvgEl(tag, attrs){
 }
 
 function redVisibleGrupos(grupos){
-  return redFiltro === 'all' ? grupos : grupos.filter(g => g.id === redFiltro);
+  let list = redFiltro === 'all' ? grupos : grupos.filter(g => g.id === redFiltro);
+  if(redSearchTerm){
+    // con busqueda activa, solo mostramos las colectoras que tengan algun pozo que coincida
+    // (igual criterio que la pestaña Plano), para no tener que buscar a ojo en toda la red
+    list = list.map(g => {
+      const colectoras = g.colectoras.filter(c => c.wells.some(w => w.pozo.toLowerCase().includes(redSearchTerm)));
+      return Object.assign({}, g, { colectoras });
+    }).filter(g => g.colectoras.length > 0);
+  }
+  return list;
 }
 
 function buildRedTree(grupos){
   const visibles = redVisibleGrupos(grupos);
+  const nodePos = {}; // pozo -> {x,y}, para poder centrar el zoom en un pozo buscado
   const spacing = 36, colGap = 18, grupoGap = 50, marginX = 28;
   let x = marginX;
   const grupoPos = [];
@@ -3497,24 +3562,29 @@ function buildRedTree(grupos){
           class: 'redge', 'data-pozo': p.pozo, 'data-grupo': g.id,
           d: `M${p.x},${yPozo + 11} L${c.x},${yTrunk - 11}`, 'marker-end': 'url(#redArrowTree)'
         }));
-        const ng = redSvgEl('g', { class: 'rnode pozo', 'data-pozo': p.pozo, 'data-colectora': c.name, 'data-grupo': g.id,
+        const pMatch = redSearchTerm && p.pozo.toLowerCase().includes(redSearchTerm);
+        const ng = redSvgEl('g', { class: 'rnode pozo' + (pMatch ? ' match' : ''), 'data-pozo': p.pozo, 'data-colectora': c.name, 'data-grupo': g.id,
           tabindex: '0', role: 'button', 'aria-label': `Pozo ${p.pozo}, colectora ${c.name}, estado ${p.rec.estado || 'sin dato'}` });
-        ng.appendChild(redSvgEl('rect', { class: 'rwell ' + redEstadoClass(p.rec), x: p.x - 18, y: yPozo - 11, width: 36, height: 22, rx: 5 }));
+        ng.appendChild(redSvgEl('rect', { class: 'rwell ' + redEstadoClass(p.rec) + (pMatch ? ' match' : ''), x: p.x - 18, y: yPozo - 11, width: 36, height: 22, rx: 5 }));
         const lab = redSvgEl('text', { class: 'rwell-label', x: p.x, y: yPozo + 3 });
         lab.textContent = p.pozo.replace('Ce-', '');
         ng.appendChild(lab);
         nodesLayer.appendChild(ng);
+        nodePos[p.pozo] = { x: p.x, y: yPozo };
       });
     });
   });
 
   svg.appendChild(edgesLayer);
   svg.appendChild(nodesLayer);
+  svg._redViewBox = { x: 0, y: 0, w: width, h: height };
+  svg._redNodePos = nodePos;
   return svg;
 }
 
 function buildRedRadial(grupos){
   const visibles = redVisibleGrupos(grupos);
+  const nodePos = {}; // pozo -> {x,y}, para poder centrar el zoom en un pozo buscado
   const size = visibles.length <= 1 ? 440 : 780;
   const cx = size/2, cy = size/2;
   const rKti = visibles.length <= 1 ? 40 : 54;
@@ -3608,19 +3678,23 @@ function buildRedRadial(grupos){
           class: 'redge', 'data-pozo': w.pozo, 'data-grupo': g.id,
           d: `M${cp.x},${cp.y} L${wp.x},${wp.y}`, 'marker-end': 'url(#redArrowRadial)'
         }));
-        const ng = redSvgEl('g', { class: 'rnode pozo', 'data-pozo': w.pozo, 'data-colectora': c.name, 'data-grupo': g.id,
+        const wMatch = redSearchTerm && w.pozo.toLowerCase().includes(redSearchTerm);
+        const ng = redSvgEl('g', { class: 'rnode pozo' + (wMatch ? ' match' : ''), 'data-pozo': w.pozo, 'data-colectora': c.name, 'data-grupo': g.id,
           tabindex: '0', role: 'button', 'aria-label': `Pozo ${w.pozo}, colectora ${c.name}, estado ${w.estado || 'sin dato'}` });
-        ng.appendChild(redSvgEl('rect', { class: 'rwell ' + redEstadoClass(w), x: wp.x - 17, y: wp.y - 10, width: 34, height: 20, rx: 5 }));
+        ng.appendChild(redSvgEl('rect', { class: 'rwell ' + redEstadoClass(w) + (wMatch ? ' match' : ''), x: wp.x - 17, y: wp.y - 10, width: 34, height: 20, rx: 5 }));
         const lab = redSvgEl('text', { class: 'rwell-label', x: wp.x, y: wp.y + 2.8, style: 'font-size:7px' });
         lab.textContent = w.pozo.replace('Ce-', '');
         ng.appendChild(lab);
         nodesLayer.appendChild(ng);
+        nodePos[w.pozo] = { x: wp.x, y: wp.y };
       });
     });
   });
 
   svg.appendChild(edgesLayer);
   svg.appendChild(nodesLayer);
+  svg._redViewBox = { x: 0, y: 0, w: size, h: size };
+  svg._redNodePos = nodePos;
   return svg;
 }
 
@@ -3632,6 +3706,7 @@ function redCaptionFor(v){
 
 function renderRed(){
   const redMain = document.getElementById('redMain');
+  redSearchTerm = (document.getElementById('searchBox').value || '').trim().toLowerCase();
   const grupos = buildRedGrupos();
   window._redGrupos = grupos;
   window._redPozoInfo = redPozoInfo(grupos);
@@ -3706,12 +3781,182 @@ function setRedFiltro(id){
   renderRedPanel(grupos);
 }
 
+// ---------------- Zoom / pan del diagrama (rueda+ctrl o pellizco en celu, arrastrar, botones +/-) ----------------
+// Trabajamos directo sobre el viewBox del SVG (no con CSS transform): mas simple y no depende de
+// medir el contenedor en pixeles para cada operacion.
+function redClampZoomW(state, w){
+  return Math.min(state.maxW, Math.max(state.minW, w));
+}
+function redApplyViewBox(state){
+  state.svg.setAttribute('viewBox', `${state.x} ${state.y} ${state.w} ${state.h}`);
+}
+function redZoomAtPoint(state, factor, pivotX, pivotY){
+  const newW = redClampZoomW(state, state.w * factor);
+  const actual = newW / state.w;
+  const newH = state.h * actual;
+  state.x = pivotX - (pivotX - state.x) * actual;
+  state.y = pivotY - (pivotY - state.y) * actual;
+  state.w = newW; state.h = newH;
+  redApplyViewBox(state);
+}
+function redZoomReset(state){
+  state.x = state.baseX; state.y = state.baseY; state.w = state.baseW; state.h = state.baseH;
+  redApplyViewBox(state);
+}
+function redZoomToPoint(state, cx, cy, targetW){
+  const aspect = state.baseH / state.baseW;
+  const w = redClampZoomW(state, targetW);
+  const h = w * aspect;
+  state.w = w; state.h = h;
+  state.x = cx - w/2;
+  state.y = cy - h/2;
+  redApplyViewBox(state);
+}
+
+function redSetupZoomPan(svg, stage, controlsWrap){
+  const base = svg._redViewBox || { x: 0, y: 0, w: 100, h: 100 };
+  const state = {
+    svg, baseX: base.x, baseY: base.y, baseW: base.w, baseH: base.h,
+    x: base.x, y: base.y, w: base.w, h: base.h,
+    minW: Math.max(70, base.w * 0.035), maxW: base.w
+  };
+  redApplyViewBox(state);
+
+  function svgPointFromClient(clientX, clientY){
+    const rect = svg.getBoundingClientRect();
+    if(!rect.width || !rect.height) return { x: state.x + state.w/2, y: state.y + state.h/2 };
+    return {
+      x: state.x + ((clientX - rect.left) / rect.width) * state.w,
+      y: state.y + ((clientY - rect.top) / rect.height) * state.h
+    };
+  }
+
+  // arrastrar con mouse (desktop)
+  let dragging = false, dragStartClient = null, dragStartState = null, dragMoved = 0;
+  svg.addEventListener('mousedown', e => {
+    if(e.button !== 0) return;
+    dragging = true; dragMoved = 0;
+    dragStartClient = { x: e.clientX, y: e.clientY };
+    dragStartState = { x: state.x, y: state.y };
+    svg.classList.add('dragging');
+  });
+  window.addEventListener('mousemove', e => {
+    if(!dragging) return;
+    const rect = svg.getBoundingClientRect();
+    if(!rect.width || !rect.height) return;
+    const dx = (e.clientX - dragStartClient.x) * (state.w / rect.width);
+    const dy = (e.clientY - dragStartClient.y) * (state.h / rect.height);
+    dragMoved = Math.max(dragMoved, Math.abs(e.clientX - dragStartClient.x), Math.abs(e.clientY - dragStartClient.y));
+    state.x = dragStartState.x - dx;
+    state.y = dragStartState.y - dy;
+    redApplyViewBox(state);
+  });
+  window.addEventListener('mouseup', () => {
+    if(!dragging) return;
+    dragging = false;
+    svg.classList.remove('dragging');
+    if(dragMoved > 4) redSuppressClick = true;
+  });
+
+  // rueda: ctrl+scroll o pellizco de trackpad (el navegador manda ctrlKey:true solo)
+  svg.addEventListener('wheel', e => {
+    if(!e.ctrlKey) return; // scroll comun: dejamos que la pagina scrollee normal
+    e.preventDefault();
+    const pivot = svgPointFromClient(e.clientX, e.clientY);
+    const factor = Math.exp(e.deltaY * 0.012);
+    redZoomAtPoint(state, factor, pivot.x, pivot.y);
+  }, { passive: false });
+
+  // touch: un dedo arrastra, dos dedos hacen pellizco de zoom
+  let touchMode = null; // 'pan' | 'pinch'
+  let touchStart = null;
+  svg.addEventListener('touchstart', e => {
+    if(e.touches.length === 1){
+      touchMode = 'pan';
+      touchStart = { clientX: e.touches[0].clientX, clientY: e.touches[0].clientY, stateX: state.x, stateY: state.y, moved: 0 };
+    } else if(e.touches.length === 2){
+      touchMode = 'pinch';
+      const [t1, t2] = e.touches;
+      const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+      const midClient = { x: (t1.clientX + t2.clientX)/2, y: (t1.clientY + t2.clientY)/2 };
+      touchStart = { dist, mid: svgPointFromClient(midClient.x, midClient.y), stateW: state.w, stateH: state.h, stateX: state.x, stateY: state.y };
+    }
+    e.preventDefault();
+  }, { passive: false });
+  svg.addEventListener('touchmove', e => {
+    if(touchMode === 'pan' && e.touches.length === 1){
+      const rect = svg.getBoundingClientRect();
+      if(!rect.width || !rect.height) return;
+      const dx = (e.touches[0].clientX - touchStart.clientX) * (state.w / rect.width);
+      const dy = (e.touches[0].clientY - touchStart.clientY) * (state.h / rect.height);
+      touchStart.moved = Math.max(touchStart.moved, Math.abs(e.touches[0].clientX - touchStart.clientX), Math.abs(e.touches[0].clientY - touchStart.clientY));
+      state.x = touchStart.stateX - dx;
+      state.y = touchStart.stateY - dy;
+      redApplyViewBox(state);
+    } else if(touchMode === 'pinch' && e.touches.length === 2){
+      const [t1, t2] = e.touches;
+      const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+      const factor = touchStart.dist / Math.max(1, dist);
+      const newW = redClampZoomW(state, touchStart.stateW * factor);
+      const actual = newW / touchStart.stateW;
+      state.w = newW;
+      state.h = touchStart.stateH * actual;
+      state.x = touchStart.mid.x - (touchStart.mid.x - touchStart.stateX) * actual;
+      state.y = touchStart.mid.y - (touchStart.mid.y - touchStart.stateY) * actual;
+      redApplyViewBox(state);
+    }
+    e.preventDefault();
+  }, { passive: false });
+  svg.addEventListener('touchend', e => {
+    // con touch-action:none (necesario para que el arrastre/pellizco no scrollee la pagina), el
+    // celular muchas veces NO sintetiza el "click" de siempre despues de tocar - asi que si fue un
+    // toque simple (no un arrastre) lo resolvemos nosotros mismos, buscando que elemento quedo bajo
+    // el dedo y abriendo el pozo directo, sin esperar a un click que puede no llegar nunca.
+    if(touchMode === 'pan' && touchStart){
+      if(touchStart.moved > 4){
+        redSuppressClick = true;
+      } else {
+        const ct = e.changedTouches && e.changedTouches[0];
+        const el = ct && document.elementFromPoint ? document.elementFromPoint(ct.clientX, ct.clientY) : null;
+        const nodeEl = el && el.closest ? el.closest('.rnode.pozo') : null;
+        if(nodeEl){
+          redSuppressClick = true; // por si el navegador igual dispara el click sintetico despues
+          selectRedPozo(nodeEl.getAttribute('data-pozo'));
+        }
+      }
+    }
+    if(e.touches.length === 0){ touchMode = null; touchStart = null; }
+    else if(e.touches.length === 1){
+      // de pellizco a un solo dedo: reiniciamos el arrastre para que no salte
+      touchMode = 'pan';
+      touchStart = { clientX: e.touches[0].clientX, clientY: e.touches[0].clientY, stateX: state.x, stateY: state.y, moved: 0 };
+    }
+  });
+
+  if(controlsWrap){
+    const btnIn = controlsWrap.querySelector('[data-zoom="in"]');
+    const btnOut = controlsWrap.querySelector('[data-zoom="out"]');
+    const btnReset = controlsWrap.querySelector('[data-zoom="reset"]');
+    if(btnIn) btnIn.addEventListener('click', () => redZoomAtPoint(state, 0.65, state.x + state.w/2, state.y + state.h/2));
+    if(btnOut) btnOut.addEventListener('click', () => redZoomAtPoint(state, 1/0.65, state.x + state.w/2, state.y + state.h/2));
+    if(btnReset) btnReset.addEventListener('click', () => redZoomReset(state));
+  }
+
+  return state;
+}
+
+let redSuppressClick = false; // true justo despues de un arrastre/pellizco, para no abrir un pozo sin querer
+
 function renderRedStage(grupos){
   const stage = document.getElementById('redStage');
   if(!stage) return;
   stage.innerHTML = '';
+  if(redVisibleGrupos(grupos).length === 0){
+    stage.innerHTML = '<div class="empty-msg">No hay pozos que coincidan con esa busqueda en esta red.</div>';
+    return;
+  }
   const svg = redView === 'tree' ? buildRedTree(grupos) : buildRedRadial(grupos);
-  if(redView === 'radial') svg.classList.add('fit');
+  svg.classList.add('fit');
   const fig = document.createElement('figure');
   fig.appendChild(svg);
   const cap = document.createElement('figcaption');
@@ -3719,14 +3964,38 @@ function renderRedStage(grupos){
   fig.appendChild(cap);
   stage.appendChild(fig);
 
+  const controls = document.createElement('div');
+  controls.className = 'red-zoom-controls';
+  controls.innerHTML = `
+    <button type="button" data-zoom="in" title="Acercar" aria-label="Acercar">+</button>
+    <button type="button" data-zoom="out" title="Alejar" aria-label="Alejar">&minus;</button>
+    <button type="button" data-zoom="reset" title="Ver todo" aria-label="Ver todo" style="font-size:0.85rem;">&#9678;</button>
+  `;
+  stage.appendChild(controls);
+  const zoomState = redSetupZoomPan(svg, stage, controls);
+
   stage.querySelectorAll('.rnode.pozo').forEach(ng => {
-    ng.addEventListener('click', () => selectRedPozo(ng.getAttribute('data-pozo')));
+    ng.addEventListener('click', () => {
+      if(redSuppressClick){ redSuppressClick = false; return; }
+      selectRedPozo(ng.getAttribute('data-pozo'));
+    });
     ng.addEventListener('keydown', e => {
       if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); selectRedPozo(ng.getAttribute('data-pozo')); }
     });
   });
 
   applyRedSelection(grupos);
+
+  // con busqueda activa y un solo pozo a la vista, enfocamos el zoom ahi directamente
+  // (asi no hay que buscarlo a ojo entre las lineas de toda la USPA)
+  if(redSearchTerm){
+    const matches = Array.from(stage.querySelectorAll('.rnode.pozo.match'));
+    if(matches.length === 1){
+      const pozoName = matches[0].getAttribute('data-pozo');
+      const pos = svg._redNodePos && svg._redNodePos[pozoName];
+      if(pos) redZoomToPoint(zoomState, pos.x, pos.y, zoomState.baseW * 0.16);
+    }
+  }
 }
 
 function applyRedSelection(grupos){
@@ -3989,7 +4258,7 @@ function renderMovimientos(){
     presion: 'presion', colectora: 'colectora', tablero: 'tablero', optim: 'optimizador',
     fecha: 'ultima visita', notas: 'notas', estado: 'estado', ciclo: 'ciclo',
     horario: 'horario', horaApertura: 'hora apertura', horaCierre: 'hora cierre',
-    horarioNota: 'nota horario', enCiclaje: 'ciclaje',
+    horarioNota: 'nota horario', presionCierre: 'presion al cerrar', enCiclaje: 'ciclaje',
     bp: 'BP', pl: 'PL', perdidas: 'perdidas', hora: 'hora', bateria: 'bateria', motivoParo: 'motivo de paro', nota: 'nota',
     texto: 'novedad'
   };
@@ -4000,6 +4269,7 @@ function renderMovimientos(){
     let v = rec[k];
     if(k === 'presion') return (v && v !== 's/d') ? convertPresionText(v, pressureUnit) : 'sin dato';
     if(k === 'bateria') return v || 'Sin bateria';
+    if(k === 'presionCierre') return v ? convertPresionText(String(v) + ' kg/cm2', pressureUnit) : 'sin dato';
     if(k === 'enCiclaje') return v ? 'agregado' : 'sacado';
     if(v === undefined || v === null || v === '') return '';
     v = v.toString();
