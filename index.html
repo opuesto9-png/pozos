@@ -2230,7 +2230,6 @@ function renderCardEdit(rec, bat){
       <button class="close-btn" id="closeBtn">&times;</button>
     </div>
     ${inputField('Bateria', 'bateria', rec.bateria === 'Sin bateria' ? '' : rec.bateria)}
-    ${inputField('Presion', 'presion', rec.presion === 's/d' ? '' : rec.presion)}
     ${inputField('Colectora', 'colectora', rec.colectora)}
     <div class="field">
       <div class="k">Ciclo (si esta en ciclaje manual)</div>
@@ -2281,12 +2280,22 @@ function renderCardEdit(rec, bat){
             <input type="time" class="edit-input time-input" id="horaApertura" value="${horaAperturaVal}">
             <button type="button" class="field-clear-btn" id="clearHoraApertura" title="Borrar apertura">&times;</button>
           </div>
+          <div class="time-label" style="margin-top:8px;">Presion apertura (${pressureUnit === 'psi' ? 'psi' : 'kg/cm2'})</div>
+          <div class="input-with-clear">
+            <input type="text" inputmode="decimal" class="edit-input" data-key="presion" value="${(rec.presion === 's/d' || !rec.presion ? '' : rec.presion).toString().replace(/"/g,'&quot;')}">
+            <button type="button" class="field-clear-btn" data-clear-target="presion" title="Borrar presion de apertura">&times;</button>
+          </div>
         </div>
         <div>
           <div class="time-label">Cierre</div>
           <div class="input-with-clear">
             <input type="time" class="edit-input time-input" id="horaCierre" value="${horaCierreVal}">
             <button type="button" class="field-clear-btn" id="clearHoraCierre" title="Borrar cierre">&times;</button>
+          </div>
+          <div class="time-label" style="margin-top:8px;">Presion cierre (${pressureUnit === 'psi' ? 'psi' : 'kg/cm2'})</div>
+          <div class="input-with-clear">
+            <input type="text" inputmode="decimal" class="edit-input" id="presionCierre" placeholder="${rec.presionCierre ? convertPresionText(rec.presionCierre + ' kg/cm2', pressureUnit) : ''}">
+            <button type="button" class="field-clear-btn" id="clearPresionCierre" title="Borrar">&times;</button>
           </div>
         </div>
       </div>
@@ -2333,6 +2342,9 @@ function renderCardEdit(rec, bat){
   });
   document.getElementById('clearHoraApertura').addEventListener('click', () => {
     document.getElementById('horaApertura').value = '';
+  });
+  document.getElementById('clearPresionCierre').addEventListener('click', () => {
+    document.getElementById('presionCierre').value = '';
   });
   document.getElementById('clearHoraCierre').addEventListener('click', () => {
     document.getElementById('horaCierre').value = '';
@@ -2448,6 +2460,17 @@ function renderCardEdit(rec, bat){
       } else if(hA){
         newFields.estado = 'Abierto';
       }
+    }
+
+    // Presion al cerrar (queda en kg/cm2, igual que BP/PL): si este guardado es un cierre nuevo, la presion
+    // cargada reemplaza a la del cierre anterior (vacia = sin dato, no arrastramos la vieja). Si no hay
+    // cierre nuevo, solo se pisa cuando se escribio algo (para corregirla o cargarla despues).
+    const presionCierreIn = document.getElementById('presionCierre').value.trim();
+    const cierreNuevo = newFields.estado === 'Cerrado' && cierreCambio && !!hcEfectivo;
+    if(cierreNuevo){
+      newFields.presionCierre = presionCierreIn ? aibPresionToKg(presionCierreIn) : '';
+    } else if(presionCierreIn && rec.estado === 'Cerrado'){
+      newFields.presionCierre = aibPresionToKg(presionCierreIn);
     }
 
     // Hs total de la maniobra que se acaba de completar (para el reporte, a pedido de Sebastian):
@@ -2745,19 +2768,22 @@ function buildNovedad(rec, velaTxt){
   // el pozo que cierra y despues reabre va en UNA sola fila, con la novedad combinada (cerro y abrio).
   // pero si es la PRIMERA vez que abre (sin un cierre previo registrado), no corresponde decir
   // "Cerrado, recupera presion" antes, porque nunca estuvo cerrado.
+  // presion con la que se cerro el pozo (la carga el operador al cerrar): "recuperando presion 4 kg/cm2"
+  const presionCierreTxt = rec.presionCierre ? convertPresionText(String(rec.presionCierre) + ' kg/cm2', pressureUnit) : '';
+  const sufPresionCierre = presionCierreTxt ? ' ' + presionCierreTxt : '';
   let base;
   if(rec.estado === 'Abierto'){
     const veniaDeCerrado = rec.veniaDeCerradoConfirmado === true;
     base = veniaDeCerrado
-      ? `Cerrado, recupera presion. Abierto${presionTxt ? ' con presion estatica de ' + presionTxt : ''}.`
+      ? `Cerrado, recupera presion${sufPresionCierre}. Abierto${presionTxt ? ' con presion estatica de ' + presionTxt : ''}.`
       : `Abierto${presionTxt ? ' con presion estatica de ' + presionTxt : ''}.`;
   } else if(rec.estado === 'Cerrado'){
     // si justo se completo un ciclo (estaba abierto y ahora cierra), mencionamos tambien la apertura
     // anterior con su presion - si no, es la primera vez que se cierra y no hay nada que mencionar antes.
     const abrioAntes = rec.horasTotalTipo === 'abierto';
     base = abrioAntes
-      ? `Abierto${presionTxt ? ' con presion estatica de ' + presionTxt : ''}. Cerrado, recuperando presion.`
-      : 'Cerrado recuperando presion.';
+      ? `Abierto${presionTxt ? ' con presion estatica de ' + presionTxt : ''}. Cerrado, recuperando presion${sufPresionCierre}.`
+      : `Cerrado recuperando presion${sufPresionCierre}.`;
   } else {
     base = 'Maniobra registrada.';
   }
@@ -4232,7 +4258,7 @@ function renderMovimientos(){
     presion: 'presion', colectora: 'colectora', tablero: 'tablero', optim: 'optimizador',
     fecha: 'ultima visita', notas: 'notas', estado: 'estado', ciclo: 'ciclo',
     horario: 'horario', horaApertura: 'hora apertura', horaCierre: 'hora cierre',
-    horarioNota: 'nota horario', enCiclaje: 'ciclaje',
+    horarioNota: 'nota horario', presionCierre: 'presion al cerrar', enCiclaje: 'ciclaje',
     bp: 'BP', pl: 'PL', perdidas: 'perdidas', hora: 'hora', bateria: 'bateria', motivoParo: 'motivo de paro', nota: 'nota',
     texto: 'novedad'
   };
@@ -4243,6 +4269,7 @@ function renderMovimientos(){
     let v = rec[k];
     if(k === 'presion') return (v && v !== 's/d') ? convertPresionText(v, pressureUnit) : 'sin dato';
     if(k === 'bateria') return v || 'Sin bateria';
+    if(k === 'presionCierre') return v ? convertPresionText(String(v) + ' kg/cm2', pressureUnit) : 'sin dato';
     if(k === 'enCiclaje') return v ? 'agregado' : 'sacado';
     if(v === undefined || v === null || v === '') return '';
     v = v.toString();
