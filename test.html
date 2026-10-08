@@ -934,6 +934,37 @@
     color: var(--amber);
     margin-right: 8px;
   }
+  /* ---------- Chat de campo ---------- */
+  .chat-wrap{ max-width: 720px; margin: 0 auto; padding: 10px 12px 0; display:flex; flex-direction:column; min-height: 60vh; }
+  .chat-hint{ font-size: 0.78rem; color: var(--muted); line-height: 1.4; border-left: 3px solid var(--amber); padding: 6px 10px; margin-bottom: 10px; }
+  .chat-list{ flex: 1; display:flex; flex-direction:column; gap: 6px; padding-bottom: 10px; }
+  .chat-empty{ color: var(--muted); text-align:center; padding: 40px 10px; font-size: 0.9rem; }
+  .chat-error{ background: #3a1f1f; border: 1px solid #c0524a; color: #f2c9c4; border-radius: 10px; padding: 8px 10px; font-size: 0.82rem; }
+  .chat-day{ text-align:center; margin: 8px 0 2px; }
+  .chat-day span{ background: var(--panel); border: 1px solid var(--line); color: var(--muted); font-size: 0.72rem; padding: 2px 10px; border-radius: 20px; }
+  .chat-row{ display:flex; justify-content:flex-start; }
+  .chat-row.mine{ justify-content:flex-end; }
+  .chat-bubble{ max-width: 86%; min-width: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 14px 14px 14px 4px; padding: 7px 10px 5px; }
+  .chat-row.mine .chat-bubble{ background: #17506a; border-color: #23688a; border-radius: 14px 14px 4px 14px; }
+  .chat-name{ font-size: 0.74rem; font-weight: 700; color: #7fd3e8; margin-bottom: 2px; }
+  .chat-text{ font-size: 0.95rem; line-height: 1.35; color: var(--text); overflow-wrap: anywhere; }
+  .chat-time{ font-size: 0.68rem; color: var(--muted); text-align: right; margin-top: 3px; }
+  .chat-row.mine .chat-time{ color: #a9cbdc; }
+  .chat-sug{ margin-top: 7px; background: rgba(0,0,0,.22); border-left: 3px solid #e8c14d; border-radius: 8px; padding: 7px 9px; display:flex; flex-direction:column; gap: 6px; }
+  .chat-sug.done{ border-left-color: #5fa85f; }
+  .chat-sug-txt{ font-size: 0.82rem; line-height: 1.35; color: var(--text); }
+  .chat-sug-btn{ align-self:flex-start; background: #e8c14d; color: #14181d; border: none; border-radius: 20px; padding: 6px 14px; font-weight: 800; font-size: 0.82rem; cursor: pointer; }
+  .chat-sug-btn:focus-visible{ outline: 2px solid #fff; outline-offset: 2px; }
+  .chat-sug-ok{ font-size: 0.78rem; color: #8fd18f; font-weight: 700; }
+  .chat-composer{ position: sticky; bottom: 0; display:flex; gap: 8px; align-items:flex-end; background: var(--bg); border-top: 1px solid var(--line);
+    padding: 8px 0 calc(8px + env(safe-area-inset-bottom, 0px)); margin-top: 4px; }
+  .chat-composer textarea{ flex:1; min-width:0; resize:none; background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 18px;
+    padding: 9px 14px; font: inherit; font-size: 0.95rem; line-height: 1.3; max-height: 140px; }
+  .chat-composer textarea:focus{ outline: none; border-color: var(--amber); }
+  .chat-send{ background: var(--amber); color: #fff; border: none; border-radius: 18px; padding: 10px 16px; font-weight: 800; font-size: 0.9rem; cursor: pointer; }
+  .chat-prefill{ outline: 2px solid #e8c14d !important; background: rgba(232,193,77,.12) !important; }
+  body.modo-chat header > p, body.modo-chat header .legend, body.modo-chat header .toolbar{ display:none; }
+  .chat-prefill-note{ background: rgba(232,193,77,.12); border: 1px solid #e8c14d; border-radius: 10px; padding: 8px 10px; font-size: 0.82rem; line-height: 1.4; margin: 8px 0 10px; color: var(--text); }
 </style>
 </head>
 <body>
@@ -963,6 +994,7 @@
     <span><span class="dot" style="background:#2b323b; opacity:.5"></span>Sin datos todavia</span>
   </div>
   <div class="tabs">
+    <button class="tab-btn" id="tabChat">Chat <span id="chatBadge" class="pend-badge" style="display:none;"></span></button>
     <button class="tab-btn" id="tabLista">Gas</button>
     <button class="tab-btn active" id="tabPlano">Plano (colectoras)</button>
     <button class="tab-btn" id="tabRed">Red</button>
@@ -985,6 +1017,7 @@
   </div>
 </header>
 
+<main id="chatMain" style="display:none;"></main>
 <main id="main" style="display:none;"></main>
 <main id="planoMain"></main>
 <main id="redMain" style="display:none;"></main>
@@ -1649,6 +1682,7 @@ function startSync(){
     render('');
     return;
   }
+  iniciarChatSync();
   db.collection('pozos_overrides').onSnapshot((snapshot) => {
     lastOverridesCount = snapshot.size;
     snapshot.forEach((doc) => {
@@ -4080,10 +4114,398 @@ function setRedView(v){
   renderRedStage(grupos);
 }
 
+// ---------------- Chat de campo: lector de mensajes ----------------
+// Lee un mensaje escrito como en WhatsApp ("cerre el 1294 a las 21, recupera 4 kg") y saca las cargas
+// posibles: pozo (solo si existe en la lista real), abrir/cerrar, hora, presion y velas. No guarda nada:
+// solo propone; el operador revisa la ficha precargada y toca Guardar.
+const CHAT_KG_POR_PSI = 14.2233;
+function chatNormalizar(t){
+  return (t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
+function chatMascara(str, start, len){
+  return str.slice(0, start) + ' '.repeat(len) + str.slice(start + len);
+}
+function chatNumeroPozo(nombre){
+  return String(nombre || '').replace(/^[a-z]+-/i, '').toLowerCase();
+}
+function chatParsearLinea(linea, pozosLista){
+  let t = ' ' + chatNormalizar(linea) + ' ';
+  const res = { pozos: [], accion: null, hora: null, horaAmbigua: false, presion: null, velas: { Gas: 0, Agua: 0, Oil: 0 }, velaSinTipo: 0 };
+
+  // 1) velas (primero, para que "2 velas" no se tome como presion ni como pozo)
+  const reVela = /(\d{1,2})?\s*(velas?|generadoras?|surfactantes?|barras?)\b(?:\s*(?:de|en|para)?\s*(gas|agua|oil|petroleo|condensado))?/g;
+  let m;
+  while((m = reVela.exec(t))){
+    const n = m[1] ? parseInt(m[1], 10) : 1;
+    let tipo = null;
+    if(m[3]) tipo = m[3] === 'gas' ? 'Gas' : (m[3] === 'agua' ? 'Agua' : 'Oil');
+    else if(/^generadora/.test(m[2])) tipo = 'Gas';
+    else if(/^surfactante/.test(m[2])) tipo = 'Agua';
+    if(tipo) res.velas[tipo] += n; else res.velaSinTipo += n;
+    t = chatMascara(t, m.index, m[0].length);
+    reVela.lastIndex = m.index + m[0].length;
+  }
+
+  // 2) presion con unidad ("4 kg", "4,5 kg/cm2", "60 psi")
+  const reConUnidad = /(\d{1,3}(?:[.,]\d{1,2})?)\s*(kg\s*\/\s*cm2|kg\s*\/\s*cm²|kgs?|psi)\b/g;
+  while((m = reConUnidad.exec(t))){
+    let v = parseFloat(m[1].replace(',', '.'));
+    if(/^psi/.test(m[2])) v = v / CHAT_KG_POR_PSI;
+    res.presion = Math.round(v * 10) / 10;
+    t = chatMascara(t, m.index, m[0].length);
+    reConUnidad.lastIndex = m.index + m[0].length;
+  }
+  // 2b) presion sin unidad pero con palabra clave ("recupera 4", "con 22", "presion 5")
+  const reClave = /\b(presion(?:\s+(?:de|estatica|de cierre|de apertura|cierre|apertura))*|recuper\w*(?:\s+presion)?|con|esta(?:tica)?\s+en|tiene)\s*(?:de\s*)?(\d{1,3}(?:[.,]\d{1,2})?)(?!\s*(?:[:.]\d|hs\b|h\b|hrs\b|horas\b))/g;
+  while((m = reClave.exec(t))){
+    if(res.presion === null || true){
+      const v = parseFloat(m[2].replace(',', '.'));
+      // un numero de pozo real despues de "con"/"tiene" no es una presion ("con el 1294" no pasa por aca)
+      if(!(m[1] === 'con' || m[1] === 'tiene') || !pozosLista.some(p => chatNumeroPozo(p.pozo) === m[2])){
+        res.presion = Math.round(v * 10) / 10;
+        const ini = m.index + m[0].length - m[2].length;
+        t = chatMascara(t, ini, m[2].length);
+      }
+    }
+  }
+
+  // 3) hora
+  const horas = [];
+  const reHM = /\b([01]?\d|2[0-3])[:.]([0-5]\d)\s*(?:hs|h|hrs|horas)?\b/g;
+  while((m = reHM.exec(t))){ horas.push({ i: m.index, h: parseInt(m[1],10), min: parseInt(m[2],10), len: m[0].length, explicita: true }); }
+  const reHs = /\b([01]?\d|2[0-3])\s*(?:hs|h|hrs|horas)\b/g;
+  while((m = reHs.exec(t))){ horas.push({ i: m.index, h: parseInt(m[1],10), min: 0, len: m[0].length, explicita: true }); }
+  const reALas = /\ba\s+las?\s+([01]?\d|2[0-3])(?![\d:.])/g;
+  while((m = reALas.exec(t))){ horas.push({ i: m.index, h: parseInt(m[1],10), min: 0, len: m[0].length, explicita: false }); }
+  horas.sort((a, b) => a.i - b.i);
+  // quitamos duplicados que se pisan (ej: "a las 21:00" lo agarran dos reglas)
+  const horasOk = [];
+  horas.forEach(h => { if(!horasOk.some(o => h.i < o.i + o.len && o.i < h.i + h.len)) horasOk.push(h); });
+  if(horasOk.length){
+    const h = horasOk[horasOk.length - 1];
+    let hh = h.h;
+    const despues = t.slice(h.i + h.len, h.i + h.len + 22);
+    if(hh < 12 && /^\s*(pm|p\.\s*m|de la (noche|tarde))/.test(despues)) hh += 12;
+    else if(hh < 12 && !h.explicita && !/^\s*(am|a\.\s*m|de la (manana|madrugada))/.test(despues) && hh !== 0) res.horaAmbigua = true;
+    res.hora = String(hh).padStart(2, '0') + ':' + String(h.min).padStart(2, '0');
+    horasOk.forEach(o => { t = chatMascara(t, o.i, o.len); });
+  }
+
+  // 4) abrir / cerrar: si aparecen las dos, vale la ultima (es el estado en que quedo)
+  const reAccion = /\b(cerr\w*|cierr\w*|abr[eiao]\w*|abiert\w*|apertur\w*)/g;
+  let ultima = null;
+  while((m = reAccion.exec(t))){
+    if(/^abril/.test(m[1])) continue;
+    ultima = /^(cerr|cierr)/.test(m[1]) ? 'cerrar' : 'abrir';
+  }
+  res.accion = ultima;
+
+  // 5) pozos: numeros que quedan y que existen en la lista real
+  const rePozo = /(?:^|[^\d:.,])(?:[a-z]{1,3}\s*-?\s*)?(\d{2,5})(?![\d:.,])/g;
+  const vistos = new Set();
+  while((m = rePozo.exec(t))){
+    const num = m[1];
+    const rec = pozosLista.find(p => chatNumeroPozo(p.pozo) === num);
+    if(rec && !vistos.has(rec.pozo)){ vistos.add(rec.pozo); res.pozos.push(rec); }
+  }
+  return res;
+}
+// devuelve una lista de sugerencias { rec, accion, hora, horaAmbigua, presion, velas, velaSinTipo, texto }
+function parseMensajeCampo(texto, pozosLista){
+  const out = [];
+  String(texto || '').split(/\n|;/).forEach(linea => {
+    if(!linea.trim()) return;
+    const r = chatParsearLinea(linea, pozosLista);
+    if(!r.pozos.length) return;
+    const hayVelas = r.velas.Gas || r.velas.Agua || r.velas.Oil || r.velaSinTipo;
+    if(!r.accion && r.presion === null && !hayVelas) return;
+    r.pozos.forEach(rec => {
+      out.push({
+        rec, accion: r.accion, hora: r.hora, horaAmbigua: r.horaAmbigua,
+        presion: r.pozos.length === 1 ? r.presion : null,
+        velas: r.pozos.length === 1 ? r.velas : { Gas: 0, Agua: 0, Oil: 0 },
+        velaSinTipo: r.pozos.length === 1 ? r.velaSinTipo : 0,
+        texto: linea.trim()
+      });
+    });
+  });
+  return out;
+}
+
+// ---------------- Pestaña Chat de campo ----------------
+// Mensajeria simple entre operadores (como un grupo de WhatsApp), guardada en la coleccion 'chat_campo'.
+// Si un mensaje habla de un pozo (abrir/cerrar, hora, presion, velas), debajo aparece una tarjeta para
+// cargarlo: abre la ficha del pozo ya precargada y el operador revisa y toca Guardar (nunca se guarda solo).
+// OJO: var (no let) a proposito: startSync() corre mas arriba en el archivo, antes de llegar a estas
+// lineas, y llama a iniciarChatSync(); con let daria error por usar la variable antes de declararla.
+var CHAT_MSGS = [];        // { id, texto, operador, dispositivo, clientTs, aplicados, pendiente }
+var chatError = '';
+var chatSyncIniciado = false;
+var CHAT_DISPOSITIVO = (() => {
+  let d = safeGet('chat_dispositivo', '');
+  if(!d){ d = 'd' + Math.random().toString(36).slice(2, 10); safeSet('chat_dispositivo', d); }
+  return d;
+})();
+
+function chatEsc(s){
+  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+function chatHoraDeTs(ts){
+  if(!ts) return '';
+  const d = new Date(ts);
+  return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+}
+function chatFechaDeTs(ts){
+  const d = new Date(ts || Date.now());
+  const hoy = new Date();
+  const ayer = new Date(); ayer.setDate(hoy.getDate() - 1);
+  const mismoDia = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  if(mismoDia(d, hoy)) return 'Hoy';
+  if(mismoDia(d, ayer)) return 'Ayer';
+  return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0');
+}
+function chatVisible(){
+  const el = document.getElementById('chatMain');
+  return el && el.style.display !== 'none';
+}
+// presion (en kg/cm2) como se muestra en la unidad elegida
+function chatPresionTxt(kg){
+  return convertPresionText(String(kg).replace('.', ',') + ' kg/cm2', pressureUnit);
+}
+function chatPresionEnUnidad(kg){
+  const v = pressureUnit === 'psi' ? kg * KG_TO_PSI : kg;
+  return (Math.round(v * 10) / 10).toString().replace('.', ',');
+}
+
+function iniciarChatSync(){
+  if(chatSyncIniciado || !firestoreOk) return;
+  chatSyncIniciado = true;
+  db.collection('chat_campo').orderBy('clientTs', 'desc').limit(300)
+    .onSnapshot({ includeMetadataChanges: true }, (snap) => {
+      const lista = [];
+      snap.forEach(doc => {
+        const d = doc.data();
+        lista.push({
+          id: doc.id, texto: d.texto || '', operador: d.operador || 'Sin nombre', dispositivo: d.dispositivo || '',
+          clientTs: d.clientTs || 0, aplicados: d.aplicados || {}, pendiente: doc.metadata.hasPendingWrites
+        });
+      });
+      CHAT_MSGS = lista.reverse();
+      chatError = '';
+      actualizarBadgeChat();
+      if(chatVisible()) renderChatLista();
+    }, (err) => {
+      chatError = 'No se pudo leer el chat (' + err.message + '). Si dice "permission", hay que habilitar la coleccion chat_campo en las reglas de Firestore.';
+      if(chatVisible()) renderChatLista();
+    });
+}
+
+function chatUltimoVisto(){ return parseInt(safeGet('chat_ultimo_visto', '0'), 10) || 0; }
+function actualizarBadgeChat(){
+  const badge = document.getElementById('chatBadge');
+  if(!badge) return;
+  if(chatVisible()){ badge.style.display = 'none'; return; }
+  const visto = chatUltimoVisto();
+  const n = CHAT_MSGS.filter(m => m.dispositivo !== CHAT_DISPOSITIVO && m.clientTs > visto).length;
+  badge.textContent = n > 99 ? '99+' : String(n);
+  badge.style.display = n ? '' : 'none';
+}
+function marcarChatVisto(){
+  const ultimo = CHAT_MSGS.length ? CHAT_MSGS[CHAT_MSGS.length - 1].clientTs : 0;
+  if(ultimo > chatUltimoVisto()) safeSet('chat_ultimo_visto', String(ultimo));
+  actualizarBadgeChat();
+}
+
+function resumenSugerencia(sug, msg){
+  const partes = [];
+  const horaTxt = sug.hora
+    ? (sug.horaAmbigua ? `${sug.hora} (¿o ${String((parseInt(sug.hora, 10) + 12) % 24).padStart(2, '0')}${sug.hora.slice(2)}?)` : sug.hora)
+    : `${chatHoraDeTs(msg.clientTs)} (hora del mensaje)`;
+  if(sug.accion === 'cerrar') partes.push(`<b>Cerrar</b> a las ${horaTxt}`);
+  if(sug.accion === 'abrir') partes.push(`<b>Abrir</b> a las ${horaTxt}`);
+  if(sug.presion !== null){
+    const cual = sug.accion === 'cerrar' ? 'presión de cierre' : (sug.accion === 'abrir' ? 'presión de apertura' : 'presión');
+    partes.push(`${cual} ${chatEsc(chatPresionTxt(sug.presion))}`);
+  }
+  const v = [];
+  if(sug.velas.Gas) v.push(`${sug.velas.Gas} gas`);
+  if(sug.velas.Agua) v.push(`${sug.velas.Agua} agua`);
+  if(sug.velas.Oil) v.push(`${sug.velas.Oil} oil`);
+  if(sug.velaSinTipo) v.push(`${sug.velaSinTipo} sin tipo (completalo a mano)`);
+  if(v.length) partes.push('velas: ' + v.join(', '));
+  return partes.join(' · ');
+}
+
+function renderChat(){
+  const main = document.getElementById('chatMain');
+  if(!document.getElementById('chatList')){
+    main.innerHTML = `
+      <div class="chat-wrap">
+        <div class="chat-hint">Escribí como en WhatsApp (ej: <i>cerré el 1294 a las 21, recupera 4 kg</i>). Si el mensaje habla de un pozo (abrir o cerrar, hora, presión, velas), abajo aparece un botón para cargarlo en la ficha. Nada se carga solo: siempre revisás y tocás Guardar.</div>
+        <div class="chat-list" id="chatList"></div>
+        <div class="chat-composer">
+          <textarea id="chatInput" rows="1" placeholder="Escribí un mensaje…"></textarea>
+          <button type="button" id="chatSendBtn" class="chat-send">Enviar</button>
+        </div>
+      </div>`;
+    const ta = document.getElementById('chatInput');
+    ta.addEventListener('input', () => {
+      ta.style.height = 'auto';
+      ta.style.height = Math.min(ta.scrollHeight, 140) + 'px';
+    });
+    ta.addEventListener('keydown', (e) => {
+      if(e.key === 'Enter' && !e.shiftKey && !esMovil()){ e.preventDefault(); enviarMensajeChat(); }
+    });
+    document.getElementById('chatSendBtn').addEventListener('click', enviarMensajeChat);
+    document.getElementById('chatList').addEventListener('click', (e) => {
+      const btn = e.target.closest('.chat-sug-btn');
+      if(btn) aplicarSugerenciaChat(btn.getAttribute('data-msg'), parseInt(btn.getAttribute('data-idx'), 10));
+    });
+  }
+  renderChatLista(true);
+}
+
+function renderChatLista(forzarAbajo){
+  const list = document.getElementById('chatList');
+  if(!list) return;
+  const cercaDelFinal = (window.innerHeight + window.scrollY) >= (document.body.scrollHeight - 160);
+  const filtro = (document.getElementById('searchBox').value || '').trim().toLowerCase();
+  const msgs = filtro ? CHAT_MSGS.filter(m => (m.texto + ' ' + m.operador).toLowerCase().includes(filtro)) : CHAT_MSGS;
+
+  let html = '';
+  if(chatError) html += `<div class="chat-error">${chatEsc(chatError)}</div>`;
+  if(!firestoreOk) html += `<div class="chat-error">Sin conexion con el guardado compartido: el chat no esta disponible.</div>`;
+  if(!msgs.length){
+    html += `<div class="chat-empty">${filtro ? 'Ningun mensaje coincide con la busqueda.' : 'Todavia no hay mensajes. Escribí el primero abajo.'}</div>`;
+  }
+  let diaAnterior = '';
+  msgs.forEach(m => {
+    const dia = chatFechaDeTs(m.clientTs);
+    if(dia !== diaAnterior){ html += `<div class="chat-day"><span>${dia}</span></div>`; diaAnterior = dia; }
+    const mio = m.dispositivo === CHAT_DISPOSITIVO;
+    const sugs = parseMensajeCampo(m.texto, POZOS);
+    let sugHtml = '';
+    sugs.forEach((s, i) => {
+      const ap = m.aplicados && m.aplicados[s.rec.pozo];
+      sugHtml += `<div class="chat-sug${ap ? ' done' : ''}">
+        <div class="chat-sug-txt">Pozo <b>${chatEsc(s.rec.pozo.replace(/^[A-Za-z]+-/, ''))}</b> · ${resumenSugerencia(s, m)}</div>
+        ${ap
+          ? `<div class="chat-sug-ok">&#10003; Cargado por ${chatEsc(ap.por || 'alguien')}${ap.ts ? ' a las ' + chatHoraDeTs(ap.ts) : ''}</div>`
+          : `<button type="button" class="chat-sug-btn" data-msg="${chatEsc(m.id)}" data-idx="${i}">Cargar en la ficha</button>`}
+      </div>`;
+    });
+    html += `<div class="chat-row${mio ? ' mine' : ''}">
+      <div class="chat-bubble">
+        ${mio ? '' : `<div class="chat-name">${chatEsc(m.operador)}</div>`}
+        <div class="chat-text">${chatEsc(m.texto).replace(/\n/g, '<br>')}</div>
+        <div class="chat-time">${chatHoraDeTs(m.clientTs)}${m.pendiente ? ' · enviando…' : ''}</div>
+        ${sugHtml}
+      </div>
+    </div>`;
+  });
+  list.innerHTML = html;
+  if(forzarAbajo || cercaDelFinal){
+    window.scrollTo(0, document.body.scrollHeight);
+  }
+  marcarChatVisto();
+}
+
+function enviarMensajeChat(){
+  const ta = document.getElementById('chatInput');
+  const texto = (ta.value || '').trim();
+  if(!texto) return;
+  if(!operadorName){
+    alert('Antes de escribir, poné tu nombre arriba (donde dice "Tu nombre") y tocá Guardar.');
+    window.scrollTo(0, 0);
+    const inp = document.getElementById('operadorInput');
+    if(inp) inp.focus();
+    return;
+  }
+  if(!firestoreOk){
+    alert('No hay conexion con el guardado compartido. Revisa tu internet e intenta de nuevo.');
+    return;
+  }
+  db.collection('chat_campo').add({
+    texto: texto.slice(0, 2000),
+    operador: operadorName,
+    dispositivo: CHAT_DISPOSITIVO,
+    clientTs: Date.now(),
+    ts: firebase.firestore.FieldValue.serverTimestamp(),
+    aplicados: {}
+  }).catch((err) => {
+    alert('No se pudo enviar el mensaje (' + err.message + ').');
+  });
+  ta.value = '';
+  ta.style.height = '';
+  ta.focus();
+}
+
+function aplicarSugerenciaChat(msgId, idx){
+  const msg = CHAT_MSGS.find(m => m.id === msgId);
+  if(!msg) return;
+  const sug = parseMensajeCampo(msg.texto, POZOS)[idx];
+  if(!sug) return;
+  const rec = sug.rec;
+  const bat = rec.bateria || 'Sin bateria';
+  openCard(rec, bat);
+  renderCardEdit(rec, bat);
+
+  const card = document.getElementById('card');
+  const poner = (el, valor) => {
+    if(!el) return;
+    el.value = valor;
+    el.classList.add('chat-prefill');
+  };
+  const hora = sug.hora || chatHoraDeTs(msg.clientTs);
+  if(sug.accion === 'cerrar'){
+    poner(document.getElementById('horaCierre'), hora);
+    if(sug.presion !== null) poner(document.getElementById('presionCierre'), chatPresionEnUnidad(sug.presion));
+  } else if(sug.accion === 'abrir'){
+    poner(document.getElementById('horaApertura'), hora);
+    if(sug.presion !== null) poner(card.querySelector('.edit-input[data-key="presion"]'), String(sug.presion).replace('.', ',') + ' kg/cm2');
+  } else if(sug.presion !== null){
+    poner(card.querySelector('.edit-input[data-key="presion"]'), String(sug.presion).replace('.', ',') + ' kg/cm2');
+  }
+  if(sug.velas.Gas) poner(document.getElementById('velaNumGas'), String(sug.velas.Gas));
+  if(sug.velas.Agua) poner(document.getElementById('velaNumAgua'), String(sug.velas.Agua));
+  if(sug.velas.Oil) poner(document.getElementById('velaNumOil'), String(sug.velas.Oil));
+
+  // aviso arriba del formulario: de donde salen los datos
+  const nota = document.createElement('div');
+  nota.className = 'chat-prefill-note';
+  nota.innerHTML = `Datos sacados del mensaje de <b>${chatEsc(msg.operador)}</b> (${chatHoraDeTs(msg.clientTs)}): “${chatEsc(sug.texto)}”.<br>Revisá lo marcado en amarillo y tocá <b>Guardar</b> abajo de todo.`
+    + (sug.horaAmbigua ? '<br><b>Ojo:</b> la hora puede ser de la mañana o de la noche, confirmala.' : '')
+    + (sug.velaSinTipo ? '<br><b>Ojo:</b> el mensaje habla de vela sin decir de qué tipo, cargala a mano.' : '');
+  const head = card.querySelector('.card-head');
+  if(head) head.insertAdjacentElement('afterend', nota); else card.prepend(nota);
+  const primero = card.querySelector('.chat-prefill');
+  if(primero) setTimeout(() => primero.scrollIntoView({ block: 'center' }), 50);
+
+  // si el guardado sale bien (la ficha vuelve a la vista normal), dejamos marcado en el chat que ya se cargo
+  const save = document.getElementById('saveBtn');
+  if(save){
+    save.addEventListener('click', () => {
+      setTimeout(() => {
+        if(document.getElementById('saveBtn')) return; // no se guardo (ej: clave incorrecta en la compu)
+        const marca = { por: operadorName || 'Sin nombre', ts: Date.now() };
+        msg.aplicados = Object.assign({}, msg.aplicados, { [rec.pozo]: marca });
+        if(firestoreOk){
+          db.collection('chat_campo').doc(msgId)
+            .update(new firebase.firestore.FieldPath('aplicados', rec.pozo), marca)
+            .catch(() => {});
+        }
+        if(chatVisible()) renderChatLista();
+      }, 0);
+    });
+  }
+}
+
 // ---------------- Manejo de pestañas (helper generico) ----------------
-const TAB_IDS = ['tabLista','tabPlano','tabRed','tabCiclaje','tabMov','tabAib','tabTanques','tabPias'];
-const MAIN_IDS = ['main','planoMain','redMain','ciclajeMain','movMain','aibMain','tanquesMain','piasMain'];
+const TAB_IDS = ['tabChat','tabLista','tabPlano','tabRed','tabCiclaje','tabMov','tabAib','tabTanques','tabPias'];
+const MAIN_IDS = ['chatMain','main','planoMain','redMain','ciclajeMain','movMain','aibMain','tanquesMain','piasMain'];
 function switchTab(activeTabId, activeMainId){
+  // en el Chat escondemos la parte explicativa del encabezado fijo, para dejarle lugar a los mensajes
+  document.body.classList.toggle('modo-chat', activeMainId === 'chatMain');
   TAB_IDS.forEach(id => document.getElementById(id).classList.toggle('active', id === activeTabId));
   MAIN_IDS.forEach(id => document.getElementById(id).style.display = (id === activeMainId) ? '' : 'none');
 }
@@ -4096,6 +4518,12 @@ document.getElementById('tabPlano').addEventListener('click', () => {
 document.getElementById('tabRed').addEventListener('click', () => {
   switchTab('tabRed', 'redMain');
   renderRed();
+});
+
+document.getElementById('tabChat').addEventListener('click', () => {
+  switchTab('tabChat', 'chatMain');
+  renderChat();
+  actualizarBadgeChat();
 });
 
 // ---------------- Vista Ciclaje ----------------
