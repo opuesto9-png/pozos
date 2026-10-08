@@ -934,6 +934,55 @@
     color: var(--amber);
     margin-right: 8px;
   }
+  /* ---------- Maniobra destacada ---------- */
+  .field.maniobra-destacada{ border: 2px solid #e8c14d; border-radius: 12px; padding: 12px; margin: 10px 0 14px; background-color: rgba(232,193,77,.07); }
+  .field.maniobra-destacada > .k{ color: #e8c14d; font-weight: 800; letter-spacing: .06em; }
+  .maniobra-tag{ display:inline-block; background:#e8c14d; color:#14181d; font-size: .62rem; font-weight: 800; border-radius: 10px; padding: 1px 7px; margin-left: 6px; letter-spacing: .04em; vertical-align: middle; }
+  /* ---------- Avisos de mantenimiento ---------- */
+  .aviso-btn{ display:block; width:100%; margin-top: 8px; background: transparent; color: #f0a35e; border: 1.5px solid #d98e3f; border-radius: 10px; padding: 10px; font-weight: 800; font-size: .9rem; cursor:pointer; }
+  .aviso-form-title{ font-size: 1.05rem; font-weight: 800; margin: 6px 0 10px; color: #f0a35e; }
+  .aviso-form .k{ font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 12px 0 6px; }
+  .aviso-chips{ display:flex; flex-wrap:wrap; gap: 8px; }
+  .aviso-chip{ background: var(--panel); color: var(--text); border: 1.5px solid var(--line); border-radius: 20px; padding: 8px 13px; font-size: .86rem; font-weight: 600; cursor:pointer; }
+  .aviso-chip.sel{ background: #1C7293; border-color: #7fd3e8; color:#fff; }
+  .aviso-chip.crit-media.sel{ background: #6b5a1c; border-color: #e8c14d; }
+  .aviso-chip.crit-alta.sel{ background: #7a4a1c; border-color: #f0a35e; }
+  .aviso-chip.crit-urgente.sel{ background: #7a2620; border-color: #ff7a6e; }
+  .aviso-error{ background: #3a1f1f; border: 1px solid #c0524a; color: #f2c9c4; border-radius: 10px; padding: 8px 10px; font-size: .84rem; margin-top: 10px; }
+  .aviso-ya{ background: rgba(217,142,63,.12); border: 1px solid #d98e3f; border-radius: 10px; padding: 8px 10px; font-size: .82rem; line-height: 1.4; margin-bottom: 4px; }
+  .aviso-enviado{ background: #1c2a1a; border: 1px solid #5fa85f; color: #a6d9a0; border-radius: 10px; padding: 8px 10px; font-size: .86rem; margin: 8px 0; font-weight: 700; }
+  .aviso-en-ficha{ border: 1.5px solid #d98e3f; background: rgba(217,142,63,.08); border-radius: 12px; padding: 10px 12px; margin: 10px 0; }
+  .aviso-en-ficha > .k{ color: #f0a35e; font-weight: 800; font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
+  .aviso-linea{ font-size: .86rem; line-height: 1.45; margin: 4px 0; }
+  .aviso-meta{ color: var(--muted); font-size: .76rem; }
+  .crit-pill{ display:inline-block; border-radius: 10px; padding: 1px 8px; font-size: .7rem; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
+  .crit-pill.urgente{ background: #c0524a; color: #fff; }
+  .crit-pill.alta{ background: #d98e3f; color: #14181d; }
+  .crit-pill.media{ background: #e8c14d; color: #14181d; }
+  .tag.mtto-tag{ color: #f0a35e; font-weight: 800; }
+  .tag.mtto-tag.urgente{ color: #ff7a6e; }
+  .pend-badge.urgente{ background: #c0524a; color: #fff; }
+  .avisos-wrap{ max-width: 860px; margin: 0 auto; padding: 12px 14px 30px; }
+  .avisos-resumen{ display:grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px; }
+  .av-num{ background: var(--panel); border: 1px solid var(--line); border-top: 4px solid; border-radius: 10px; padding: 8px 12px; display:flex; flex-direction:column; }
+  .av-num b{ font-size: 1.6rem; font-variant-numeric: tabular-nums; }
+  .av-num span{ font-size: .74rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  .av-num.urgente{ border-top-color: #c0524a; } .av-num.alta{ border-top-color: #d98e3f; } .av-num.media{ border-top-color: #e8c14d; }
+  .avisos-filtro{ margin-bottom: 12px; }
+  .avisos-lista{ display:flex; flex-direction:column; gap: 10px; }
+  .aviso-card{ background: var(--panel); border: 1px solid var(--line); border-left: 5px solid #e8c14d; border-radius: 10px; padding: 10px 12px; }
+  .aviso-card.alta{ border-left-color: #d98e3f; } .aviso-card.urgente{ border-left-color: #c0524a; }
+  .aviso-top{ display:flex; align-items:center; gap: 8px; flex-wrap: wrap; }
+  .aviso-pozo{ background:none; border:none; color: #7fd3e8; font-weight: 800; font-size: 1rem; padding: 0; cursor:pointer; text-decoration: underline; }
+  .aviso-bat{ color: var(--muted); font-size: .8rem; }
+  .aviso-nuevo{ background: #1C7293; color: #fff; font-size: .62rem; font-weight: 800; border-radius: 10px; padding: 1px 7px; letter-spacing: .05em; }
+  .aviso-esp{ font-weight: 700; margin-top: 6px; font-size: .9rem; }
+  .aviso-desc{ margin-top: 3px; font-size: .92rem; line-height: 1.4; overflow-wrap: anywhere; }
+  .aviso-pie{ display:flex; justify-content: space-between; align-items:center; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
+  .aviso-resolver{ background: #1c2a1a; color: #a6d9a0; border: 1.5px solid #5fa85f; border-radius: 20px; padding: 6px 14px; font-weight: 800; font-size: .82rem; cursor:pointer; }
+  .avisos-vacio{ color: var(--muted); text-align:center; padding: 30px 10px; }
+  .avisos-resueltos{ margin-top: 18px; color: var(--text); }
+  .avisos-resueltos summary{ cursor:pointer; color: var(--muted); font-size: .86rem; margin-bottom: 6px; }
 </style>
 </head>
 <body>
@@ -971,6 +1020,7 @@
     <button class="tab-btn" id="tabAib">AIB</button>
     <button class="tab-btn" id="tabTanques">Baterias</button>
     <button class="tab-btn" id="tabPias">Pías 2</button>
+    <button class="tab-btn" id="tabAvisos" style="display:none;">Avisos <span id="avisosBadge" class="pend-badge" style="display:none;"></span></button>
   </div>
   <div class="toolbar">
     <button class="tab-btn export-btn" id="parteBtn">Enviar parte de campo <span id="pendCount" class="pend-badge" style="display:none;"></span></button>
@@ -993,6 +1043,7 @@
 <main id="aibMain" style="display:none;"></main>
 <main id="tanquesMain" style="display:none;"></main>
 <main id="piasMain" style="display:none;"></main>
+<main id="avisosMain" style="display:none;"></main>
 
 <div class="overlay" id="overlay">
   <div class="card" id="card"></div>
@@ -1224,7 +1275,10 @@ function render(filterText){
       chip.innerHTML = rec.pozo.replace('Ce-','')
         + (isOpt ? '<span class="tag">optimizado</span>' : '')
         + (estadoClass ? `<span class="tag estado-tag ${estadoClass}">${rec.estado}${movHoy > 0 ? ' · '+movHoy+(movHoy===1?' mov.':' movs.') : ''}</span>` : '')
-        + (rec._edited ? '<span class="tag edit-tag">editado</span>' : '');
+        + (rec._edited ? '<span class="tag edit-tag">editado</span>' : '')
+        + (() => { const av = avisosAbiertosDePozo(rec.pozo); if(!av.length) return '';
+            const urg = av.some(a => a.criticidad === 'Urgente');
+            return `<span class="tag mtto-tag${urg ? ' urgente' : ''}">MTTO${urg ? ' urgente' : ''}</span>`; })();
       chip.addEventListener('click', () => openCard(rec, bat));
       grid.appendChild(chip);
     });
@@ -1649,6 +1703,7 @@ function startSync(){
     render('');
     return;
   }
+  iniciarAvisosSync();
   db.collection('pozos_overrides').onSnapshot((snapshot) => {
     lastOverridesCount = snapshot.size;
     snapshot.forEach((doc) => {
@@ -2117,14 +2172,15 @@ function renderCardView(rec, bat){
       <button class="close-btn" id="closeBtn">&times;</button>
     </div>
     <div class="estado-badge ${estadoClass}">${estadoLabel.toUpperCase()}</div>
+    <div class="field horario-field maniobra-destacada ${hInfo.colorClass}">
+      <div class="k">${hInfo.label} <span class="maniobra-tag">MANUAL</span></div>
+      <div class="v ${!hInfo.text ? 'empty' : ''}">${hInfo.text || 'Sin dato'}</div>
+    </div>
+    ${avisosDePozoHtml(rec)}
     ${field('Presion', presionMostrada, 'presion')}
     ${field('Colectora', rec.colectora)}
     ${field('Ciclo', rec.ciclo)}
     ${ultimaVelaTxt ? field('Ultima vela lanzada', ultimaVelaTxt) : ''}
-    <div class="field horario-field ${hInfo.colorClass}">
-      <div class="k">${hInfo.label}</div>
-      <div class="v ${!hInfo.text ? 'empty' : ''}">${hInfo.text || 'Sin dato'}</div>
-    </div>
     ${typeof rec.horasTotalNum === 'number' ? `<div class="field">
       <div class="k">Horas para el reporte</div>
       <div class="v">${rec.horasTotalNum.toString().replace('.',',')} hs &middot; ${rec.horasTotalTipo === 'cerrado' ? 'PERDIDA' : 'PRODUCCION'}</div>
@@ -2134,12 +2190,14 @@ function renderCardView(rec, bat){
     ${field('Ultima visita', rec.fecha)}
     ${field('Notas / accesorios', rec.notas)}
     <button class="edit-btn" id="editBtn">Editar datos / horario</button>
+    <button class="aviso-btn" id="avisoBtn">Aviso de mantenimiento</button>
     <button class="hist-btn" id="histBtn">Ver historico de aperturas</button>
     <div id="historicoBox" class="hist-box" style="display:none;"></div>
     ${rec._edited ? '<button class="clear-btn" id="clearBtn">Limpiar datos de este pozo</button>' : ''}
   `;
   document.getElementById('closeBtn').addEventListener('click', closeCard);
   document.getElementById('editBtn').addEventListener('click', () => renderCardEdit(rec, bat));
+  document.getElementById('avisoBtn').addEventListener('click', () => renderAvisoForm(rec, bat));
   document.getElementById('histBtn').addEventListener('click', () => verHistoricoPozo(rec));
   const clearBtn = document.getElementById('clearBtn');
   if(clearBtn) clearBtn.addEventListener('click', () => clearPozoData(rec, bat));
@@ -2229,6 +2287,37 @@ function renderCardEdit(rec, bat){
       </div>
       <button class="close-btn" id="closeBtn">&times;</button>
     </div>
+    <div class="field maniobra-destacada">
+      <div class="k">Maniobra del pozo <span class="maniobra-tag">MANUAL</span></div>
+      <div class="edit-hint">Solo apertura = queda ABIERTO (verde). Agregar cierre = pasa a CERRADO (rojo).</div>
+      <div class="time-row">
+        <div>
+          <div class="time-label">Apertura</div>
+          <div class="input-with-clear">
+            <input type="time" class="edit-input time-input" id="horaApertura" value="${horaAperturaVal}">
+            <button type="button" class="field-clear-btn" id="clearHoraApertura" title="Borrar apertura">&times;</button>
+          </div>
+          <div class="time-label" style="margin-top:8px;">Presion apertura (${pressureUnit === 'psi' ? 'psi' : 'kg/cm2'})</div>
+          <div class="input-with-clear">
+            <input type="text" inputmode="decimal" class="edit-input" data-key="presion" value="${(rec.presion === 's/d' || !rec.presion ? '' : rec.presion).toString().replace(/"/g,'&quot;')}">
+            <button type="button" class="field-clear-btn" data-clear-target="presion" title="Borrar presion de apertura">&times;</button>
+          </div>
+        </div>
+        <div>
+          <div class="time-label">Cierre</div>
+          <div class="input-with-clear">
+            <input type="time" class="edit-input time-input" id="horaCierre" value="${horaCierreVal}">
+            <button type="button" class="field-clear-btn" id="clearHoraCierre" title="Borrar cierre">&times;</button>
+          </div>
+          <div class="time-label" style="margin-top:8px;">Presion cierre (${pressureUnit === 'psi' ? 'psi' : 'kg/cm2'})</div>
+          <div class="input-with-clear">
+            <input type="text" inputmode="decimal" class="edit-input" id="presionCierre" placeholder="${rec.presionCierre ? convertPresionText(rec.presionCierre + ' kg/cm2', pressureUnit) : ''}">
+            <button type="button" class="field-clear-btn" id="clearPresionCierre" title="Borrar">&times;</button>
+          </div>
+        </div>
+      </div>
+      <input class="edit-input" id="horarioNota" placeholder="Nota (ej: prueba 2hs, ciclo 8x8)" value="${notaVal.replace(/"/g,'&quot;')}" style="margin-top:8px;">
+    </div>
     ${inputField('Bateria', 'bateria', rec.bateria === 'Sin bateria' ? '' : rec.bateria)}
     ${inputField('Colectora', 'colectora', rec.colectora)}
     <div class="field">
@@ -2271,37 +2360,6 @@ function renderCardEdit(rec, bat){
       ${ultimasVelasHtml}
     </div>
     <div class="field">
-      <div class="k">Horario de maniobra</div>
-      <div class="edit-hint">Solo apertura = queda ABIERTO (verde). Agregar cierre = pasa a CERRADO (rojo).</div>
-      <div class="time-row">
-        <div>
-          <div class="time-label">Apertura</div>
-          <div class="input-with-clear">
-            <input type="time" class="edit-input time-input" id="horaApertura" value="${horaAperturaVal}">
-            <button type="button" class="field-clear-btn" id="clearHoraApertura" title="Borrar apertura">&times;</button>
-          </div>
-          <div class="time-label" style="margin-top:8px;">Presion apertura (${pressureUnit === 'psi' ? 'psi' : 'kg/cm2'})</div>
-          <div class="input-with-clear">
-            <input type="text" inputmode="decimal" class="edit-input" data-key="presion" value="${(rec.presion === 's/d' || !rec.presion ? '' : rec.presion).toString().replace(/"/g,'&quot;')}">
-            <button type="button" class="field-clear-btn" data-clear-target="presion" title="Borrar presion de apertura">&times;</button>
-          </div>
-        </div>
-        <div>
-          <div class="time-label">Cierre</div>
-          <div class="input-with-clear">
-            <input type="time" class="edit-input time-input" id="horaCierre" value="${horaCierreVal}">
-            <button type="button" class="field-clear-btn" id="clearHoraCierre" title="Borrar cierre">&times;</button>
-          </div>
-          <div class="time-label" style="margin-top:8px;">Presion cierre (${pressureUnit === 'psi' ? 'psi' : 'kg/cm2'})</div>
-          <div class="input-with-clear">
-            <input type="text" inputmode="decimal" class="edit-input" id="presionCierre" placeholder="${rec.presionCierre ? convertPresionText(rec.presionCierre + ' kg/cm2', pressureUnit) : ''}">
-            <button type="button" class="field-clear-btn" id="clearPresionCierre" title="Borrar">&times;</button>
-          </div>
-        </div>
-      </div>
-      <input class="edit-input" id="horarioNota" placeholder="Nota (ej: prueba 2hs, ciclo 8x8)" value="${notaVal.replace(/"/g,'&quot;')}" style="margin-top:8px;">
-    </div>
-    <div class="field">
       <div class="k">Horas para el reporte (corregir a mano)</div>
       <div class="edit-hint">
         Se calcula solo${typeof rec.horasTotalNum === 'number' ? ` (actual: ${rec.horasTotalNum.toString().replace('.',',')} hs, ${rec.horasTotalTipo === 'cerrado' ? 'perdida' : 'produccion'})` : ''}.
@@ -2333,6 +2391,9 @@ function renderCardEdit(rec, bat){
   `;
   document.getElementById('closeBtn').addEventListener('click', closeCard);
   document.getElementById('cancelBtn').addEventListener('click', () => renderCardView(rec, bat));
+  // la maniobra es lo primero del formulario: arrancamos siempre arriba de todo
+  card.scrollTop = 0;
+  const ov = document.getElementById('overlay'); if(ov) ov.scrollTop = 0;
   card.querySelectorAll('.field-clear-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const key = btn.dataset.clearTarget;
@@ -2620,6 +2681,9 @@ document.getElementById('searchBox').addEventListener('input', (e) => {
   if(document.getElementById('redMain').style.display !== 'none'){
     renderRed();
   }
+  if(document.getElementById('avisosMain').style.display !== 'none'){
+    renderAvisos();
+  }
 });
 document.getElementById('parteBtn').addEventListener('click', () => {
   try { exportParteDeCampo(); } catch(err) { alert('Error al generar el parte: ' + (err && err.message ? err.message : err)); }
@@ -2702,6 +2766,7 @@ function actualizarBotonParte(){
   // puede mandar estos reportes en cualquier momento
   if(bateriasBtn) bateriasBtn.style.display = esDispositivoPrimario ? '' : 'none';
   if(aguaBtn) aguaBtn.style.display = esDispositivoPrimario ? '' : 'none';
+  actualizarTabAvisos();
   if(!btn) return;
   if(!esDispositivoPrimario){
     btn.style.display = 'none';
@@ -4080,9 +4145,270 @@ function setRedView(v){
   renderRedStage(grupos);
 }
 
+
+// ---------------- Avisos de mantenimiento ----------------
+// El operador genera el aviso desde la ficha del pozo (criticidad + especialidad + descripcion). Se guarda
+// en la coleccion 'avisos_mtto'. La pestaña "Avisos" (solo en la compu principal) los lista con contador
+// de abiertos; al repararse se marcan como Resuelto y el contador baja.
+// OJO: var (no let/const) a proposito: startSync() corre mas arriba en el archivo y llama a
+// iniciarAvisosSync() antes de llegar a estas lineas.
+var AVISOS = [];               // { id, pozo, bateria, criticidad, especialidad, descripcion, operador, clientTs, estado, resueltoPor, resueltoTs, pendiente }
+var avisosError = '';
+var avisosSyncIniciado = false;
+var avisosFiltroEsp = 'Todas';
+var avisosVistoAlAbrir = 0; // hasta donde se habian visto los avisos al abrir la pestaña (para marcar NUEVO)
+var AVISO_CRITICIDADES = ['Urgente', 'Alta', 'Media'];
+var AVISO_ESPECIALIDADES = ['Mecánica', 'Electricidad', 'Instrumentación y Control', 'Servicios Generales', 'Otros'];
+var AVISO_RANGO = { Urgente: 0, Alta: 1, Media: 2 };
+
+function avisoEsc(s){
+  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+function avisoFechaHora(ts){
+  if(!ts) return '';
+  const d = new Date(ts);
+  return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + ' '
+    + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+}
+function avisosAbiertos(){ return (AVISOS || []).filter(a => a.estado !== 'resuelto'); }
+function avisosAbiertosDePozo(pozo){ return avisosAbiertos().filter(a => a.pozo === pozo); }
+function avisoClaseCrit(c){ return c === 'Urgente' ? 'urgente' : (c === 'Alta' ? 'alta' : 'media'); }
+function avisosVisible(){
+  const el = document.getElementById('avisosMain');
+  return el && el.style.display !== 'none';
+}
+
+function iniciarAvisosSync(){
+  if(avisosSyncIniciado || !firestoreOk) return;
+  avisosSyncIniciado = true;
+  db.collection('avisos_mtto').orderBy('clientTs', 'desc').limit(500)
+    .onSnapshot({ includeMetadataChanges: true }, (snap) => {
+      const lista = [];
+      snap.forEach(doc => {
+        const d = doc.data();
+        lista.push({
+          id: doc.id, pozo: d.pozo || '', bateria: d.bateria || '', criticidad: d.criticidad || 'Media',
+          especialidad: d.especialidad || 'Otros', descripcion: d.descripcion || '', operador: d.operador || 'Sin nombre',
+          clientTs: d.clientTs || 0, estado: d.estado || 'abierto', resueltoPor: d.resueltoPor || '', resueltoTs: d.resueltoTs || 0,
+          pendiente: doc.metadata.hasPendingWrites
+        });
+      });
+      AVISOS = lista;
+      avisosError = '';
+      actualizarBadgeAvisos();
+      render(document.getElementById('searchBox').value); // marca MTTO en los botones de los pozos
+      if(avisosVisible()) renderAvisos();
+    }, (err) => {
+      avisosError = 'No se pudieron leer los avisos (' + err.message + '). Si dice "permission", hay que habilitar la coleccion avisos_mtto en las reglas de Firestore.';
+      if(avisosVisible()) renderAvisos();
+    });
+}
+
+function actualizarBadgeAvisos(){
+  const badge = document.getElementById('avisosBadge');
+  if(!badge) return;
+  const n = avisosAbiertos().length;
+  badge.textContent = n > 99 ? '99+' : String(n);
+  badge.style.display = n ? '' : 'none';
+  const urg = avisosAbiertos().some(a => a.criticidad === 'Urgente');
+  badge.classList.toggle('urgente', urg);
+}
+// la pestaña Avisos solo aparece en la compu marcada como principal
+function actualizarTabAvisos(){
+  const tab = document.getElementById('tabAvisos');
+  if(!tab) return;
+  tab.style.display = esDispositivoPrimario ? '' : 'none';
+  if(!esDispositivoPrimario && avisosVisible()){
+    document.getElementById('tabPlano').click();
+  }
+}
+
+// ---- formulario de aviso, dentro de la ficha del pozo ----
+function renderAvisoForm(rec, bat){
+  const card = document.getElementById('card');
+  let crit = '';
+  let esp = '';
+  const abiertos = avisosAbiertosDePozo(rec.pozo);
+  card.innerHTML = `
+    <div class="card-head">
+      <div>
+        <h2>${avisoEsc(rec.pozo)}</h2>
+        <span class="bat-pill" style="background:${BAT_COLORS[bat] || '#4c8fb0'}">${avisoEsc(bat)}</span>
+      </div>
+      <button class="close-btn" id="closeBtn">&times;</button>
+    </div>
+    <div class="aviso-form">
+      <div class="aviso-form-title">Aviso de mantenimiento</div>
+      ${abiertos.length ? `<div class="aviso-ya">Este pozo ya tiene ${abiertos.length === 1 ? 'un aviso abierto' : abiertos.length + ' avisos abiertos'}: ${abiertos.map(a => `<b>${avisoEsc(a.criticidad)}</b> · ${avisoEsc(a.especialidad)}`).join('; ')}. Si es el mismo problema no hace falta cargarlo de nuevo.</div>` : ''}
+      <div class="k">Criticidad</div>
+      <div class="aviso-chips" id="avisoCrit">
+        ${['Media', 'Alta', 'Urgente'].map(c => `<button type="button" class="aviso-chip crit-${avisoClaseCrit(c)}" data-v="${c}">${c}</button>`).join('')}
+      </div>
+      <div class="k">¿Quién lo tiene que reparar?</div>
+      <div class="aviso-chips" id="avisoEsp">
+        ${AVISO_ESPECIALIDADES.map(e => `<button type="button" class="aviso-chip" data-v="${avisoEsc(e)}">${avisoEsc(e)}</button>`).join('')}
+      </div>
+      <div class="k">Qué pasa</div>
+      <textarea id="avisoDesc" class="edit-input edit-textarea" rows="3" placeholder="Ej: pérdida en la válvula de entrada, tablero sin tensión, transmisor de presión sin señal…"></textarea>
+      <div class="aviso-error" id="avisoErr" style="display:none;"></div>
+      <div class="edit-actions">
+        <button class="save-btn" id="avisoEnviarBtn">Enviar aviso</button>
+        <button class="cancel-btn" id="avisoCancelBtn">Cancelar</button>
+      </div>
+    </div>`;
+  document.getElementById('closeBtn').addEventListener('click', closeCard);
+  document.getElementById('avisoCancelBtn').addEventListener('click', () => renderCardView(rec, bat));
+  const elegir = (wrapId, setter) => {
+    document.getElementById(wrapId).addEventListener('click', (e) => {
+      const b = e.target.closest('.aviso-chip');
+      if(!b) return;
+      document.querySelectorAll('#' + wrapId + ' .aviso-chip').forEach(x => x.classList.toggle('sel', x === b));
+      setter(b.getAttribute('data-v'));
+    });
+  };
+  const ocultarError = () => { const e = document.getElementById('avisoErr'); if(e) e.style.display = 'none'; };
+  elegir('avisoCrit', v => { crit = v; ocultarError(); });
+  elegir('avisoEsp', v => { esp = v; ocultarError(); });
+  document.getElementById('avisoDesc').addEventListener('input', ocultarError);
+  document.getElementById('avisoEnviarBtn').addEventListener('click', () => {
+    const desc = document.getElementById('avisoDesc').value.trim();
+    const err = document.getElementById('avisoErr');
+    const falta = [];
+    if(!crit) falta.push('la criticidad');
+    if(!esp) falta.push('quién lo tiene que reparar');
+    if(desc.length < 3) falta.push('qué pasa');
+    if(falta.length){
+      err.textContent = 'Falta elegir ' + falta.join(', ') + '.';
+      err.style.display = '';
+      return;
+    }
+    if(!operadorName){
+      err.textContent = 'Antes de enviar, poné tu nombre arriba de todo (donde dice "Tu nombre").';
+      err.style.display = '';
+      return;
+    }
+    if(!firestoreOk){
+      err.textContent = 'No hay conexion con el guardado compartido. Revisa tu internet e intenta de nuevo.';
+      err.style.display = '';
+      return;
+    }
+    const aviso = {
+      pozo: rec.pozo, bateria: rec.bateria || bat || '', criticidad: crit, especialidad: esp,
+      descripcion: desc.slice(0, 1000), operador: operadorName, clientTs: Date.now(),
+      ts: firebase.firestore.FieldValue.serverTimestamp(), estado: 'abierto'
+    };
+    db.collection('avisos_mtto').add(aviso).catch((e) => {
+      alert('No se pudo enviar el aviso (' + e.message + ').');
+    });
+    // lo sumamos ya a la lista local, asi la ficha y la marca MTTO lo muestran al instante
+    // (cuando llega la actualizacion de la base, la lista se reemplaza entera con el dato real)
+    AVISOS = [Object.assign({ id: 'local-' + Date.now(), pendiente: true, resueltoPor: '', resueltoTs: 0 }, aviso)].concat(AVISOS || []);
+    actualizarBadgeAvisos();
+    render(document.getElementById('searchBox').value);
+    renderCardView(rec, bat);
+    const card2 = document.getElementById('card');
+    const ok = document.createElement('div');
+    ok.className = 'aviso-enviado';
+    ok.textContent = 'Aviso enviado. Ya aparece en la pestaña Avisos de la compu.';
+    const head = card2.querySelector('.card-head');
+    if(head) head.insertAdjacentElement('afterend', ok);
+  });
+}
+
+// bloque que se muestra en la ficha del pozo si tiene avisos abiertos
+function avisosDePozoHtml(rec){
+  const abiertos = avisosAbiertosDePozo(rec.pozo);
+  if(!abiertos.length) return '';
+  return `<div class="aviso-en-ficha">
+    <div class="k">Aviso de mantenimiento abierto</div>
+    ${abiertos.map(a => `<div class="aviso-linea"><span class="crit-pill ${avisoClaseCrit(a.criticidad)}">${avisoEsc(a.criticidad)}</span> <b>${avisoEsc(a.especialidad)}</b>: ${avisoEsc(a.descripcion)} <span class="aviso-meta">(${avisoEsc(a.operador)}, ${avisoFechaHora(a.clientTs)})</span></div>`).join('')}
+  </div>`;
+}
+
+// ---- pestaña Avisos (solo compu principal) ----
+function renderAvisos(){
+  const main = document.getElementById('avisosMain');
+  const filtroTxt = (document.getElementById('searchBox').value || '').trim().toLowerCase();
+  const abiertos = avisosAbiertos();
+  const conteoEsp = {};
+  abiertos.forEach(a => { conteoEsp[a.especialidad] = (conteoEsp[a.especialidad] || 0) + 1; });
+  let lista = abiertos.filter(a => avisosFiltroEsp === 'Todas' || a.especialidad === avisosFiltroEsp);
+  if(filtroTxt) lista = lista.filter(a => (a.pozo + ' ' + a.descripcion + ' ' + a.operador).toLowerCase().includes(filtroTxt));
+  lista.sort((a, b) => (AVISO_RANGO[a.criticidad] - AVISO_RANGO[b.criticidad]) || (b.clientTs - a.clientTs));
+  const visto = avisosVistoAlAbrir;
+  const resueltos = (AVISOS || []).filter(a => a.estado === 'resuelto').sort((a, b) => b.resueltoTs - a.resueltoTs).slice(0, 15);
+  const cuenta = c => abiertos.filter(a => a.criticidad === c).length;
+
+  main.innerHTML = `
+    <div class="avisos-wrap">
+      ${avisosError ? `<div class="aviso-error">${avisoEsc(avisosError)}</div>` : ''}
+      <div class="avisos-resumen">
+        <div class="av-num urgente"><b>${cuenta('Urgente')}</b><span>Urgente</span></div>
+        <div class="av-num alta"><b>${cuenta('Alta')}</b><span>Alta</span></div>
+        <div class="av-num media"><b>${cuenta('Media')}</b><span>Media</span></div>
+      </div>
+      <div class="aviso-chips avisos-filtro" id="avisosFiltro">
+        ${['Todas'].concat(AVISO_ESPECIALIDADES).map(e => `<button type="button" class="aviso-chip${avisosFiltroEsp === e ? ' sel' : ''}" data-v="${avisoEsc(e)}">${avisoEsc(e)}${e === 'Todas' ? ` (${abiertos.length})` : (conteoEsp[e] ? ` (${conteoEsp[e]})` : '')}</button>`).join('')}
+      </div>
+      <div class="avisos-lista">
+        ${lista.length ? lista.map(a => `
+          <div class="aviso-card ${avisoClaseCrit(a.criticidad)}">
+            <div class="aviso-top">
+              <span class="crit-pill ${avisoClaseCrit(a.criticidad)}">${avisoEsc(a.criticidad)}</span>
+              <button type="button" class="aviso-pozo" data-pozo="${avisoEsc(a.pozo)}">Pozo ${avisoEsc(a.pozo.replace(/^[A-Za-z]+-/, ''))}</button>
+              <span class="aviso-bat">${avisoEsc(a.bateria)}</span>
+              ${a.clientTs > visto ? '<span class="aviso-nuevo">NUEVO</span>' : ''}
+            </div>
+            <div class="aviso-esp">${avisoEsc(a.especialidad)}</div>
+            <div class="aviso-desc">${avisoEsc(a.descripcion)}</div>
+            <div class="aviso-pie">
+              <span class="aviso-meta">Generado por ${avisoEsc(a.operador)} · ${avisoFechaHora(a.clientTs)}${a.pendiente ? ' · enviando…' : ''}</span>
+              <button type="button" class="aviso-resolver" data-id="${avisoEsc(a.id)}">Resuelto</button>
+            </div>
+          </div>`).join('')
+        : `<div class="avisos-vacio">${abiertos.length ? 'Ningún aviso abierto con este filtro.' : 'No hay avisos de mantenimiento abiertos.'}</div>`}
+      </div>
+      ${resueltos.length ? `<details class="avisos-resueltos">
+        <summary>Resueltos recientes (${resueltos.length})</summary>
+        ${resueltos.map(a => `<div class="aviso-linea"><span class="crit-pill ${avisoClaseCrit(a.criticidad)}">${avisoEsc(a.criticidad)}</span> Pozo ${avisoEsc(a.pozo.replace(/^[A-Za-z]+-/, ''))} · ${avisoEsc(a.especialidad)}: ${avisoEsc(a.descripcion)} <span class="aviso-meta">— resuelto por ${avisoEsc(a.resueltoPor || 'compu')} el ${avisoFechaHora(a.resueltoTs)}</span></div>`).join('')}
+      </details>` : ''}
+    </div>`;
+
+  main.querySelector('#avisosFiltro').addEventListener('click', (e) => {
+    const b = e.target.closest('.aviso-chip');
+    if(!b) return;
+    avisosFiltroEsp = b.getAttribute('data-v');
+    renderAvisos();
+  });
+  main.querySelectorAll('.aviso-pozo').forEach(b => b.addEventListener('click', () => {
+    const rec = POZOS.find(p => p.pozo === b.getAttribute('data-pozo'));
+    if(rec) openCard(rec, rec.bateria || 'Sin bateria');
+  }));
+  main.querySelectorAll('.aviso-resolver').forEach(b => b.addEventListener('click', () => {
+    const a = AVISOS.find(x => x.id === b.getAttribute('data-id'));
+    if(!a) return;
+    if(!confirm('¿Marcar como resuelto el aviso del pozo ' + a.pozo + ' (' + a.especialidad + ')?')) return;
+    const cambios = { estado: 'resuelto', resueltoPor: operadorName || 'Compu', resueltoTs: Date.now() };
+    Object.assign(a, cambios);
+    if(firestoreOk){
+      db.collection('avisos_mtto').doc(a.id).update(cambios).catch((err) => alert('No se pudo marcar como resuelto (' + err.message + ').'));
+    }
+    actualizarBadgeAvisos();
+    render(document.getElementById('searchBox').value);
+    renderAvisos();
+  }));
+}
+// al abrir la pestaña: lo que llego despues de la ultima visita se marca NUEVO durante esta visita
+function abrirPestanaAvisos(){
+  avisosVistoAlAbrir = parseInt(safeGet('avisos_ultimo_visto', '0'), 10) || 0;
+  const ultimo = (AVISOS || []).reduce((m, a) => Math.max(m, a.clientTs || 0), 0);
+  if(ultimo > avisosVistoAlAbrir) safeSet('avisos_ultimo_visto', String(ultimo));
+  renderAvisos();
+}
+
 // ---------------- Manejo de pestañas (helper generico) ----------------
-const TAB_IDS = ['tabLista','tabPlano','tabRed','tabCiclaje','tabMov','tabAib','tabTanques','tabPias'];
-const MAIN_IDS = ['main','planoMain','redMain','ciclajeMain','movMain','aibMain','tanquesMain','piasMain'];
+const TAB_IDS = ['tabLista','tabPlano','tabRed','tabCiclaje','tabMov','tabAib','tabTanques','tabPias','tabAvisos'];
+const MAIN_IDS = ['main','planoMain','redMain','ciclajeMain','movMain','aibMain','tanquesMain','piasMain','avisosMain'];
 function switchTab(activeTabId, activeMainId){
   TAB_IDS.forEach(id => document.getElementById(id).classList.toggle('active', id === activeTabId));
   MAIN_IDS.forEach(id => document.getElementById(id).style.display = (id === activeMainId) ? '' : 'none');
@@ -4096,6 +4422,11 @@ document.getElementById('tabPlano').addEventListener('click', () => {
 document.getElementById('tabRed').addEventListener('click', () => {
   switchTab('tabRed', 'redMain');
   renderRed();
+});
+
+document.getElementById('tabAvisos').addEventListener('click', () => {
+  switchTab('tabAvisos', 'avisosMain');
+  abrirPestanaAvisos();
 });
 
 // ---------------- Vista Ciclaje ----------------
