@@ -962,6 +962,9 @@
   .tag.mtto-tag{ color: #f0a35e; font-weight: 800; }
   .tag.mtto-tag.urgente{ color: #ff7a6e; }
   .pend-badge.urgente{ background: #c0524a; color: #fff; }
+  .aviso-mini-btn{ display:block; width:100%; margin-top: 8px; background: transparent; color: #f0a35e; border: 1.5px solid #d98e3f; border-radius: 10px; padding: 8px; font-weight: 800; font-size: .84rem; cursor:pointer; }
+  .aviso-slot .aviso-en-ficha{ margin: 8px 0 0; }
+  .avisos-filtro-label{ font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 4px 0 6px; }
   .avisos-wrap{ max-width: 860px; margin: 0 auto; padding: 12px 14px 30px; }
   .avisos-resumen{ display:grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px; }
   .av-num{ background: var(--panel); border: 1px solid var(--line); border-top: 4px solid; border-radius: 10px; padding: 8px 12px; display:flex; flex-direction:column; }
@@ -4196,19 +4199,29 @@ function setRedView(v){
 
 
 // ---------------- Avisos de mantenimiento ----------------
-// El operador genera el aviso desde la ficha del pozo (criticidad + especialidad + descripcion). Se guarda
-// en la coleccion 'avisos_mtto'. La pestaña "Avisos" (solo en la compu principal) los lista con contador
-// de abiertos; al repararse se marcan como Resuelto y el contador baja.
+// El operador genera el aviso desde la ficha del pozo de gas, desde cada pozo AIB, desde cada tanque de
+// Baterias o desde cada tanque/compresor/bomba de Pias 2 (criticidad + especialidad + descripcion). Se
+// guarda en la coleccion 'avisos_mtto'. La pestaña "Avisos" (solo en la compu principal) los lista con
+// contador de abiertos; al repararse se marcan como Resuelto y el contador baja.
+// Cada aviso tiene: origen ('gas' | 'aib' | 'bateria' | 'pias2'), equipo (nombre del pozo o del equipo)
+// y bateria (donde esta). Los avisos viejos (antes de existir "origen") son todos de pozos de gas.
 // OJO: var (no let/const) a proposito: startSync() corre mas arriba en el archivo y llama a
 // iniciarAvisosSync() antes de llegar a estas lineas.
-var AVISOS = [];               // { id, pozo, bateria, criticidad, especialidad, descripcion, operador, clientTs, estado, resueltoPor, resueltoTs, pendiente }
+var AVISOS = [];               // { id, origen, equipo, pozo, bateria, criticidad, especialidad, descripcion, operador, clientTs, estado, resueltoPor, resueltoTs, pendiente }
 var avisosError = '';
 var avisosSyncIniciado = false;
 var avisosFiltroEsp = 'Todas';
+var avisosFiltroOrigen = 'todos';
 var avisosVistoAlAbrir = 0; // hasta donde se habian visto los avisos al abrir la pestaña (para marcar NUEVO)
 var AVISO_CRITICIDADES = ['Urgente', 'Alta', 'Media'];
 var AVISO_ESPECIALIDADES = ['Mecánica', 'Electricidad', 'Instrumentación y Control', 'Servicios Generales', 'Otros'];
 var AVISO_RANGO = { Urgente: 0, Alta: 1, Media: 2 };
+var AVISO_ORIGENES = [
+  { id: 'gas', label: 'Pozos gas' },
+  { id: 'aib', label: 'AIB' },
+  { id: 'bateria', label: 'Baterías' },
+  { id: 'pias2', label: 'Pías 2' }
+];
 
 function avisoEsc(s){
   return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -4219,9 +4232,22 @@ function avisoFechaHora(ts){
   return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + ' '
     + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
 }
+function avisoOrigen(a){ return a.origen || 'gas'; }
+function avisoEquipo(a){ return a.equipo || a.pozo || ''; }
 function avisosAbiertos(){ return (AVISOS || []).filter(a => a.estado !== 'resuelto'); }
-function avisosAbiertosDePozo(pozo){ return avisosAbiertos().filter(a => a.pozo === pozo); }
+function avisosAbiertosDe(origen, equipo){ return avisosAbiertos().filter(a => avisoOrigen(a) === origen && avisoEquipo(a) === equipo); }
+function avisosAbiertosDePozo(pozo){ return avisosAbiertosDe('gas', pozo); }
 function avisoClaseCrit(c){ return c === 'Urgente' ? 'urgente' : (c === 'Alta' ? 'alta' : 'media'); }
+function avisoNumPozo(n){ return String(n || '').replace(/^[A-Za-z]+-/, ''); }
+// como se nombra el equipo del aviso en la lista: "Pozo 1580", "AIB · Pozo 1314", "Bateria 1 · TK-101 General"
+function avisoEtiqueta(a){
+  const o = avisoOrigen(a);
+  const eq = avisoEquipo(a);
+  if(o === 'gas') return 'Pozo ' + avisoNumPozo(eq);
+  if(o === 'aib') return 'AIB · Pozo ' + avisoNumPozo(eq);
+  if(o === 'pias2') return 'Pías 2 · ' + eq;
+  return (a.bateria ? a.bateria + ' · ' : '') + eq;
+}
 function avisosVisible(){
   const el = document.getElementById('avisosMain');
   return el && el.style.display !== 'none';
@@ -4236,21 +4262,28 @@ function iniciarAvisosSync(){
       snap.forEach(doc => {
         const d = doc.data();
         lista.push({
-          id: doc.id, pozo: d.pozo || '', bateria: d.bateria || '', criticidad: d.criticidad || 'Media',
-          especialidad: d.especialidad || 'Otros', descripcion: d.descripcion || '', operador: d.operador || 'Sin nombre',
-          clientTs: d.clientTs || 0, estado: d.estado || 'abierto', resueltoPor: d.resueltoPor || '', resueltoTs: d.resueltoTs || 0,
-          pendiente: doc.metadata.hasPendingWrites
+          id: doc.id, origen: d.origen || 'gas', equipo: d.equipo || d.pozo || '', pozo: d.pozo || '', bateria: d.bateria || '',
+          criticidad: d.criticidad || 'Media', especialidad: d.especialidad || 'Otros', descripcion: d.descripcion || '',
+          operador: d.operador || 'Sin nombre', clientTs: d.clientTs || 0, estado: d.estado || 'abierto',
+          resueltoPor: d.resueltoPor || '', resueltoTs: d.resueltoTs || 0, pendiente: doc.metadata.hasPendingWrites
         });
       });
       AVISOS = lista;
       avisosError = '';
-      actualizarBadgeAvisos();
-      render(document.getElementById('searchBox').value); // marca MTTO en los botones de los pozos
+      refrescarMarcasAvisos();
       if(avisosVisible()) renderAvisos();
     }, (err) => {
       avisosError = 'No se pudieron leer los avisos (' + err.message + '). Si dice "permission", hay que habilitar la coleccion avisos_mtto en las reglas de Firestore.';
       if(avisosVisible()) renderAvisos();
     });
+}
+
+// actualiza todo lo que muestra avisos, sin redibujar las pestañas de AIB/Baterias/Pias 2
+// (asi no se pierde lo que alguien este tipeando en esas tarjetas)
+function refrescarMarcasAvisos(){
+  actualizarBadgeAvisos();
+  render(document.getElementById('searchBox').value); // marca MTTO en los botones de los pozos de gas
+  actualizarAvisoSlots();
 }
 
 function actualizarBadgeAvisos(){
@@ -4272,23 +4305,25 @@ function actualizarTabAvisos(){
   }
 }
 
-// ---- formulario de aviso, dentro de la ficha del pozo ----
-function renderAvisoForm(rec, bat){
+// ---- formulario de aviso (generico, para cualquier equipo) ----
+// target: { origen, equipo, bateria, titulo, color }   alCancelar / alEnviar: que hacer despues
+function renderAvisoFormGenerico(target, alCancelar, alEnviar){
   const card = document.getElementById('card');
   let crit = '';
   let esp = '';
-  const abiertos = avisosAbiertosDePozo(rec.pozo);
+  const abiertos = avisosAbiertosDe(target.origen, target.equipo);
+  const queEs = target.origen === 'gas' || target.origen === 'aib' ? 'Este pozo' : 'Este equipo';
   card.innerHTML = `
     <div class="card-head">
       <div>
-        <h2>${avisoEsc(rec.pozo)}</h2>
-        <span class="bat-pill" style="background:${BAT_COLORS[bat] || '#4c8fb0'}">${avisoEsc(bat)}</span>
+        <h2>${avisoEsc(target.titulo)}</h2>
+        ${target.bateria ? `<span class="bat-pill" style="background:${target.color || '#4c8fb0'}">${avisoEsc(target.bateria)}</span>` : ''}
       </div>
       <button class="close-btn" id="closeBtn">&times;</button>
     </div>
     <div class="aviso-form">
       <div class="aviso-form-title">Aviso de mantenimiento</div>
-      ${abiertos.length ? `<div class="aviso-ya">Este pozo ya tiene ${abiertos.length === 1 ? 'un aviso abierto' : abiertos.length + ' avisos abiertos'}: ${abiertos.map(a => `<b>${avisoEsc(a.criticidad)}</b> · ${avisoEsc(a.especialidad)}`).join('; ')}. Si es el mismo problema no hace falta cargarlo de nuevo.</div>` : ''}
+      ${abiertos.length ? `<div class="aviso-ya">${queEs} ya tiene ${abiertos.length === 1 ? 'un aviso abierto' : abiertos.length + ' avisos abiertos'}: ${abiertos.map(a => `<b>${avisoEsc(a.criticidad)}</b> · ${avisoEsc(a.especialidad)}`).join('; ')}. Si es el mismo problema no hace falta cargarlo de nuevo.</div>` : ''}
       <div class="k">Criticidad</div>
       <div class="aviso-chips" id="avisoCrit">
         ${['Media', 'Alta', 'Urgente'].map(c => `<button type="button" class="aviso-chip crit-${avisoClaseCrit(c)}" data-v="${c}">${c}</button>`).join('')}
@@ -4298,15 +4333,16 @@ function renderAvisoForm(rec, bat){
         ${AVISO_ESPECIALIDADES.map(e => `<button type="button" class="aviso-chip" data-v="${avisoEsc(e)}">${avisoEsc(e)}</button>`).join('')}
       </div>
       <div class="k">Qué pasa</div>
-      <textarea id="avisoDesc" class="edit-input edit-textarea" rows="3" placeholder="Ej: pérdida en la válvula de entrada, tablero sin tensión, transmisor de presión sin señal…"></textarea>
+      <textarea id="avisoDesc" class="edit-input edit-textarea" rows="3" placeholder="Ej: pérdida en la válvula de entrada, motor que no arranca, transmisor sin señal…"></textarea>
       <div class="aviso-error" id="avisoErr" style="display:none;"></div>
       <div class="edit-actions">
         <button class="save-btn" id="avisoEnviarBtn">Enviar aviso</button>
         <button class="cancel-btn" id="avisoCancelBtn">Cancelar</button>
       </div>
     </div>`;
+  card.scrollTop = 0;
   document.getElementById('closeBtn').addEventListener('click', closeCard);
-  document.getElementById('avisoCancelBtn').addEventListener('click', () => renderCardView(rec, bat));
+  document.getElementById('avisoCancelBtn').addEventListener('click', alCancelar);
   const elegir = (wrapId, setter) => {
     document.getElementById(wrapId).addEventListener('click', (e) => {
       const b = e.target.closest('.aviso-chip');
@@ -4342,36 +4378,92 @@ function renderAvisoForm(rec, bat){
       return;
     }
     const aviso = {
-      pozo: rec.pozo, bateria: rec.bateria || bat || '', criticidad: crit, especialidad: esp,
+      origen: target.origen, equipo: target.equipo,
+      pozo: (target.origen === 'gas' || target.origen === 'aib') ? target.equipo : '',
+      bateria: target.bateria || '', criticidad: crit, especialidad: esp,
       descripcion: desc.slice(0, 1000), operador: operadorName, clientTs: Date.now(),
       ts: firebase.firestore.FieldValue.serverTimestamp(), estado: 'abierto'
     };
     db.collection('avisos_mtto').add(aviso).catch((e) => {
       alert('No se pudo enviar el aviso (' + e.message + ').');
     });
-    // lo sumamos ya a la lista local, asi la ficha y la marca MTTO lo muestran al instante
+    // lo sumamos ya a la lista local, asi todo lo muestra al instante
     // (cuando llega la actualizacion de la base, la lista se reemplaza entera con el dato real)
     AVISOS = [Object.assign({ id: 'local-' + Date.now(), pendiente: true, resueltoPor: '', resueltoTs: 0 }, aviso)].concat(AVISOS || []);
-    actualizarBadgeAvisos();
-    render(document.getElementById('searchBox').value);
-    renderCardView(rec, bat);
-    const card2 = document.getElementById('card');
-    const ok = document.createElement('div');
-    ok.className = 'aviso-enviado';
-    ok.textContent = 'Aviso enviado. Ya aparece en la pestaña Avisos de la compu.';
-    const head = card2.querySelector('.card-head');
-    if(head) head.insertAdjacentElement('afterend', ok);
+    refrescarMarcasAvisos();
+    alEnviar();
   });
 }
 
-// bloque que se muestra en la ficha del pozo si tiene avisos abiertos
-function avisosDePozoHtml(rec){
-  const abiertos = avisosAbiertosDePozo(rec.pozo);
+// aviso desde la ficha del pozo de gas
+function renderAvisoForm(rec, bat){
+  renderAvisoFormGenerico(
+    { origen: 'gas', equipo: rec.pozo, bateria: rec.bateria || bat || '', titulo: rec.pozo, color: BAT_COLORS[bat] },
+    () => renderCardView(rec, bat),
+    () => {
+      renderCardView(rec, bat);
+      const card2 = document.getElementById('card');
+      const ok = document.createElement('div');
+      ok.className = 'aviso-enviado';
+      ok.textContent = 'Aviso enviado. Ya aparece en la pestaña Avisos de la compu.';
+      const head = card2.querySelector('.card-head');
+      if(head) head.insertAdjacentElement('afterend', ok);
+    }
+  );
+}
+
+// aviso desde una tarjeta de AIB / Baterias / Pias 2: se abre en la misma ventana emergente de las fichas
+function abrirAvisoEquipo(target){
+  document.getElementById('overlay').classList.add('show');
+  if(!modalHistoryPushed){
+    history.pushState({ pozosModal: true }, '');
+    modalHistoryPushed = true;
+  }
+  renderAvisoFormGenerico(target, closeCard, () => {
+    const card = document.getElementById('card');
+    card.innerHTML = `
+      <div class="card-head">
+        <div><h2>${avisoEsc(target.titulo)}</h2></div>
+        <button class="close-btn" id="closeBtn">&times;</button>
+      </div>
+      <div class="aviso-enviado">Aviso enviado. Ya aparece en la pestaña Avisos de la compu.</div>
+      ${avisosEquipoHtml(target.origen, target.equipo)}
+      <div class="edit-actions"><button class="save-btn" id="avisoListoBtn">Listo</button></div>`;
+    document.getElementById('closeBtn').addEventListener('click', closeCard);
+    document.getElementById('avisoListoBtn').addEventListener('click', closeCard);
+  });
+}
+
+// bloque con los avisos abiertos de un equipo (se usa en la ficha del pozo y en las tarjetas)
+function avisosEquipoHtml(origen, equipo){
+  const abiertos = avisosAbiertosDe(origen, equipo);
   if(!abiertos.length) return '';
   return `<div class="aviso-en-ficha">
     <div class="k">Aviso de mantenimiento abierto</div>
     ${abiertos.map(a => `<div class="aviso-linea"><span class="crit-pill ${avisoClaseCrit(a.criticidad)}">${avisoEsc(a.criticidad)}</span> <b>${avisoEsc(a.especialidad)}</b>: ${avisoEsc(a.descripcion)} <span class="aviso-meta">(${avisoEsc(a.operador)}, ${avisoFechaHora(a.clientTs)})</span></div>`).join('')}
   </div>`;
+}
+function avisosDePozoHtml(rec){ return avisosEquipoHtml('gas', rec.pozo); }
+
+// en las tarjetas de AIB / Baterias / Pias 2: lugar para mostrar los avisos abiertos + boton para generar uno
+function agregarAvisoATarjeta(el, target){
+  const slot = document.createElement('div');
+  slot.className = 'aviso-slot';
+  slot.dataset.origen = target.origen;
+  slot.dataset.equipo = target.equipo;
+  slot.innerHTML = avisosEquipoHtml(target.origen, target.equipo);
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'aviso-mini-btn';
+  btn.textContent = 'Aviso de mantenimiento';
+  btn.addEventListener('click', () => abrirAvisoEquipo(target));
+  el.appendChild(slot);
+  el.appendChild(btn);
+}
+function actualizarAvisoSlots(){
+  document.querySelectorAll('.aviso-slot').forEach(slot => {
+    slot.innerHTML = avisosEquipoHtml(slot.dataset.origen, slot.dataset.equipo);
+  });
 }
 
 // ---- pestaña Avisos (solo compu principal) ----
@@ -4379,10 +4471,13 @@ function renderAvisos(){
   const main = document.getElementById('avisosMain');
   const filtroTxt = (document.getElementById('searchBox').value || '').trim().toLowerCase();
   const abiertos = avisosAbiertos();
+  const deOrigen = abiertos.filter(a => avisosFiltroOrigen === 'todos' || avisoOrigen(a) === avisosFiltroOrigen);
   const conteoEsp = {};
-  abiertos.forEach(a => { conteoEsp[a.especialidad] = (conteoEsp[a.especialidad] || 0) + 1; });
-  let lista = abiertos.filter(a => avisosFiltroEsp === 'Todas' || a.especialidad === avisosFiltroEsp);
-  if(filtroTxt) lista = lista.filter(a => (a.pozo + ' ' + a.descripcion + ' ' + a.operador).toLowerCase().includes(filtroTxt));
+  deOrigen.forEach(a => { conteoEsp[a.especialidad] = (conteoEsp[a.especialidad] || 0) + 1; });
+  const conteoOrigen = {};
+  abiertos.forEach(a => { conteoOrigen[avisoOrigen(a)] = (conteoOrigen[avisoOrigen(a)] || 0) + 1; });
+  let lista = deOrigen.filter(a => avisosFiltroEsp === 'Todas' || a.especialidad === avisosFiltroEsp);
+  if(filtroTxt) lista = lista.filter(a => (avisoEtiqueta(a) + ' ' + avisoEquipo(a) + ' ' + a.bateria + ' ' + a.descripcion + ' ' + a.operador).toLowerCase().includes(filtroTxt));
   lista.sort((a, b) => (AVISO_RANGO[a.criticidad] - AVISO_RANGO[b.criticidad]) || (b.clientTs - a.clientTs));
   const visto = avisosVistoAlAbrir;
   const resueltos = (AVISOS || []).filter(a => a.estado === 'resuelto').sort((a, b) => b.resueltoTs - a.resueltoTs).slice(0, 15);
@@ -4396,16 +4491,22 @@ function renderAvisos(){
         <div class="av-num alta"><b>${cuenta('Alta')}</b><span>Alta</span></div>
         <div class="av-num media"><b>${cuenta('Media')}</b><span>Media</span></div>
       </div>
+      <div class="avisos-filtro-label">Dónde</div>
+      <div class="aviso-chips avisos-filtro" id="avisosFiltroOrigen">
+        <button type="button" class="aviso-chip${avisosFiltroOrigen === 'todos' ? ' sel' : ''}" data-v="todos">Todos (${abiertos.length})</button>
+        ${AVISO_ORIGENES.map(o => `<button type="button" class="aviso-chip${avisosFiltroOrigen === o.id ? ' sel' : ''}" data-v="${o.id}">${o.label}${conteoOrigen[o.id] ? ` (${conteoOrigen[o.id]})` : ''}</button>`).join('')}
+      </div>
+      <div class="avisos-filtro-label">Quién lo repara</div>
       <div class="aviso-chips avisos-filtro" id="avisosFiltro">
-        ${['Todas'].concat(AVISO_ESPECIALIDADES).map(e => `<button type="button" class="aviso-chip${avisosFiltroEsp === e ? ' sel' : ''}" data-v="${avisoEsc(e)}">${avisoEsc(e)}${e === 'Todas' ? ` (${abiertos.length})` : (conteoEsp[e] ? ` (${conteoEsp[e]})` : '')}</button>`).join('')}
+        ${['Todas'].concat(AVISO_ESPECIALIDADES).map(e => `<button type="button" class="aviso-chip${avisosFiltroEsp === e ? ' sel' : ''}" data-v="${avisoEsc(e)}">${avisoEsc(e)}${e === 'Todas' ? ` (${deOrigen.length})` : (conteoEsp[e] ? ` (${conteoEsp[e]})` : '')}</button>`).join('')}
       </div>
       <div class="avisos-lista">
         ${lista.length ? lista.map(a => `
           <div class="aviso-card ${avisoClaseCrit(a.criticidad)}">
             <div class="aviso-top">
               <span class="crit-pill ${avisoClaseCrit(a.criticidad)}">${avisoEsc(a.criticidad)}</span>
-              <button type="button" class="aviso-pozo" data-pozo="${avisoEsc(a.pozo)}">Pozo ${avisoEsc(a.pozo.replace(/^[A-Za-z]+-/, ''))}</button>
-              <span class="aviso-bat">${avisoEsc(a.bateria)}</span>
+              <button type="button" class="aviso-pozo" data-id="${avisoEsc(a.id)}">${avisoEsc(avisoEtiqueta(a))}</button>
+              ${avisoOrigen(a) === 'gas' || avisoOrigen(a) === 'aib' ? `<span class="aviso-bat">${avisoEsc(a.bateria)}</span>` : ''}
               ${a.clientTs > visto ? '<span class="aviso-nuevo">NUEVO</span>' : ''}
             </div>
             <div class="aviso-esp">${avisoEsc(a.especialidad)}</div>
@@ -4419,31 +4520,50 @@ function renderAvisos(){
       </div>
       ${resueltos.length ? `<details class="avisos-resueltos">
         <summary>Resueltos recientes (${resueltos.length})</summary>
-        ${resueltos.map(a => `<div class="aviso-linea"><span class="crit-pill ${avisoClaseCrit(a.criticidad)}">${avisoEsc(a.criticidad)}</span> Pozo ${avisoEsc(a.pozo.replace(/^[A-Za-z]+-/, ''))} · ${avisoEsc(a.especialidad)}: ${avisoEsc(a.descripcion)} <span class="aviso-meta">— resuelto por ${avisoEsc(a.resueltoPor || 'compu')} el ${avisoFechaHora(a.resueltoTs)}</span></div>`).join('')}
+        ${resueltos.map(a => `<div class="aviso-linea"><span class="crit-pill ${avisoClaseCrit(a.criticidad)}">${avisoEsc(a.criticidad)}</span> ${avisoEsc(avisoEtiqueta(a))} · ${avisoEsc(a.especialidad)}: ${avisoEsc(a.descripcion)} <span class="aviso-meta">— resuelto por ${avisoEsc(a.resueltoPor || 'compu')} el ${avisoFechaHora(a.resueltoTs)}</span></div>`).join('')}
       </details>` : ''}
     </div>`;
 
+  main.querySelector('#avisosFiltroOrigen').addEventListener('click', (e) => {
+    const b = e.target.closest('.aviso-chip');
+    if(!b) return;
+    avisosFiltroOrigen = b.getAttribute('data-v');
+    avisosFiltroEsp = 'Todas';
+    renderAvisos();
+  });
   main.querySelector('#avisosFiltro').addEventListener('click', (e) => {
     const b = e.target.closest('.aviso-chip');
     if(!b) return;
     avisosFiltroEsp = b.getAttribute('data-v');
     renderAvisos();
   });
+  // tocar el nombre lleva al equipo: ficha del pozo de gas, o la pestaña donde esta el equipo
   main.querySelectorAll('.aviso-pozo').forEach(b => b.addEventListener('click', () => {
-    const rec = POZOS.find(p => p.pozo === b.getAttribute('data-pozo'));
-    if(rec) openCard(rec, rec.bateria || 'Sin bateria');
+    const a = AVISOS.find(x => x.id === b.getAttribute('data-id'));
+    if(!a) return;
+    const o = avisoOrigen(a);
+    if(o === 'gas'){
+      const rec = POZOS.find(p => p.pozo === avisoEquipo(a));
+      if(rec) openCard(rec, rec.bateria || 'Sin bateria');
+    } else if(o === 'aib'){
+      document.getElementById('tabAib').click();
+    } else if(o === 'bateria'){
+      if(a.bateria) bateriasAbiertas.add(a.bateria);
+      document.getElementById('tabTanques').click();
+    } else if(o === 'pias2'){
+      document.getElementById('tabPias').click();
+    }
   }));
   main.querySelectorAll('.aviso-resolver').forEach(b => b.addEventListener('click', () => {
     const a = AVISOS.find(x => x.id === b.getAttribute('data-id'));
     if(!a) return;
-    if(!confirm('¿Marcar como resuelto el aviso del pozo ' + a.pozo + ' (' + a.especialidad + ')?')) return;
+    if(!confirm('¿Marcar como resuelto el aviso de ' + avisoEtiqueta(a) + ' (' + a.especialidad + ')?')) return;
     const cambios = { estado: 'resuelto', resueltoPor: operadorName || 'Compu', resueltoTs: Date.now() };
     Object.assign(a, cambios);
     if(firestoreOk){
       db.collection('avisos_mtto').doc(a.id).update(cambios).catch((err) => alert('No se pudo marcar como resuelto (' + err.message + ').'));
     }
-    actualizarBadgeAvisos();
-    render(document.getElementById('searchBox').value);
+    refrescarMarcasAvisos();
     renderAvisos();
   }));
 }
@@ -4933,6 +5053,7 @@ function renderAib(){
       const motivoParo = row.querySelector('.aib-motivo').value;
       saveAibPozo(rec.pozo, { hora, bp, pl, perdidas, nota, bateria, estado: estadoSeleccionado, motivoParo });
     });
+    agregarAvisoATarjeta(row, { origen: 'aib', equipo: rec.pozo, bateria: rec.bateria || '', titulo: 'AIB · ' + rec.pozo });
     aibMain.appendChild(row);
   });
 }
@@ -4966,6 +5087,7 @@ function crearTarjetaTanque(nombre, bateria, coleccion, datos){
     const ni = card.querySelector('.tk-interfaz').value.trim();
     guardarMedicionTanque(coleccion, nombre, bateria, nt, ni);
   });
+  agregarAvisoATarjeta(card, { origen: coleccion === 'pias2_tanques' ? 'pias2' : 'bateria', equipo: nombre, bateria: bateria, titulo: nombre });
   return card;
 }
 
@@ -4993,6 +5115,7 @@ function crearTarjetaEquipo(nombre, tipo, datos){
   card.querySelector('.eq-save').addEventListener('click', () => {
     guardarEquipoPias2(nombre, tipo, estadoLocal, card.querySelector('.eq-nota').value.trim());
   });
+  agregarAvisoATarjeta(card, { origen: 'pias2', equipo: nombre, bateria: 'Pias 2', titulo: nombre });
   return card;
 }
 
