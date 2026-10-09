@@ -1706,6 +1706,23 @@ function startSync(){
   iniciarAvisosSync();
   db.collection('pozos_overrides').onSnapshot((snapshot) => {
     lastOverridesCount = snapshot.size;
+    // pozos limpiados desde otro dispositivo (se borro su documento): volvemos al dato original del listado
+    if(typeof snapshot.docChanges === 'function'){
+      snapshot.docChanges().forEach((ch) => {
+        if(ch.type !== 'removed') return;
+        const id = ch.doc.id;
+        const rec = POZOS.find(p => p.pozo === id);
+        if(!rec) return;
+        if(POZOS_BASE.has(id) && ORIGINAL_POZOS[id]){
+          Object.keys(rec).forEach(k => delete rec[k]);
+          Object.assign(rec, ORIGINAL_POZOS[id]);
+          rec._edited = false;
+        } else {
+          POZOS.splice(POZOS.indexOf(rec), 1);
+          delete ORIGINAL_POZOS[id];
+        }
+      });
+    }
     snapshot.forEach((doc) => {
       let rec = POZOS.find(p => p.pozo === doc.id);
       const data = doc.data();
@@ -1719,7 +1736,7 @@ function startSync(){
         ORIGINAL_POZOS[rec.pozo] = Object.assign({}, rec);
       }
       Object.assign(rec, data);
-      rec._edited = true;
+      rec._edited = data.limpiado !== true;
       rec._updatedAtDate = (data.updatedAt && data.updatedAt.toDate) ? data.updatedAt.toDate() : (rec._updatedAtDate || null);
     });
     refreshEverything();
@@ -1926,7 +1943,7 @@ function saveEdit(pozoKey, newFields, changedKeys){
     alert('No hay conexion con el guardado compartido. Revisa tu internet e intenta de nuevo.');
     return;
   }
-  const toSave = Object.assign({}, newFields, {
+  const toSave = Object.assign({ limpiado: false }, newFields, {
     updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
     // si nos pasan la lista de campos que REALMENTE cambiaron la usamos (para que Movimientos sea
     // preciso); si no, dejamos el comportamiento viejo (todos los campos que se mandaron)
@@ -2032,20 +2049,41 @@ function renderHistoricoChart(cont, porDia, pozoNombre){
 
 let clearArmed = null; // pozo que esta esperando el segundo toque para confirmar limpieza
 
+// datos que quedan al limpiar un pozo: solo los fijos. Todo lo demas se pone en blanco, incluso campos
+// que no conocemos de antemano (cualquier dato que se agregue a futuro tambien se limpia).
+const CAMPOS_FIJOS_POZO = ['pozo', 'bateria', 'colectora', 'tablero', 'optim'];
+function datosPozoLimpio(rec){
+  const limpio = {
+    bateria: rec.bateria || 'Sin bateria', colectora: rec.colectora || '', tablero: rec.tablero || '', optim: rec.optim || '',
+    estado: '', presion: 's/d', presionCierre: '', horario: '', horaApertura: '', horaCierre: '', horarioNota: '',
+    ciclo: '', notas: '', fecha: '', enCiclaje: false, historial: [],
+    horasTotalNum: null, horasTotalTipo: '', horasRangoDesde: '', horasRangoHasta: '', horasRangoConfirmado: false,
+    veniaDeCerradoConfirmado: false, velaPendienteAgua: 0, velaPendienteGas: 0, velaPendienteOil: 0,
+    velaPendienteHora: '', velaEnAperturaTxt: '', limpiado: true
+  };
+  Object.keys(rec).forEach(k => {
+    if(k.charAt(0) === '_' || CAMPOS_FIJOS_POZO.includes(k) || k in limpio) return;
+    if(k === 'updatedAt' || k === 'updatedFields' || k === 'operador') return;
+    const v = rec[k];
+    limpio[k] = Array.isArray(v) ? [] : (typeof v === 'number' ? null : (typeof v === 'boolean' ? false : (v && typeof v === 'object' ? null : '')));
+  });
+  return limpio;
+}
+
 function clearPozoData(rec, bat){
   const btn = document.getElementById('clearBtn');
   if(clearArmed !== rec.pozo){
     // primer toque: armamos la confirmacion, sin depender de confirm()
     clearArmed = rec.pozo;
     if(btn){
-      btn.textContent = 'Toca de nuevo para confirmar';
+      btn.textContent = 'Tocá de nuevo para borrar TODO (horarios, presiones, velas e histórico)';
       btn.classList.add('armed');
     }
     setTimeout(() => {
       if(clearArmed === rec.pozo){
         clearArmed = null;
         if(btn && document.body.contains(btn)){
-          btn.textContent = 'Limpiar datos de este pozo';
+          btn.textContent = 'Limpiar todos los datos de este pozo';
           btn.classList.remove('armed');
         }
       }
@@ -2053,18 +2091,28 @@ function clearPozoData(rec, bat){
     return;
   }
 
-  // segundo toque: confirmado, limpiamos de verdad
+  // segundo toque: confirmado. Se borra TODO lo del pozo menos sus datos fijos (bateria, colectora,
+  // tablero y optimizador): estado, presiones, horarios, ciclo, notas, ultima visita, velas e historico
+  // de aperturas. Tambien se pisa lo que traia la lista original (estado, notas viejas), porque si no
+  // el pozo "vuelve" a mostrar datos que parecen cargados. Los avisos de mantenimiento NO se tocan.
   if(!puedeModificar()) return;
   clearArmed = null;
+  const limpio = datosPozoLimpio(rec);
   if(firestoreOk){
-    db.collection('pozos_overrides').doc(rec.pozo).delete().catch(() => {});
+    db.collection('pozos_overrides').doc(rec.pozo).set(Object.assign({}, limpio, {
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      updatedFields: [],
+      operador: operadorName || 'Sin nombre'
+    })).catch((err) => alert('No se pudo limpiar el pozo (' + err.message + ').'));
+    VELAS.filter(v => v.pozo === rec.pozo && v.id).forEach(v => {
+      db.collection('pozos_velas').doc(v.id).delete().catch(() => {});
+    });
+    db.collection('pozos_historial').where('pozo', '==', rec.pozo).get().then((snap) => {
+      snap.forEach(d => { db.collection('pozos_historial').doc(d.id).delete().catch(() => {}); });
+    }).catch(() => {});
   }
-
-  const original = ORIGINAL_POZOS[rec.pozo];
-  if(original){
-    Object.keys(rec).forEach(k => delete rec[k]);
-    Object.assign(rec, original);
-  }
+  VELAS = VELAS.filter(v => v.pozo !== rec.pozo);
+  Object.assign(rec, limpio);
   rec._edited = false;
 
   renderCardView(rec, bat);
@@ -2193,7 +2241,7 @@ function renderCardView(rec, bat){
     <button class="aviso-btn" id="avisoBtn">Aviso de mantenimiento</button>
     <button class="hist-btn" id="histBtn">Ver historico de aperturas</button>
     <div id="historicoBox" class="hist-box" style="display:none;"></div>
-    ${rec._edited ? '<button class="clear-btn" id="clearBtn">Limpiar datos de este pozo</button>' : ''}
+    ${rec._edited ? '<button class="clear-btn" id="clearBtn">Limpiar todos los datos de este pozo</button>' : ''}
   `;
   document.getElementById('closeBtn').addEventListener('click', closeCard);
   document.getElementById('editBtn').addEventListener('click', () => renderCardEdit(rec, bat));
@@ -3364,6 +3412,7 @@ function exportParteDeCampo(forzarTodos){
 // copia de los valores originales (antes de cualquier edicion), para poder mostrar el "antes -> despues"
 const ORIGINAL_POZOS = {};
 POZOS.forEach(p => { ORIGINAL_POZOS[p.pozo] = Object.assign({}, p); });
+const POZOS_BASE = new Set(POZOS.map(p => p.pozo)); // los del listado original (no agregados desde la app)
 
 render('');
 startSync();
