@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pozos por bateria</title>
+<title>Pozos por USPA</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B2436">
 <link rel="icon" href="icon-192.png">
@@ -986,6 +986,21 @@
   .avisos-vacio{ color: var(--muted); text-align:center; padding: 30px 10px; }
   .avisos-resueltos{ margin-top: 18px; color: var(--text); }
   .avisos-resueltos summary{ cursor:pointer; color: var(--muted); font-size: .86rem; margin-bottom: 6px; }
+  /* ---------- Bombeo a PTC ---------- */
+  .bombeo-box{ background: var(--panel); border: 1.5px solid var(--amber); border-radius: 10px; padding: 12px 14px; margin: 8px 0 12px; }
+  .bombeo-titulo{ font-weight: 800; font-size: .95rem; color: #7fd3e8; }
+  .bombeo-sub{ font-size: .72rem; color: var(--muted); margin: 2px 0 10px; }
+  .bombeo-bombas{ display:flex; flex-direction:column; gap: 8px; margin-bottom: 10px; }
+  .bombeo-bomba{ background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+  .bombeo-check{ display:flex; align-items:center; gap: 8px; font-size: .9rem; cursor:pointer; }
+  .bombeo-check input{ width: 20px; height: 20px; accent-color: #5fa85f; }
+  .bombeo-bomba .aviso-mini-btn{ margin-top: 6px; padding: 6px; font-size: .78rem; }
+  .bombeo-res{ margin-top: 10px; display:flex; flex-direction:column; gap: 2px; }
+  .bombeo-etq{ font-size: .72rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  .bombeo-vol{ font-size: 1.6rem; color: #a6d9a0; font-variant-numeric: tabular-nums; }
+  .bombeo-cero{ font-size: 1.1rem; color: #e6a49d; }
+  .bombeo-nota{ font-size: .74rem; color: var(--muted); line-height: 1.35; }
+  .bombeo-ultima{ font-size: .72rem; color: var(--muted); margin-top: 8px; }
 </style>
 </head>
 <body>
@@ -997,7 +1012,7 @@
 </div>
 
 <header>
-  <h1>Pozos por bateria</h1>
+  <h1>Pozos por USPA</h1>
   <div class="status-bar">
     <span id="connBadge" class="conn-badge"></span>
     <span id="operadorTag" class="operador-tag"></span>
@@ -1066,7 +1081,7 @@ const BAT_COLORS = {
 const USPA_ORDER = ["USPA2","USPA3","USPA4","USPA5","Sin bateria"];
 const USPA_TITLES = {
   "USPA2": "USPA II", "USPA3": "USPA III", "USPA4": "USPA IV",
-  "USPA5": "USPA V", "Sin bateria": "Sin bateria confirmada"
+  "USPA5": "USPA V", "Sin bateria": "Sin USPA confirmada"
 };
 
 // ---------------- Almacenamiento seguro (localStorage puede estar bloqueado en file://) ----------------
@@ -1214,7 +1229,7 @@ function render(filterText){
   const main = document.getElementById('main');
   main.innerHTML = `<div class="add-ciclaje-row">
       <input type="text" id="addPozoNum" placeholder="Agregar pozo (ej: 1580)" class="edit-input" style="max-width:170px;">
-      <input type="text" id="addPozoBat" placeholder="Bateria (ej: USPA2)" class="edit-input" style="max-width:160px;">
+      <input type="text" id="addPozoBat" placeholder="USPA (ej: USPA2)" class="edit-input" style="max-width:160px;">
       <button id="addPozoBtn" class="add-ciclaje-btn">Agregar</button>
     </div>`;
 
@@ -1261,7 +1276,7 @@ function render(filterText){
 
     const label = document.createElement('div');
     label.className = 'bat-label';
-    label.innerHTML = `${bat} <span class="count">(${items.length})</span>`;
+    label.innerHTML = `${bat === 'Sin bateria' ? 'Sin USPA' : bat} <span class="count">(${items.length})</span>`;
     section.appendChild(label);
 
     const grid = document.createElement('div');
@@ -1311,7 +1326,7 @@ function crearNotasUspaBox(bat){
           <input type="text" class="edit-input uspa-notas-equipo" placeholder="ej: SG 8">
         </div>
       </div>
-      <textarea class="edit-input edit-textarea uspa-notas-text" placeholder="Novedad para esta bateria..." style="margin-top:8px;"></textarea>
+      <textarea class="edit-input edit-textarea uspa-notas-text" placeholder="Novedad para esta USPA..." style="margin-top:8px;"></textarea>
       <button type="button" class="save-btn uspa-notas-save">Guardar novedad</button>
     </div>
   `;
@@ -1409,6 +1424,7 @@ const COMPRESORES_PIAS2 = ['K-111','K-112'];
 const BOMBAS_PIAS2 = ['P-101A','P-101B','P-110B','P-110C','P-110D','P-111B','P-111C','P-120','P-121','P-150'];
 
 let TANQUES_DATA = []; // mediciones de tanques de Bateria 1/2/5 (coleccion 'baterias_tanques')
+let BOMBEO_DATA = []; // ultimo bombeo a PTC por bateria: bombas en servicio, altura y m3 a bombear (coleccion 'baterias_bombeo')
 let PIAS2_TANQUES_DATA = []; // mediciones de tanques de Pias 2 (coleccion 'pias2_tanques')
 let PIAS2_EQUIPOS_DATA = []; // bombas y compresores de Pias 2, con estado/novedad (coleccion 'pias2_equipos')
 let PIAS2_CAMIONES_DATA = []; // descargas de camiones de agua en Pias 2 (coleccion 'pias2_camiones')
@@ -1876,6 +1892,19 @@ function startSync(){
     updatePendCount();
   }, (err) => { console.error('Firestore sync error (baterias_tanques)', err); });
 
+  // bombeo a PTC por bateria (bombas en servicio + petroleo para bombear)
+  db.collection('baterias_bombeo').onSnapshot((snapshot) => {
+    BOMBEO_DATA = [];
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      BOMBEO_DATA.push(Object.assign({ bateria: doc.id }, data, {
+        // mientras la base no confirma la hora del servidor, usamos la hora del celular que guardo
+        _updatedAtDate: (data.updatedAt && data.updatedAt.toDate) ? data.updatedAt.toDate() : (data.clientTs ? new Date(data.clientTs) : null)
+      }));
+    });
+    actualizarBombeoUltimo(); // solo el renglon "Ultima carga", sin redibujar (no se pierde lo que se esta tipeando)
+  }, (err) => { console.error('Firestore sync error (baterias_bombeo)', err); });
+
   // mediciones de tanques de Pias 2
   db.collection('pias2_tanques').onSnapshot((snapshot) => {
     PIAS2_TANQUES_DATA = [];
@@ -2217,7 +2246,7 @@ function renderCardView(rec, bat){
     <div class="card-head">
       <div>
         <h2>${rec.pozo}</h2>
-        <span class="bat-pill" style="background:${BAT_COLORS[bat] || '#4c8fb0'}">${bat}</span>
+        <span class="bat-pill" style="background:${BAT_COLORS[bat] || '#4c8fb0'}">${bat === 'Sin bateria' ? 'Sin USPA' : bat}</span>
         ${rec._edited ? '<div class="edited-note">Editado en este celular</div>' : ''}
       </div>
       <button class="close-btn" id="closeBtn">&times;</button>
@@ -2334,7 +2363,7 @@ function renderCardEdit(rec, bat){
     <div class="card-head">
       <div>
         <h2>${rec.pozo}</h2>
-        <span class="bat-pill" style="background:${BAT_COLORS[bat] || '#4c8fb0'}">${bat}</span>
+        <span class="bat-pill" style="background:${BAT_COLORS[bat] || '#4c8fb0'}">${bat === 'Sin bateria' ? 'Sin USPA' : bat}</span>
       </div>
       <button class="close-btn" id="closeBtn">&times;</button>
     </div>
@@ -2369,7 +2398,7 @@ function renderCardEdit(rec, bat){
       </div>
       <input class="edit-input" id="horarioNota" placeholder="Nota (ej: prueba 2hs, ciclo 8x8)" value="${notaVal.replace(/"/g,'&quot;')}" style="margin-top:8px;">
     </div>
-    ${inputField('Bateria', 'bateria', rec.bateria === 'Sin bateria' ? '' : rec.bateria)}
+    ${inputField('USPA', 'bateria', rec.bateria === 'Sin bateria' ? '' : rec.bateria)}
     ${inputField('Colectora', 'colectora', rec.colectora)}
     <div class="field">
       <div class="k">Ciclo (si esta en ciclaje manual)</div>
@@ -3520,10 +3549,10 @@ function renderPlano(){
 // abierto/cerrado) sale de POZOS en vivo, asi que si se agrega o edita un pozo el diagrama se actualiza solo.
 const RED_KTI_LABEL = 'KTI / Planta de Gas';
 const RED_USPA_PC = {
-  USPA2: { label: 'Batería USPA II', compresora: 'PC IV', destino: 'KTI' },
-  USPA5: { label: 'Batería USPA V',  compresora: null,    destino: 'USPA2' }, // sin PC propia: se suma a la linea de USPA II
-  USPA3: { label: 'Batería USPA III', compresora: 'PC II', destino: 'KTI' },
-  USPA4: { label: 'Batería USPA IV',  compresora: 'PC II', destino: 'KTI' }
+  USPA2: { label: 'USPA II', compresora: 'PC IV', destino: 'KTI' },
+  USPA5: { label: 'USPA V',  compresora: null,    destino: 'USPA2' }, // sin PC propia: se suma a la linea de USPA II
+  USPA3: { label: 'USPA III', compresora: 'PC II', destino: 'KTI' },
+  USPA4: { label: 'USPA IV',  compresora: 'PC II', destino: 'KTI' }
 };
 const RED_USPA_ORDEN = ['USPA2','USPA5','USPA3','USPA4'];
 
@@ -3624,7 +3653,7 @@ function buildRedTree(grupos){
   const ktiX = (grupoPos[0].x + grupoPos[grupoPos.length-1].x) / 2;
 
   const svg = redSvgEl('svg', { viewBox: `0 0 ${width} ${height}`, role: 'img',
-    'aria-label': 'Diagrama esquematico de la red: pozos arriba convergen por colectora y bateria hasta la planta compresora y KTI abajo' });
+    'aria-label': 'Diagrama esquematico de la red: pozos arriba convergen por colectora y USPA hasta la planta compresora y KTI abajo' });
   const defs = redSvgEl('defs', {});
   const marker = redSvgEl('marker', { id: 'redArrowTree', markerWidth: 7, markerHeight: 7, refX: 3.5, refY: 3.5, orient: 'auto' });
   marker.appendChild(redSvgEl('path', { d: 'M0,0 L7,3.5 L0,7 Z', fill: 'currentColor' }));
@@ -3651,7 +3680,7 @@ function buildRedTree(grupos){
       }));
     }
     const bGroup = redSvgEl('g', { class: 'rnode bateria', 'data-grupo': g.id, tabindex: '0', role: 'img',
-      'aria-label': `Bateria ${g.label}, ${g.compresora || ('va hacia ' + g.destino)}` });
+      'aria-label': `${g.label}, ${g.compresora || ('va hacia ' + g.destino)}` });
     bGroup.appendChild(redSvgEl('rect', { class: 'rbat', x: g.x - 68, y: yBateria - 22, width: 136, height: 44, rx: 7 }));
     const bLabel = redSvgEl('text', { class: 'rbat-label', x: g.x, y: yBateria - 2, style: 'font-size:10.5px' });
     bLabel.textContent = g.label;
@@ -3715,7 +3744,7 @@ function buildRedRadial(grupos){
   if(totalPozos === 0) totalPozos = 1;
 
   const svg = redSvgEl('svg', { viewBox: `0 0 ${size} ${size}`, role: 'img',
-    'aria-label': 'Diagrama radial de la red: KTI en el centro, baterias y compresoras en el anillo interno, colectoras en el medio, pozos en la punta' });
+    'aria-label': 'Diagrama radial de la red: KTI en el centro, USPAs y compresoras en el anillo interno, colectoras en el medio, pozos en la punta' });
   const defs = redSvgEl('defs', {});
   const marker = redSvgEl('marker', { id: 'redArrowRadial', markerWidth: 7, markerHeight: 7, refX: 3.5, refY: 3.5, orient: 'auto' });
   marker.appendChild(redSvgEl('path', { d: 'M0,0 L7,3.5 L0,7 Z', fill: 'currentColor' }));
@@ -3757,7 +3786,7 @@ function buildRedRadial(grupos){
       }));
     }
     const bGroup = redSvgEl('g', { class: 'rnode bateria', 'data-grupo': g.id, tabindex: '0', role: 'img',
-      'aria-label': `Bateria ${g.label}, ${g.compresora || ('va hacia ' + g.destino)}` });
+      'aria-label': `${g.label}, ${g.compresora || ('va hacia ' + g.destino)}` });
     bGroup.appendChild(redSvgEl('rect', { class: 'rbat', x: bp.x - 50, y: bp.y - 17, width: 100, height: 34, rx: 7 }));
     const bLabel = redSvgEl('text', { class: 'rbat-label', x: bp.x, y: bp.y - 1, style: 'font-size:10px' });
     bLabel.textContent = g.label.replace('Batería ', '');
@@ -3817,8 +3846,8 @@ function buildRedRadial(grupos){
 
 function redCaptionFor(v){
   return v === 'tree'
-    ? 'Los pozos (arriba) convergen por colectora y batería hasta su planta compresora y KTI (abajo).'
-    : 'KTI en el centro; cada batería con su compresora real, las colectoras y los pozos en la punta de cada rayo.';
+    ? 'Los pozos (arriba) convergen por colectora y USPA hasta su planta compresora y KTI (abajo).'
+    : 'KTI en el centro; cada USPA con su compresora real, las colectoras y los pozos en la punta de cada rayo.';
 }
 
 function renderRed(){
@@ -3843,7 +3872,7 @@ function renderRed(){
         <button type="button" class="tab-btn" id="redTabRadial" style="border-radius:20px;">Vista radial</button>
         <button type="button" class="tab-btn" id="redTabTree" style="border-radius:20px;">Vista esquemática</button>
       </div>
-      <div class="red-filter" id="redFilter" role="group" aria-label="Filtrar por bateria"></div>
+      <div class="red-filter" id="redFilter" role="group" aria-label="Filtrar por USPA"></div>
     </div>
     <div class="red-legend">
       <span><span class="dot" style="background:#5fa85f"></span>Abierto</span>
@@ -4629,7 +4658,7 @@ function agregarPozoCiclaje(){
   // no esta en la lista (solapa Lista): ofrecemos crearlo como pozo nuevo, igual que "Agregar pozo" alla
   const quiereCrear = confirm('No encontre el pozo "' + inp.value + '" en la lista. Queres agregarlo como pozo nuevo y ponerlo en ciclaje?');
   if(!quiereCrear) return;
-  const batInput = prompt('Bateria del pozo (ej: USPA2, USPA3, USPA4, USPA5):', '');
+  const batInput = prompt('USPA del pozo (ej: USPA2, USPA3, USPA4, USPA5):', '');
   if(batInput === null) return; // cancelo
   const bateria = normalizarBateria(batInput);
   const pozoKey = 'Ce-' + q;
@@ -4768,7 +4797,7 @@ function renderMovimientos(){
   function formatMovValue(k, rec){
     let v = rec[k];
     if(k === 'presion') return (v && v !== 's/d') ? convertPresionText(v, pressureUnit) : 'sin dato';
-    if(k === 'bateria') return v || 'Sin bateria';
+    if(k === 'bateria') return (v && v !== 'Sin bateria') ? v : (rec._tipo === 'oil' ? 'Sin bateria' : 'Sin USPA');
     if(k === 'presionCierre') return v ? convertPresionText(String(v) + ' kg/cm2', pressureUnit) : 'sin dato';
     if(k === 'enCiclaje') return v ? 'agregado' : 'sacado';
     if(v === undefined || v === null || v === '') return '';
@@ -4851,7 +4880,7 @@ function renderMovimientos(){
     const camposTocados = (rec.updatedFields || [])
       .filter(k => k !== 'updatedAt' && !HIDDEN_MOV_FIELDS.includes(k))
       .map(k => {
-        const label = FIELD_LABELS_MOV[k] || k;
+        const label = (k === 'bateria' && !esOil) ? 'USPA' : (FIELD_LABELS_MOV[k] || k);
         const val = formatMovValue(k, rec);
         return val ? `${label}: ${val}` : label;
       })
@@ -5119,6 +5148,130 @@ function crearTarjetaEquipo(nombre, tipo, datos){
   return card;
 }
 
+
+// ---------------- Bombeo a PTC (baterias de petroleo) ----------------
+// Por bateria: que bombas estan en servicio mandando petroleo a PTC y cuanto petroleo queda para bombear
+// en el tanque, calculado como (altura del tanque - corte de bomba) x constante del tanque (m3 por cm).
+// Se guarda en la coleccion 'baterias_bombeo' (un documento por bateria, con la ultima carga).
+const BOMBEO_PTC = {
+  'Bateria 1': { bombas: ['P-101A', 'P-101B'], tanque: 'TK-101 General', constante: 0.638, corteCm: 70 },
+  'Bateria 5': { bombas: ['P-571', 'P-572'], tanque: 'TK-502 Stock', constante: 0.715, corteCm: 70 }
+};
+
+function bombeoNum(txt){
+  const n = parseFloat(String(txt == null ? '' : txt).replace(',', '.'));
+  return isNaN(n) ? null : n;
+}
+function bombeoFmt(n, dec){ return (Math.round(n * Math.pow(10, dec)) / Math.pow(10, dec)).toFixed(dec).replace('.', ','); }
+// m3 de petroleo por encima del corte de la bomba (0 si el tanque esta por debajo del corte)
+function bombeoVolumen(alturaCm, cfg){
+  return Math.max(0, alturaCm - cfg.corteCm) * cfg.constante;
+}
+function bombeoTextoUltimo(bat){
+  const d = (BOMBEO_DATA || []).find(x => x.bateria === bat);
+  if(!d || !d._updatedAtDate) return 'Sin cargas todavía.';
+  const bombas = (d.bombasEnServicio || []).length ? d.bombasEnServicio.join(' y ') + ' en servicio' : 'Sin bombas en servicio';
+  const vol = (typeof d.volumenM3 === 'number' && (d.bombasEnServicio || []).length)
+    ? ` · ${String(d.alturaCm).replace('.', ',')} cm → ${bombeoFmt(d.volumenM3, 2)} m³ a bombear` : '';
+  return `Última carga: ${bombas}${vol} · ${tiempoRelativo(d._updatedAtDate)}${d.operador ? ' · ' + d.operador : ''}`;
+}
+function actualizarBombeoUltimo(){
+  document.querySelectorAll('.bombeo-ultima').forEach(el => { el.textContent = bombeoTextoUltimo(el.dataset.bat); });
+}
+
+function crearBloqueBombeo(bat){
+  const cfg = BOMBEO_PTC[bat];
+  const box = document.createElement('div');
+  box.className = 'bombeo-box';
+  const previo = (BOMBEO_DATA || []).find(x => x.bateria === bat);
+  const enServicioPrevio = previo ? (previo.bombasEnServicio || []) : [];
+  // altura sugerida: la medicion mas reciente del tanque (la de la tarjeta del tanque o la del ultimo bombeo)
+  const med = (TANQUES_DATA || []).find(t => t.nombre === cfg.tanque && t.bateria === bat) || (TANQUES_DATA || []).find(t => t.nombre === cfg.tanque);
+  let alturaSugerida = '';
+  const tMed = med && med._updatedAtDate ? med._updatedAtDate.getTime() : 0;
+  const tBom = previo && previo._updatedAtDate ? previo._updatedAtDate.getTime() : 0;
+  if(tBom >= tMed && previo && previo.alturaCm != null) alturaSugerida = String(previo.alturaCm).replace('.', ',');
+  else if(med && med.nivelTotal) alturaSugerida = String(med.nivelTotal);
+
+  box.innerHTML = `
+    <div class="bombeo-titulo">Bombeo de petróleo a PTC</div>
+    <div class="bombeo-sub">${/^tanque/i.test(cfg.tanque) ? cfg.tanque : 'Tanque ' + cfg.tanque} · constante ${String(cfg.constante).replace('.', ',')} m³/cm · corte de bomba ${cfg.corteCm} cm</div>
+    <div class="bombeo-bombas"></div>
+    <div class="bombeo-calc" hidden>
+      <div class="tk-field">
+        <label>Altura ${cfg.tanque} (cm)</label>
+        <input type="text" inputmode="decimal" class="bombeo-altura" placeholder="ej: 84,28" value="${alturaSugerida.replace(/"/g, '&quot;')}">
+      </div>
+      <div class="bombeo-res"></div>
+    </div>
+    <button class="tk-save bombeo-save">Guardar bombeo</button>
+    <div class="bombeo-ultima" data-bat="${bat}"></div>`;
+
+  const bombasCont = box.querySelector('.bombeo-bombas');
+  cfg.bombas.forEach(b => {
+    const row = document.createElement('div');
+    row.className = 'bombeo-bomba';
+    row.innerHTML = `<label class="bombeo-check"><input type="checkbox" value="${b}" ${enServicioPrevio.includes(b) ? 'checked' : ''}> <b>${b}</b> en servicio</label>`;
+    agregarAvisoATarjeta(row, { origen: 'bateria', equipo: b, bateria: bat, titulo: b + ' (bomba a PTC)' });
+    bombasCont.appendChild(row);
+  });
+
+  const calc = box.querySelector('.bombeo-calc');
+  const inpAltura = box.querySelector('.bombeo-altura');
+  const res = box.querySelector('.bombeo-res');
+  const tildadas = () => [...box.querySelectorAll('.bombeo-check input:checked')].map(i => i.value);
+  function actualizar(){
+    calc.hidden = tildadas().length === 0;
+    const h = bombeoNum(inpAltura.value);
+    if(h === null){
+      res.innerHTML = '<span class="bombeo-nota">Cargá la altura del tanque para calcular.</span>';
+      return;
+    }
+    if(h <= cfg.corteCm){
+      res.innerHTML = `<b class="bombeo-cero">0 m³ para bombear</b><span class="bombeo-nota">El tanque está en ${bombeoFmt(h, 2)} cm, por debajo del corte de bomba (${cfg.corteCm} cm).</span>`;
+      return;
+    }
+    const vol = bombeoVolumen(h, cfg);
+    res.innerHTML = `<span class="bombeo-etq">Petróleo para bombear</span><b class="bombeo-vol">${bombeoFmt(vol, 2)} m³</b>`
+      + `<span class="bombeo-nota">(${bombeoFmt(h, 2)} cm − ${cfg.corteCm} cm de corte) × ${String(cfg.constante).replace('.', ',')} m³/cm</span>`;
+  }
+  box.querySelectorAll('.bombeo-check input').forEach(i => i.addEventListener('change', actualizar));
+  inpAltura.addEventListener('input', actualizar);
+  actualizar();
+
+  box.querySelector('.bombeo-save').addEventListener('click', () => {
+    const bombas = tildadas();
+    const h = bombeoNum(inpAltura.value);
+    if(bombas.length && h === null){
+      alert('Cargá la altura del ' + cfg.tanque + ' para calcular el petróleo a bombear.');
+      inpAltura.focus();
+      return;
+    }
+    if(!puedeModificar()) return;
+    if(!firestoreOk){
+      alert('No hay conexion con el guardado compartido. Revisa tu internet e intenta de nuevo.');
+      return;
+    }
+    const datos = {
+      bateria: bat, tanque: cfg.tanque, constante: cfg.constante, corteCm: cfg.corteCm,
+      bombasEnServicio: bombas,
+      alturaCm: bombas.length ? h : null,
+      volumenM3: bombas.length ? Math.round(bombeoVolumen(h, cfg) * 100) / 100 : 0,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      clientTs: Date.now(),
+      operador: operadorName || 'Sin nombre'
+    };
+    db.collection('baterias_bombeo').doc(bat).set(datos).catch((err) => {
+      alert('No se pudo guardar el bombeo (' + err.message + '). Revisa tu conexion.');
+    });
+    // lo mostramos ya, sin esperar a la base
+    BOMBEO_DATA = (BOMBEO_DATA || []).filter(x => x.bateria !== bat).concat([Object.assign({}, datos, { _updatedAtDate: new Date() })]);
+    actualizarBombeoUltimo();
+  });
+  box.querySelector('.bombeo-ultima').textContent = bombeoTextoUltimo(bat);
+  return box;
+}
+
 function renderTanques(){
   const main = document.getElementById('tanquesMain');
   main.innerHTML = '<p class="seccion-titulo">Baterias</p><div id="bateriasAcordeon"></div>';
@@ -5131,6 +5284,7 @@ function renderTanques(){
     const body = document.createElement('div');
     body.className = 'bat-body' + (abierto ? '' : ' closed');
     body.appendChild(crearNotasEquipoBox(bat));
+    if(BOMBEO_PTC[bat]) body.appendChild(crearBloqueBombeo(bat));
     TANQUES_BATERIAS[bat].forEach(tk => body.appendChild(crearTarjetaTanque(tk, bat, 'baterias_tanques', TANQUES_DATA)));
     header.addEventListener('click', () => {
       if(bateriasAbiertas.has(bat)){ bateriasAbiertas.delete(bat); } else { bateriasAbiertas.add(bat); }
