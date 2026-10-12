@@ -1417,13 +1417,14 @@ let uspaNotasAbiertas = new Set(); // que recuadros de notas estan desplegados e
 const TANQUES_BATERIAS = {
   'Bateria 1': ['TK-101 General','TK-102 Control','TK-103 Cortador','TK-104 Control','TK-105 Cortador'],
   'Bateria 2': ['SG-211 General','SG-212 General','SG-400 Control','TK-201 Control','TK-202 General','TK-203 Cortador'],
-  'Bateria 5': ['TK-501 Cortador','TK-503 Control','TK-504 Control']
+  'Bateria 5': ['TK-501 Cortador','TK-502 Stock','TK-503 Control','TK-504 Control']
 };
 const PIAS2_TANQUES_NOMBRES = ['TK-101 Pulmon','TK-110 Skimmer','TK-111 Skimmer','TK-120 Stock','TK-121 Stock'];
 const COMPRESORES_PIAS2 = ['K-111','K-112'];
 const BOMBAS_PIAS2 = ['P-101A','P-101B','P-110B','P-110C','P-110D','P-111B','P-111C','P-120','P-121','P-150'];
 
 let TANQUES_DATA = []; // mediciones de tanques de Bateria 1/2/5 (coleccion 'baterias_tanques')
+let BOMBEO_LOG = [];  // cada bombeo guardado (con bombas en servicio), para el reporte de Baterias (coleccion 'baterias_bombeo_log')
 let BOMBEO_DATA = []; // ultimo bombeo a PTC por bateria: bombas en servicio, altura y m3 a bombear (coleccion 'baterias_bombeo')
 let PIAS2_TANQUES_DATA = []; // mediciones de tanques de Pias 2 (coleccion 'pias2_tanques')
 let PIAS2_EQUIPOS_DATA = []; // bombas y compresores de Pias 2, con estado/novedad (coleccion 'pias2_equipos')
@@ -1679,7 +1680,7 @@ function updatePendCount(){
   }
   const badgeBat = document.getElementById('pendCountBaterias');
   if(badgeBat){
-    const nb = pendientesBaterias().length + pendientesNotasBaterias().length;
+    const nb = pendientesBaterias().length + pendientesNotasBaterias().length + pendientesBombeoBaterias().length;
     if(nb > 0){ badgeBat.style.display = ''; badgeBat.textContent = nb; } else { badgeBat.style.display = 'none'; }
   }
   const badgeAgua = document.getElementById('pendCountAgua');
@@ -1904,6 +1905,18 @@ function startSync(){
     });
     actualizarBombeoUltimo(); // solo el renglon "Ultima carga", sin redibujar (no se pierde lo que se esta tipeando)
   }, (err) => { console.error('Firestore sync error (baterias_bombeo)', err); });
+
+  // historial de bombeos (cada vez que se guarda con alguna bomba en servicio): va al reporte de Baterias
+  db.collection('baterias_bombeo_log').orderBy('clientTs', 'desc').limit(300).onSnapshot((snapshot) => {
+    BOMBEO_LOG = [];
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      BOMBEO_LOG.push(Object.assign({ id: doc.id }, data, {
+        _updatedAtDate: (data.updatedAt && data.updatedAt.toDate) ? data.updatedAt.toDate() : (data.clientTs ? new Date(data.clientTs) : null)
+      }));
+    });
+    updatePendCount();
+  }, (err) => { console.error('Firestore sync error (baterias_bombeo_log)', err); });
 
   // mediciones de tanques de Pias 2
   db.collection('pias2_tanques').onSnapshot((snapshot) => {
@@ -3017,6 +3030,11 @@ function pendientesBaterias(){
   return TANQUES_DATA.filter(t => t._updatedAtDate && t._updatedAtDate > corte)
     .sort((a,b) => a._updatedAtDate - b._updatedAtDate);
 }
+function pendientesBombeoBaterias(){
+  const corte = corteDePendientesBaterias();
+  return (BOMBEO_LOG || []).filter(b => b._updatedAtDate && b._updatedAtDate > corte)
+    .sort((a,b) => a._updatedAtDate - b._updatedAtDate);
+}
 function pendientesNotasBaterias(){
   const corte = corteDePendientesBaterias();
   return EQUIPOS_NOTAS.filter(n => n.grupo !== 'Pias 2' && n.texto && n._updatedAtDate && n._updatedAtDate > corte)
@@ -3050,28 +3068,43 @@ function exportReporteBaterias(forzarTodos){
   }
   const base = forzarTodos ? TANQUES_DATA.filter(t => t.nivelTotal || t.nivelInterfaz) : pendientesBaterias();
   const notasBase = forzarTodos ? EQUIPOS_NOTAS.filter(n => n.grupo !== 'Pias 2' && n.texto) : pendientesNotasBaterias();
-  if(base.length === 0 && notasBase.length === 0){
+  const bombeoBase = forzarTodos ? (BOMBEO_LOG || []).slice() : pendientesBombeoBaterias();
+  if(base.length === 0 && notasBase.length === 0 && bombeoBase.length === 0){
     if(!forzarTodos){
-      const quiere = confirm('No hay mediciones ni novedades de Baterias nuevas desde el ultimo reporte enviado.\n\n¿Generar igual el reporte con TODO lo cargado?');
+      const quiere = confirm('No hay mediciones, bombeos ni novedades de Baterias nuevas desde el ultimo reporte enviado.\n\n¿Generar igual el reporte con TODO lo cargado?');
       if(quiere) exportReporteBaterias(true);
       return;
     }
-    alert('No hay ninguna medicion ni novedad de Bateria cargada todavia.');
+    alert('No hay ninguna medicion, bombeo ni novedad de Bateria cargada todavia.');
     return;
   }
-  const filas = base.map(t => [
-    t._updatedAtDate ? t._updatedAtDate.toTimeString().slice(0,5) : '',
+  const fechaDe = d => d ? String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear() : '';
+  const horaDe = d => d ? d.toTimeString().slice(0,5) : '';
+  // cada fila lleva su momento (para ordenar) y despues se lo sacamos
+  const filasTs = base.map(t => [
+    t._updatedAtDate ? t._updatedAtDate.getTime() : 0,
+    fechaDe(t._updatedAtDate), horaDe(t._updatedAtDate),
     t.bateria || '',
     t.nombre || '',
     `Medicion: Nivel Total ${t.nivelTotal || '?'}cm / Nivel Interfaz ${t.nivelInterfaz || '?'}cm`
   ]);
-  notasBase.forEach(n => filas.push([
-    n.hora || (n._updatedAtDate ? n._updatedAtDate.toTimeString().slice(0,5) : ''),
+  notasBase.forEach(n => filasTs.push([
+    n._updatedAtDate ? n._updatedAtDate.getTime() : 0,
+    fechaDe(n._updatedAtDate) || todayStr(), n.hora || horaDe(n._updatedAtDate),
     n.grupo || '', n.equipo || 'General', n.texto || ''
   ]));
-  filas.sort((a,b) => (a[0]||'').localeCompare(b[0]||''));
+  // bombeo a PTC: "Se bombea stock de oil: X m3"
+  bombeoBase.forEach(b => filasTs.push([
+    b._updatedAtDate ? b._updatedAtDate.getTime() : 0,
+    fechaDe(b._updatedAtDate), horaDe(b._updatedAtDate),
+    b.bateria || '',
+    (b.bombasEnServicio || []).join(' / '),
+    'Se bombea stock de oil: ' + bombeoFmt(Number(b.volumenM3) || 0, 2) + ' m³'
+  ]));
+  filasTs.sort((a,b) => a[0] - b[0]);
+  const filas = filasTs.map(f => f.slice(1));
   const wb = new ExcelJS.Workbook();
-  agregarHojaTabla(wb, 'OIL', ['HORA','INSTALACION','EQUIPO','NOVEDAD'], filas, [12,14,18,50]);
+  agregarHojaTabla(wb, 'OIL', ['FECHA','HORA','INSTALACION','EQUIPO','NOVEDAD'], filas, [12,9,14,18,50]);
   wb.xlsx.writeBuffer().then(buffer => {
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     downloadOrShareBlob(blob, `Reporte_Baterias_${todayStr().replace(/\//g,'-')}.xlsx`, 'Reporte de Baterias');
@@ -5264,6 +5297,13 @@ function crearBloqueBombeo(bat){
     db.collection('baterias_bombeo').doc(bat).set(datos).catch((err) => {
       alert('No se pudo guardar el bombeo (' + err.message + '). Revisa tu conexion.');
     });
+    // si hay bombas en servicio, queda registrado como bombeo para el reporte de Baterias
+    if(bombas.length){
+      const reg = Object.assign({}, datos);
+      db.collection('baterias_bombeo_log').add(reg).catch(() => {});
+      BOMBEO_LOG = [Object.assign({ id: 'local-' + Date.now() }, reg, { _updatedAtDate: new Date(reg.clientTs) })].concat(BOMBEO_LOG || []);
+      updatePendCount();
+    }
     // lo mostramos ya, sin esperar a la base
     BOMBEO_DATA = (BOMBEO_DATA || []).filter(x => x.bateria !== bat).concat([Object.assign({}, datos, { _updatedAtDate: new Date() })]);
     actualizarBombeoUltimo();
