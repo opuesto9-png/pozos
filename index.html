@@ -1471,7 +1471,7 @@ function guardarCamionAgua(datos){
     return;
   }
   db.collection('pias2_camiones').add(Object.assign({}, datos, {
-    fecha: todayStr(),
+    fecha: datos.fecha || todayStr(),
     updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
     operador: (datos.operador && datos.operador.trim()) || operadorName || 'Sin nombre'
   })).catch((err) => {
@@ -3150,8 +3150,9 @@ function exportReporteAgua(forzarTodos){
   filasOil.sort((a,b) => (a[0]||'').localeCompare(b[0]||''));
 
   const filasCamiones = camionesBase.map(c => [
-    c.fecha || '', c.horaEntrada || '', c.horaSalida || '', c.yacProcedencia || '',
-    c.volumen || '', c.chofer || '', c.operador || '', c.tanqueDestino || ''
+    c.fecha || '', c.horaEntrada || '', c.horaSalida || '', c.yacProcedencia || '', c.remito || '',
+    c.volumen || '', c.nivelTotal || '', c.nivelCorteAgua || '', c.chofer || '', c.transporte || '',
+    c.operador || '', c.tanqueDestino || ''
   ]);
 
   const wb = new ExcelJS.Workbook();
@@ -3159,7 +3160,7 @@ function exportReporteAgua(forzarTodos){
     agregarHojaTabla(wb, 'OIL', ['HORA','INSTALACION','EQUIPO','NOVEDAD'], filasOil, [12,14,18,50]);
   }
   if(filasCamiones.length){
-    agregarHojaTabla(wb, 'Camiones de agua', ['Fecha','Hs entrada','Hs salida','Yac. Procedencia','Volumen (m3)','Chofer','Operador','Tanque destino'], filasCamiones, [10,10,10,14,12,14,14,14]);
+    agregarHojaTabla(wb, 'Camiones de agua', ['Fecha','Hora inicial','Hora final','Procedencia','Remito','Volumen M3','Nivel total (CM)','Nivel corte agua (CM)','Chofer','Transporte','Operador Pias 2','Tanque destino'], filasCamiones, [11,9,9,12,12,10,11,13,16,12,16,14]);
   }
   wb.xlsx.writeBuffer().then(buffer => {
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
@@ -5347,15 +5348,20 @@ function renderPias(){
     <p class="seccion-titulo">Bombas Pias 2</p>
     <div id="bombasCont"></div>
     <div class="camion-box">
-      <p class="camion-titulo">Carga de camion de agua</p>
+      <p class="camion-titulo">Descarga de camiones</p>
       <div class="camion-grid">
-        <div class="camion-field"><label>Hora entrada</label><input type="time" id="camHoraEntrada"></div>
-        <div class="camion-field"><label>Hora salida</label><input type="time" id="camHoraSalida"></div>
-        <div class="camion-field"><label>Yac. procedencia</label><input type="text" id="camYac" placeholder="ej: LJE"></div>
-        <div class="camion-field"><label>Volumen (m3)</label><input type="text" id="camVolumen" placeholder="ej: 30"></div>
+        <div class="camion-field"><label>Fecha</label><input type="date" id="camFecha" value="${(() => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); })()}"></div>
+        <div class="camion-field"><label>Procedencia</label><input type="text" id="camYac" placeholder="ej: LJE"></div>
+        <div class="camion-field"><label>Hora inicial</label><input type="time" id="camHoraEntrada"></div>
+        <div class="camion-field"><label>Hora final</label><input type="time" id="camHoraSalida"></div>
+        <div class="camion-field"><label>Remito</label><input type="text" id="camRemito" placeholder="ej: 18-3484"></div>
+        <div class="camion-field"><label>Volumen (m3)</label><input type="text" inputmode="decimal" id="camVolumen" placeholder="ej: 30,00"></div>
+        <div class="camion-field"><label>Nivel total (cm)</label><input type="text" inputmode="decimal" id="camNivelTotal" placeholder="ej: 136"></div>
+        <div class="camion-field"><label>Nivel corte agua (cm)</label><input type="text" inputmode="decimal" id="camNivelAgua" placeholder="ej: 133"></div>
         <div class="camion-field"><label>Chofer</label><input type="text" id="camChofer" placeholder="nombre"></div>
-        <div class="camion-field"><label>Operador</label><input type="text" id="camOperador" placeholder="nombre" value="${operadorName || ''}"></div>
-        <div class="camion-field" style="grid-column:1/-1"><label>Tanque destino</label>
+        <div class="camion-field"><label>Transporte</label><input type="text" id="camTransporte" placeholder="ej: TSB"></div>
+        <div class="camion-field"><label>Operador Pías 2</label><input type="text" id="camOperador" placeholder="nombre" value="${operadorName || ''}"></div>
+        <div class="camion-field"><label>Tanque destino</label>
           <select id="camTanque">
             ${PIAS2_TANQUES_NOMBRES.map(t => `<option>${t}</option>`).join('')}
             <option>PTC (TK206)</option>
@@ -5377,17 +5383,29 @@ function renderPias(){
   BOMBAS_PIAS2.forEach(p => bombasCont.appendChild(crearTarjetaEquipo(p, 'bomba', PIAS2_EQUIPOS_DATA)));
 
   document.getElementById('camionSaveBtn').addEventListener('click', () => {
+    // fecha del formulario (aaaa-mm-dd) al mismo formato que el resto de la app (dd/mm/aaaa)
+    const fRaw = document.getElementById('camFecha').value;
+    let fecha = '';
+    if(fRaw){
+      const [y, m, d] = fRaw.split('-').map(Number);
+      fecha = new Date(y, m - 1, d).toLocaleDateString('es-AR');
+    }
     const datos = {
+      fecha,
       horaEntrada: document.getElementById('camHoraEntrada').value,
       horaSalida: document.getElementById('camHoraSalida').value,
       yacProcedencia: document.getElementById('camYac').value.trim(),
+      remito: document.getElementById('camRemito').value.trim(),
       volumen: document.getElementById('camVolumen').value.trim(),
+      nivelTotal: document.getElementById('camNivelTotal').value.trim(),
+      nivelCorteAgua: document.getElementById('camNivelAgua').value.trim(),
       chofer: document.getElementById('camChofer').value.trim(),
+      transporte: document.getElementById('camTransporte').value.trim(),
       operador: document.getElementById('camOperador').value.trim(),
       tanqueDestino: document.getElementById('camTanque').value
     };
     if(!datos.horaEntrada || !datos.volumen){
-      alert('Cargá al menos la hora de entrada y el volumen.');
+      alert('Cargá al menos la hora inicial y el volumen.');
       return;
     }
     guardarCamionAgua(datos);
@@ -5397,7 +5415,7 @@ function renderPias(){
   PIAS2_CAMIONES_DATA.slice(0, 8).forEach(c => {
     const row = document.createElement('div');
     row.className = 'camion-row';
-    row.innerHTML = `<span>${c.fecha} ${c.horaEntrada}${c.horaSalida ? '-'+c.horaSalida : ''}</span> <b>${c.volumen} m3</b> <span>${c.chofer || ''} &rarr; ${c.tanqueDestino || ''} &middot; ${c.operador || ''}</span>`;
+    row.innerHTML = `<span>${c.fecha || ''} ${c.horaEntrada || ''}${c.horaSalida ? '-'+c.horaSalida : ''}${c.yacProcedencia ? ' · ' + c.yacProcedencia : ''}${c.remito ? ' · Rto ' + c.remito : ''}</span> <b>${c.volumen} m3</b> <span>${c.nivelTotal ? 'NT ' + c.nivelTotal + ' / CA ' + (c.nivelCorteAgua || '?') + ' cm · ' : ''}${c.chofer || ''}${c.transporte ? ' (' + c.transporte + ')' : ''} &middot; ${c.operador || ''}</span>`;
     lista.appendChild(row);
   });
 }
