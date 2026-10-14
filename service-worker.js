@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pozos-cache-v4';
+const CACHE_NAME = 'pozos-cache-v5';
 const ASSETS = [
   './manifest.json',
   './icon-192.png',
@@ -105,4 +105,15 @@ self.addEventListener('fetch', (event) => {
   }
 
   // cualquier otro recurso externo: directo a la red, sin tocar el cache
+});
+
+// al tocar la notificacion de "movimiento nuevo" (Windows), se abre/enfoca la ventana de la app
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((cs) => {
+      for(const c of cs){ if('focus' in c) return c.focus(); }
+      return self.clients.openWindow('./');
+    })
+  );
 });
