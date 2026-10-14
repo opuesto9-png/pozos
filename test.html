@@ -1756,7 +1756,8 @@ function movPrepararAudio(){
     if(MOV_AV_AUDIO.state === 'suspended') MOV_AV_AUDIO.resume();
   } catch(e) {}
 }
-document.addEventListener('pointerdown', movPrepararAudio, { once: true });
+// el navegador no deja sonar nada hasta que se toca la pagina una vez: apenas se toca/teclea, habilitamos el audio
+['pointerdown', 'keydown', 'touchstart'].forEach(ev => document.addEventListener(ev, movPrepararAudio, { passive: true }));
 
 function movDing(){
   if(!movAvisosOn()) return;
@@ -1796,9 +1797,19 @@ function movTexto(col, id, d){
 function detectarMovimientos(snapshot, col, soloAltas){
   if(!movAvisosActivo() || !snapshot || typeof snapshot.docChanges !== 'function') return;
   const md = snapshot.metadata || {};
-  const yaCargada = MOV_AV_ESTADO[col] === true;
-  if(!md.fromCache) MOV_AV_ESTADO[col] = true; // desde aca, todo lo que cambie es nuevo
   const ahora = Date.now();
+  // 1ra foto de la coleccion (de la memoria de la compu o del servidor): son datos viejos, no avisamos.
+  // OJO: si la memoria ya estaba al dia, Firestore NO manda una 2da foto "del servidor", por eso no
+  // hay que esperarla. Si si llega enseguida (lo que se cargo mientras la app estaba cerrada) tampoco avisa.
+  const est = MOV_AV_ESTADO[col];
+  let yaCargada = true;
+  if(!est){
+    MOV_AV_ESTADO[col] = { desdeServidor: !md.fromCache, ts: ahora };
+    yaCargada = false;
+  } else if(!est.desdeServidor && !md.fromCache){
+    est.desdeServidor = true;
+    if(ahora - est.ts < 15000) yaCargada = false;
+  }
   snapshot.docChanges().forEach((ch) => {
     if(ch.type === 'removed') return;
     if(soloAltas && ch.type !== 'added') return;
