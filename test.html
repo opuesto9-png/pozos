@@ -1932,7 +1932,8 @@ function movRenderTag(){
   btn.addEventListener('click', () => { (on && !permisoPendiente) ? movDesactivarAvisos() : movActivarAvisos(); });
   tag.appendChild(btn);
 }
-movRenderTag();
+// al abrir la app arrancamos de cero: Windows deja el numero del icono puesto aunque la app se haya cerrado
+movActualizarBadge();
 
 function startSync(){
   if(!firestoreOk){
