@@ -64,6 +64,19 @@
   }
   .conn-badge.online{ background: #24391f; color:#a6d9a0; }
   .conn-badge.offline{ background: #3a201d; color:#e6a49d; }
+  .mov-av-tag{ display:inline-flex; align-items:center; gap:6px; }
+  .mov-av-btn, .mov-av-count{
+    font: inherit; font-size: 0.72rem; border-radius: 999px; padding: 3px 10px; cursor: pointer;
+    border: 1px solid var(--border, #ccc); background: transparent; color: var(--muted);
+  }
+  .mov-av-btn.on{ color: inherit; }
+  .mov-av-count{ background: #d93025; border-color: #d93025; color: #fff; font-weight: 700; }
+  .mov-toast{
+    position: fixed; left: 50%; bottom: 20px; transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
+    background: #1f2937; color: #fff; padding: 10px 16px; border-radius: 10px; font-size: 0.85rem;
+    box-shadow: 0 6px 20px rgba(0,0,0,.3); max-width: min(92vw, 560px); z-index: 9999; transition: .25s;
+  }
+  .mov-toast.show{ opacity: 1; transform: translate(-50%, 0); pointer-events: auto; cursor: pointer; }
   .operador-tag{
     font-size: 0.72rem;
     color: var(--muted);
@@ -1049,7 +1062,8 @@
       <button class="unit-btn active" id="unitKg">kg/cm&sup2;</button>
       <button class="unit-btn" id="unitPsi">psi</button>
     </div>
-    <span id="primarioTag" class="operador-tag" style="margin-left:auto;"></span>
+    <span id="movAvisoTag" class="mov-av-tag" style="margin-left:auto; display:none;"></span>
+    <span id="primarioTag" class="operador-tag"></span>
   </div>
 </header>
 
@@ -1713,6 +1727,213 @@ function refreshEverything(){
   }
 }
 
+
+// ---------------- Aviso de movimientos nuevos (sonido + barra de tareas), como en Datos KTI ----------------
+// Solo en compu: cada vez que alguien carga un movimiento de campo desde otro dispositivo suena un "ding",
+// el numero de movimientos nuevos aparece en el icono de la barra de tareas (y en el titulo de la pestaña)
+// y, si la ventana esta minimizada o en segundo plano, sale la notificacion de Windows.
+// La primera carga no cuenta (son datos viejos) y lo que guarda esta misma compu tampoco.
+var MOV_AV_ESTADO = {};   // por coleccion: ya se recibio la carga inicial del servidor
+var MOV_AV_PROPIOS = {};  // 'coleccion/id' -> hora en que lo guardo esta compu
+var MOV_AV_NUEVOS = [];   // { key, tab, texto, ts }
+var MOV_AV_AUDIO = null;
+var MOV_AV_COLA = [];
+var MOV_AV_TIMER = null;
+var MOV_AV_TITULO = 'Pozos por USPA';
+// a que pestaña pertenece cada coleccion (al abrir esa pestaña se dan por vistos sus movimientos)
+var MOV_AV_TABS = {
+  pozos_overrides: 'tabLista', pozos_velas: 'tabLista', uspa_notas: 'tabLista', aib_pozos: 'tabAib',
+  baterias_tanques: 'tabTanques', baterias_bombeo_log: 'tabTanques', equipos_notas: 'tabTanques',
+  pias2_tanques: 'tabPias', pias2_equipos: 'tabPias', pias2_camiones: 'tabPias', avisos_mtto: 'tabAvisos'
+};
+
+function movAvisosActivo(){ return !esMovil(); }
+function movAvisosOn(){ return safeGet('pozos_avisos_sonido', '1') === '1'; }
+
+function movPrepararAudio(){
+  try {
+    MOV_AV_AUDIO = MOV_AV_AUDIO || new (window.AudioContext || window.webkitAudioContext)();
+    if(MOV_AV_AUDIO.state === 'suspended') MOV_AV_AUDIO.resume();
+  } catch(e) {}
+}
+// el navegador no deja sonar nada hasta que se toca la pagina una vez: apenas se toca/teclea, habilitamos el audio
+['pointerdown', 'keydown', 'touchstart'].forEach(ev => document.addEventListener(ev, movPrepararAudio, { passive: true }));
+
+function movDing(){
+  if(!movAvisosOn()) return;
+  movPrepararAudio();
+  if(!MOV_AV_AUDIO) return;
+  const t = MOV_AV_AUDIO.currentTime;
+  [[880, 0], [1320, 0.16]].forEach(([fq, dt]) => {
+    const o = MOV_AV_AUDIO.createOscillator(), g = MOV_AV_AUDIO.createGain();
+    o.type = 'sine'; o.frequency.value = fq;
+    g.gain.setValueAtTime(0.0001, t + dt);
+    g.gain.exponentialRampToValueAtTime(0.35, t + dt + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dt + 0.45);
+    o.connect(g); g.connect(MOV_AV_AUDIO.destination);
+    o.start(t + dt); o.stop(t + dt + 0.5);
+  });
+}
+
+// texto corto de cada movimiento, para la notificacion
+function movTexto(col, id, d){
+  switch(col){
+    case 'pozos_overrides': return 'Pozo ' + id + (d.estado ? ' (' + d.estado.toLowerCase() + ')' : '');
+    case 'aib_pozos': return 'Pozo ' + id + ' (petróleo)';
+    case 'pozos_velas': return 'Vela ' + (d.tipo || '').toLowerCase() + ' en ' + (d.pozo || id);
+    case 'uspa_notas': return 'Novedad ' + (d.bateria || id);
+    case 'equipos_notas': return 'Novedad ' + (d.grupo || id);
+    case 'baterias_tanques': return (d.nombre || id) + (d.bateria ? ' · ' + d.bateria : '');
+    case 'baterias_bombeo_log': return 'Bombeo a PTC ' + (d.bateria || '');
+    case 'pias2_tanques': return (d.nombre || id) + ' · Pías 2';
+    case 'pias2_equipos': return (d.nombre || id) + ' · Pías 2';
+    case 'pias2_camiones': return 'Camión de agua' + (d.remito ? ' (remito ' + d.remito + ')' : '') + ' · Pías 2';
+    case 'avisos_mtto': return 'Aviso de mtto: ' + (d.equipo || d.pozo || '') + (d.criticidad ? ' (' + d.criticidad + ')' : '');
+  }
+  return id;
+}
+
+// se llama al principio de cada listener de Firestore
+function detectarMovimientos(snapshot, col, soloAltas){
+  if(!movAvisosActivo() || !snapshot || typeof snapshot.docChanges !== 'function') return;
+  const md = snapshot.metadata || {};
+  const ahora = Date.now();
+  // 1ra foto de la coleccion (de la memoria de la compu o del servidor): son datos viejos, no avisamos.
+  // OJO: si la memoria ya estaba al dia, Firestore NO manda una 2da foto "del servidor", por eso no
+  // hay que esperarla. Si si llega enseguida (lo que se cargo mientras la app estaba cerrada) tampoco avisa.
+  const est = MOV_AV_ESTADO[col];
+  let yaCargada = true;
+  if(!est){
+    MOV_AV_ESTADO[col] = { desdeServidor: !md.fromCache, ts: ahora };
+    yaCargada = false;
+  } else if(!est.desdeServidor && !md.fromCache){
+    est.desdeServidor = true;
+    if(ahora - est.ts < 15000) yaCargada = false;
+  }
+  snapshot.docChanges().forEach((ch) => {
+    if(ch.type === 'removed') return;
+    if(soloAltas && ch.type !== 'added') return;
+    const key = col + '/' + ch.doc.id;
+    // lo guardo esta misma compu: no me aviso a mi mismo (ni cuando la base confirma el guardado)
+    if(ch.doc.metadata && ch.doc.metadata.hasPendingWrites){ MOV_AV_PROPIOS[key] = ahora; return; }
+    if(MOV_AV_PROPIOS[key] && ahora - MOV_AV_PROPIOS[key] < 120000) return;
+    if(!yaCargada) return;
+    const d = ch.doc.data() || {};
+    MOV_AV_COLA.push({ key, tab: MOV_AV_TABS[col], texto: movTexto(col, ch.doc.id, d), operador: d.operador || '', ts: ahora });
+  });
+  // varias colecciones pueden cambiar juntas: juntamos todo en un solo aviso
+  if(MOV_AV_COLA.length && !MOV_AV_TIMER) MOV_AV_TIMER = setTimeout(movProcesarCola, 400);
+}
+
+function movProcesarCola(){
+  MOV_AV_TIMER = null;
+  const nuevas = MOV_AV_COLA.splice(0);
+  if(!nuevas.length) return;
+  nuevas.forEach(n => {
+    MOV_AV_NUEVOS = MOV_AV_NUEVOS.filter(x => x.key !== n.key); // el mismo pozo editado 2 veces cuenta 1
+    MOV_AV_NUEVOS.push(n);
+  });
+  movActualizarBadge();
+  movAvisar(nuevas);
+}
+
+function movActualizarBadge(){
+  if(!movAvisosActivo()) return;
+  const n = MOV_AV_NUEVOS.length;
+  try {
+    if(navigator.setAppBadge){ if(n) navigator.setAppBadge(n); else navigator.clearAppBadge(); }
+  } catch(e) {}
+  document.title = (n ? '(' + n + ') ' : '') + MOV_AV_TITULO;
+  movRenderTag();
+}
+
+function movToast(texto){
+  let el = document.getElementById('movToast');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'movToast';
+    el.className = 'mov-toast';
+    el.addEventListener('click', () => { el.classList.remove('show'); });
+    document.body.appendChild(el);
+  }
+  el.textContent = texto;
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 6000);
+}
+
+async function movAvisar(nuevas){
+  movDing();
+  const items = nuevas.slice(0, 4).map(n => n.texto).join(' · ') + (nuevas.length > 4 ? ' y ' + (nuevas.length - 4) + ' más' : '');
+  const ops = [...new Set(nuevas.map(n => n.operador).filter(Boolean))];
+  const texto = items + (ops.length ? ' — ' + ops.join(', ') : '');
+  movToast('Movimiento nuevo: ' + texto);
+  if(!movAvisosOn() || !document.hidden || !('Notification' in window) || Notification.permission !== 'granted') return;
+  try {
+    const titulo = nuevas.length === 1 ? 'Pozos: movimiento nuevo' : 'Pozos: ' + nuevas.length + ' movimientos nuevos';
+    const opts = { body: texto, icon: 'icon-192.png', badge: 'icon-192.png', tag: 'pozos-movimientos', renotify: true };
+    const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration();
+    if(reg) reg.showNotification(titulo, opts); else new Notification(titulo, opts);
+  } catch(e) {}
+}
+
+// al abrir una pestaña, sus movimientos se dan por vistos ("Ultimos movimientos" cubre los de pozos)
+function movMarcarVistos(tabId){
+  const antes = MOV_AV_NUEVOS.length;
+  if(tabId === 'todos') MOV_AV_NUEVOS = [];
+  else if(tabId === 'tabMov') MOV_AV_NUEVOS = MOV_AV_NUEVOS.filter(x => x.tab !== 'tabLista' && x.tab !== 'tabAib');
+  else MOV_AV_NUEVOS = MOV_AV_NUEVOS.filter(x => x.tab !== tabId);
+  if(MOV_AV_NUEVOS.length !== antes) movActualizarBadge();
+}
+
+async function movActivarAvisos(){
+  movPrepararAudio();
+  safeSet('pozos_avisos_sonido', '1');
+  if('Notification' in window && Notification.permission === 'default'){
+    try { await Notification.requestPermission(); } catch(e) {}
+  }
+  movDing();
+  movRenderTag();
+  movToast('Avisos activados: va a sonar cada vez que se cargue un movimiento de campo.');
+}
+function movDesactivarAvisos(){
+  safeSet('pozos_avisos_sonido', '0');
+  movRenderTag();
+  movToast('Sonido y avisos desactivados.');
+}
+
+function movRenderTag(){
+  const tag = document.getElementById('movAvisoTag');
+  if(!tag) return;
+  if(!movAvisosActivo()){
+    tag.style.display = 'none';
+    const pt = document.getElementById('primarioTag'); if(pt) pt.style.marginLeft = 'auto';
+    return;
+  }
+  tag.style.display = '';
+  const n = MOV_AV_NUEVOS.length;
+  const on = movAvisosOn();
+  const permisoPendiente = on && ('Notification' in window) && Notification.permission === 'default';
+  tag.innerHTML = '';
+  if(n){
+    const cnt = document.createElement('button');
+    cnt.type = 'button';
+    cnt.className = 'mov-av-count';
+    cnt.title = 'Movimientos nuevos sin ver (tocar para marcarlos como vistos)';
+    cnt.textContent = n + (n === 1 ? ' nuevo' : ' nuevos');
+    cnt.addEventListener('click', () => movMarcarVistos('todos'));
+    tag.appendChild(cnt);
+  }
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'mov-av-btn' + (on ? ' on' : '');
+  btn.textContent = !on ? '🔕 Activar avisos' : (permisoPendiente ? '🔔 Activar avisos de Windows' : '🔔 Silenciar');
+  btn.title = on ? 'Suena cada vez que alguien carga un movimiento de campo' : 'Activar sonido y aviso en la barra de tareas';
+  btn.addEventListener('click', () => { (on && !permisoPendiente) ? movDesactivarAvisos() : movActivarAvisos(); });
+  tag.appendChild(btn);
+}
+movRenderTag();
+
 function startSync(){
   if(!firestoreOk){
     const warn = document.createElement('div');
@@ -1726,6 +1947,7 @@ function startSync(){
   iniciarAvisosSync();
   db.collection('pozos_overrides').onSnapshot((snapshot) => {
     lastOverridesCount = snapshot.size;
+    detectarMovimientos(snapshot, 'pozos_overrides');
     // pozos limpiados desde otro dispositivo (se borro su documento): volvemos al dato original del listado
     if(typeof snapshot.docChanges === 'function'){
       snapshot.docChanges().forEach((ch) => {
@@ -1791,6 +2013,7 @@ function startSync(){
 
   // novedades generales por USPA (con hora), en su propia coleccion, compartidas entre dispositivos
   db.collection('uspa_notas').onSnapshot((snapshot) => {
+    detectarMovimientos(snapshot, 'uspa_notas');
     USPA_NOTAS = [];
     snapshot.forEach((doc) => {
       const data = doc.data();
@@ -1814,6 +2037,7 @@ function startSync(){
 
   // novedades generales de Baterias (1/2/5) y Pias 2, mismo esquema que las de USPA
   db.collection('equipos_notas').onSnapshot((snapshot) => {
+    detectarMovimientos(snapshot, 'equipos_notas');
     EQUIPOS_NOTAS = [];
     snapshot.forEach((doc) => {
       const data = doc.data();
@@ -1831,6 +2055,7 @@ function startSync(){
 
   // pozos de petroleo (AIB) - coleccion propia, totalmente separada de los pozos de gas
   db.collection('aib_pozos').onSnapshot((snapshot) => {
+    detectarMovimientos(snapshot, 'aib_pozos');
     AIB_POZOS = [];
     snapshot.forEach((doc) => {
       const data = doc.data();
@@ -1854,6 +2079,7 @@ function startSync(){
 
   // lanzamientos de velas (agua/gas/oil) por pozo - coleccion propia, historial de eventos
   db.collection('pozos_velas').onSnapshot((snapshot) => {
+    detectarMovimientos(snapshot, 'pozos_velas');
     VELAS = [];
     snapshot.forEach((doc) => {
       const data = doc.data();
@@ -1882,6 +2108,7 @@ function startSync(){
 
   // mediciones de tanques de Bateria 1/2/5
   db.collection('baterias_tanques').onSnapshot((snapshot) => {
+    detectarMovimientos(snapshot, 'baterias_tanques');
     TANQUES_DATA = [];
     snapshot.forEach((doc) => {
       const data = doc.data();
@@ -1908,6 +2135,7 @@ function startSync(){
 
   // historial de bombeos (cada vez que se guarda con alguna bomba en servicio): va al reporte de Baterias
   db.collection('baterias_bombeo_log').orderBy('clientTs', 'desc').limit(300).onSnapshot((snapshot) => {
+    detectarMovimientos(snapshot, 'baterias_bombeo_log', true);
     BOMBEO_LOG = [];
     snapshot.forEach((doc) => {
       const data = doc.data();
@@ -1920,6 +2148,7 @@ function startSync(){
 
   // mediciones de tanques de Pias 2
   db.collection('pias2_tanques').onSnapshot((snapshot) => {
+    detectarMovimientos(snapshot, 'pias2_tanques');
     PIAS2_TANQUES_DATA = [];
     snapshot.forEach((doc) => {
       const data = doc.data();
@@ -1933,6 +2162,7 @@ function startSync(){
 
   // bombas y compresores de Pias 2 (estado + novedad)
   db.collection('pias2_equipos').onSnapshot((snapshot) => {
+    detectarMovimientos(snapshot, 'pias2_equipos');
     PIAS2_EQUIPOS_DATA = [];
     snapshot.forEach((doc) => {
       const data = doc.data();
@@ -1947,6 +2177,7 @@ function startSync(){
   // descargas de camiones de agua en Pias 2 (solo los ultimos 200, ordenados por fecha, para no
   // leer la coleccion entera cada vez que crezca con los años)
   db.collection('pias2_camiones').orderBy('updatedAt', 'desc').limit(200).onSnapshot((snapshot) => {
+    detectarMovimientos(snapshot, 'pias2_camiones', true);
     PIAS2_CAMIONES_DATA = [];
     snapshot.forEach((doc) => {
       const data = doc.data();
@@ -4321,6 +4552,7 @@ function iniciarAvisosSync(){
   avisosSyncIniciado = true;
   db.collection('avisos_mtto').orderBy('clientTs', 'desc').limit(500)
     .onSnapshot({ includeMetadataChanges: true }, (snap) => {
+      detectarMovimientos(snap, 'avisos_mtto', true);
       const lista = [];
       snap.forEach(doc => {
         const d = doc.data();
@@ -4642,6 +4874,7 @@ function abrirPestanaAvisos(){
 const TAB_IDS = ['tabLista','tabPlano','tabRed','tabCiclaje','tabMov','tabAib','tabTanques','tabPias','tabAvisos'];
 const MAIN_IDS = ['main','planoMain','redMain','ciclajeMain','movMain','aibMain','tanquesMain','piasMain','avisosMain'];
 function switchTab(activeTabId, activeMainId){
+  movMarcarVistos(activeTabId);
   TAB_IDS.forEach(id => document.getElementById(id).classList.toggle('active', id === activeTabId));
   MAIN_IDS.forEach(id => document.getElementById(id).style.display = (id === activeMainId) ? '' : 'none');
 }
