@@ -1999,7 +1999,8 @@ function ptcGrupo(d){ return d.tipo === 'carga' ? 'CARG' : d.isla; }
 function ptcCistTotal(d){ return (d.cisterna1 || 0) + (d.cisterna2 || 0) + (d.cisterna3 || 0); }
 var PTC_OPERADORAS = ['Pluspetrol - Jarillosa', 'Pluspetrol - La Calera', 'Pluspetrol - Puesto Silva', 'TGS - Tratayen'];
 var PTC_TRANSPORTES = ['Peduzzi', 'TSB'];
-var PTC_LOGO_B64 = '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';
+// logo de la planilla (PNG en base64). Vacio = sin logo
+var PTC_LOGO_B64 = '';
 var ptcIslaSel = (typeof safeGet === 'function' && safeGet('ptc_isla', 'A')) || 'A';
 var ptcMesSel = '';
 
@@ -2385,7 +2386,7 @@ function ptcArmarLibro(lista, soloConDatos, wbExistente){
     const wb = wbExistente || new ExcelJS.Workbook();
     wb.creator = 'Pozos Interactivo';
     let logoId = null;
-    try { logoId = wb.addImage({ base64: PTC_LOGO_B64, extension: 'png' }); } catch(e) {}
+    if(PTC_LOGO_B64){ try { logoId = wb.addImage({ base64: PTC_LOGO_B64, extension: 'png' }); } catch(e) {} }
     const BANDA = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF8FAADC' } };
     const MED = { style: 'medium' };
     const HEADERS = ['Fecha', 'ISLA', 'Hora Inicial', 'Hora Final', 'Vol.Masico', 'H2O libre', 'Vol. Inicial', 'Vol. Final', 'Dif. X Vol', 'Peso Inicial', 'Peso Final', 'Peso.Masico', 'REMITO', 'Chofer', 'Transporte', 'Operador PTC', 'Operadora'];
@@ -2598,52 +2599,26 @@ function marcarReportePtcEnviado(){
     lastReportePtcTs: firebase.firestore.FieldValue.serverTimestamp()
   }, { merge: true }).catch((err) => { console.error('No se pudo marcar el reporte de PTC como enviado', err); });
 }
-function exportReportePtc(forzarTodos){
+function exportReportePtc(){
   if(typeof ExcelJS === 'undefined'){
     alert('No se pudo generar el Excel (falta conexion a internet para cargar la libreria).');
     return;
   }
-  const hoy = ptcFechaOperativa();
-  const camiones = forzarTodos ? PTC_DATA.filter(d => d.fecha === hoy).sort(ptcOrden) : pendientesPtc();
-  const notas = forzarTodos ? EQUIPOS_NOTAS.filter(n => n.grupo === 'PTC' && n.texto) : pendientesNotasPtc();
-  if(!camiones.length && !notas.length){
-    if(!forzarTodos){
-      if(confirm('No hay descargas, cargas ni novedades de PTC nuevas desde el ultimo reporte enviado.\n\n¿Generar igual el reporte con lo del dia operativo de hoy?')) exportReportePtc(true);
+  // el reporte es acumulado: todas las descargas/cargas del mes (del dia operativo de hoy), dia tras dia,
+  // en las hojas Isla A, Isla B, Isla C y Cargadero (asi no se pisa nada al cambiar el dia)
+  const mes = ptcMesActual();
+  ptcDescargasDelMes(mes).then(lista => {
+    if(!lista.length){
+      alert('No hay descargas ni cargas de PTC en ' + ptcNombreMes(mes) + ' todavia.');
       return;
     }
-    alert('No hay descargas, cargas ni novedades de PTC del dia operativo de hoy.');
-    return;
-  }
-  const fechaDe = (iso) => { if(!iso) return ''; const [y, m, d] = iso.split('-'); return d + '/' + m + '/' + y; };
-  const fechaDeDate = d => d ? String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear() : '';
-  // hoja OIL (como el reporte de Baterias): un renglon por isla/cargadero y por dia con el total, mas las novedades
-  const filasTs = [];
-  const porGrupoDia = {};
-  camiones.forEach(d => { const k = ptcGrupo(d) + '|' + d.fecha; (porGrupoDia[k] = porGrupoDia[k] || []).push(d); });
-  Object.keys(porGrupoDia).forEach(k => {
-    const l = porGrupoDia[k].sort(ptcOrden);
-    const g = ptcGrupo(l[0]);
-    const m3 = l.reduce((acc, d) => acc + (ptcVolMasico(d) || 0), 0);
-    const kg = l.reduce((acc, d) => acc + (ptcPesoMasico(d) || 0), 0);
-    const ultimo = l[l.length - 1];
-    const verbo = g === 'CARG' ? 'Se cargan' : 'Se descargan';
-    const f = ptcFechaCarga(ultimo);
-    filasTs.push([f ? f.getTime() : 0, fechaDe(l[0].fecha), ultimo.horaFinal || ultimo.horaInicial || '',
-      'PTC', PTC_NOMBRE_GRUPO[g],
-      `${verbo} ${l.length} ${l.length === 1 ? 'camión' : 'camiones'}: ${ptcFmt(m3, 2)} m³ / ${ptcFmt(kg, 0)} kg`]);
-  });
-  notas.forEach(n => filasTs.push([n._updatedAtDate ? n._updatedAtDate.getTime() : 0, fechaDeDate(n._updatedAtDate) || todayStr(),
-    n.hora || (n._updatedAtDate ? n._updatedAtDate.toTimeString().slice(0, 5) : ''), 'PTC', n.equipo || 'General', n.texto || '']));
-  filasTs.sort((a, b) => a[0] - b[0]);
-  const wb = new ExcelJS.Workbook();
-  agregarHojaTabla(wb, 'OIL', ['FECHA', 'HORA', 'INSTALACION', 'EQUIPO', 'NOVEDAD'], filasTs.map(f => f.slice(1)), [12, 9, 14, 18, 60]);
-  // y el detalle de cada camion con el formato de la planilla PTC
-  if(camiones.length) ptcArmarLibro(camiones, true, wb);
-  wb.xlsx.writeBuffer().then(buffer => {
-    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    downloadOrShareBlob(blob, `Reporte_PTC_${todayStr().replace(/\//g, '-')}.xlsx`, 'Reporte de PTC');
-  });
-  marcarReportePtcEnviado();
+    const wb = ptcArmarLibro(lista, false);
+    return wb.xlsx.writeBuffer().then(buffer => {
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      downloadOrShareBlob(blob, `Reporte_PTC_${todayStr().replace(/\//g, '-')}.xlsx`, 'Reporte de PTC');
+      marcarReportePtcEnviado();
+    });
+  }).catch((e) => alert('No se pudo generar el reporte de PTC (' + (e && e.message) + ').'));
 }
 
 function startSync(){
