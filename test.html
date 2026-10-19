@@ -645,6 +645,44 @@
   .camion-lista{ margin-top: 10px; }
   .camion-row{ display: flex; justify-content: space-between; gap: 8px; font-size: 0.72rem; color: var(--muted); padding: 6px 0; border-top: 1px solid var(--line); }
   .camion-row b{ color: var(--text); }
+  .ptc-top{ display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin: 6px 0 12px; }
+  .ptc-islas{ display:flex; gap:6px; }
+  .ptc-isla{ font: inherit; font-size: .85rem; font-weight: 700; padding: 8px 16px; border-radius: 999px; cursor: pointer;
+    background: var(--panel); color: var(--text); border: 2px solid var(--line); }
+  .ptc-isla.sel{ border-color: var(--isla); background: color-mix(in srgb, var(--isla) 28%, var(--panel)); }
+  .ptc-mes{ font-size: .72rem; color: var(--muted); display:flex; align-items:center; gap:6px; }
+  .ptc-mes input{ background: var(--bg); border: 1px solid var(--line); color: var(--text); padding: 6px 8px; border-radius: 6px; font: inherit; font-size: .8rem; color-scheme: dark; }
+  .ptc-nueva, .ptc-excel{ width:100%; padding: 11px; border-radius: 8px; font: inherit; font-size: .88rem; font-weight: 700; cursor: pointer; margin-bottom: 8px; }
+  .ptc-nueva{ background: var(--amber-dim); border: 1px solid var(--amber); color: var(--text); }
+  .ptc-excel{ background: none; border: 1px dashed var(--amber); color: var(--text); font-weight: 600; font-size: .8rem; }
+  .ptc-resumen{ display:grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 6px 0 14px; }
+  .ptc-resumen > div{ background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--isla); border-radius: 8px; padding: 9px 12px; display:flex; flex-direction:column; gap:2px; }
+  .ptc-resumen span{ font-size: .68rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  .ptc-resumen b{ font-size: 1.05rem; }
+  .ptc-resumen small{ font-size: .74rem; color: var(--muted); }
+  .ptc-dia{ background: var(--panel); border: 1px solid var(--line); border-radius: 8px; margin-bottom: 10px; overflow: hidden; }
+  .ptc-dia-head{ display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; padding: 8px 12px; background: var(--amber-dim); font-size: .78rem; }
+  .ptc-dia-head span{ color: var(--muted); }
+  .ptc-row{ display:grid; grid-template-columns: 104px 110px 1fr; gap: 8px; width:100%; text-align:left; background:none; border:none; border-top: 1px solid var(--line);
+    color: var(--text); padding: 8px 12px; font: inherit; font-size: .76rem; cursor: pointer; align-items: start; }
+  .ptc-row:hover{ background: rgba(255,255,255,.03); }
+  .ptc-hora{ font-family: 'Consolas', 'SF Mono', monospace; white-space: nowrap; }
+  .ptc-vol{ display:flex; flex-direction:column; }
+  .ptc-vol small, .ptc-det{ color: var(--muted); }
+  .ptc-dif{ color: #f0a35e !important; font-style: normal; }
+  .ptc-calc{ grid-column: 1 / -1; display:flex; gap: 8px; flex-wrap: wrap; }
+  .ptc-calc > div{ flex: 1; min-width: 90px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 9px; display:flex; flex-direction:column; }
+  .ptc-calc span{ font-size: .64rem; color: var(--muted); text-transform: uppercase; }
+  .ptc-calc b{ font-size: .95rem; }
+  .ptc-form input[type=date], .ptc-form input[type=time]{ color-scheme: dark; }
+  .ptc-aviso-card{ margin-bottom: 10px; }
+  .ptc-aviso-card .eq-nota{ margin: 2px 0 6px; }
+  #ptcNotasCont{ margin-bottom: 10px; }
+  .ptc-borrar{ width:100%; margin-top: 14px; padding: 9px; background: none; border: 1px solid #6b2a24; color: #e6a49d; border-radius: 6px; font: inherit; font-size: .78rem; cursor: pointer; }
+  @media (max-width: 420px){
+    .ptc-row{ grid-template-columns: 104px 1fr; }
+    .ptc-det{ grid-column: 1 / -1; }
+  }
 
   .edit-input{
     width: 100%;
@@ -1051,6 +1089,7 @@
     <button class="tab-btn" id="tabAib">AIB</button>
     <button class="tab-btn" id="tabTanques">Baterias</button>
     <button class="tab-btn" id="tabPias">Pías 2</button>
+    <button class="tab-btn" id="tabPtc">PTC</button>
     <button class="tab-btn" id="tabAvisos" style="display:none;">Avisos <span id="avisosBadge" class="pend-badge" style="display:none;"></span></button>
   </div>
   <div class="toolbar">
@@ -1058,6 +1097,7 @@
     <button class="tab-btn export-btn" id="exportarTodoBtn">Exportar todo</button>
     <button class="tab-btn export-btn" id="reporteBateriasBtn">Enviar reporte de Baterías <span id="pendCountBaterias" class="pend-badge" style="display:none;"></span></button>
     <button class="tab-btn export-btn" id="reporteAguaBtn">Enviar reporte de Agua <span id="pendCountAgua" class="pend-badge" style="display:none;"></span></button>
+    <button class="tab-btn export-btn" id="reportePtcBtn">Enviar reporte de PTC <span id="pendCountPtc" class="pend-badge" style="display:none;"></span></button>
     <div class="unit-toggle">
       <button class="unit-btn active" id="unitKg">kg/cm&sup2;</button>
       <button class="unit-btn" id="unitPsi">psi</button>
@@ -1075,6 +1115,7 @@
 <main id="aibMain" style="display:none;"></main>
 <main id="tanquesMain" style="display:none;"></main>
 <main id="piasMain" style="display:none;"></main>
+<main id="ptcMain" style="display:none;"></main>
 <main id="avisosMain" style="display:none;"></main>
 
 <div class="overlay" id="overlay">
@@ -1702,6 +1743,11 @@ function updatePendCount(){
     const na = pendientesAguaTanques().length + pendientesAguaEquipos().length + pendientesAguaCamiones().length + pendientesNotaAguaPias2().length;
     if(na > 0){ badgeAgua.style.display = ''; badgeAgua.textContent = na; } else { badgeAgua.style.display = 'none'; }
   }
+  const badgePtc = document.getElementById('pendCountPtc');
+  if(badgePtc){
+    const np = pendientesPtc().length + pendientesNotasPtc().length;
+    if(np > 0){ badgePtc.style.display = ''; badgePtc.textContent = np; } else { badgePtc.style.display = 'none'; }
+  }
 }
 
 function refreshEverything(){
@@ -1744,7 +1790,7 @@ var MOV_AV_TITULO = 'Pozos por USPA';
 var MOV_AV_TABS = {
   pozos_overrides: 'tabLista', pozos_velas: 'tabLista', uspa_notas: 'tabLista', aib_pozos: 'tabAib',
   baterias_tanques: 'tabTanques', baterias_bombeo_log: 'tabTanques', equipos_notas: 'tabTanques',
-  pias2_tanques: 'tabPias', pias2_equipos: 'tabPias', pias2_camiones: 'tabPias', avisos_mtto: 'tabAvisos'
+  pias2_tanques: 'tabPias', pias2_equipos: 'tabPias', pias2_camiones: 'tabPias', ptc_descargas: 'tabPtc', avisos_mtto: 'tabAvisos'
 };
 
 function movAvisosActivo(){ return !esMovil(); }
@@ -1788,6 +1834,7 @@ function movTexto(col, id, d){
     case 'pias2_tanques': return (d.nombre || id) + ' · Pías 2';
     case 'pias2_equipos': return (d.nombre || id) + ' · Pías 2';
     case 'pias2_camiones': return 'Camión de agua' + (d.remito ? ' (remito ' + d.remito + ')' : '') + ' · Pías 2';
+    case 'ptc_descargas': return (d.tipo === 'carga' ? 'Carga PTC Cargadero' : 'Descarga PTC Isla ' + (d.isla || '?')) + (d.remito ? ' (remito ' + d.remito + ')' : '');
     case 'avisos_mtto': return 'Aviso de mtto: ' + (d.equipo || d.pozo || '') + (d.criticidad ? ' (' + d.criticidad + ')' : '');
   }
   return id;
@@ -1935,6 +1982,670 @@ function movRenderTag(){
 // al abrir la app arrancamos de cero: Windows deja el numero del icono puesto aunque la app se haya cerrado
 movActualizarBadge();
 
+// ---------------- PTC: descarga de camiones por isla (A / B / C) ----------------
+// Cada descarga es un documento en 'ptc_descargas'. Mismos datos que la planilla "Descarga Camiones PTC"
+// (reporte SCADA): fecha (dia operativo), isla, horas, totalizadores de volumen y peso, H2O libre, remito,
+// chofer, transporte, operador PTC y operadora. En la compu se baja el Excel del mes con el mismo formato.
+var PTC_DATA = [];          // ultimas descargas (en vivo)
+var PTC_MES_CACHE = {};     // 'aaaa-mm' -> descargas de meses viejos (se piden una sola vez)
+var PTC_ISLAS = ['A', 'B', 'C'];
+// 'CARG' = Cargadero: CARGA de camiones (sale petroleo de PTC, en la isla C), con sus cisternas
+var PTC_GRUPOS = ['A', 'B', 'C', 'CARG'];
+var PTC_COLOR_ISLA = { A: '#0070C0', B: '#00B050', C: '#FFC000', CARG: '#E8590C' };
+var PTC_NOMBRE_GRUPO = { A: 'Isla A', B: 'Isla B', C: 'Isla C', CARG: 'Cargadero' };
+var PTC_OPERADORAS_CARGA = ['Refipampa'];
+var PTC_TRANSPORTES_CARGA = ['All Road'];
+function ptcGrupo(d){ return d.tipo === 'carga' ? 'CARG' : d.isla; }
+function ptcCistTotal(d){ return (d.cisterna1 || 0) + (d.cisterna2 || 0) + (d.cisterna3 || 0); }
+var PTC_OPERADORAS = ['Pluspetrol - Jarillosa', 'Pluspetrol - La Calera', 'Pluspetrol - Puesto Silva', 'TGS - Tratayen'];
+var PTC_TRANSPORTES = ['Peduzzi', 'TSB'];
+var PTC_LOGO_B64 = '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';
+var ptcIslaSel = (typeof safeGet === 'function' && safeGet('ptc_isla', 'A')) || 'A';
+var ptcMesSel = '';
+
+function ptcPad(n){ return String(n).padStart(2, '0'); }
+function ptcIsoFecha(d){ return d.getFullYear() + '-' + ptcPad(d.getMonth() + 1) + '-' + ptcPad(d.getDate()); }
+// dia operativo de PTC: en la planilla los camiones de la madrugada (hasta las 7 mas o menos) quedan con la
+// fecha del dia anterior, asi que antes de las 9 de la mañana todavia cuenta como el dia anterior
+var PTC_CORTE_HORA = 9;
+function ptcFechaOperativa(){
+  const d = new Date();
+  if(d.getHours() < PTC_CORTE_HORA) d.setDate(d.getDate() - 1);
+  return ptcIsoFecha(d);
+}
+function ptcMesActual(){ return ptcFechaOperativa().slice(0, 7); }
+// numeros como los escribe el operador: "176847,19", "176.847,19", "70739200", "70.739.200"
+function ptcNum(txt){
+  let s = String(txt == null ? '' : txt).trim().replace(/\s/g, '');
+  if(!s) return null;
+  if(s.includes(',')){ s = s.replace(/\./g, '').replace(',', '.'); }
+  else if((s.match(/\./g) || []).length > 1){ s = s.replace(/\./g, ''); }
+  const n = parseFloat(s);
+  return isNaN(n) ? null : n;
+}
+function ptcFmt(n, dec){
+  if(n == null || isNaN(n)) return '';
+  return Number(n).toLocaleString('es-AR', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+}
+function ptcEsc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+// orden dentro del dia operativo: las horas de la madrugada (antes de las 9) van al final del dia
+function ptcMinutosOperativos(hora){
+  if(!hora || !/^\d{1,2}:\d{2}/.test(hora)) return 9999;
+  const [h, m] = hora.split(':').map(Number);
+  return (h < PTC_CORTE_HORA ? h + 24 : h) * 60 + m;
+}
+function ptcOrden(a, b){
+  if(a.fecha !== b.fecha) return (a.fecha || '').localeCompare(b.fecha || '');
+  const d = ptcMinutosOperativos(a.horaInicial) - ptcMinutosOperativos(b.horaInicial);
+  return d !== 0 ? d : (a.clientTs || 0) - (b.clientTs || 0);
+}
+function ptcVolMasico(d){ return (d.volFinal != null && d.volInicial != null) ? d.volFinal - d.volInicial : null; }
+function ptcPesoMasico(d){ return (d.pesoFinal != null && d.pesoInicial != null) ? d.pesoFinal - d.pesoInicial : null; }
+function ptcFechaCorta(iso){
+  if(!iso) return '';
+  const [y, m, d] = iso.split('-').map(Number);
+  const f = new Date(y, m - 1, d);
+  const dias = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+  return dias[f.getDay()] + ' ' + ptcPad(d) + '/' + ptcPad(m) + '/' + y;
+}
+function ptcNombreMes(mes){
+  const n = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+  const [y, m] = mes.split('-').map(Number);
+  return n[m - 1] + ' ' + y;
+}
+
+// descargas de un mes: si el mes esta dentro de lo que ya tenemos en vivo, sale de ahi; si es viejo, se pide a la base
+function ptcDescargasDelMes(mes){
+  const vivas = PTC_DATA.filter(d => d.mes === mes);
+  const masVieja = PTC_DATA.length ? PTC_DATA.reduce((m, d) => (d.fecha && d.fecha < m ? d.fecha : m), '9999') : '9999';
+  const completo = PTC_DATA.length < PTC_LIMITE_VIVO || masVieja.slice(0, 7) < mes;
+  if(completo) return Promise.resolve(vivas);
+  if(PTC_MES_CACHE[mes]) return Promise.resolve(PTC_MES_CACHE[mes]);
+  if(!firestoreOk) return Promise.resolve(vivas);
+  return db.collection('ptc_descargas').where('mes', '==', mes).get().then(snap => {
+    const lista = [];
+    snap.forEach(doc => lista.push(Object.assign({ id: doc.id }, doc.data())));
+    PTC_MES_CACHE[mes] = lista;
+    return lista;
+  }).catch(() => vivas);
+}
+var PTC_LIMITE_VIVO = 800;
+
+// ultima descarga cargada en una isla (para arrastrar los totalizadores al formulario nuevo)
+function ptcUltimaDeIsla(grupo, excluirId){
+  const l = PTC_DATA.filter(d => ptcGrupo(d) === grupo && d.id !== excluirId).sort(ptcOrden);
+  return l.length ? l[l.length - 1] : null;
+}
+// descarga anterior a 'rec' en su misma isla (para la diferencia por volumen, como la columna Dif. X Vol)
+function ptcAnteriorA(rec, lista){
+  const l = lista.filter(d => ptcGrupo(d) === ptcGrupo(rec) && d.id !== rec.id).concat([rec]).sort(ptcOrden);
+  const i = l.indexOf(rec);
+  return i > 0 ? l[i - 1] : null;
+}
+
+function renderPtc(){
+  const main = document.getElementById('ptcMain');
+  if(!main) return;
+  if(!ptcMesSel) ptcMesSel = ptcMesActual();
+  const enCompu = !esMovil();
+  main.innerHTML = `
+    <div class="ptc-top">
+      <div class="ptc-islas">
+        ${PTC_GRUPOS.map(i => `<button type="button" class="ptc-isla${i === ptcIslaSel ? ' sel' : ''}" data-isla="${i}" style="--isla:${PTC_COLOR_ISLA[i]}">${PTC_NOMBRE_GRUPO[i]}</button>`).join('')}
+      </div>
+      <label class="ptc-mes">Mes <input type="month" id="ptcMes" value="${ptcMesSel}"></label>
+    </div>
+    <button type="button" class="ptc-nueva" id="ptcNuevaBtn">${ptcIslaSel === 'CARG' ? '+ Registrar carga en el Cargadero' : '+ Registrar descarga en Isla ' + ptcIslaSel}</button>
+    ${enCompu ? `<button type="button" class="ptc-excel" id="ptcExcelBtn">Descargar Excel de ${ptcNombreMes(ptcMesSel)} (Islas A, B, C y Cargadero)</button>` : ''}
+    <div id="ptcNotasCont"></div>
+    <div id="ptcResumen"></div>
+    <div id="ptcAvisoCont"></div>
+    <div id="ptcLista"><div class="empty-msg">Cargando…</div></div>`;
+  document.getElementById('ptcNotasCont').appendChild(crearNotasEquipoBox('PTC'));
+  // avisos de mantenimiento: uno para la isla/cargadero elegido y otro para cualquier equipo de PTC
+  const avisoCont = document.getElementById('ptcAvisoCont');
+  const tarjetaIsla = document.createElement('div');
+  tarjetaIsla.className = 'eq-card ptc-aviso-card';
+  tarjetaIsla.innerHTML = `<p class="eq-nombre">${PTC_NOMBRE_GRUPO[ptcIslaSel]}</p>`;
+  agregarAvisoATarjeta(tarjetaIsla, { origen: 'ptc', equipo: PTC_NOMBRE_GRUPO[ptcIslaSel], bateria: 'PTC', titulo: 'PTC · ' + PTC_NOMBRE_GRUPO[ptcIslaSel] });
+  avisoCont.appendChild(tarjetaIsla);
+  const tarjetaOtro = document.createElement('div');
+  tarjetaOtro.className = 'eq-card ptc-aviso-card';
+  tarjetaOtro.innerHTML = `<p class="eq-nombre">Otro equipo de PTC</p>
+    <input type="text" class="eq-nota ptc-aviso-equipo" placeholder="Nombre del equipo (ej: bomba de transferencia, caudalímetro, tanque…)">
+    <div class="ptc-aviso-otro-slot"></div>
+    <button type="button" class="aviso-mini-btn ptc-aviso-otro">Aviso de mantenimiento</button>`;
+  tarjetaOtro.querySelector('.ptc-aviso-otro').addEventListener('click', () => {
+    const inp = tarjetaOtro.querySelector('.ptc-aviso-equipo');
+    const eq = inp.value.trim();
+    if(!eq){ alert('Escribí el nombre del equipo para el aviso.'); inp.focus(); return; }
+    abrirAvisoEquipo({ origen: 'ptc', equipo: eq, bateria: 'PTC', titulo: 'PTC · ' + eq });
+  });
+  avisoCont.appendChild(tarjetaOtro);
+  // avisos abiertos de otros equipos de PTC (los que no son de una isla ni del cargadero)
+  const otrosAbiertos = avisosAbiertos().filter(a => avisoOrigen(a) === 'ptc' && !Object.values(PTC_NOMBRE_GRUPO).includes(avisoEquipo(a)));
+  if(otrosAbiertos.length){
+    tarjetaOtro.querySelector('.ptc-aviso-otro-slot').innerHTML = `<div class="aviso-en-ficha"><div class="k">Avisos abiertos en PTC</div>${otrosAbiertos.map(a => `<div class="aviso-linea"><span class="crit-pill ${avisoClaseCrit(a.criticidad)}">${avisoEsc(a.criticidad)}</span> <b>${avisoEsc(avisoEquipo(a))}</b> · ${avisoEsc(a.especialidad)}: ${avisoEsc(a.descripcion)}</div>`).join('')}</div>`;
+  }
+
+  if(!PTC_GRUPOS.includes(ptcIslaSel)) ptcIslaSel = 'A';
+  main.querySelectorAll('.ptc-isla').forEach(b => b.addEventListener('click', () => {
+    ptcIslaSel = b.dataset.isla;
+    safeSet('ptc_isla', ptcIslaSel);
+    renderPtc();
+  }));
+  document.getElementById('ptcMes').addEventListener('change', (e) => {
+    ptcMesSel = e.target.value || ptcMesActual();
+    renderPtc();
+  });
+  document.getElementById('ptcNuevaBtn').addEventListener('click', () => abrirPtcForm(null));
+  if(enCompu) document.getElementById('ptcExcelBtn').addEventListener('click', () => exportarExcelPtc(ptcMesSel));
+
+  const mes = ptcMesSel, isla = ptcIslaSel;
+  ptcDescargasDelMes(mes).then(listaMes => {
+    if(ptcMesSel !== mes || ptcIslaSel !== isla) return; // el usuario ya cambio de isla/mes
+    const deIsla = listaMes.filter(d => ptcGrupo(d) === isla).sort(ptcOrden);
+    const resumen = document.getElementById('ptcResumen');
+    const listaEl = document.getElementById('ptcLista');
+    if(!resumen || !listaEl) return;
+
+    const hoy = ptcFechaOperativa();
+    const deHoy = PTC_DATA.filter(d => ptcGrupo(d) === isla && d.fecha === hoy);
+    const totM3 = (l) => l.reduce((s, d) => s + (ptcVolMasico(d) || 0), 0);
+    const totKg = (l) => l.reduce((s, d) => s + (ptcPesoMasico(d) || 0), 0);
+    resumen.innerHTML = `
+      <div class="ptc-resumen" style="--isla:${PTC_COLOR_ISLA[isla]}">
+        <div><span>Hoy (día operativo)</span><b>${deHoy.length} ${deHoy.length === 1 ? 'camión' : 'camiones'}</b><small>${ptcFmt(totM3(deHoy), 2)} m³ · ${ptcFmt(totKg(deHoy), 0)} kg</small></div>
+        <div><span>${ptcNombreMes(mes)}</span><b>${deIsla.length} ${deIsla.length === 1 ? 'camión' : 'camiones'}</b><small>${ptcFmt(totM3(deIsla), 2)} m³ · ${ptcFmt(totKg(deIsla), 0)} kg</small></div>
+      </div>`;
+
+    if(!deIsla.length){
+      listaEl.innerHTML = `<div class="empty-msg">No hay ${isla === 'CARG' ? 'cargas en el Cargadero' : 'descargas en la Isla ' + isla} en ${ptcNombreMes(mes)}.</div>`;
+      return;
+    }
+    // agrupado por dia, el mas reciente arriba; dentro del dia en orden de descarga
+    const porDia = {};
+    deIsla.forEach(d => { (porDia[d.fecha] = porDia[d.fecha] || []).push(d); });
+    listaEl.innerHTML = '';
+    Object.keys(porDia).sort().reverse().forEach(fecha => {
+      const l = porDia[fecha];
+      const dia = document.createElement('div');
+      dia.className = 'ptc-dia';
+      dia.innerHTML = `<div class="ptc-dia-head"><b>${ptcFechaCorta(fecha)}</b><span>${l.length} ${l.length === 1 ? 'camión' : 'camiones'} · ${ptcFmt(totM3(l), 2)} m³ · ${ptcFmt(totKg(l), 0)} kg</span></div>`;
+      l.forEach(d => {
+        const ant = ptcAnteriorA(d, deIsla);
+        const dif = (ant && ant.volFinal != null && d.volInicial != null) ? Math.round((d.volInicial - ant.volFinal) * 100) / 100 : 0;
+        const row = document.createElement('button');
+        row.type = 'button';
+        row.className = 'ptc-row';
+        row.innerHTML = `
+          <span class="ptc-hora">${ptcEsc(d.horaInicial || '--:--')}–${ptcEsc(d.horaFinal || '--:--')}</span>
+          <span class="ptc-vol"><b>${ptcFmt(ptcVolMasico(d), 2)} m³</b><small>${ptcFmt(ptcPesoMasico(d), 0)} kg${d.h2o ? ' · H2O ' + ptcFmt(d.h2o, 2) : ''}${d.tipo === 'carga' && ptcCistTotal(d) ? '<br>Cist: ' + [d.cisterna1, d.cisterna2, d.cisterna3].filter(x => x != null).join(' / ') : ''}</small></span>
+          <span class="ptc-det">${d.remito ? 'Rto ' + ptcEsc(d.remito) + ' · ' : ''}${ptcEsc(d.chofer || '')}${d.transporte ? ' (' + ptcEsc(d.transporte) + ')' : ''}<br>${ptcEsc(d.operadora || '')}${d.operadorPtc ? ' · Op: ' + ptcEsc(d.operadorPtc) : ''}${dif ? `<br><em class="ptc-dif">Dif. x vol: ${ptcFmt(dif, 2)} m³ con la descarga anterior</em>` : ''}</span>`;
+        row.addEventListener('click', () => abrirPtcForm(d));
+        dia.appendChild(row);
+      });
+      listaEl.appendChild(dia);
+    });
+  });
+}
+
+function abrirPtcForm(rec){
+  const editando = !!rec;
+  const grupo = rec ? ptcGrupo(rec) : ptcIslaSel;
+  const esCarga = grupo === 'CARG';
+  const isla = esCarga ? 'C' : grupo;
+  const ult = ptcUltimaDeIsla(grupo, rec && rec.id);
+  const v = rec || {
+    fecha: ptcFechaOperativa(), isla,
+    volInicial: ult ? ult.volFinal : null, pesoInicial: ult ? ult.pesoFinal : null,
+    transporte: ult ? ult.transporte : (esCarga ? PTC_TRANSPORTES_CARGA[0] : ''),
+    operadora: ult ? ult.operadora : (esCarga ? PTC_OPERADORAS_CARGA[0] : ''),
+    operadorPtc: operadorName || '', h2o: 0
+  };
+  const usados = (k, base) => [...new Set(base.concat(PTC_DATA.map(d => (d[k] || '').trim())).filter(Boolean))].slice(0, 60);
+  const num = (n, dec) => (n == null || n === '') ? '' : String(dec != null ? Number(n).toFixed(dec) : n).replace('.', ',');
+
+  window._currentCardRec = null;
+  const card = document.getElementById('card');
+  card.innerHTML = `
+    <div class="card-head">
+      <div>
+        <h2>${editando ? (esCarga ? 'Editar carga' : 'Editar descarga') : (esCarga ? 'Carga de camión' : 'Descarga de camión')}</h2>
+        <span class="bat-pill" id="ptcPill" style="background:${PTC_COLOR_ISLA[grupo]}">PTC · ${esCarga ? 'Cargadero (Isla C)' : 'Isla ' + isla}</span>
+      </div>
+      <button class="close-btn" id="closeBtn">&times;</button>
+    </div>
+    <div class="camion-grid ptc-form">
+      <div class="camion-field"><label>Fecha (día operativo)</label><input type="date" id="ptcF_fecha" value="${ptcEsc(v.fecha || '')}"></div>
+      ${esCarga ? `<div class="camion-field"><label>Isla</label><select id="ptcF_isla" disabled><option value="C">Isla C (cargadero)</option></select></div>` : `<div class="camion-field"><label>Isla</label>
+        <select id="ptcF_isla">${PTC_ISLAS.map(i => `<option value="${i}" ${i === isla ? 'selected' : ''}>Isla ${i}</option>`).join('')}</select></div>`}
+      <div class="camion-field"><label>Hora inicial</label><input type="time" id="ptcF_hi" value="${ptcEsc(v.horaInicial || '')}"></div>
+      <div class="camion-field"><label>Hora final</label><input type="time" id="ptcF_hf" value="${ptcEsc(v.horaFinal || '')}"></div>
+      <div class="camion-field"><label>Vol. inicial (m³)</label><input type="text" inputmode="decimal" id="ptcF_vi" placeholder="ej: 176847,19" value="${num(v.volInicial)}"></div>
+      <div class="camion-field"><label>Vol. final (m³)</label><input type="text" inputmode="decimal" id="ptcF_vf" placeholder="ej: 176880,00" value="${num(v.volFinal)}"></div>
+      <div class="camion-field"><label>Peso inicial (kg)</label><input type="text" inputmode="numeric" id="ptcF_pi" placeholder="ej: 70739200" value="${num(v.pesoInicial)}"></div>
+      <div class="camion-field"><label>Peso final (kg)</label><input type="text" inputmode="numeric" id="ptcF_pf" placeholder="ej: 70767256" value="${num(v.pesoFinal)}"></div>
+      <div class="ptc-calc" id="ptcCalc"></div>
+      ${esCarga ? `
+      <div class="camion-field"><label>Cisterna 1 (m³)</label><input type="text" inputmode="decimal" id="ptcF_c1" placeholder="ej: 20" value="${num(v.cisterna1)}"></div>
+      <div class="camion-field"><label>Cisterna 2 (m³)</label><input type="text" inputmode="decimal" id="ptcF_c2" placeholder="vacío si no tiene" value="${num(v.cisterna2)}"></div>
+      <div class="camion-field"><label>Cisterna 3 (m³)</label><input type="text" inputmode="decimal" id="ptcF_c3" placeholder="vacío si no tiene" value="${num(v.cisterna3)}"></div>` : `
+      <div class="camion-field"><label>H2O libre</label><input type="text" inputmode="decimal" id="ptcF_h2o" placeholder="0" value="${num(v.h2o)}"></div>`}
+      <div class="camion-field"><label>Remito</label><input type="text" id="ptcF_rem" placeholder="ej: 0017-00012299" value="${ptcEsc(v.remito || '')}"></div>
+      <div class="camion-field"><label>Chofer</label><input type="text" id="ptcF_cho" list="ptcDlCho" placeholder="Apellido y nombre" value="${ptcEsc(v.chofer || '')}"></div>
+      <div class="camion-field"><label>Transporte</label><input type="text" id="ptcF_tra" list="ptcDlTra" placeholder="ej: Peduzzi" value="${ptcEsc(v.transporte || '')}"></div>
+      <div class="camion-field"><label>Operador PTC</label><input type="text" id="ptcF_op" list="ptcDlOp" placeholder="ej: Fabian J." value="${ptcEsc(v.operadorPtc || '')}"></div>
+      <div class="camion-field"><label>Operadora</label><input type="text" id="ptcF_ope" list="ptcDlOpe" placeholder="ej: Pluspetrol - Jarillosa" value="${ptcEsc(v.operadora || '')}"></div>
+    </div>
+    <datalist id="ptcDlCho">${usados('chofer', []).map(x => `<option value="${ptcEsc(x)}">`).join('')}</datalist>
+    <datalist id="ptcDlTra">${usados('transporte', esCarga ? PTC_TRANSPORTES_CARGA : PTC_TRANSPORTES).map(x => `<option value="${ptcEsc(x)}">`).join('')}</datalist>
+    <datalist id="ptcDlOp">${usados('operadorPtc', operadorName ? [operadorName] : []).map(x => `<option value="${ptcEsc(x)}">`).join('')}</datalist>
+    <datalist id="ptcDlOpe">${usados('operadora', esCarga ? PTC_OPERADORAS_CARGA : PTC_OPERADORAS).map(x => `<option value="${ptcEsc(x)}">`).join('')}</datalist>
+    <div class="aviso-error" id="ptcErr" style="display:none;"></div>
+    <div class="edit-actions">
+      <button class="save-btn" id="ptcGuardarBtn">${editando ? 'Guardar cambios' : 'Guardar descarga'}</button>
+      <button class="cancel-btn" id="ptcCancelBtn">Cancelar</button>
+    </div>
+    ${editando ? `<button type="button" class="ptc-borrar" id="ptcBorrarBtn">Eliminar esta ${esCarga ? 'carga' : 'descarga'}</button>` : ''}`;
+  card.scrollTop = 0;
+  document.getElementById('overlay').classList.add('show');
+  if(!modalHistoryPushed){
+    history.pushState({ pozosModal: true }, '');
+    modalHistoryPushed = true;
+  }
+  const $ = (id) => document.getElementById(id);
+  $('closeBtn').addEventListener('click', closeCard);
+  $('ptcCancelBtn').addEventListener('click', closeCard);
+
+  function calc(){
+    const vi = ptcNum($('ptcF_vi').value), vf = ptcNum($('ptcF_vf').value);
+    const pi = ptcNum($('ptcF_pi').value), pf = ptcNum($('ptcF_pf').value);
+    const isl = $('ptcF_isla').value;
+    const grp = esCarga ? 'CARG' : isl;
+    const ant = editando ? ptcAnteriorA(Object.assign({}, rec, { isla: isl, fecha: $('ptcF_fecha').value, horaInicial: $('ptcF_hi').value }), PTC_DATA.filter(d => d.id !== rec.id)) : ptcUltimaDeIsla(grp);
+    const partes = [];
+    partes.push(`<div><span>Vol. másico</span><b>${vi != null && vf != null ? ptcFmt(vf - vi, 2) + ' m³' : '—'}</b></div>`);
+    partes.push(`<div><span>Peso másico</span><b>${pi != null && pf != null ? ptcFmt(pf - pi, 0) + ' kg' : '—'}</b></div>`);
+    if(ant && ant.volFinal != null && vi != null){
+      const dif = Math.round((vi - ant.volFinal) * 100) / 100;
+      partes.push(`<div class="${dif ? 'ptc-dif' : ''}"><span>Dif. x vol</span><b>${ptcFmt(dif, 2)} m³</b></div>`);
+    }
+    if(esCarga){
+      const cs = ['ptcF_c1', 'ptcF_c2', 'ptcF_c3'].map(id => ptcNum($(id).value) || 0).reduce((a, b) => a + b, 0);
+      if(cs) partes.push(`<div><span>Cisternas</span><b>${ptcFmt(cs, 0)} m³</b></div>`);
+    }
+    $('ptcCalc').innerHTML = partes.join('');
+  }
+  ['ptcF_vi', 'ptcF_vf', 'ptcF_pi', 'ptcF_pf', 'ptcF_fecha', 'ptcF_hi'].concat(esCarga ? ['ptcF_c1', 'ptcF_c2', 'ptcF_c3'] : []).forEach(id => $(id).addEventListener('input', calc));
+  $('ptcF_isla').addEventListener('change', () => {
+    const isl = $('ptcF_isla').value;
+    $('ptcPill').textContent = 'PTC · Isla ' + isl;
+    $('ptcPill').style.background = PTC_COLOR_ISLA[isl];
+    if(!editando){
+      // al cambiar de isla, los totalizadores iniciales son los de esa isla
+      const u = ptcUltimaDeIsla(isl);
+      $('ptcF_vi').value = u && u.volFinal != null ? num(u.volFinal) : '';
+      $('ptcF_pi').value = u && u.pesoFinal != null ? num(u.pesoFinal) : '';
+    }
+    calc();
+  });
+  calc();
+
+  $('ptcGuardarBtn').addEventListener('click', () => {
+    const err = $('ptcErr');
+    const datos = {
+      fecha: $('ptcF_fecha').value,
+      isla: $('ptcF_isla').value,
+      horaInicial: $('ptcF_hi').value,
+      horaFinal: $('ptcF_hf').value,
+      volInicial: ptcNum($('ptcF_vi').value),
+      volFinal: ptcNum($('ptcF_vf').value),
+      pesoInicial: ptcNum($('ptcF_pi').value),
+      pesoFinal: ptcNum($('ptcF_pf').value),
+      h2o: esCarga ? 0 : (ptcNum($('ptcF_h2o').value) || 0),
+      remito: $('ptcF_rem').value.trim(),
+      chofer: $('ptcF_cho').value.trim(),
+      transporte: $('ptcF_tra').value.trim(),
+      operadorPtc: $('ptcF_op').value.trim(),
+      operadora: $('ptcF_ope').value.trim()
+    };
+    if(esCarga){
+      datos.tipo = 'carga';
+      datos.isla = 'C';
+      datos.cisterna1 = ptcNum($('ptcF_c1').value);
+      datos.cisterna2 = ptcNum($('ptcF_c2').value);
+      datos.cisterna3 = ptcNum($('ptcF_c3').value);
+    }
+    const falta = [];
+    if(!datos.fecha) falta.push('la fecha');
+    if(!datos.horaInicial) falta.push('la hora inicial');
+    if(datos.volInicial == null || datos.volFinal == null) falta.push('el volumen inicial y final');
+    let msg = falta.length ? 'Falta cargar ' + falta.join(', ') + '.' : '';
+    if(!msg && datos.volFinal < datos.volInicial) msg = 'El volumen final no puede ser menor que el inicial.';
+    if(!msg && datos.pesoInicial != null && datos.pesoFinal != null && datos.pesoFinal < datos.pesoInicial) msg = 'El peso final no puede ser menor que el inicial.';
+    if(msg){ err.textContent = msg; err.style.display = ''; return; }
+    if(datos.volFinal - datos.volInicial > 60 && !confirm('El volumen ' + (esCarga ? 'cargado' : 'descargado') + ' da ' + ptcFmt(datos.volFinal - datos.volInicial, 2) + ' m³, más de lo normal para un camión. ¿Está bien?')) return;
+    if(!puedeModificar()) return;
+    if(!firestoreOk){
+      alert('No hay conexion con el guardado compartido. Revisa tu internet e intenta de nuevo.');
+      return;
+    }
+    datos.mes = datos.fecha.slice(0, 7);
+    datos.operador = operadorName || 'Sin nombre';
+    datos.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
+    const ref = editando ? db.collection('ptc_descargas').doc(rec.id) : db.collection('ptc_descargas').doc();
+    if(!editando) datos.clientTs = Date.now();
+    const op = editando ? ref.set(datos, { merge: true }) : ref.set(datos);
+    op.catch((e) => alert('No se pudo guardar (' + e.message + '). Revisa tu conexion.'));
+    // lo mostramos ya, sin esperar a la base
+    const local = Object.assign({ id: ref.id }, rec || {}, datos, { _local: true });
+    PTC_DATA = PTC_DATA.filter(d => d.id !== ref.id).concat([local]);
+    Object.keys(PTC_MES_CACHE).forEach(k => { delete PTC_MES_CACHE[k]; });
+    ptcIslaSel = esCarga ? 'CARG' : datos.isla;
+    if(datos.mes !== ptcMesSel) ptcMesSel = datos.mes;
+    closeCard();
+    renderPtc();
+  });
+
+  if(editando){
+    $('ptcBorrarBtn').addEventListener('click', () => {
+      if(!confirm('¿Eliminar la ' + (esCarga ? 'carga' : 'descarga') + ' de las ' + (rec.horaInicial || '') + ' (' + PTC_NOMBRE_GRUPO[grupo] + ', remito ' + (rec.remito || 's/n') + ')?')) return;
+      if(!puedeModificar()) return;
+      db.collection('ptc_descargas').doc(rec.id).delete().catch((e) => alert('No se pudo eliminar (' + e.message + ').'));
+      PTC_DATA = PTC_DATA.filter(d => d.id !== rec.id);
+      Object.keys(PTC_MES_CACHE).forEach(k => { delete PTC_MES_CACHE[k]; });
+      closeCard();
+      renderPtc();
+    });
+  }
+}
+
+// Excel del mes, con el mismo formato que la planilla "Descarga Camiones PTC": una hoja por isla
+function exportarExcelPtc(mes){
+  if(typeof ExcelJS === 'undefined'){
+    alert('No se pudo generar el Excel (falta conexion a internet para cargar la libreria).');
+    return;
+  }
+  ptcDescargasDelMes(mes).then(lista => {
+    if(!lista.length && !confirm('No hay descargas ni cargas en ' + ptcNombreMes(mes) + '. ¿Bajar la planilla vacía igual?')) return;
+    const wb = ptcArmarLibro(lista, false);
+    const [yy, mm] = mes.split('-');
+    const nombre = `${mm}_${ptcNombreMes(mes).split(' ')[0]}_Descarga_Camiones_PTC - ${yy}.xlsx`;
+    return wb.xlsx.writeBuffer().then(buf => {
+      const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      downloadFile(blob, nombre);
+    });
+  }).catch((e) => alert('No se pudo generar el Excel de PTC (' + (e && e.message) + ').'));
+}
+
+// arma el libro con el formato de la planilla PTC. soloConDatos: solo las hojas que tienen camiones (para el reporte)
+function ptcArmarLibro(lista, soloConDatos, wbExistente){
+  {
+    const wb = wbExistente || new ExcelJS.Workbook();
+    wb.creator = 'Pozos Interactivo';
+    let logoId = null;
+    try { logoId = wb.addImage({ base64: PTC_LOGO_B64, extension: 'png' }); } catch(e) {}
+    const BANDA = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF8FAADC' } };
+    const MED = { style: 'medium' };
+    const HEADERS = ['Fecha', 'ISLA', 'Hora Inicial', 'Hora Final', 'Vol.Masico', 'H2O libre', 'Vol. Inicial', 'Vol. Final', 'Dif. X Vol', 'Peso Inicial', 'Peso Final', 'Peso.Masico', 'REMITO', 'Chofer', 'Transporte', 'Operador PTC', 'Operadora'];
+    const ANCHOS = { A: 3.1, B: 11.7, C: 10.4, D: 14.1, E: 12.7, F: 14, G: 12.7, H: 14.3, I: 14.3, J: 11.9, K: 14.3, L: 14.3, M: 14.9, N: 19.6, O: 28.1, P: 12.9, Q: 16.1, R: 27, S: 3.1 };
+    const horaExcel = (h) => {
+      if(!h || !/^\d{1,2}:\d{2}/.test(h)) return null;
+      const [hh, mm] = h.split(':').map(Number);
+      return (hh * 60 + mm) / 1440; // fraccion de dia, como guarda Excel las horas
+    };
+
+    PTC_ISLAS.forEach(isla => {
+      if(soloConDatos && !lista.some(d => ptcGrupo(d) === isla)) return;
+      const ws = wb.addWorksheet('Isla ' + isla, { views: [{ state: 'frozen', ySplit: 5, showGridLines: false, zoomScale: 80 }] });
+      Object.keys(ANCHOS).forEach(c => { ws.getColumn(c).width = ANCHOS[c]; });
+      // banda de encabezado (filas 1 a 5) con el recuadro del titulo
+      for(let r = 1; r <= 5; r++){
+        ws.getRow(r).height = r === 1 ? 14.1 : (r === 5 ? 18.75 : 26.1);
+        for(let c = 1; c <= 19; c++){
+          if(r === 1 && c === 1) continue;
+          ws.getCell(r, c).fill = BANDA;
+        }
+      }
+      for(let c = 2; c <= 18; c++){
+        const b = {};
+        if(c === 2) b.left = MED;
+        if(c === 18) b.right = MED;
+        ws.getCell(2, c).border = Object.assign({ top: MED }, b);
+        ws.getCell(3, c).border = Object.assign({}, b);
+        ws.getCell(4, c).border = Object.assign({ bottom: MED }, b);
+      }
+      const t = ws.getCell('J3');
+      t.value = 'REPORTE SCADA DESCARGA DE CAMIONES PTC';
+      t.font = { name: 'Calibri', size: 26, bold: true };
+      t.alignment = { horizontal: 'center', vertical: 'middle' };
+      if(logoId !== null){
+        ws.addImage(logoId, { tl: { col: 1.4, row: 1.25 }, ext: { width: 216, height: 83 }, editAs: 'oneCell' });
+      }
+      HEADERS.forEach((h, i) => {
+        const c = ws.getCell(5, i + 2);
+        c.value = h;
+        c.font = { name: 'Calibri', size: 14, bold: true };
+        c.alignment = { horizontal: 'center', vertical: 'middle' };
+        c.border = { top: MED, bottom: MED, left: MED, right: MED };
+      });
+
+      const filas = lista.filter(d => ptcGrupo(d) === isla).sort(ptcOrden);
+      filas.forEach((d, i) => {
+        const r = 6 + i;
+        const row = ws.getRow(r);
+        row.height = 18.75;
+        const [y, m, dd] = (d.fecha || '').split('-').map(Number);
+        row.getCell(2).value = d.fecha ? new Date(Date.UTC(y, m - 1, dd)) : null;
+        row.getCell(3).value = isla;
+        row.getCell(4).value = horaExcel(d.horaInicial);
+        row.getCell(5).value = horaExcel(d.horaFinal);
+        row.getCell(6).value = { formula: `I${r}-H${r}`, result: ptcVolMasico(d) };
+        row.getCell(7).value = d.h2o || 0;
+        row.getCell(8).value = d.volInicial;
+        row.getCell(9).value = d.volFinal;
+        row.getCell(10).value = i === 0 ? 0 : { formula: `H${r}-I${r - 1}` };
+        row.getCell(11).value = d.pesoInicial;
+        row.getCell(12).value = d.pesoFinal;
+        row.getCell(13).value = { formula: `L${r}-K${r}`, result: ptcPesoMasico(d) };
+        row.getCell(14).value = d.remito || '';
+        row.getCell(15).value = d.chofer || '';
+        row.getCell(16).value = d.transporte || '';
+        row.getCell(17).value = d.operadorPtc || '';
+        row.getCell(18).value = d.operadora || '';
+        for(let c = 2; c <= 18; c++){
+          const cell = row.getCell(c);
+          cell.font = { name: 'Calibri', size: 14 };
+          cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        }
+        row.getCell(2).numFmt = 'd-mmm';
+        row.getCell(4).numFmt = 'h:mm';
+        row.getCell(5).numFmt = 'h:mm';
+        [6, 8, 9, 10].forEach(c => { row.getCell(c).numFmt = '0.00'; });
+        [11, 12, 13].forEach(c => { row.getCell(c).numFmt = '0'; });
+        // linea gruesa abajo al terminar cada dia, como en la planilla
+        const sig = filas[i + 1];
+        if(!sig || sig.fecha !== d.fecha){
+          for(let c = 2; c <= 18; c++) row.getCell(c).border = { bottom: MED };
+        }
+      });
+      const ultima = Math.max(6, 5 + filas.length);
+      ws.autoFilter = { from: { row: 5, column: 2 }, to: { row: ultima, column: 18 } };
+      // letra de la isla en color (A azul, B verde, C naranja), igual que el formato condicional de la planilla
+      ws.addConditionalFormatting({
+        ref: `C6:C${ultima + 300}`,
+        rules: [
+          { type: 'cellIs', operator: 'equal', formulae: ['"A"'], style: { font: { color: { argb: 'FF0070C0' } } }, priority: 3 },
+          { type: 'cellIs', operator: 'equal', formulae: ['"B"'], style: { font: { color: { argb: 'FF00B050' } } }, priority: 2 },
+          { type: 'cellIs', operator: 'equal', formulae: ['"C"'], style: { font: { color: { argb: 'FFFFC000' } } }, priority: 1 }
+        ]
+      });
+      ws.pageSetup = { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0, paperSize: 9 };
+    });
+
+    // hoja Cargadero (CARGA de camiones en la isla C), mismo formato que la planilla: sin H2O ni Dif. X Vol,
+    // y con las cisternas a la derecha
+    if(!soloConDatos || lista.some(d => ptcGrupo(d) === 'CARG')){
+      const ws = wb.addWorksheet('Cargadero', { views: [{ state: 'frozen', ySplit: 5, showGridLines: false, zoomScale: 80 }] });
+      const ANCH = { A: 3.1, B: 11.7, C: 10.4, D: 14.1, E: 12.7, F: 14, G: 14.3, H: 14.3, I: 14.3, J: 16.6, K: 17.3, L: 19.6, M: 28.1, N: 17.3, O: 16.1, P: 27, Q: 3.1, R: 16.9, S: 14.7, T: 14.7 };
+      Object.keys(ANCH).forEach(c => { ws.getColumn(c).width = ANCH[c]; });
+      for(let r = 1; r <= 5; r++){
+        ws.getRow(r).height = r === 1 ? 14.1 : (r === 5 ? 18.75 : 26.1);
+        for(let c = 1; c <= 19; c++) ws.getCell(r, c).fill = BANDA;
+      }
+      for(let c = 2; c <= 16; c++){
+        const b = {};
+        if(c === 2) b.left = MED;
+        if(c === 16) b.right = MED;
+        ws.getCell(2, c).border = Object.assign({ top: MED }, b);
+        ws.getCell(3, c).border = Object.assign({}, b);
+        ws.getCell(4, c).border = Object.assign({ bottom: MED }, b);
+      }
+      const t = ws.getCell('J3');
+      t.value = 'REPORTE SCADA CARGA DE CAMIONES PTC';
+      t.font = { name: 'Calibri', size: 26, bold: true };
+      t.alignment = { horizontal: 'center', vertical: 'middle' };
+      if(logoId !== null){
+        ws.addImage(logoId, { tl: { col: 1.4, row: 1.25 }, ext: { width: 216, height: 83 }, editAs: 'oneCell' });
+      }
+      const HC = ['Fecha', 'ISLA', 'Hora Inicial', 'Hora Final', 'Vol.Masico', 'Vol. Inicial', 'Vol. Final', 'Peso Inicial', 'Peso Final', 'Peso.Masico', 'REMITO', 'Chofer', 'Transporte', 'Operador PTC', 'Operadora'];
+      HC.forEach((h, i) => {
+        const c = ws.getCell(5, i + 2);
+        c.value = h;
+        c.font = { name: 'Calibri', size: 14, bold: true };
+        c.alignment = { horizontal: 'center', vertical: 'middle' };
+        c.border = { top: MED, bottom: MED, left: MED, right: MED };
+      });
+      ['Cisterna 1', 'Cisterna 2', 'Cisterna 3'].forEach((h, i) => {
+        const c = ws.getCell(5, 18 + i);
+        c.value = h;
+        c.font = { name: 'Calibri', size: 14 };
+        c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFFF' } };
+        c.alignment = { horizontal: 'center', vertical: 'middle' };
+      });
+      const filas = lista.filter(d => ptcGrupo(d) === 'CARG').sort(ptcOrden);
+      filas.forEach((d, i) => {
+        const r = 6 + i;
+        const row = ws.getRow(r);
+        row.height = 18.75;
+        const [y, m, dd] = (d.fecha || '').split('-').map(Number);
+        row.getCell(2).value = d.fecha ? new Date(Date.UTC(y, m - 1, dd)) : null;
+        row.getCell(3).value = 'C';
+        row.getCell(4).value = horaExcel(d.horaInicial);
+        row.getCell(5).value = horaExcel(d.horaFinal);
+        row.getCell(6).value = { formula: `H${r}-G${r}`, result: ptcVolMasico(d) };
+        row.getCell(7).value = d.volInicial;
+        row.getCell(8).value = d.volFinal;
+        row.getCell(9).value = d.pesoInicial;
+        row.getCell(10).value = d.pesoFinal;
+        row.getCell(11).value = { formula: `J${r}-I${r}`, result: ptcPesoMasico(d) };
+        row.getCell(12).value = d.remito || '';
+        row.getCell(13).value = d.chofer || '';
+        row.getCell(14).value = d.transporte || '';
+        row.getCell(15).value = d.operadorPtc || '';
+        row.getCell(16).value = d.operadora || '';
+        row.getCell(18).value = d.cisterna1 != null ? d.cisterna1 : null;
+        row.getCell(19).value = d.cisterna2 != null ? d.cisterna2 : null;
+        row.getCell(20).value = d.cisterna3 != null ? d.cisterna3 : null;
+        for(let c = 2; c <= 20; c++){
+          if(c === 17) continue;
+          const cell = row.getCell(c);
+          cell.font = { name: 'Calibri', size: 14 };
+          cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        }
+        row.getCell(2).numFmt = 'd-mmm';
+        row.getCell(4).numFmt = 'h:mm';
+        row.getCell(5).numFmt = 'h:mm';
+        row.getCell(6).numFmt = '0.000';
+        row.getCell(7).numFmt = '0.000';
+        row.getCell(8).numFmt = '0.000';
+        [9, 10, 11].forEach(c => { row.getCell(c).numFmt = '0'; });
+        const sig = filas[i + 1];
+        if(!sig || sig.fecha !== d.fecha){
+          for(let c = 2; c <= 16; c++) row.getCell(c).border = { bottom: MED };
+        }
+      });
+      const ultima = Math.max(6, 5 + filas.length);
+      ws.autoFilter = { from: { row: 5, column: 2 }, to: { row: ultima, column: 16 } };
+      ws.addConditionalFormatting({
+        ref: `C6:C${ultima + 300}`,
+        rules: [{ type: 'cellIs', operator: 'equal', formulae: ['"C"'], style: { font: { color: { argb: 'FFFFC000' } } }, priority: 1 }]
+      });
+      ws.pageSetup = { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0, paperSize: 9 };
+    }
+
+    return wb;
+  }
+}
+
+// ---- Reporte de PTC (compu principal): lo nuevo desde el ultimo reporte enviado ----
+var ultimoReportePtcTs = null;
+function ptcFechaCarga(d){
+  return d._updatedAtDate || (d.clientTs ? new Date(d.clientTs) : null);
+}
+function pendientesPtc(){
+  const corte = ultimoReportePtcTs || new Date(0);
+  return PTC_DATA.filter(d => { const f = ptcFechaCarga(d); return f && f > corte; }).sort(ptcOrden);
+}
+function pendientesNotasPtc(){
+  const corte = ultimoReportePtcTs || new Date(0);
+  return EQUIPOS_NOTAS.filter(n => n.grupo === 'PTC' && n.texto && n._updatedAtDate && n._updatedAtDate > corte);
+}
+function marcarReportePtcEnviado(){
+  if(!firestoreOk) return;
+  db.collection('pozos_meta').doc('estado9am').set({
+    lastReportePtcTs: firebase.firestore.FieldValue.serverTimestamp()
+  }, { merge: true }).catch((err) => { console.error('No se pudo marcar el reporte de PTC como enviado', err); });
+}
+function exportReportePtc(forzarTodos){
+  if(typeof ExcelJS === 'undefined'){
+    alert('No se pudo generar el Excel (falta conexion a internet para cargar la libreria).');
+    return;
+  }
+  const hoy = ptcFechaOperativa();
+  const camiones = forzarTodos ? PTC_DATA.filter(d => d.fecha === hoy).sort(ptcOrden) : pendientesPtc();
+  const notas = forzarTodos ? EQUIPOS_NOTAS.filter(n => n.grupo === 'PTC' && n.texto) : pendientesNotasPtc();
+  if(!camiones.length && !notas.length){
+    if(!forzarTodos){
+      if(confirm('No hay descargas, cargas ni novedades de PTC nuevas desde el ultimo reporte enviado.\n\n¿Generar igual el reporte con lo del dia operativo de hoy?')) exportReportePtc(true);
+      return;
+    }
+    alert('No hay descargas, cargas ni novedades de PTC del dia operativo de hoy.');
+    return;
+  }
+  const fechaDe = (iso) => { if(!iso) return ''; const [y, m, d] = iso.split('-'); return d + '/' + m + '/' + y; };
+  const fechaDeDate = d => d ? String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear() : '';
+  // hoja OIL (como el reporte de Baterias): un renglon por isla/cargadero y por dia con el total, mas las novedades
+  const filasTs = [];
+  const porGrupoDia = {};
+  camiones.forEach(d => { const k = ptcGrupo(d) + '|' + d.fecha; (porGrupoDia[k] = porGrupoDia[k] || []).push(d); });
+  Object.keys(porGrupoDia).forEach(k => {
+    const l = porGrupoDia[k].sort(ptcOrden);
+    const g = ptcGrupo(l[0]);
+    const m3 = l.reduce((acc, d) => acc + (ptcVolMasico(d) || 0), 0);
+    const kg = l.reduce((acc, d) => acc + (ptcPesoMasico(d) || 0), 0);
+    const ultimo = l[l.length - 1];
+    const verbo = g === 'CARG' ? 'Se cargan' : 'Se descargan';
+    const f = ptcFechaCarga(ultimo);
+    filasTs.push([f ? f.getTime() : 0, fechaDe(l[0].fecha), ultimo.horaFinal || ultimo.horaInicial || '',
+      'PTC', PTC_NOMBRE_GRUPO[g],
+      `${verbo} ${l.length} ${l.length === 1 ? 'camión' : 'camiones'}: ${ptcFmt(m3, 2)} m³ / ${ptcFmt(kg, 0)} kg`]);
+  });
+  notas.forEach(n => filasTs.push([n._updatedAtDate ? n._updatedAtDate.getTime() : 0, fechaDeDate(n._updatedAtDate) || todayStr(),
+    n.hora || (n._updatedAtDate ? n._updatedAtDate.toTimeString().slice(0, 5) : ''), 'PTC', n.equipo || 'General', n.texto || '']));
+  filasTs.sort((a, b) => a[0] - b[0]);
+  const wb = new ExcelJS.Workbook();
+  agregarHojaTabla(wb, 'OIL', ['FECHA', 'HORA', 'INSTALACION', 'EQUIPO', 'NOVEDAD'], filasTs.map(f => f.slice(1)), [12, 9, 14, 18, 60]);
+  // y el detalle de cada camion con el formato de la planilla PTC
+  if(camiones.length) ptcArmarLibro(camiones, true, wb);
+  wb.xlsx.writeBuffer().then(buffer => {
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    downloadOrShareBlob(blob, `Reporte_PTC_${todayStr().replace(/\//g, '-')}.xlsx`, 'Reporte de PTC');
+  });
+  marcarReportePtcEnviado();
+}
+
 function startSync(){
   if(!firestoreOk){
     const warn = document.createElement('div');
@@ -2048,6 +2759,7 @@ function startSync(){
     });
     if(document.getElementById('tanquesMain').style.display !== 'none'){ renderTanques(); }
     if(document.getElementById('piasMain').style.display !== 'none'){ renderPias(); }
+    if(document.getElementById('ptcMain').style.display !== 'none'){ renderPtc(); }
     if(document.getElementById('movMain').style.display !== 'none'){ renderMovimientos(); }
     updatePendCount();
   }, (err) => {
@@ -2102,6 +2814,7 @@ function startSync(){
     const data = doc.data();
     ultimoReporteBateriasTs = (data && data.lastReporteBateriasTs && data.lastReporteBateriasTs.toDate) ? data.lastReporteBateriasTs.toDate() : null;
     ultimoReporteAguaTs = (data && data.lastReporteAguaTs && data.lastReporteAguaTs.toDate) ? data.lastReporteAguaTs.toDate() : null;
+    ultimoReportePtcTs = (data && data.lastReportePtcTs && data.lastReportePtcTs.toDate) ? data.lastReportePtcTs.toDate() : null;
     refreshEverything();
   }, (err) => {
     console.error('Firestore sync error (meta9am)', err);
@@ -2190,6 +2903,20 @@ function startSync(){
     if(document.getElementById('piasMain').style.display !== 'none'){ renderPias(); }
     updatePendCount();
   }, (err) => { console.error('Firestore sync error (pias2_camiones)', err); });
+
+  // descargas de camiones en PTC (islas A/B/C): las ultimas, en vivo; los meses viejos se piden aparte
+  db.collection('ptc_descargas').orderBy('clientTs', 'desc').limit(PTC_LIMITE_VIVO).onSnapshot((snapshot) => {
+    detectarMovimientos(snapshot, 'ptc_descargas', true);
+    PTC_DATA = [];
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      PTC_DATA.push(Object.assign({ id: doc.id }, data, {
+        _updatedAtDate: (data.updatedAt && data.updatedAt.toDate) ? data.updatedAt.toDate() : (data.clientTs ? new Date(data.clientTs) : null)
+      }));
+    });
+    if(document.getElementById('ptcMain').style.display !== 'none'){ renderPtc(); }
+    updatePendCount();
+  }, (err) => { console.error('Firestore sync error (ptc_descargas)', err); });
 }
 
 // carga inicial de pozos de petroleo (solo corre una vez, la primera vez que la coleccion esta vacia)
@@ -3091,6 +3818,8 @@ function actualizarBotonParte(){
   // puede mandar estos reportes en cualquier momento
   if(bateriasBtn) bateriasBtn.style.display = esDispositivoPrimario ? '' : 'none';
   if(aguaBtn) aguaBtn.style.display = esDispositivoPrimario ? '' : 'none';
+  const ptcBtn = document.getElementById('reportePtcBtn');
+  if(ptcBtn) ptcBtn.style.display = esDispositivoPrimario ? '' : 'none';
   actualizarTabAvisos();
   if(!btn) return;
   if(!esDispositivoPrimario){
@@ -3109,6 +3838,9 @@ document.getElementById('reporteBateriasBtn').addEventListener('click', () => {
 });
 document.getElementById('reporteAguaBtn').addEventListener('click', () => {
   try { exportReporteAgua(); } catch(err) { alert('Error al generar el reporte de Agua: ' + (err && err.message ? err.message : err)); }
+});
+document.getElementById('reportePtcBtn').addEventListener('click', () => {
+  try { exportReportePtc(); } catch(err) { alert('Error al generar el reporte de PTC: ' + (err && err.message ? err.message : err)); }
 });
 
 function bateriaToInstalacion(bat){
@@ -3269,7 +4001,7 @@ function pendientesBombeoBaterias(){
 }
 function pendientesNotasBaterias(){
   const corte = corteDePendientesBaterias();
-  return EQUIPOS_NOTAS.filter(n => n.grupo !== 'Pias 2' && n.texto && n._updatedAtDate && n._updatedAtDate > corte)
+  return EQUIPOS_NOTAS.filter(n => n.grupo !== 'Pias 2' && n.grupo !== 'PTC' && n.texto && n._updatedAtDate && n._updatedAtDate > corte)
     .sort((a,b) => a._updatedAtDate - b._updatedAtDate);
 }
 function pendientesAguaTanques(){
@@ -3299,7 +4031,7 @@ function exportReporteBaterias(forzarTodos){
     return;
   }
   const base = forzarTodos ? TANQUES_DATA.filter(t => t.nivelTotal || t.nivelInterfaz) : pendientesBaterias();
-  const notasBase = forzarTodos ? EQUIPOS_NOTAS.filter(n => n.grupo !== 'Pias 2' && n.texto) : pendientesNotasBaterias();
+  const notasBase = forzarTodos ? EQUIPOS_NOTAS.filter(n => n.grupo !== 'Pias 2' && n.grupo !== 'PTC' && n.texto) : pendientesNotasBaterias();
   const bombeoBase = forzarTodos ? (BOMBEO_LOG || []).slice() : pendientesBombeoBaterias();
   if(base.length === 0 && notasBase.length === 0 && bombeoBase.length === 0){
     if(!forzarTodos){
@@ -4515,7 +5247,8 @@ var AVISO_ORIGENES = [
   { id: 'gas', label: 'Pozos gas' },
   { id: 'aib', label: 'AIB' },
   { id: 'bateria', label: 'Baterías' },
-  { id: 'pias2', label: 'Pías 2' }
+  { id: 'pias2', label: 'Pías 2' },
+  { id: 'ptc', label: 'PTC' }
 ];
 
 function avisoEsc(s){
@@ -4541,6 +5274,7 @@ function avisoEtiqueta(a){
   if(o === 'gas') return 'Pozo ' + avisoNumPozo(eq);
   if(o === 'aib') return 'AIB · Pozo ' + avisoNumPozo(eq);
   if(o === 'pias2') return 'Pías 2 · ' + eq;
+  if(o === 'ptc') return 'PTC · ' + eq;
   return (a.bateria ? a.bateria + ' · ' : '') + eq;
 }
 function avisosVisible(){
@@ -4848,6 +5582,10 @@ function renderAvisos(){
       document.getElementById('tabTanques').click();
     } else if(o === 'pias2'){
       document.getElementById('tabPias').click();
+    } else if(o === 'ptc'){
+      const g = Object.keys(PTC_NOMBRE_GRUPO).find(k => PTC_NOMBRE_GRUPO[k] === avisoEquipo(a));
+      if(g) ptcIslaSel = g;
+      document.getElementById('tabPtc').click();
     }
   }));
   main.querySelectorAll('.aviso-resolver').forEach(b => b.addEventListener('click', () => {
@@ -4872,8 +5610,8 @@ function abrirPestanaAvisos(){
 }
 
 // ---------------- Manejo de pestañas (helper generico) ----------------
-const TAB_IDS = ['tabLista','tabPlano','tabRed','tabCiclaje','tabMov','tabAib','tabTanques','tabPias','tabAvisos'];
-const MAIN_IDS = ['main','planoMain','redMain','ciclajeMain','movMain','aibMain','tanquesMain','piasMain','avisosMain'];
+const TAB_IDS = ['tabLista','tabPlano','tabRed','tabCiclaje','tabMov','tabAib','tabTanques','tabPias','tabPtc','tabAvisos'];
+const MAIN_IDS = ['main','planoMain','redMain','ciclajeMain','movMain','aibMain','tanquesMain','piasMain','ptcMain','avisosMain'];
 function switchTab(activeTabId, activeMainId){
   movMarcarVistos(activeTabId);
   TAB_IDS.forEach(id => document.getElementById(id).classList.toggle('active', id === activeTabId));
@@ -5112,6 +5850,9 @@ function renderMovimientos(){
         if(rec.grupo === 'Pias 2'){
           switchTab('tabPias', 'piasMain');
           renderPias();
+        } else if(rec.grupo === 'PTC'){
+          switchTab('tabPtc', 'ptcMain');
+          renderPtc();
         } else {
           bateriasAbiertas.add(rec.grupo);
           switchTab('tabTanques', 'tanquesMain');
@@ -5661,6 +6402,10 @@ document.getElementById('tabTanques').addEventListener('click', () => {
 document.getElementById('tabPias').addEventListener('click', () => {
   switchTab('tabPias', 'piasMain');
   renderPias();
+});
+document.getElementById('tabPtc').addEventListener('click', () => {
+  switchTab('tabPtc', 'ptcMain');
+  renderPtc();
 });
 
 // arranca mostrando el Plano por defecto (ya con todo declarado)
