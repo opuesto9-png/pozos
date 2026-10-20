@@ -71,6 +71,8 @@
   .hab-row input{ flex: 1; min-width: 150px; background: var(--bg); border: 1px solid var(--line); color: var(--text); padding: 9px 10px; border-radius: 6px; font: inherit; font-size: .95rem; letter-spacing: .08em; }
   .hab-banner button{ padding: 9px 16px; border-radius: 6px; border: 1px solid #c98a2b; background: #5a3e12; color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
   .hab-msg{ font-size: .8rem; color: #ffb4a8; }
+  .hab-prim{ margin-top: 4px; padding-top: 8px; border-top: 1px solid #6b4e1c; font-size: .8rem; }
+  .hab-prim button{ margin-left: 6px; padding: 6px 12px !important; background: #1C7293 !important; border-color: #1C7293 !important; }
   .hab-msg.info{ color: var(--muted); }
   .hab-yo{ padding: 9px 12px; border-radius: 8px; background: var(--bg); border: 1px solid var(--line); font-size: .82rem; margin-bottom: 10px; }
   .hab-yo.ok{ border-color: #2f6b45; }
@@ -1617,7 +1619,8 @@ function habRenderBanner(){
       <input id="habCodigo" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="12" placeholder="Código (ej: K7P4QX)">
       <button type="button" id="habBtn">Habilitar</button>
     </div>
-    <div id="habMsg" class="hab-msg" style="display:none;"></div>`;
+    <div id="habMsg" class="hab-msg" style="display:none;"></div>
+    ${esDispositivoPrimario ? `<div class="hab-prim">¿Esta es la compu principal? No escribas acá tu clave: tocá <button type="button" id="habPrimBtn">🔒 Habilitar esta compu como administradora</button></div>` : ''}`;
   const header = document.querySelector('header');
   header.parentNode.insertBefore(el, header.nextSibling);
   const go = () => {
@@ -1626,6 +1629,8 @@ function habRenderBanner(){
     habRegistrar(document.getElementById('habCodigo').value).then(() => { btn.disabled = false; });
   };
   document.getElementById('habBtn').addEventListener('click', go);
+  const prim = document.getElementById('habPrimBtn');
+  if(prim) prim.addEventListener('click', habAbrirPanel);
   document.getElementById('habCodigo').addEventListener('keydown', e => { if(e.key === 'Enter') go(); });
 }
 
@@ -1658,7 +1663,7 @@ function habRenderPanel(){
       <b>Esta compu:</b> ${yo ? 'habilitada' + (HAB.admin ? ' como administradora' : '') + (HAB.nombre ? ' (' + avisoEsc(HAB.nombre) + ')' : '') : (HAB.uid ? 'todavía no habilitada' : 'no se pudo identificar con Firebase (' + avisoEsc(HAB.error || 'sin señal') + ')')}
     </div>`;
   if(!yo && HAB.uid){
-    html += `<p class="hab-ayuda">Primer paso: habilitá esta compu como administradora. Solo funciona mientras la base sigue abierta (antes de publicar las reglas nuevas).</p>
+    html += `<p class="hab-ayuda">Primer paso: habilitá esta compu como administradora (te pide la misma clave de siempre para guardar cambios). Solo funciona mientras la base sigue abierta (antes de publicar las reglas nuevas).</p>
       <button type="button" class="save-btn" id="habYoBtn" style="width:100%">Habilitar esta compu como administradora</button>`;
   }
   if(yo && HAB.admin){
