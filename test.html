@@ -92,6 +92,7 @@
   .hab-acc{ display:flex; gap: 6px; flex-shrink: 0; }
   .hab-mini{ font: inherit; font-size: .72rem; padding: 5px 9px; border-radius: 6px; border: 1px solid var(--line); background: none; color: var(--text); cursor: pointer; }
   .hab-mini.rojo{ border-color: #6b2a24; color: #e6a49d; }
+  .hab-item em.hab-pausa{ color: #ffb4a8; font-weight: 700; }
   .hab-vacio{ font-size: .76rem; color: var(--muted); padding: 4px 0; }
 
   .mov-av-btn, .mov-av-count{
@@ -1540,7 +1541,7 @@ function habConsultar(){
   db.collection('dispositivos').doc(HAB.uid).get().then(doc => {
     if(doc.exists){
       const d = doc.data();
-      HAB.estado = 'habilitado'; HAB.admin = d.admin === true; HAB.nombre = d.nombre || '';
+      HAB.estado = d.pausado === true ? 'pausado' : 'habilitado'; HAB.admin = d.admin === true; HAB.nombre = d.nombre || '';
       safeSet('hab_ok', HAB.uid);
       // marca de ultimo uso (una vez por dia como mucho), para ver en la lista de la compu principal
       if(!d.ultimoUso || Date.now() - d.ultimoUso > 20 * 3600e3){
@@ -1578,7 +1579,9 @@ function habRegistrar(codigo){
       codigo, nombre: d.nombre || '', admin: d.admin === true, tipo: habTipoDispositivo(), app: HAB_APP,
       creadoTs: Date.now(), ultimoUso: Date.now(), agente: String(navigator.userAgent || '').slice(0, 150)
     });
+    HAB.registrando = true;
     return b.commit().then(() => {
+      HAB.registrando = false;
       safeSet('hab_ok', HAB.uid);
       HAB.estado = 'habilitado'; HAB.admin = d.admin === true; HAB.nombre = d.nombre || '';
       habMostrarError('');
@@ -1587,12 +1590,40 @@ function habRegistrar(codigo){
       return '';
     });
   }).catch(err => {
+    HAB.registrando = false;
     console.error('habRegistrar', err);
     if(err && err.code === 'unavailable') return habMostrarError('No hay señal. Probá de nuevo cuando tengas internet.');
     if(err && err.code === 'permission-denied') return habMostrarError('Ese código ya fue usado o no es válido. Pedile uno nuevo al encargado.');
     return habMostrarError('No se pudo habilitar (' + ((err && err.message) || err) + ').');
   });
 }
+
+// ---- sin habilitar o en pausa: no se deja guardar nada (y se avisa claro, en vez de "guardar" y que despues desaparezca)
+function habBloqueado(){ return HAB.estado === 'no' || HAB.estado === 'pausado'; }
+function habTextoBloqueado(){
+  return HAB.estado === 'pausado'
+    ? habEsteDispositivo() + ' está en pausa: por ahora no puede cargar datos. Hablá con el encargado para que lo reactive.'
+    : habEsteDispositivo() + ' no está ' + habHabilitadoTxt() + ', así que no puede cargar datos. Pedile el código al encargado y escribilo en el cartel de arriba.';
+}
+function habAvisarBloqueado(){ alert(habTextoBloqueado()); }
+// red de seguridad: cualquier escritura a la base (aunque no pase por puedeModificar) se frena aca
+function habInstalarGuardia(){
+  try {
+    const FS = firebase.firestore;
+    const frenar = (path) => habBloqueado() && !HAB.registrando && !/^(dispositivos|invitaciones)\//.test(path || '');
+    const rechazo = () => { const e = new Error(habTextoBloqueado()); e.code = 'no-habilitado'; return Promise.reject(e); };
+    ['set', 'update', 'delete'].forEach(m => {
+      const orig = FS.DocumentReference.prototype[m];
+      if(!orig) return;
+      FS.DocumentReference.prototype[m] = function(){ return frenar(this.path) ? rechazo() : orig.apply(this, arguments); };
+    });
+    const add = FS.CollectionReference && FS.CollectionReference.prototype.add;
+    if(add) FS.CollectionReference.prototype.add = function(){ return frenar(this.path + '/x') ? rechazo() : add.apply(this, arguments); };
+    const commit = FS.WriteBatch && FS.WriteBatch.prototype.commit;
+    if(commit) FS.WriteBatch.prototype.commit = function(){ return (habBloqueado() && !HAB.registrando) ? rechazo() : commit.apply(this, arguments); };
+  } catch(e) { console.warn('guardia de escritura no instalada', e); }
+}
+if(firestoreOk) habInstalarGuardia();
 
 function habMostrarError(msg, info){
   HAB.error = msg;
@@ -1606,12 +1637,20 @@ function habMostrarError(msg, info){
 // cartel arriba (no bloquea nada): solo si sabemos que este dispositivo NO esta habilitado
 function habRenderBanner(){
   let el = document.getElementById('habBanner');
-  const mostrar = HAB.estado === 'no';
+  const mostrar = HAB.estado === 'no' || HAB.estado === 'pausado';
   if(!mostrar){ if(el) el.remove(); return; }
-  if(el) return;
+  if(el && el.dataset.estado === HAB.estado) return;
+  if(el) el.remove();
   el = document.createElement('div');
   el.id = 'habBanner';
+  el.dataset.estado = HAB.estado;
   el.className = 'hab-banner';
+  if(HAB.estado === 'pausado'){
+    el.innerHTML = `<b>${habEsteDispositivo()} está en pausa.</b><span>Por ahora no puede ver datos nuevos ni cargar nada. Para volver a usar la app, hablá con el encargado para que lo reactive.</span>`;
+    const header = document.querySelector('header');
+    header.parentNode.insertBefore(el, header.nextSibling);
+    return;
+  }
   el.innerHTML = `
     <b>${habEsteDispositivo()} todavía no está ${habHabilitadoTxt()}.</b>
     <span>Escribí el código que te pasó el encargado (se pone una sola vez):</span>
@@ -1660,7 +1699,7 @@ function habRenderPanel(){
   if(!cont) return;
   const yo = HAB.estado === 'habilitado';
   let html = `<div class="hab-yo ${yo ? 'ok' : ''}">
-      <b>Esta compu:</b> ${yo ? 'habilitada' + (HAB.admin ? ' como administradora' : '') + (HAB.nombre ? ' (' + avisoEsc(HAB.nombre) + ')' : '') : (HAB.uid ? 'todavía no habilitada' : 'no se pudo identificar con Firebase (' + avisoEsc(HAB.error || 'sin señal') + ')')}
+      <b>Esta compu:</b> ${HAB.estado === 'pausado' ? 'en pausa' : ''}${yo ? 'habilitada' + (HAB.admin ? ' como administradora' : '') + (HAB.nombre ? ' (' + avisoEsc(HAB.nombre) + ')' : '') : (HAB.uid ? 'todavía no habilitada' : 'no se pudo identificar con Firebase (' + avisoEsc(HAB.error || 'sin señal') + ')')}
     </div>`;
   if(!yo && HAB.uid){
     html += `<p class="hab-ayuda">Primer paso: habilitá esta compu como administradora (te pide la misma clave de siempre para guardar cambios). Solo funciona mientras la base sigue abierta (antes de publicar las reglas nuevas).</p>
@@ -1684,7 +1723,7 @@ function habRenderPanel(){
 
   const yoBtn = document.getElementById('habYoBtn');
   if(yoBtn) yoBtn.addEventListener('click', () => {
-    if(!puedeModificar()) return;
+    if(!puedeModificar(true)) return; // solo la clave: esta compu todavia no esta habilitada
     const codigo = habCodigoNuevo();
     yoBtn.disabled = true;
     db.collection('invitaciones').doc(codigo).set({ nombre: 'Compu principal', admin: true, usado: false, creadoTs: Date.now(), creadoPor: HAB.uid })
@@ -1762,9 +1801,19 @@ function habCargarListas(){
     l.sort((a, b) => (b.ultimoUso || 0) - (a.ultimoUso || 0));
     if(!l.length){ devEl.innerHTML = '<div class="hab-vacio">Ninguno todavía.</div>'; return; }
     devEl.innerHTML = l.map(d => `<div class="hab-item">
-        <span><b>${avisoEsc(d.nombre || 'Sin nombre')}</b> · ${avisoEsc(d.tipo || '')}${d.admin ? ' <em>(admin)</em>' : ''}${d.id === HAB.uid ? ' <em>(esta compu)</em>' : ''}<small>habilitado ${habFecha(d.creadoTs)} · último uso ${habFecha(d.ultimoUso)}</small></span>
-        ${d.id === HAB.uid ? '' : `<span class="hab-acc"><button type="button" class="hab-mini rojo" data-quitar="${avisoEsc(d.id)}" data-nombre="${avisoEsc(d.nombre || '')}">Quitar</button></span>`}
+        <span><b>${avisoEsc(d.nombre || 'Sin nombre')}</b> · ${avisoEsc(d.tipo || '')}${d.admin ? ' <em>(admin)</em>' : ''}${d.id === HAB.uid ? ' <em>(esta compu)</em>' : ''}${d.pausado ? ' <em class="hab-pausa">EN PAUSA</em>' : ''}<small>habilitado ${habFecha(d.creadoTs)} · último uso ${habFecha(d.ultimoUso)}${d.pausado && d.pausadoTs ? ' · en pausa desde ' + habFecha(d.pausadoTs) : ''}</small></span>
+        ${d.id === HAB.uid ? '' : `<span class="hab-acc"><button type="button" class="hab-mini" data-pausar="${avisoEsc(d.id)}" data-nombre="${avisoEsc(d.nombre || '')}" data-pausado="${d.pausado ? '1' : ''}">${d.pausado ? 'Reactivar' : 'Pausar'}</button><button type="button" class="hab-mini rojo" data-quitar="${avisoEsc(d.id)}" data-nombre="${avisoEsc(d.nombre || '')}">Quitar</button></span>`}
       </div>`).join('');
+    devEl.querySelectorAll('[data-pausar]').forEach(b => b.addEventListener('click', () => {
+      const pausar = !b.dataset.pausado;
+      const quien = b.dataset.nombre || 'este dispositivo';
+      if(!confirm(pausar
+        ? '¿Pausar a ' + quien + '? Mientras esté en pausa no ve datos nuevos ni puede cargar nada (en Pozos y en Datos KTI). Lo podés reactivar cuando quieras, sin código nuevo.'
+        : '¿Reactivar a ' + quien + '? Vuelve a funcionar normal enseguida.')) return;
+      if(!puedeModificar()) return;
+      db.collection('dispositivos').doc(b.dataset.pausar).update(pausar ? { pausado: true, pausadoTs: Date.now() } : { pausado: false, pausadoTs: null })
+        .then(habCargarListas).catch(err => alert('No se pudo (' + err.message + ').'));
+    }));
     devEl.querySelectorAll('[data-quitar]').forEach(b => b.addEventListener('click', () => {
       if(!confirm('¿Quitar el acceso de ' + (b.dataset.nombre || 'este dispositivo') + '? Deja de ver y cargar datos (en Pozos y en Datos KTI).')) return;
       if(!puedeModificar()) return;
@@ -4086,7 +4135,8 @@ function esMovil(){
 // en compu, pide clave antes de guardar cualquier cambio (para evitar que alguien modifique algo
 // sin querer al pasar por la compu). En el celular no pide nada, los operadores siguen igual.
 const CLAVE_MODIFICAR_PC = '091218';
-function puedeModificar(){
+function puedeModificar(sinControlHab){
+  if(!sinControlHab && habBloqueado()){ habAvisarBloqueado(); return false; }
   if(esMovil()) return true;
   const clave = prompt('Ingresa la clave para guardar cambios desde esta compu:');
   if(clave === null) return false; // cancelo
@@ -5714,6 +5764,11 @@ function renderAvisoFormGenerico(target, alCancelar, alEnviar){
     }
     if(!operadorName){
       err.textContent = 'Antes de enviar, poné tu nombre arriba de todo (donde dice "Tu nombre").';
+      err.style.display = '';
+      return;
+    }
+    if(habBloqueado()){
+      err.textContent = habTextoBloqueado();
       err.style.display = '';
       return;
     }
