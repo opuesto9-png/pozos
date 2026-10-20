@@ -65,6 +65,35 @@
   .conn-badge.online{ background: #24391f; color:#a6d9a0; }
   .conn-badge.offline{ background: #3a201d; color:#e6a49d; }
   .mov-av-tag{ display:inline-flex; align-items:center; gap:6px; }
+  .hab-banner{ margin: 10px 14px; padding: 12px 14px; border-radius: 10px; background: #3a2a10; border: 1px solid #c98a2b; color: #f3dcb2; font-size: .82rem; display:flex; flex-direction:column; gap:6px; }
+  .hab-banner b{ color: #ffd48a; font-size: .9rem; }
+  .hab-row{ display:flex; gap:8px; flex-wrap: wrap; align-items: center; }
+  .hab-row input{ flex: 1; min-width: 150px; background: var(--bg); border: 1px solid var(--line); color: var(--text); padding: 9px 10px; border-radius: 6px; font: inherit; font-size: .95rem; letter-spacing: .08em; }
+  .hab-banner button{ padding: 9px 16px; border-radius: 6px; border: 1px solid #c98a2b; background: #5a3e12; color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+  .hab-msg{ font-size: .8rem; color: #ffb4a8; }
+  .hab-prim{ margin-top: 4px; padding-top: 8px; border-top: 1px solid #6b4e1c; font-size: .8rem; }
+  .hab-prim button{ margin-left: 6px; padding: 6px 12px !important; background: #1C7293 !important; border-color: #1C7293 !important; }
+  .hab-msg.info{ color: var(--muted); }
+  .hab-yo{ padding: 9px 12px; border-radius: 8px; background: var(--bg); border: 1px solid var(--line); font-size: .82rem; margin-bottom: 10px; }
+  .hab-yo.ok{ border-color: #2f6b45; }
+  .hab-ayuda{ font-size: .78rem; color: var(--muted); }
+  .hab-k{ font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 16px 0 6px; }
+  .hab-row .edit-input{ flex: 1; min-width: 160px; }
+  .hab-row .save-btn{ flex: 0 0 auto; padding: 9px 14px; }
+  .hab-check{ display:flex; gap:8px; align-items:flex-start; font-size: .74rem; color: var(--muted); margin-top: 8px; }
+  .hab-nuevo{ margin-top: 10px; padding: 12px; border-radius: 8px; background: var(--bg); border: 1px solid #2f6b45; font-size: .8rem; display:flex; flex-direction:column; gap:6px; }
+  .hab-codigo{ font-family: 'Consolas', 'SF Mono', monospace; font-size: 1.6rem; font-weight: 800; letter-spacing: .18em; color: #a6d9a0; }
+  .hab-link{ font-size: .7rem; color: var(--muted); word-break: break-all; }
+  .hab-wa{ text-decoration: none; text-align: center; background: #1f4d2e !important; border-color: #2f8a4f !important; }
+  .hab-item{ display:flex; justify-content: space-between; gap: 8px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line); font-size: .8rem; }
+  .hab-item small{ display:block; color: var(--muted); font-size: .7rem; margin-top: 2px; }
+  .hab-item em{ color: #e8c14d; font-style: normal; font-size: .72rem; }
+  .hab-cod{ font-family: 'Consolas', 'SF Mono', monospace; letter-spacing: .1em; }
+  .hab-acc{ display:flex; gap: 6px; flex-shrink: 0; }
+  .hab-mini{ font: inherit; font-size: .72rem; padding: 5px 9px; border-radius: 6px; border: 1px solid var(--line); background: none; color: var(--text); cursor: pointer; }
+  .hab-mini.rojo{ border-color: #6b2a24; color: #e6a49d; }
+  .hab-vacio{ font-size: .76rem; color: var(--muted); padding: 4px 0; }
+
   .mov-av-btn, .mov-av-count{
     font: inherit; font-size: 0.72rem; border-radius: 999px; padding: 3px 10px; cursor: pointer;
     border: 1px solid var(--border, #ccc); background: transparent; color: var(--muted);
@@ -645,6 +674,44 @@
   .camion-lista{ margin-top: 10px; }
   .camion-row{ display: flex; justify-content: space-between; gap: 8px; font-size: 0.72rem; color: var(--muted); padding: 6px 0; border-top: 1px solid var(--line); }
   .camion-row b{ color: var(--text); }
+  .ptc-top{ display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin: 6px 0 12px; }
+  .ptc-islas{ display:flex; gap:6px; }
+  .ptc-isla{ font: inherit; font-size: .85rem; font-weight: 700; padding: 8px 16px; border-radius: 999px; cursor: pointer;
+    background: var(--panel); color: var(--text); border: 2px solid var(--line); }
+  .ptc-isla.sel{ border-color: var(--isla); background: color-mix(in srgb, var(--isla) 28%, var(--panel)); }
+  .ptc-mes{ font-size: .72rem; color: var(--muted); display:flex; align-items:center; gap:6px; }
+  .ptc-mes input{ background: var(--bg); border: 1px solid var(--line); color: var(--text); padding: 6px 8px; border-radius: 6px; font: inherit; font-size: .8rem; color-scheme: dark; }
+  .ptc-nueva, .ptc-excel{ width:100%; padding: 11px; border-radius: 8px; font: inherit; font-size: .88rem; font-weight: 700; cursor: pointer; margin-bottom: 8px; }
+  .ptc-nueva{ background: var(--amber-dim); border: 1px solid var(--amber); color: var(--text); }
+  .ptc-excel{ background: none; border: 1px dashed var(--amber); color: var(--text); font-weight: 600; font-size: .8rem; }
+  .ptc-resumen{ display:grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 6px 0 14px; }
+  .ptc-resumen > div{ background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--isla); border-radius: 8px; padding: 9px 12px; display:flex; flex-direction:column; gap:2px; }
+  .ptc-resumen span{ font-size: .68rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  .ptc-resumen b{ font-size: 1.05rem; }
+  .ptc-resumen small{ font-size: .74rem; color: var(--muted); }
+  .ptc-dia{ background: var(--panel); border: 1px solid var(--line); border-radius: 8px; margin-bottom: 10px; overflow: hidden; }
+  .ptc-dia-head{ display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; padding: 8px 12px; background: var(--amber-dim); font-size: .78rem; }
+  .ptc-dia-head span{ color: var(--muted); }
+  .ptc-row{ display:grid; grid-template-columns: 104px 110px 1fr; gap: 8px; width:100%; text-align:left; background:none; border:none; border-top: 1px solid var(--line);
+    color: var(--text); padding: 8px 12px; font: inherit; font-size: .76rem; cursor: pointer; align-items: start; }
+  .ptc-row:hover{ background: rgba(255,255,255,.03); }
+  .ptc-hora{ font-family: 'Consolas', 'SF Mono', monospace; white-space: nowrap; }
+  .ptc-vol{ display:flex; flex-direction:column; }
+  .ptc-vol small, .ptc-det{ color: var(--muted); }
+  .ptc-dif{ color: #f0a35e !important; font-style: normal; }
+  .ptc-calc{ grid-column: 1 / -1; display:flex; gap: 8px; flex-wrap: wrap; }
+  .ptc-calc > div{ flex: 1; min-width: 90px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 9px; display:flex; flex-direction:column; }
+  .ptc-calc span{ font-size: .64rem; color: var(--muted); text-transform: uppercase; }
+  .ptc-calc b{ font-size: .95rem; }
+  .ptc-form input[type=date], .ptc-form input[type=time]{ color-scheme: dark; }
+  .ptc-aviso-card{ margin-bottom: 10px; }
+  .ptc-aviso-card .eq-nota{ margin: 2px 0 6px; }
+  #ptcNotasCont{ margin-bottom: 10px; }
+  .ptc-borrar{ width:100%; margin-top: 14px; padding: 9px; background: none; border: 1px solid #6b2a24; color: #e6a49d; border-radius: 6px; font: inherit; font-size: .78rem; cursor: pointer; }
+  @media (max-width: 420px){
+    .ptc-row{ grid-template-columns: 104px 1fr; }
+    .ptc-det{ grid-column: 1 / -1; }
+  }
 
   .edit-input{
     width: 100%;
@@ -1051,6 +1118,7 @@
     <button class="tab-btn" id="tabAib">AIB</button>
     <button class="tab-btn" id="tabTanques">Baterias</button>
     <button class="tab-btn" id="tabPias">Pías 2</button>
+    <button class="tab-btn" id="tabPtc">PTC</button>
     <button class="tab-btn" id="tabAvisos" style="display:none;">Avisos <span id="avisosBadge" class="pend-badge" style="display:none;"></span></button>
   </div>
   <div class="toolbar">
@@ -1058,11 +1126,13 @@
     <button class="tab-btn export-btn" id="exportarTodoBtn">Exportar todo</button>
     <button class="tab-btn export-btn" id="reporteBateriasBtn">Enviar reporte de Baterías <span id="pendCountBaterias" class="pend-badge" style="display:none;"></span></button>
     <button class="tab-btn export-btn" id="reporteAguaBtn">Enviar reporte de Agua <span id="pendCountAgua" class="pend-badge" style="display:none;"></span></button>
+    <button class="tab-btn export-btn" id="reportePtcBtn">Enviar reporte de PTC <span id="pendCountPtc" class="pend-badge" style="display:none;"></span></button>
     <div class="unit-toggle">
       <button class="unit-btn active" id="unitKg">kg/cm&sup2;</button>
       <button class="unit-btn" id="unitPsi">psi</button>
     </div>
     <span id="movAvisoTag" class="mov-av-tag" style="margin-left:auto; display:none;"></span>
+    <button type="button" id="dispositivosBtn" class="mov-av-btn" style="display:none;" title="Habilitar celulares y compus, y ver quién tiene acceso">🔒 Dispositivos</button>
     <span id="primarioTag" class="operador-tag"></span>
   </div>
 </header>
@@ -1075,6 +1145,7 @@
 <main id="aibMain" style="display:none;"></main>
 <main id="tanquesMain" style="display:none;"></main>
 <main id="piasMain" style="display:none;"></main>
+<main id="ptcMain" style="display:none;"></main>
 <main id="avisosMain" style="display:none;"></main>
 
 <div class="overlay" id="overlay">
@@ -1084,6 +1155,7 @@
 <script>const POZOS = [{"pozo": "Ce-63", "fecha": "22/08", "presion": "4 kg/cm2", "tablero": "ENSI", "optim": "Optimizador P. Cosing (Auto 6)", "notas": "Colectora (plano 2017): Col. USPA II - BP; Pozo con cono (plano 2017); Nota plano: + Ce-1116 + Ce-1221", "bateria": "USPA2", "colectora": "Col. USPA II - BP", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-103", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Colectora (plano 2017): Col. USPA II - BP; Estado en plano 2017: cerrado", "bateria": "USPA2", "colectora": "Col. USPA II - BP", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1014", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Colectora (plano 2017): Col. USPA II - BP; Estado en plano 2017: cerrado", "bateria": "USPA2", "colectora": "Col. USPA II - BP", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1044", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Aparece en la lista SCADA de USPA2 (tag CEN_USPA2_Ce_1044.FI) pero todavia no tenemos sus datos de la libreta.; Caudal medido en conjunto con Ce-1560 (mismo FI, tag CEN_USPA2_Ce_1044_1560.FI).; Colectora (plano 2017): Col. 29 - BP; Pozo con cono (plano 2017)", "bateria": "USPA2", "colectora": "Col. 29 - BP", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1081", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Aparece en la lista SCADA de USPA2 (tag CEN_USPA2_Ce_1081.FI) pero todavia no tenemos sus datos de la libreta.; Colectora (plano 2017): Col. 29 - BP; Pozo con cono (plano 2017)", "bateria": "USPA2", "colectora": "Col. 29 - BP", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1095", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Colectora (plano 2017): Col. USPA II - BP", "bateria": "USPA2", "colectora": "Col. USPA II - BP", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1096", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Aparece en la lista SCADA de USPA2 (tag CEN_USPA2_Ce_1096.FI) pero todavia no tenemos sus datos de la libreta.; Colectora (plano 2017): Col. 29 - BP; Pozo con cono (plano 2017)", "bateria": "USPA2", "colectora": "Col. 29 - BP", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1097", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Aparece en la lista SCADA de USPA2 (tag CEN_USPA2_Ce_1097.FI) pero todavia no tenemos sus datos de la libreta.; Colectora (plano 2017): Col. 29 - BP; Pozo con cono (plano 2017)", "bateria": "USPA2", "colectora": "Col. 29 - BP", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1116", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Colectora (plano 2017): Col. USPA II - BP; Pozo con cono (plano 2017); Nota plano: junto a Ce-63", "bateria": "USPA2", "colectora": "Col. USPA II - BP", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1119", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Aparece en la lista SCADA de USPA2 (tag CEN_USPA2_Ce_1119.FI) pero todavia no tenemos sus datos de la libreta.; Colectora (plano 2017): Col. 29 - BP; Pozo con cono (plano 2017)", "bateria": "USPA2", "colectora": "Col. 29 - BP", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1126", "fecha": "-", "presion": "4,2 kg/cm2", "tablero": "ENSI", "optim": "", "notas": "Cat. A; (T+); Cronograma 12/09-13/09 (Sebastian Flores, mail 12/9 14:5x): 12/9 20:00:Cerrado / 12/9 22:00:Cerrado / 13/9 00:00:Cerrado / 13/9 02:00:Abierto / 13/9 04:00:Abierto / 13/9 06:00:Abierto / 13/9 08:00:Abierto", "bateria": "USPA2", "colectora": "", "estado": "Cerrado", "ciclo": "6c x 90a", "horario": ""}, {"pozo": "Ce-1141", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Aparece en la lista SCADA de USPA2 (tag CEN_USPA2_Ce_1141.FI) pero todavia no tenemos sus datos de la libreta.; Colectora (plano 2017): Col. 29 - BP; Pozo con cono (plano 2017)", "bateria": "USPA2", "colectora": "Col. 29 - BP", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1147", "fecha": "-", "presion": "4 kg/cm2", "tablero": "", "optim": "", "notas": "Cat. A; se cambio Abrac a T.surg; (T+); Colectora (plano 2017): Col. 29 - BP; Pozo con cono (plano 2017)", "bateria": "USPA2", "colectora": "Col. 29 - BP", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1154", "fecha": "-", "presion": "3 kg/cm2", "tablero": "", "optim": "Optimizador Pompa", "notas": "Cat. A; Auto 6; (T+) (B+); Brida Bocheo, Brida ciego (conexion MC); Colectora (plano 2017): Col. 29 - BP; Pozo con cono (plano 2017); Nota plano: MP", "bateria": "USPA2", "colectora": "Col. 29 - BP", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1193", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Aparece en la lista SCADA de USPA2 (tag CEN_USPA2_Ce_1193.FI) pero todavia no tenemos sus datos de la libreta.; Colectora (plano 2017): Col. 29 - BP; Nota plano: junto con Ce-1490", "bateria": "USPA2", "colectora": "Col. 29 - BP", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1221", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Colectora (plano 2017): Col. USPA II - BP; Nota plano: junto a Ce-63", "bateria": "USPA2", "colectora": "Col. USPA II - BP", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1267", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Colectora (plano 2017): Col. USPA II - BP", "bateria": "USPA2", "colectora": "Col. USPA II - BP", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1294", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Aparece en la lista SCADA de USPA2 (tag CEN_USPA2_Ce_1294.FI) pero todavia no tenemos sus datos de la libreta.; Colectora (plano 2017): Col. 29 - BP; Pozo con cono (plano 2017); Cronograma 12/09-13/09 (Sebastian Flores, mail 12/9 14:5x): 12/9 20:00:Abierto / 12/9 22:00:Abierto / 13/9 00:00:Abierto / 13/9 02:00:Cerrado / 13/9 04:00:Cerrado / 13/9 06:00:Abierto / 13/9 08:00:Abierto", "bateria": "USPA2", "colectora": "Col. 29 - BP", "estado": "Abierto", "ciclo": "8c x 88a", "horario": ""}, {"pozo": "Ce-1295", "fecha": "-", "presion": "2,5 kg/cm2", "tablero": "", "optim": "", "notas": "Cat. A; (T+); Colectora (plano 2017): Col. USPA II - BP; Cronograma 12/09-13/09 (Sebastian Flores, mail 12/9 14:5x): 12/9 20:00:Abierto / 12/9 22:00:Abierto / 13/9 00:00:Abierto / 13/9 02:00:Abierto / 13/9 04:00:Cerrado / 13/9 06:00:Cerrado / 13/9 08:00:Cerrado", "bateria": "USPA2", "colectora": "Col. USPA II - BP", "estado": "Abierto", "ciclo": "2c x 46a", "horario": ""}, {"pozo": "Ce-1296", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Colectora (plano 2017): Col. USPA II - BP", "bateria": "USPA2", "colectora": "Col. USPA II - BP", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1299", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Aparece en la lista SCADA de USPA2 (tag CEN_USPA2_Ce_1299.FI) pero todavia no tenemos sus datos de la libreta.; Colectora (plano 2017): Col. 29 - BP; Pozo con cono (plano 2017)", "bateria": "USPA2", "colectora": "Col. 29 - BP", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1336", "fecha": "-", "presion": "17,5 kg/cm2", "tablero": "", "optim": "Optimizador MNA", "notas": "Cat. C; (T+); Brida Bocheo, Brida ciego, Tope de surgencia; Lubricador fijo; Colectora (plano 2017): Col. 1478; Pozo con cono (plano 2017)", "bateria": "USPA2", "colectora": "Col. 1478", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1339", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Aparece en la lista SCADA de USPA2 (tag CEN_USPA2_Ce_1339.FI) pero todavia no tenemos sus datos de la libreta.; Colectora (plano 2017): Col. GPI USPA II; Pozo con cono (plano 2017)", "bateria": "USPA2", "colectora": "Col. GPI USPA II", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1340", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Aparece en la lista SCADA de USPA2 (tag CEN_USPA2_Ce_1340.FI) pero todavia no tenemos sus datos de la libreta.; Colectora (plano 2017): Col. 29 - BP; Pozo con cono (plano 2017)", "bateria": "USPA2", "colectora": "Col. 29 - BP", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1385", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Colectora (plano 2017): Col. GPI USPA II; Nota plano: caudalimetro", "bateria": "USPA2", "colectora": "Col. GPI USPA II", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1454", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Aparece en la lista SCADA de USPA2 (tag CEN_USPA2_Ce_1454.FI) pero todavia no tenemos sus datos de la libreta.; Colectora (plano 2017): Col. 1095; Pozo con cono (plano 2017); Nota plano: (d)", "bateria": "USPA2", "colectora": "Col. 1095", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1472", "fecha": "-", "presion": "2,5 kg/cm2", "tablero": "", "optim": "", "notas": "Cat. A; Cronograma 12/09-13/09 (Sebastian Flores, mail 12/9 14:5x): 12/9 20:00:Abierto / 12/9 22:00:Abierto / 13/9 00:00:Abierto / 13/9 02:00:Abierto / 13/9 04:00:Cerrado / 13/9 06:00:Cerrado / 13/9 08:00:Cerrado", "bateria": "USPA2", "colectora": "", "estado": "Abierto", "ciclo": "2c x 46a", "horario": ""}, {"pozo": "Ce-1478", "fecha": "-", "presion": "42 kg/cm2", "tablero": "ENSI", "optim": "", "notas": "Cat. C; (T+); Brida Bocheo, Brida ciego; Colectora (plano 2017): Col. 1478", "bateria": "USPA2", "colectora": "Col. 1478", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1520", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Aparece en la lista SCADA de USPA2 (tag CEN_USPA2_Ce_1520.FI) pero todavia no tenemos sus datos de la libreta.; Colectora (plano 2017): Sin colectora especifica; Pozo con cono (plano 2017)", "bateria": "USPA2", "colectora": "Sin colectora especifica", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1543", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Aparece en la lista SCADA de USPA2 (tag CEN_USPA2_Ce_1543.FI) pero todavia no tenemos sus datos de la libreta.; Colectora (plano 2017): Col. 29; Pozo con cono (plano 2017)", "bateria": "USPA2", "colectora": "Col. 29", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1544", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Aparece en la lista SCADA de USPA2 (tag CEN_USPA2_Ce_1544.FI) pero todavia no tenemos sus datos de la libreta.; Colectora (plano 2017): Col. 1095; Pozo con cono (plano 2017); Nota plano: (d)", "bateria": "USPA2", "colectora": "Col. 1095", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1545", "fecha": "30/06", "presion": "3 kg/cm2", "tablero": "ENSI", "optim": "", "notas": "Cat. A; Plunger c/Piston (Auto 2); Tope surgencia (B+); Colectora (plano 2017): Ampl Col. USPA II; Pozo con cono (plano 2017)", "bateria": "USPA2", "colectora": "Ampl Col. USPA II", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1557", "fecha": "30/06", "presion": "3 kg/cm2", "tablero": "", "optim": "", "notas": "Cat. A; Colectora (plano 2017): Ampl Col. USPA II; Pozo con cono (plano 2017)", "bateria": "USPA2", "colectora": "Ampl Col. USPA II", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1558", "fecha": "29/06", "presion": "4 kg", "tablero": "", "optim": "Optimizador Pompa", "notas": "Cat. A; Auto 6; (T+) (B+)", "bateria": "USPA2", "colectora": "", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1559", "fecha": "29/06", "presion": "5 kg/cm2", "tablero": "MNA", "optim": "", "notas": "Cat. A; (T+) - pozo del ciclado PM351/PM420; Colectora (plano 2017): Ampl Col. USPA II; Pozo con cono (plano 2017)", "bateria": "USPA2", "colectora": "Ampl Col. USPA II", "estado": "", "ciclo": "", "horario": "Abrir 16:00 - Cerrar 22:00 / Abrir 04:00 - Cerrar 10:00 (ciclo 6x6)"}, {"pozo": "Ce-1560", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Aparece en la lista SCADA de USPA2 (tag CEN_USPA2_Ce_1560.FI) pero todavia no tenemos sus datos de la libreta.; Caudal medido en conjunto con Ce-1044 (mismo FI, tag CEN_USPA2_Ce_1044_1560.FI).; Colectora (plano 2017): Col. 29; Pozo con cono (plano 2017)", "bateria": "USPA2", "colectora": "Col. 29", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1561", "fecha": "29/06", "presion": "18 kg/cm2", "tablero": "MNA", "optim": "", "notas": "Cat. C; Auto 2; Plunger c/Piston (B+)", "bateria": "USPA2", "colectora": "", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1562", "fecha": "29/06", "presion": "3 kg/cm2", "tablero": "", "optim": "", "notas": "Cat. A; Auto 2; Plunger c/Piston (B+)", "bateria": "USPA2", "colectora": "", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1563", "fecha": "29/06", "presion": "17 kg/cm2", "tablero": "", "optim": "Optimizador Pompa", "notas": "Cat. C; Auto 6; (T+) (B+)", "bateria": "USPA2", "colectora": "", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1564", "fecha": "29/06", "presion": "3 kg/cm2", "tablero": "ENSI", "optim": "", "notas": "Cat. A - pozo del ciclado PM351/PM420 (ya con optimizador montado); Colectora (plano 2017): Ampl Col. USPA II; Pozo con cono (plano 2017)", "bateria": "USPA2", "colectora": "Ampl Col. USPA II", "estado": "", "ciclo": "", "horario": "Cerrar 16:00 / Abrir 22:00 - Cerrar 04:00 / Abrir 10:00 - Cerrar 16:00 (ciclo 6x6, complementario a Ce-1559)"}, {"pozo": "Ce-1570", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Aparece en la lista SCADA de USPA2 (tag CEN_USPA2_Ce_1570.FI) pero todavia no tenemos sus datos de la libreta.; Colectora (plano 2017): Col. 1095", "bateria": "USPA2", "colectora": "Col. 1095", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1577", "fecha": "30/06", "presion": "4 kg/cm2", "tablero": "ENSI", "optim": "Optimizador Pompa", "notas": "Cat. A; (T+) (B+)", "bateria": "USPA2", "colectora": "", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1578", "fecha": "30/06", "presion": "3,5 kg/cm2", "tablero": "MNA", "optim": "", "notas": "Cat. A; (T+) - pozo tambien en ciclado PM351/PM420", "bateria": "USPA2", "colectora": "", "estado": "Abierto", "ciclo": "", "horario": "Abrir 21:00 - Cerrar 05:00 / Abrir 13:00 - Cerrar 21:00 (ciclo 8x8)"}, {"pozo": "Ce-1580", "fecha": "30/06", "presion": "3,5 kg/cm2", "tablero": "MNA", "optim": "", "notas": "Cat. A; Lubricador fijo; T. de surgencia; (T+) - pozo tambien en ciclado PM351/PM420", "bateria": "USPA2", "colectora": "", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1062", "fecha": "22/08", "presion": "4 kg/cm2", "tablero": "", "optim": "Optimizador Pompa (Auto 6)", "notas": "", "bateria": "USPA3", "colectora": "", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1105", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Cronograma 12/09-13/09 (Sebastian Flores, mail 12/9 14:5x): 12/9 20:00:Cerrado / 12/9 22:00:Cerrado / 13/9 00:00:Cerrado / 13/9 02:00:Cerrado / 13/9 04:00:Abierto / 13/9 06:00:Abierto / 13/9 08:00:Abierto", "bateria": "USPA3", "colectora": "", "estado": "Cerrado", "ciclo": "48c x 24a", "horario": ""}, {"pozo": "Ce-1120", "fecha": "21/08", "presion": "4 kg/cm2", "tablero": "", "optim": "", "notas": "(T+); Colectora (plano 2017): Col. 1156; Nota plano: junto con Ce-1220 (cortada); Cronograma 12/09-13/09 (Sebastian Flores, mail 12/9 14:5x): 12/9 20:00:Abierto / 12/9 22:00:Abierto / 13/9 00:00:Cerrado / 13/9 02:00:Abierto / 13/9 04:00:Abierto / 13/9 06:00:Abierto / 13/9 08:00:Abierto", "bateria": "USPA3", "colectora": "Col. 1156", "estado": "Abierto", "ciclo": "2c x 46a", "horario": ""}, {"pozo": "Ce-1122", "fecha": "22/08", "presion": "1,2 kg/cm2", "tablero": "MNA", "optim": "", "notas": "MCBP (Hoerbiger) (T+); Colectora (plano 2017): Col. 1153; Pozo con cono (plano 2017); Nota plano: MP", "bateria": "USPA3", "colectora": "Col. 1153", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1125", "fecha": "21/08", "presion": "5 kg/cm2", "tablero": "ENSI", "optim": "Optimizador Pompa", "notas": "(T+); Colectora (plano 2017): Col. 1136; Pozo con cono (plano 2017); Nota plano: a-1125 BP", "bateria": "USPA3", "colectora": "Col. 1136", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1136", "fecha": "22/08", "presion": "4,5 kg/cm2", "tablero": "", "optim": "", "notas": "Iny. P.Quimico wezol; Pack Off Sup 3600 PSI / Inf 4000 PSI, habilitado (T+); Colectora (plano 2017): Col. 1136; Pozo con cono (plano 2017); Nota plano: BP", "bateria": "USPA3", "colectora": "Col. 1136", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1140", "fecha": "21/08", "presion": "4 kg/cm2", "tablero": "", "optim": "", "notas": "(T+); Cronograma 12/09-13/09 (Sebastian Flores, mail 12/9 14:5x): 12/9 20:00:Cerrado / 12/9 22:00:Cerrado / 13/9 00:00:Abierto / 13/9 02:00:Abierto / 13/9 04:00:Abierto / 13/9 06:00:Abierto / 13/9 08:00:Abierto", "bateria": "USPA3", "colectora": "", "estado": "Cerrado", "ciclo": "4c x 42a", "horario": ""}, {"pozo": "Ce-1142", "fecha": "22/08", "presion": "4,5 kg/cm2", "tablero": "MNA", "optim": "", "notas": "Colectora (plano 2017): Col. 1153; Pozo con cono (plano 2017); Nota plano: MP", "bateria": "USPA3", "colectora": "Col. 1153", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1143", "fecha": "22/08", "presion": "4 kg/cm2", "tablero": "MNA", "optim": "", "notas": "T+; Colectora (plano 2017): Col. 1143", "bateria": "USPA3", "colectora": "Col. 1143", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1144", "fecha": "22/08", "presion": "5 kg/cm2", "tablero": "ENSI", "optim": "Optimizado P. Cosing (Auto 6)", "notas": "Colectora (plano 2017): Col. 1144; Nota plano: MP (resaltado en el plano)", "bateria": "USPA3", "colectora": "Col. 1144", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1146", "fecha": "21/08", "presion": "4 kg/cm2", "tablero": "MNA", "optim": "", "notas": "(T+); Colectora (plano 2017): Col. 1146; Pozo con cono (plano 2017)", "bateria": "USPA3", "colectora": "Col. 1146", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1148", "fecha": "21/08", "presion": "6 kg/cm2", "tablero": "MNA", "optim": "", "notas": "(T+); Colectora (plano 2017): Col. 1136; Pozo con cono (plano 2017); Nota plano: MP", "bateria": "USPA3", "colectora": "Col. 1136", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1149", "fecha": "22/08", "presion": "3 kg/cm2", "tablero": "ENSI", "optim": "Optimizador Pompa (Auto 6)", "notas": "Colectora (plano 2017): Sin colectora especifica; Pozo con cono (plano 2017)", "bateria": "USPA3", "colectora": "Sin colectora especifica", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1151", "fecha": "22/08", "presion": "4,5 kg/cm2", "tablero": "MNA", "optim": "", "notas": "Brida Bocheo, Brida ciego (T+); Colectora (plano 2017): Col. 1151", "bateria": "USPA3", "colectora": "Col. 1151", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1152", "fecha": "22/08", "presion": "2,5 kg/cm2", "tablero": "", "optim": "", "notas": "Brida Bocheo, Brida ciego (T+); Colectora (plano 2017): Col. 1153; Pozo con cono (plano 2017); Nota plano: MP", "bateria": "USPA3", "colectora": "Col. 1153", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1153", "fecha": "22/08", "presion": "3 kg/cm2", "tablero": "MNA", "optim": "", "notas": "(T+); Colectora (plano 2017): Col. 1153; Pozo con cono (plano 2017); Nota plano: MP", "bateria": "USPA3", "colectora": "Col. 1153", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1155", "fecha": "22/08", "presion": "5 kg/cm2", "tablero": "MMA", "optim": "", "notas": "Brida Bocheo - Brida ciega (T+); Colectora (plano 2017): Col. 1143; Pozo con cono (plano 2017); Nota plano: junto a Ce-1181, BP", "bateria": "USPA3", "colectora": "Col. 1143", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1156", "fecha": "21/08", "presion": "16 kg/cm2", "tablero": "", "optim": "", "notas": "Brida Bocheo; Colectora (plano 2017): Col. 1156; Pozo con cono (plano 2017)", "bateria": "USPA3", "colectora": "Col. 1156", "estado": "", "ciclo": "", "horario": "Cerrar 02:00 / Abrir 04:00 - ... (dato cortado en la foto del mail)"}, {"pozo": "Ce-1157", "fecha": "22/08", "presion": "4,5 kg/cm2", "tablero": "MNA", "optim": "", "notas": "(T+); Colectora (plano 2017): Col. 1178; Nota plano: BP", "bateria": "USPA3", "colectora": "Col. 1178", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1158", "fecha": "21/08", "presion": "0 kg/cm2", "tablero": "ENSI", "optim": "", "notas": "Brida Bocheo, Brida ciego; MCBP (Hoerbiger) (T+); Colectora (plano 2017): Col. 1144; Nota plano: BP", "bateria": "USPA3", "colectora": "Col. 1144", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1166", "fecha": "21/08", "presion": "5 kg/cm2", "tablero": "", "optim": "", "notas": "(T+); Cronograma 12/09-13/09 (Sebastian Flores, mail 12/9 14:5x): 12/9 20:00:Abierto / 12/9 22:00:Abierto / 13/9 00:00:Cerrado", "bateria": "USPA3", "colectora": "", "estado": "Abierto", "ciclo": "6c x 18a", "horario": ""}, {"pozo": "Ce-1176", "fecha": "21/08", "presion": "3,5 kg/cm2", "tablero": "", "optim": "Optimizador MNA F/S", "notas": "Brida Bocheo, Brida ciego (T+)", "bateria": "USPA3", "colectora": "", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1181", "fecha": "21/08", "presion": "3,5 kg/cm2", "tablero": "MNA", "optim": "", "notas": "Brida Bocheo, Brida ciego; Colectora (plano 2017): Col. 1143; Pozo con cono (plano 2017); Nota plano: junto a Ce-1155, BP", "bateria": "USPA3", "colectora": "Col. 1143", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1183", "fecha": "22/08", "presion": "4,5 kg/cm2", "tablero": "MNA", "optim": "", "notas": "(T+); Colectora (plano 2017): Col. 1151", "bateria": "USPA3", "colectora": "Col. 1151", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1190", "fecha": "22/08", "presion": "4 kg/cm2", "tablero": "", "optim": "", "notas": "Iny. P.Quimico (vedio/wezol); Pack Off Sup 500 PSI / Inf s/o (roto), habilitado (T+); Colectora (plano 2017): Col. 1153; Pozo con cono (plano 2017); Nota plano: MP", "bateria": "USPA3", "colectora": "Col. 1153", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1195", "fecha": "22/08", "presion": "4 kg/cm2", "tablero": "MNA", "optim": "", "notas": "(T+); Colectora (plano 2017): Col. 1144; Nota plano: (d) BP; Cronograma 12/09-13/09 (Sebastian Flores, mail 12/9 14:5x): 12/9 20:00:Abierto / 12/9 22:00:Abierto / 13/9 00:00:Abierto / 13/9 02:00:Abierto / 13/9 04:00:Abierto / 13/9 06:00:Abierto / 13/9 08:00:Abierto", "bateria": "USPA3", "colectora": "Col. 1144", "estado": "Abierto", "ciclo": "2c x 46a", "horario": ""}, {"pozo": "Ce-1197", "fecha": "22/08", "presion": "3 kg/cm2", "tablero": "MNA", "optim": "", "notas": "Lubricador fijo; Brida Bocheo, Brida ciego, T. Surgencia (T+); Colectora (plano 2017): Col. 1153; Pozo con cono (plano 2017); Nota plano: BP", "bateria": "USPA3", "colectora": "Col. 1153", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1200", "fecha": "21/08", "presion": "4 kg/cm2", "tablero": "", "optim": "", "notas": "(T+); Colectora (plano 2017): Col. 1156; Cronograma 12/09-13/09 (Sebastian Flores, mail 12/9 14:5x): 12/9 20:00:Cerrado / 12/9 22:00:Cerrado / 13/9 00:00:Cerrado / 13/9 02:00:Abierto / 13/9 04:00:Abierto / 13/9 06:00:Abierto / 13/9 08:00:Abierto", "bateria": "USPA3", "colectora": "Col. 1156", "estado": "Cerrado", "ciclo": "48c x 24a", "horario": ""}, {"pozo": "Ce-1207", "fecha": "21/08", "presion": "0 kg/cm2", "tablero": "ENSI", "optim": "", "notas": "Brida Bocheo, Brida ciego; Colectora (plano 2017): Col. 1178; Pozo con cono (plano 2017); Nota plano: BP", "bateria": "USPA3", "colectora": "Col. 1178", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1208", "fecha": "22/08", "presion": "5 kg/cm2", "tablero": "", "optim": "", "notas": "(T+); Colectora (plano 2017): Col. 1136; Pozo con cono (plano 2017); Nota plano: (D) BP", "bateria": "USPA3", "colectora": "Col. 1136", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1214", "fecha": "22/08", "presion": "5 kg/cm2", "tablero": "ENSI", "optim": "", "notas": "(T+); Colectora (plano 2017): Col. 1136; Pozo con cono (plano 2017); Nota plano: BP", "bateria": "USPA3", "colectora": "Col. 1136", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1218", "fecha": "21/08", "presion": "3,5 kg/cm2", "tablero": "MMA", "optim": "", "notas": "Lubricador fijo; T. Surgencia; Colectora (plano 2017): Col. 1144; Nota plano: (d) BP", "bateria": "USPA3", "colectora": "Col. 1144", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1236", "fecha": "22/08", "presion": "4 kg/cm2", "tablero": "MMA", "optim": "", "notas": "Brida de Bocheo - Brida ciega (T+); Colectora (plano 2017): Col. 1153; Cronograma 12/09-13/09 (Sebastian Flores, mail 12/9 14:5x): 12/9 20:00:Abierto / 12/9 22:00:Abierto / 13/9 00:00:Abierto / 13/9 02:00:Abierto / 13/9 04:00:Abierto / 13/9 06:00:Abierto / 13/9 08:00:Abierto", "bateria": "USPA3", "colectora": "Col. 1153", "estado": "Abierto", "ciclo": "2c x 46a", "horario": ""}, {"pozo": "Ce-1249", "fecha": "22/08", "presion": "3,5 kg/cm2", "tablero": "MNA", "optim": "", "notas": "(T+); Colectora (plano 2017): Col. 26; Nota plano: BP", "bateria": "USPA3", "colectora": "Col. 26", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1252", "fecha": "21/08", "presion": "4,5 kg/cm2", "tablero": "ENSI", "optim": "Optimizador P. Cosing (Auto 6)", "notas": "Brida Bocheo (T+); Colectora (plano 2017): Col. 1144; Estado en plano 2017: nuevo; Nota plano: (d) BP", "bateria": "USPA3", "colectora": "Col. 1144", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1253", "fecha": "21/08", "presion": "3,5 kg/cm2", "tablero": "", "optim": "", "notas": "Lubricador fijo; Brida Bocheo, Brida ciego, T. Surgencia; Colectora (plano 2017): Col. 1253; Pozo con cono (plano 2017); Nota plano: BP", "bateria": "USPA3", "colectora": "Col. 1253", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1279", "fecha": "21/08", "presion": "3 kg/cm2", "tablero": "", "optim": "", "notas": "Colectora (plano 2017): Col. 1253; Pozo con cono (plano 2017); Nota plano: BP", "bateria": "USPA3", "colectora": "Col. 1253", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1280", "fecha": "22/08", "presion": "30 kg/cm2", "tablero": "", "optim": "", "notas": "Colectora (plano 2017): Col. 26; Nota plano: -d BP; Cronograma 12/09-13/09 (Sebastian Flores, mail 12/9 14:5x): 12/9 20:00:Cerrado / 12/9 22:00:Cerrado / 13/9 00:00:Cerrado / 13/9 02:00:Cerrado", "bateria": "USPA3", "colectora": "Col. 26", "estado": "Cerrado", "ciclo": "20c x 4a", "horario": ""}, {"pozo": "Ce-1297", "fecha": "22/08", "presion": "5 kg/cm2", "tablero": "ENSI", "optim": "", "notas": "Brida Bocheo, T. Surgencia (T+)", "bateria": "USPA3", "colectora": "", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1300", "fecha": "22/08", "presion": "5 kg/cm2", "tablero": "", "optim": "", "notas": "Iny. P.Quimico wezol; Pack Off Sup 0 / Inf 1000 PSI, habilitado (T+); Colectora (plano 2017): Col. 1136; Pozo con cono (plano 2017); Nota plano: -d BP", "bateria": "USPA3", "colectora": "Col. 1136", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1301", "fecha": "21/08", "presion": "BP 3,5 kg/cm2", "tablero": "", "optim": "Optimizado P. Cosing (Manual 6)", "notas": "Lubricador fijo, Tope surgencia (T+); Colectora (plano 2017): Col. 1253; Pozo con cono (plano 2017); Nota plano: -d BP", "bateria": "USPA3", "colectora": "Col. 1253", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1303", "fecha": "22/08", "presion": "3,5 kg/cm2", "tablero": "ENSI", "optim": "", "notas": "(T+); Colectora (plano 2017): Col. 1178; Pozo con cono (plano 2017); Nota plano: MP", "bateria": "USPA3", "colectora": "Col. 1178", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1335", "fecha": "22/08", "presion": "4 kg/cm2", "tablero": "ENSI", "optim": "", "notas": "Colectora (plano 2017): Col. 1253; Pozo con cono (plano 2017); Nota plano: (d) BP; Cronograma 12/09-13/09 (Sebastian Flores, mail 12/9 14:5x): 12/9 20:00:Abierto / 12/9 22:00:Abierto / 13/9 00:00:Abierto / 13/9 02:00:Abierto / 13/9 04:00:Abierto / 13/9 06:00:Abierto / 13/9 08:00:Abierto", "bateria": "USPA3", "colectora": "Col. 1253", "estado": "Abierto", "ciclo": "6c x 90a", "horario": ""}, {"pozo": "Ce-1337", "fecha": "21/08", "presion": "3 kg/cm2", "tablero": "", "optim": "", "notas": "Tope surgencia; Colectora (plano 2017): Col. 1253; Nota plano: BP; Cronograma 12/09-13/09 (Sebastian Flores, mail 12/9 14:5x): 12/9 20:00:Cerrado / 12/9 22:00:Cerrado / 13/9 00:00:Cerrado / 13/9 02:00:Abierto / 13/9 04:00:Abierto / 13/9 06:00:Abierto / 13/9 08:00:Cerrado", "bateria": "USPA3", "colectora": "Col. 1253", "estado": "Cerrado", "ciclo": "24c x 24a", "horario": ""}, {"pozo": "Ce-1356", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Aparece en la lista SCADA de USPA3 (CEN_USPA3_Ce_1356.FI) pero todavia no tenemos sus datos de la libreta (presion, tablero, optimizador).; Colectora (plano 2017): Col. 1153; Estado en plano 2017: nuevo; Pozo con cono (plano 2017); Nota plano: MP", "bateria": "USPA3", "colectora": "Col. 1153", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1369", "fecha": "21/08", "presion": "3,5 kg/cm2", "tablero": "MMA", "optim": "", "notas": "(T+); Colectora (plano 2017): Sin colectora especifica; Pozo con cono (plano 2017)", "bateria": "USPA3", "colectora": "Sin colectora especifica", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1370", "fecha": "22/08", "presion": "6 kg/cm2", "tablero": "MMA", "optim": "Optimizador Pompa (tachado / de baja)", "notas": "Plunger (Manual 6); Colectora (plano 2017): Col. 1079; Pozo con cono (plano 2017)", "bateria": "USPA3", "colectora": "Col. 1079", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1371", "fecha": "21/08", "presion": "4 kg/cm2", "tablero": "", "optim": "", "notas": "Colectora (plano 2017): Col. 1079; Pozo con cono (plano 2017)", "bateria": "USPA3", "colectora": "Col. 1079", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1372", "fecha": "21/08", "presion": "4 kg/cm2", "tablero": "", "optim": "", "notas": "(T+); Colectora (plano 2017): Col. 1079; Pozo con cono (plano 2017)", "bateria": "USPA3", "colectora": "Col. 1079", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1374", "fecha": "22/08", "presion": "3,5 kg/cm2", "tablero": "", "optim": "", "notas": "Segun libreta, conectado a la colectora de BAT4 (agrupacion fisica distinta de USPA4; no se asigna USPA por esto).; Colectora (plano 2017): Sin colectora especifica; Pozo con cono (plano 2017); Cronograma 12/09-13/09 (Sebastian Flores, mail 12/9 14:5x): 12/9 20:00:Abierto / 12/9 22:00:Abierto / 13/9 00:00:Cerrado / 13/9 02:00:Cerrado / 13/9 04:00:Cerrado / 13/9 06:00:Cerrado / 13/9 08:00:Cerrado", "bateria": "USPA3", "colectora": "Sin colectora especifica", "estado": "Abierto", "ciclo": "24c x 48a", "horario": ""}, {"pozo": "Ce-1376", "fecha": "21/08", "presion": "3,5 kg/cm2", "tablero": "", "optim": "", "notas": "Brida Bocheo, Brida ciego; Colectora (plano 2017): Col. 1079; Pozo con cono (plano 2017)", "bateria": "USPA3", "colectora": "Col. 1079", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1451", "fecha": "22/08", "presion": "4 kg/cm2", "tablero": "", "optim": "", "notas": "(T+); Segun libreta, conectado a la colectora de BAT4 (agrupacion fisica distinta de USPA4; no se asigna USPA por esto).; Colectora (plano 2017): Col. 1079; Pozo con cono (plano 2017); Cronograma 12/09-13/09 (Sebastian Flores, mail 12/9 14:5x): 12/9 20:00:Abierto / 12/9 22:00:Abierto / 13/9 00:00:Abierto / 13/9 02:00:Abierto / 13/9 04:00:Cerrado / 13/9 06:00:Cerrado / 13/9 08:00:Cerrado", "bateria": "USPA3", "colectora": "Col. 1079", "estado": "Abierto", "ciclo": "24c x 48a", "horario": ""}, {"pozo": "Ce-1458", "fecha": "29/06", "presion": "3 kg/cm2", "tablero": "", "optim": "", "notas": "Cat. A; (T+); Cronograma 12/09-13/09 (Sebastian Flores, mail 12/9 14:5x): 12/9 20:00:Abierto / 12/9 22:00:Abierto / 13/9 00:00:Cerrado / 13/9 02:00:Abierto / 13/9 04:00:Abierto / 13/9 06:00:Abierto / 13/9 08:00:Abierto", "bateria": "USPA3", "colectora": "", "estado": "Abierto", "ciclo": "2c x 22a", "horario": ""}, {"pozo": "Ce-1487", "fecha": "22/08", "presion": "3 kg/cm2", "tablero": "ENSI", "optim": "", "notas": "Brida Bocheo, Brida ciego (T+); Colectora (plano 2017): Col. 1153; Estado en plano 2017: nuevo; Pozo con cono (plano 2017); Nota plano: MP", "bateria": "USPA3", "colectora": "Col. 1153", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1494", "fecha": "22/08", "presion": "1,2 kg/cm2", "tablero": "ENSI", "optim": "Optimizador MNA", "notas": "MCBP (Hoerbiger) (T+); Colectora (plano 2017): Col. 1153; Estado en plano 2017: nuevo; Pozo con cono (plano 2017); Nota plano: BP", "bateria": "USPA3", "colectora": "Col. 1153", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1501", "fecha": "22/08", "presion": "20 kg/cm2", "tablero": "MNA", "optim": "Optimizado P. Cosing (Auto 6)", "notas": "Brida Bocheo, Brida ciego (T+); Colectora (plano 2017): Col. 1079; Pozo con cono (plano 2017)", "bateria": "USPA3", "colectora": "Col. 1079", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1513", "fecha": "22/08", "presion": "4,5 kg/cm2", "tablero": "", "optim": "", "notas": "Plunger pompa (Auto 2); Colectora (plano 2017): Col. 1079; Estado en plano 2017: nuevo; Nota plano: I", "bateria": "USPA3", "colectora": "Col. 1079", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1515", "fecha": "22/08", "presion": "4 kg/cm2", "tablero": "MMA", "optim": "", "notas": "Lubricador f/u; Tope surgencia (T+)", "bateria": "USPA3", "colectora": "", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1516", "fecha": "22/08", "presion": "12 kg/cm2", "tablero": "ENSI", "optim": "", "notas": "Plunger c/Piston (Auto 2); Colectora (plano 2017): Col. 1153; Estado en plano 2017: nuevo; Pozo con cono (plano 2017); Nota plano: MP", "bateria": "USPA3", "colectora": "Col. 1153", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1517", "fecha": "22/08", "presion": "8 kg/cm2", "tablero": "MNA", "optim": "", "notas": "Plunger y Piston (Auto 2)", "bateria": "USPA3", "colectora": "", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1202", "fecha": "29/06", "presion": "88 kg/cm2", "tablero": "", "optim": "", "notas": "Cat. C; desvinculado; Capilar WTF; Pack Off Sup 2400 PSI / Inf 2000 PSI; Tope de surgencia", "bateria": "USPA4", "colectora": "", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1338", "fecha": "29/06", "presion": "18 kg/cm2", "tablero": "", "optim": "", "notas": "Cat. C; Auto 2; Plunger sin Piston (B+); Brida Bocheo, Brida ciego, T. surgencia; Colectora (plano 2017): Col. GPI USPA II; Nota plano: caudalimetro", "bateria": "USPA4", "colectora": "Col. GPI USPA II", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1465", "fecha": "-", "presion": "8 kg/cm2", "tablero": "", "optim": "", "notas": "Cat. C; Plunger s/Piston (Auto 2) (B+); Colectora (plano 2017): Col. USPA IV; Pozo con cono (plano 2017)", "bateria": "USPA4", "colectora": "Col. USPA IV", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1466", "fecha": "-", "presion": "22 kg/cm2", "tablero": "", "optim": "Optimizador MNA", "notas": "Cat. C; (T+); Colectora (plano 2017): Col. USPA IV", "bateria": "USPA4", "colectora": "Col. USPA IV", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1468", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Agregado manualmente por Maxi, asignado a bateria; sin mas datos todavia.", "bateria": "USPA4", "colectora": "", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1471", "fecha": "-", "presion": "3 kg/cm2", "tablero": "", "optim": "", "notas": "Cat. A; Brida Bocheo, Brida ciego; Colectora (plano 2017): Col. USPA IV; Pozo con cono (plano 2017)", "bateria": "USPA4", "colectora": "Col. USPA IV", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1504", "fecha": "30/06", "presion": "3 kg/cm2", "tablero": "ENSI", "optim": "", "notas": "Cat. A; Brida c/reduccion a 2\"; Colectora (plano 2017): Col. 1163; Cronograma 12/09-13/09 (Sebastian Flores, mail 12/9 14:5x): 12/9 20:00:Abierto / 12/9 22:00:Cerrado / 13/9 00:00:Abierto / 13/9 02:00:Abierto / 13/9 04:00:Abierto / 13/9 06:00:Abierto / 13/9 08:00:Abierto", "bateria": "USPA4", "colectora": "Col. 1163", "estado": "Abierto", "ciclo": "2c x 46a", "horario": ""}, {"pozo": "Ce-1505", "fecha": "-", "presion": "70 kg/cm2", "tablero": "", "optim": "", "notas": "Cat. C; (T+); leve fuga entre valvulas Muestra y Sobremuestra; se coloco Abrac y manometro 150 a BP; Cronograma 12/09-13/09 (Sebastian Flores, mail 12/9 14:5x): 12/9 20:00:Abierto", "bateria": "USPA4", "colectora": "", "estado": "Abierto", "ciclo": "24c x 24a", "horario": ""}, {"pozo": "Ce-1506", "fecha": "30/06", "presion": "2,5 kg/cm2", "tablero": "", "optim": "", "notas": "Cat. A; Capilar W+F (sin Iny.); Pack Off Sup 1000 PSI / Inf 1000 PSI; Tope surgencia, Brida ciego; Colectora (plano 2017): Col. 1163", "bateria": "USPA4", "colectora": "Col. 1163", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1507", "fecha": "30/06", "presion": "3 kg/cm2", "tablero": "", "optim": "Optimizador Pompa", "notas": "Cat. A; (T+); bodega purgo lleno (B+)", "bateria": "USPA4", "colectora": "", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1508", "fecha": "-", "presion": "5 kg/cm2", "tablero": "ENSI", "optim": "Optimizador MNA", "notas": "Cat. A; (T+) (B+); Brida Bocheo, Brida ciego; tablero quedo prendido y en automatico; Colectora (plano 2017): Col. USPA IV; Estado en plano 2017: nuevo", "bateria": "USPA4", "colectora": "Col. USPA IV", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1556", "fecha": "-", "presion": "4 kg/cm2", "tablero": "MNA", "optim": "Optimizador MNA", "notas": "Cat. A; (T+); Colectora (plano 2017): Col. 1163", "bateria": "USPA4", "colectora": "Col. 1163", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1565", "fecha": "29/06", "presion": "48 kg/cm2", "tablero": "ENSI", "optim": "Optimizador Pompa", "notas": "Cat. C; (T+) (B+); Lubricador fijo", "bateria": "USPA4", "colectora": "", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1567", "fecha": "-", "presion": "2,5 kg/cm2", "tablero": "ENSI", "optim": "", "notas": "Cat. A; (T+); Colectora (plano 2017): Col. USPA IV; Cronograma 12/09-13/09 (Sebastian Flores, mail 12/9 14:5x): 12/9 20:00:Abierto / 12/9 22:00:Abierto / 13/9 00:00:Abierto / 13/9 02:00:Abierto / 13/9 04:00:Abierto / 13/9 06:00:Abierto / 13/9 08:00:Abierto", "bateria": "USPA4", "colectora": "Col. USPA IV", "estado": "Abierto", "ciclo": "24c x 48a", "horario": ""}, {"pozo": "Ce-1568", "fecha": "-", "presion": "2,5 kg/cm2", "tablero": "ENSI", "optim": "", "notas": "Cat. A; Colectora (plano 2017): Col. USPA IV; Cronograma 12/09-13/09 (Sebastian Flores, mail 12/9 14:5x): 12/9 20:00:Cerrado / 12/9 22:00:Cerrado / 13/9 00:00:Abierto / 13/9 02:00:Abierto / 13/9 04:00:Abierto / 13/9 06:00:Abierto / 13/9 08:00:Cerrado", "bateria": "USPA4", "colectora": "Col. USPA IV", "estado": "Cerrado", "ciclo": "8c x 88a", "horario": ""}, {"pozo": "Ce-1569", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Aparece en la lista SCADA de USPA4 (tag CEN_USPA4_Ce_1569.FI) pero todavia no tenemos sus datos de la libreta.", "bateria": "USPA4", "colectora": "", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1608", "fecha": "29/06", "presion": "40 kg/cm2", "tablero": "ENSI", "optim": "Optimizador Pompa", "notas": "Cat. C; (T+) (B+); Lubricador fijo", "bateria": "USPA4", "colectora": "", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1127", "fecha": "09/07", "presion": "3 kg/cm2", "tablero": "MNA", "optim": "", "notas": "Cat. A; (T+); mantenimiento (desmalezado); Cronograma 12/09-13/09 (Sebastian Flores, mail 12/9 14:5x): 12/9 20:00:Abierto / 12/9 22:00:Abierto / 13/9 00:00:Cerrado / 13/9 02:00:Abierto / 13/9 04:00:Abierto / 13/9 06:00:Abierto / 13/9 08:00:Abierto", "bateria": "USPA5", "colectora": "", "estado": "Abierto", "ciclo": "2c x 46a", "horario": ""}, {"pozo": "Ce-1135", "fecha": "09/07", "presion": "4 kg/cm2", "tablero": "", "optim": "", "notas": "Cat. A", "bateria": "USPA5", "colectora": "", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1489", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Aparece en la lista SCADA de USPA5 (tag CEN_USPA5_Ce_1489.FI) pero todavia no tenemos sus datos de la libreta.; Colectora (plano 2017): Col. 1296; Pozo con cono (plano 2017); Nota plano: BP", "bateria": "USPA5", "colectora": "Col. 1296", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1493", "fecha": "09/07", "presion": "3,5 kg/cm2", "tablero": "", "optim": "Optimizador Pompa", "notas": "Cat. A; (B+); Brida Bocheo, Brida ciego; Caudal medido en conjunto con Ce-1539 (mismo FI, tag CEN_USPA5_CE_1493_1539.FI).", "bateria": "USPA5", "colectora": "", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1532", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Aparece en la lista SCADA de USPA5 (tag CEN_USPA5_Ce_1532.FI) pero todavia no tenemos sus datos de la libreta.; Colectora (plano 2017): Col. USPA V; Pozo con cono (plano 2017); Nota plano: MP; Cronograma 12/09-13/09 (Sebastian Flores, mail 12/9 14:5x): 12/9 20:00:Abierto / 12/9 22:00:Abierto / 13/9 00:00:Abierto / 13/9 02:00:Cerrado / 13/9 04:00:Cerrado / 13/9 06:00:Cerrado / 13/9 08:00:Cerrado", "bateria": "USPA5", "colectora": "Col. USPA V", "estado": "Abierto", "ciclo": "48c x 24a", "horario": ""}, {"pozo": "Ce-1533", "fecha": "09/07", "presion": "3,5 kg/cm2", "tablero": "", "optim": "Optimizador Pompa", "notas": "Cat. A; (T+); Capilar WTF; Pack Off Sup 1000 PSI F/S / Inf 3500 PSI (B+); Colectora (plano 2017): Col. USPA V; Pozo con cono (plano 2017); Nota plano: MP", "bateria": "USPA5", "colectora": "Col. USPA V", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1534", "fecha": "09/07", "presion": "4 kg/cm2", "tablero": "", "optim": "", "notas": "Cat. A; (T+); Iny. P.Quimico habilitada; Capilar WTF; Pack Off S/SDV Sup 3500 PSI / Inf 3300 PSI; Colectora (plano 2017): Col. USPA V; Pozo con cono (plano 2017); Nota plano: MP", "bateria": "USPA5", "colectora": "Col. USPA V", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1535", "fecha": "09/07", "presion": "5 kg/cm2", "tablero": "ENSI", "optim": "Optimizador MNA", "notas": "Cat. A; OK (B+); Plunger; (T+); Tope surgencia; Colectora (plano 2017): Col. USPA V; Pozo con cono (plano 2017); Nota plano: MP", "bateria": "USPA5", "colectora": "Col. USPA V", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1539", "fecha": "09/07", "presion": "37 kg/cm2", "tablero": "MNA", "optim": "Optimizador Pompa", "notas": "Cat. C; (T+); OK (B+); Caudal medido en conjunto con Ce-1493 (mismo FI, tag CEN_USPA5_CE_1493_1539.FI).; Colectora (plano 2017): Col. USPA V; Pozo con cono (plano 2017); Nota plano: MP", "bateria": "USPA5", "colectora": "Col. USPA V", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1540", "fecha": "09/07", "presion": "17 kg/cm2", "tablero": "", "optim": "Optimizador MNA", "notas": "Cat. C; (T+) (B+); Colectora (plano 2017): Col. USPA V; Pozo con cono (plano 2017); Nota plano: MP", "bateria": "USPA5", "colectora": "Col. USPA V", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1541", "fecha": "09/07", "presion": "17 kg/cm2", "tablero": "ENSI", "optim": "", "notas": "Cat. C; Colectora (plano 2017): Col. USPA V; Pozo con cono (plano 2017); Nota plano: MP", "bateria": "USPA5", "colectora": "Col. USPA V", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1574", "fecha": "09/07", "presion": "22 kg/cm2", "tablero": "ENSI", "optim": "Optimizador Pompa", "notas": "Cat. C; (T+); OK; bateria 80%", "bateria": "USPA5", "colectora": "", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-26", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Colectora (plano 2017): Col. 26; Nota plano: a-26 BP", "bateria": "Sin bateria", "colectora": "Col. 26", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-30", "fecha": "09/07", "presion": "35 kg/cm2", "tablero": "", "optim": "", "notas": "Cat. C; desvinculado; (T+)", "bateria": "Sin bateria", "colectora": "", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-104", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Colectora (plano 2017): Col. 1178; Estado en plano 2017: cerrado; Nota plano: Linea cortada", "bateria": "Sin bateria", "colectora": "Col. 1178", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-117", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Colectora (plano 2017): Sin colectora especifica; Pozo con cono (plano 2017)", "bateria": "Sin bateria", "colectora": "Sin colectora especifica", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1123", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Colectora (plano 2017): Col. 1146; Pozo con cono (plano 2017)", "bateria": "Sin bateria", "colectora": "Col. 1146", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1159", "fecha": "22/08", "presion": "0,5 kg/cm2", "tablero": "", "optim": "", "notas": "Brida Bocheo", "bateria": "Sin bateria", "colectora": "", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1171", "fecha": "09/07", "presion": "6 kg/cm2", "tablero": "", "optim": "", "notas": "Cat. A", "bateria": "Sin bateria", "colectora": "", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1178", "fecha": "21/08", "presion": "3,5 kg/cm2", "tablero": "", "optim": "", "notas": "Segun libreta, conectado a la colectora de BAT4 (agrupacion fisica distinta de USPA4; no se asigna USPA por esto).; Colectora (plano 2017): Col. 1178; Nota plano: BP", "bateria": "Sin bateria", "colectora": "Col. 1178", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1191", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Colectora (plano 2017): Col. 1144; Nota plano: (d) BP", "bateria": "Sin bateria", "colectora": "Col. 1144", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1198", "fecha": "22/08", "presion": "7 kg/cm2", "tablero": "MNA", "optim": "", "notas": "Brida Bocheo (T+); Colectora (plano 2017): Col. 1151; Nota plano: BP", "bateria": "Sin bateria", "colectora": "Col. 1151", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1199", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Colectora (plano 2017): Col. 1151; Nota plano: BP", "bateria": "Sin bateria", "colectora": "Col. 1151", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1217", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Colectora (plano 2017): Col. 1151; Estado en plano 2017: cerrado", "bateria": "Sin bateria", "colectora": "Col. 1151", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1220", "fecha": "21/08", "presion": "3,5 kg/cm2", "tablero": "", "optim": "", "notas": "(T+); Colectora (plano 2017): Col. 1156; Estado en plano 2017: cerrado; Nota plano: linea cortada, junto a Ce-1120", "bateria": "Sin bateria", "colectora": "Col. 1156", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1266", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Colectora (plano 2017): Col. 29 - BP; Estado en plano 2017: cerrado", "bateria": "Sin bateria", "colectora": "Col. 29 - BP", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1302", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Colectora (plano 2017): Col. 26; Nota plano: BP", "bateria": "Sin bateria", "colectora": "Col. 26", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1350", "fecha": "22/08", "presion": "4 kg/cm2", "tablero": "", "optim": "", "notas": "Iny. P.Quimico (vedio-wezol); Pack Off Sup 1800 PSI / Inf 1200 PSI, habilitado (T+)", "bateria": "Sin bateria", "colectora": "", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1490", "fecha": "-", "presion": "s/d", "tablero": "", "optim": "", "notas": "Colectora (plano 2017): Col. 29 - BP; Nota plano: junto con Ce-1193", "bateria": "Sin bateria", "colectora": "Col. 29 - BP", "estado": "", "ciclo": "", "horario": ""}, {"pozo": "Ce-1572", "fecha": "09/07", "presion": "-", "tablero": "", "optim": "", "notas": "Cat. C; (T+); Brida Bocheo", "bateria": "Sin bateria", "colectora": "", "estado": "", "ciclo": "", "horario": ""}];</script><script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script>
 const BAT_COLORS = {
   "USPA2": "#3d6ea8",
@@ -1387,14 +1459,319 @@ const firebaseConfig = {
 };
 let db = null;
 let firestoreOk = false;
+var authFb = null; // identificacion anonima del dispositivo (ver "Habilitacion de dispositivos")
 try{
   if(typeof firebase !== 'undefined'){
     firebase.initializeApp(firebaseConfig);
+    // auth antes que firestore: asi la base espera a saber quien es el dispositivo antes de conectarse
+    try{ authFb = (typeof firebase.auth === 'function') ? firebase.auth() : null; }catch(e){ authFb = null; }
     db = firebase.firestore();
     try{ db.enablePersistence({ synchronizeTabs: true }).catch(() => {}); }catch(e){}
     firestoreOk = true;
   }
 }catch(e){ firestoreOk = false; }
+
+// ---------------- Habilitacion de dispositivos (codigo de un solo uso) ----------------
+// Cada celular/compu se identifica sola con Firebase (usuario anonimo, sin usuario ni contraseña) y queda
+// habilitada una sola vez con un codigo que genera la compu principal. Cada codigo sirve para UN solo
+// dispositivo: si se reenvia, al segundo le dice "ya usado". Las reglas de Firestore (en la consola, no
+// en este archivo) son las que cierran la base a los dispositivos no habilitados.
+// Colecciones: 'dispositivos/{uid}' (los habilitados) e 'invitaciones/{codigo}' (los codigos).
+// La misma habilitacion vale para Datos KTI (mismo dominio y mismo proyecto de Firebase).
+var HAB = { uid: null, estado: 'cargando', admin: false, nombre: '', error: '' }; // estado: cargando | habilitado | no | sin-auth
+var HAB_ALFABETO = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // sin 0/O ni 1/I para que no se confundan al escribirlos
+var HAB_APP = 'pozos';
+
+function habNormalizar(c){ return String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); }
+function habCodigoNuevo(){
+  const r = new Uint32Array(6);
+  try { crypto.getRandomValues(r); } catch(e) { for(let i = 0; i < 6; i++) r[i] = Math.floor(Math.random() * 1e9); }
+  return Array.from(r, n => HAB_ALFABETO[n % HAB_ALFABETO.length]).join('');
+}
+function habLinkDe(codigo){
+  // link a esta misma pagina (index.html en la app; test.html mientras se prueba)
+  const u = new URL(location.href);
+  u.search = '?equipo=' + codigo;
+  u.hash = '';
+  return u.toString();
+}
+function habTipoDispositivo(){ return esMovil() ? 'celular' : 'compu'; }
+function habEsteDispositivo(){ return esMovil() ? 'Este celular' : 'Esta compu'; }
+function habHabilitadoTxt(){ return esMovil() ? 'habilitado' : 'habilitada'; }
+
+// espera a que Firebase diga quien es este dispositivo; si nunca se identifico, se identifica (necesita señal la 1ra vez)
+function habEsperarUsuario(auth, ms){
+  return new Promise(resolve => {
+    let listo = false;
+    const fin = (u) => { if(!listo){ listo = true; resolve(u || null); } };
+    setTimeout(() => fin(auth.currentUser), ms);
+    const off = auth.onAuthStateChanged(u => {
+      off();
+      if(u){ fin(u); return; }
+      auth.signInAnonymously().then(c => fin(c.user)).catch(e => {
+        HAB.error = (e && e.code) || 'error';
+        console.warn('No se pudo identificar el dispositivo', e);
+        fin(null);
+      });
+    });
+  });
+}
+
+// se llama antes de startSync(): nunca bloquea la app (con las reglas abiertas todo sigue andando igual)
+function habPreparar(){
+  if(!firestoreOk || !authFb) { HAB.estado = 'sin-auth'; return Promise.resolve(); }
+  return habEsperarUsuario(authFb, 5000).then(u => {
+    if(!u){ HAB.estado = 'sin-auth'; habRenderBanner(); return; }
+    HAB.uid = u.uid;
+    const yaOk = safeGet('hab_ok', '') === u.uid;
+    if(yaOk) HAB.estado = 'habilitado'; // sin señal: confiamos en lo que ya sabiamos de este dispositivo
+    // lo confirmamos con la base en segundo plano (sin frenar el arranque)
+    habConsultar();
+    const cod = habNormalizar(new URLSearchParams(location.search).get('equipo'));
+    if(cod){
+      try { history.replaceState(null, '', location.pathname + location.hash); } catch(e) {}
+      if(!yaOk) habRegistrar(cod);
+    }
+  });
+}
+
+function habConsultar(){
+  if(!HAB.uid) return;
+  db.collection('dispositivos').doc(HAB.uid).get().then(doc => {
+    if(doc.exists){
+      const d = doc.data();
+      HAB.estado = 'habilitado'; HAB.admin = d.admin === true; HAB.nombre = d.nombre || '';
+      safeSet('hab_ok', HAB.uid);
+      // marca de ultimo uso (una vez por dia como mucho), para ver en la lista de la compu principal
+      if(!d.ultimoUso || Date.now() - d.ultimoUso > 20 * 3600e3){
+        db.collection('dispositivos').doc(HAB.uid).update({ ultimoUso: Date.now(), app: HAB_APP }).catch(() => {});
+      }
+    } else if(!doc.metadata || !doc.metadata.fromCache){
+      HAB.estado = 'no'; HAB.admin = false;
+      safeSet('hab_ok', '');
+    }
+    habRenderBanner();
+    actualizarBotonDispositivos();
+  }).catch(err => {
+    // permiso denegado = la base ya esta cerrada y este dispositivo no esta habilitado (o lo quitaron)
+    if(err && err.code === 'permission-denied'){ HAB.estado = 'no'; safeSet('hab_ok', ''); }
+    habRenderBanner();
+    actualizarBotonDispositivos();
+  });
+}
+
+// usa un codigo para habilitar ESTE dispositivo. Devuelve una promesa con el mensaje de error (o '' si salio bien)
+function habRegistrar(codigo){
+  codigo = habNormalizar(codigo);
+  if(!HAB.uid) return Promise.resolve(habMostrarError('Este dispositivo todavía no se pudo identificar (falta señal o falta activar el acceso anónimo en Firebase). Probá de nuevo con señal.'));
+  if(codigo.length < 4) return Promise.resolve(habMostrarError('Ese código no es válido.'));
+  const invRef = db.collection('invitaciones').doc(codigo);
+  const devRef = db.collection('dispositivos').doc(HAB.uid);
+  habMostrarError('Habilitando…', true);
+  return invRef.get({ source: 'server' }).then(inv => {
+    if(!inv.exists) return habMostrarError('Ese código no existe. Revisá que esté bien escrito.');
+    const d = inv.data();
+    if(d.usado && d.usadoPor !== HAB.uid) return habMostrarError('Ese código ya fue usado en otro dispositivo. Pedile uno nuevo al encargado.');
+    const b = db.batch();
+    if(!d.usado) b.update(invRef, { usado: true, usadoPor: HAB.uid, usadoTs: Date.now() });
+    b.set(devRef, {
+      codigo, nombre: d.nombre || '', admin: d.admin === true, tipo: habTipoDispositivo(), app: HAB_APP,
+      creadoTs: Date.now(), ultimoUso: Date.now(), agente: String(navigator.userAgent || '').slice(0, 150)
+    });
+    return b.commit().then(() => {
+      safeSet('hab_ok', HAB.uid);
+      HAB.estado = 'habilitado'; HAB.admin = d.admin === true; HAB.nombre = d.nombre || '';
+      habMostrarError('');
+      alert('¡Listo! ' + habEsteDispositivo() + ' quedó ' + habHabilitadoTxt() + (d.nombre ? ' (' + d.nombre + ')' : '') + '.');
+      location.reload(); // arrancamos de nuevo la conexion, ya habilitados
+      return '';
+    });
+  }).catch(err => {
+    console.error('habRegistrar', err);
+    if(err && err.code === 'unavailable') return habMostrarError('No hay señal. Probá de nuevo cuando tengas internet.');
+    if(err && err.code === 'permission-denied') return habMostrarError('Ese código ya fue usado o no es válido. Pedile uno nuevo al encargado.');
+    return habMostrarError('No se pudo habilitar (' + ((err && err.message) || err) + ').');
+  });
+}
+
+function habMostrarError(msg, info){
+  HAB.error = msg;
+  // si el link trae un codigo que falla, mostramos el cartel para que se vea el motivo y se pueda reintentar
+  if(msg && !info && !document.getElementById('habMsg') && HAB.estado !== 'habilitado'){ HAB.estado = 'no'; habRenderBanner(); }
+  const el = document.getElementById('habMsg');
+  if(el){ el.textContent = msg; el.className = 'hab-msg' + (info ? ' info' : ''); el.style.display = msg ? '' : 'none'; }
+  return msg;
+}
+
+// cartel arriba (no bloquea nada): solo si sabemos que este dispositivo NO esta habilitado
+function habRenderBanner(){
+  let el = document.getElementById('habBanner');
+  const mostrar = HAB.estado === 'no';
+  if(!mostrar){ if(el) el.remove(); return; }
+  if(el) return;
+  el = document.createElement('div');
+  el.id = 'habBanner';
+  el.className = 'hab-banner';
+  el.innerHTML = `
+    <b>${habEsteDispositivo()} todavía no está ${habHabilitadoTxt()}.</b>
+    <span>Escribí el código que te pasó el encargado (se pone una sola vez):</span>
+    <div class="hab-row">
+      <input id="habCodigo" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="12" placeholder="Código (ej: K7P4QX)">
+      <button type="button" id="habBtn">Habilitar</button>
+    </div>
+    <div id="habMsg" class="hab-msg" style="display:none;"></div>
+    ${esDispositivoPrimario ? `<div class="hab-prim">¿Esta es la compu principal? No escribas acá tu clave: tocá <button type="button" id="habPrimBtn">🔒 Habilitar esta compu como administradora</button></div>` : ''}`;
+  const header = document.querySelector('header');
+  header.parentNode.insertBefore(el, header.nextSibling);
+  const go = () => {
+    const btn = document.getElementById('habBtn');
+    btn.disabled = true;
+    habRegistrar(document.getElementById('habCodigo').value).then(() => { btn.disabled = false; });
+  };
+  document.getElementById('habBtn').addEventListener('click', go);
+  const prim = document.getElementById('habPrimBtn');
+  if(prim) prim.addEventListener('click', habAbrirPanel);
+  document.getElementById('habCodigo').addEventListener('keydown', e => { if(e.key === 'Enter') go(); });
+}
+
+// ---- compu principal: boton "Dispositivos" (generar codigos, ver y quitar habilitados) ----
+function actualizarBotonDispositivos(){
+  const b = document.getElementById('dispositivosBtn');
+  if(b) b.style.display = (esDispositivoPrimario && authFb) ? '' : 'none';
+}
+
+function habAbrirPanel(){
+  window._currentCardRec = null;
+  const card = document.getElementById('card');
+  document.getElementById('overlay').classList.add('show');
+  if(!modalHistoryPushed){ history.pushState({ pozosModal: true }, ''); modalHistoryPushed = true; }
+  card.innerHTML = `
+    <div class="card-head">
+      <div><h2>Dispositivos</h2><span class="bat-pill" style="background:#4c8fb0">Acceso a la app</span></div>
+      <button class="close-btn" id="closeBtn">&times;</button>
+    </div>
+    <div id="habPanel"><div class="empty-msg">Cargando…</div></div>`;
+  document.getElementById('closeBtn').addEventListener('click', closeCard);
+  habRenderPanel();
+}
+
+function habRenderPanel(){
+  const cont = document.getElementById('habPanel');
+  if(!cont) return;
+  const yo = HAB.estado === 'habilitado';
+  let html = `<div class="hab-yo ${yo ? 'ok' : ''}">
+      <b>Esta compu:</b> ${yo ? 'habilitada' + (HAB.admin ? ' como administradora' : '') + (HAB.nombre ? ' (' + avisoEsc(HAB.nombre) + ')' : '') : (HAB.uid ? 'todavía no habilitada' : 'no se pudo identificar con Firebase (' + avisoEsc(HAB.error || 'sin señal') + ')')}
+    </div>`;
+  if(!yo && HAB.uid){
+    html += `<p class="hab-ayuda">Primer paso: habilitá esta compu como administradora (te pide la misma clave de siempre para guardar cambios). Solo funciona mientras la base sigue abierta (antes de publicar las reglas nuevas).</p>
+      <button type="button" class="save-btn" id="habYoBtn" style="width:100%">Habilitar esta compu como administradora</button>`;
+  }
+  if(yo && HAB.admin){
+    html += `
+      <div class="k hab-k">Habilitar un celular o compu nueva</div>
+      <div class="hab-row">
+        <input id="habNombre" type="text" class="edit-input" placeholder="Nombre (ej: Juan - celular)">
+        <button type="button" class="save-btn" id="habGenBtn">Generar código</button>
+      </div>
+      <label class="hab-check"><input type="checkbox" id="habEsAdmin"> Es otra compu administradora (puede generar códigos y quitar dispositivos)</label>
+      <div id="habNuevo"></div>
+      <div class="k hab-k">Códigos sin usar</div><div id="habInvs"><div class="empty-msg">Cargando…</div></div>
+      <div class="k hab-k">Dispositivos habilitados</div><div id="habDevs"><div class="empty-msg">Cargando…</div></div>`;
+  } else if(yo){
+    html += `<p class="hab-ayuda">Esta compu está habilitada pero no es administradora: los códigos se generan desde la compu administradora.</p>`;
+  }
+  cont.innerHTML = html;
+
+  const yoBtn = document.getElementById('habYoBtn');
+  if(yoBtn) yoBtn.addEventListener('click', () => {
+    if(!puedeModificar()) return;
+    const codigo = habCodigoNuevo();
+    yoBtn.disabled = true;
+    db.collection('invitaciones').doc(codigo).set({ nombre: 'Compu principal', admin: true, usado: false, creadoTs: Date.now(), creadoPor: HAB.uid })
+      .then(() => habRegistrar(codigo))
+      .catch(err => { yoBtn.disabled = false; alert('No se pudo (' + (err.code === 'permission-denied' ? 'la base ya está cerrada: hay que habilitarla desde una compu administradora' : err.message) + ').'); });
+  });
+  if(!(yo && HAB.admin)) return;
+
+  document.getElementById('habGenBtn').addEventListener('click', () => {
+    const nombre = document.getElementById('habNombre').value.trim();
+    if(!nombre){ alert('Poné el nombre de la persona o del equipo (así después sabés quién es).'); return; }
+    if(!puedeModificar()) return;
+    const codigo = habCodigoNuevo();
+    const admin = document.getElementById('habEsAdmin').checked;
+    db.collection('invitaciones').doc(codigo).set({ nombre, admin, usado: false, creadoTs: Date.now(), creadoPor: HAB.uid })
+      .then(() => {
+        document.getElementById('habNombre').value = '';
+        document.getElementById('habEsAdmin').checked = false;
+        habMostrarNuevo(codigo, nombre);
+        habCargarListas();
+      })
+      .catch(err => alert('No se pudo generar el código (' + err.message + ').'));
+  });
+  habCargarListas();
+}
+
+function habTextoMensaje(codigo, nombre){
+  return `Hola${nombre ? ' ' + nombre.split(/[ -]/)[0] : ''}! Para habilitar la app Pozos en tu celular abrí este link UNA sola vez: ${habLinkDe(codigo)}\n(O escribí el código ${codigo} en la app.) El código sirve para un solo celular, no lo reenvíes.`;
+}
+function habMostrarNuevo(codigo, nombre){
+  const el = document.getElementById('habNuevo');
+  if(!el) return;
+  const msg = habTextoMensaje(codigo, nombre);
+  el.innerHTML = `<div class="hab-nuevo">
+      <div>Código para <b>${avisoEsc(nombre)}</b>:</div>
+      <div class="hab-codigo">${codigo}</div>
+      <div class="hab-link">${avisoEsc(habLinkDe(codigo))}</div>
+      <div class="hab-row">
+        <button type="button" class="save-btn" id="habCopiar">Copiar mensaje</button>
+        <a class="save-btn hab-wa" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(msg)}">Mandar por WhatsApp</a>
+      </div>
+    </div>`;
+  document.getElementById('habCopiar').addEventListener('click', () => {
+    const ok = () => { document.getElementById('habCopiar').textContent = '¡Copiado!'; };
+    if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(msg).then(ok).catch(() => prompt('Copiá el mensaje:', msg));
+    else prompt('Copiá el mensaje:', msg);
+  });
+}
+
+function habFecha(ts){ return ts ? avisoFechaHora(ts) : '—'; }
+function habCargarListas(){
+  const invEl = document.getElementById('habInvs');
+  const devEl = document.getElementById('habDevs');
+  if(!invEl || !devEl) return;
+  db.collection('invitaciones').where('usado', '==', false).get({ source: 'server' }).then(snap => {
+    const l = [];
+    snap.forEach(d => l.push(Object.assign({ id: d.id }, d.data())));
+    l.sort((a, b) => (b.creadoTs || 0) - (a.creadoTs || 0));
+    if(!l.length){ invEl.innerHTML = '<div class="hab-vacio">No hay códigos pendientes.</div>'; return; }
+    invEl.innerHTML = l.map(i => `<div class="hab-item">
+        <span><b class="hab-cod">${avisoEsc(i.id)}</b> ${avisoEsc(i.nombre || '')}${i.admin ? ' <em>(admin)</em>' : ''}<small>generado ${habFecha(i.creadoTs)}</small></span>
+        <span class="hab-acc"><button type="button" class="hab-mini" data-ver="${avisoEsc(i.id)}" data-nombre="${avisoEsc(i.nombre || '')}">Ver link</button><button type="button" class="hab-mini rojo" data-borrar="${avisoEsc(i.id)}">Anular</button></span>
+      </div>`).join('');
+    invEl.querySelectorAll('[data-ver]').forEach(b => b.addEventListener('click', () => habMostrarNuevo(b.dataset.ver, b.dataset.nombre)));
+    invEl.querySelectorAll('[data-borrar]').forEach(b => b.addEventListener('click', () => {
+      if(!confirm('¿Anular el código ' + b.dataset.borrar + '? Ya no se va a poder usar.')) return;
+      if(!puedeModificar()) return;
+      db.collection('invitaciones').doc(b.dataset.borrar).delete().then(habCargarListas).catch(err => alert('No se pudo (' + err.message + ').'));
+    }));
+  }).catch(err => { invEl.innerHTML = '<div class="hab-vacio">No se pudo leer (' + avisoEsc(err.message) + ').</div>'; });
+
+  db.collection('dispositivos').get({ source: 'server' }).then(snap => {
+    const l = [];
+    snap.forEach(d => l.push(Object.assign({ id: d.id }, d.data())));
+    l.sort((a, b) => (b.ultimoUso || 0) - (a.ultimoUso || 0));
+    if(!l.length){ devEl.innerHTML = '<div class="hab-vacio">Ninguno todavía.</div>'; return; }
+    devEl.innerHTML = l.map(d => `<div class="hab-item">
+        <span><b>${avisoEsc(d.nombre || 'Sin nombre')}</b> · ${avisoEsc(d.tipo || '')}${d.admin ? ' <em>(admin)</em>' : ''}${d.id === HAB.uid ? ' <em>(esta compu)</em>' : ''}<small>habilitado ${habFecha(d.creadoTs)} · último uso ${habFecha(d.ultimoUso)}</small></span>
+        ${d.id === HAB.uid ? '' : `<span class="hab-acc"><button type="button" class="hab-mini rojo" data-quitar="${avisoEsc(d.id)}" data-nombre="${avisoEsc(d.nombre || '')}">Quitar</button></span>`}
+      </div>`).join('');
+    devEl.querySelectorAll('[data-quitar]').forEach(b => b.addEventListener('click', () => {
+      if(!confirm('¿Quitar el acceso de ' + (b.dataset.nombre || 'este dispositivo') + '? Deja de ver y cargar datos (en Pozos y en Datos KTI).')) return;
+      if(!puedeModificar()) return;
+      db.collection('dispositivos').doc(b.dataset.quitar).delete().then(habCargarListas).catch(err => alert('No se pudo (' + err.message + ').'));
+    }));
+  }).catch(err => { devEl.innerHTML = '<div class="hab-vacio">No se pudo leer (' + avisoEsc(err.message) + ').</div>'; });
+}
 
 let lastOverridesCount = 0;
 let ultimoReporteTs = null; // fecha/hora (compartida entre dispositivos) del ultimo parte de campo enviado
@@ -1702,6 +2079,11 @@ function updatePendCount(){
     const na = pendientesAguaTanques().length + pendientesAguaEquipos().length + pendientesAguaCamiones().length + pendientesNotaAguaPias2().length;
     if(na > 0){ badgeAgua.style.display = ''; badgeAgua.textContent = na; } else { badgeAgua.style.display = 'none'; }
   }
+  const badgePtc = document.getElementById('pendCountPtc');
+  if(badgePtc){
+    const np = pendientesPtc().length + pendientesNotasPtc().length;
+    if(np > 0){ badgePtc.style.display = ''; badgePtc.textContent = np; } else { badgePtc.style.display = 'none'; }
+  }
 }
 
 function refreshEverything(){
@@ -1744,7 +2126,7 @@ var MOV_AV_TITULO = 'Pozos por USPA';
 var MOV_AV_TABS = {
   pozos_overrides: 'tabLista', pozos_velas: 'tabLista', uspa_notas: 'tabLista', aib_pozos: 'tabAib',
   baterias_tanques: 'tabTanques', baterias_bombeo_log: 'tabTanques', equipos_notas: 'tabTanques',
-  pias2_tanques: 'tabPias', pias2_equipos: 'tabPias', pias2_camiones: 'tabPias', avisos_mtto: 'tabAvisos'
+  pias2_tanques: 'tabPias', pias2_equipos: 'tabPias', pias2_camiones: 'tabPias', ptc_descargas: 'tabPtc', avisos_mtto: 'tabAvisos'
 };
 
 function movAvisosActivo(){ return !esMovil(); }
@@ -1788,6 +2170,7 @@ function movTexto(col, id, d){
     case 'pias2_tanques': return (d.nombre || id) + ' · Pías 2';
     case 'pias2_equipos': return (d.nombre || id) + ' · Pías 2';
     case 'pias2_camiones': return 'Camión de agua' + (d.remito ? ' (remito ' + d.remito + ')' : '') + ' · Pías 2';
+    case 'ptc_descargas': return (d.tipo === 'carga' ? 'Carga PTC Cargadero' : 'Descarga PTC Isla ' + (d.isla || '?')) + (d.remito ? ' (remito ' + d.remito + ')' : '');
     case 'avisos_mtto': return 'Aviso de mtto: ' + (d.equipo || d.pozo || '') + (d.criticidad ? ' (' + d.criticidad + ')' : '');
   }
   return id;
@@ -1932,7 +2315,647 @@ function movRenderTag(){
   btn.addEventListener('click', () => { (on && !permisoPendiente) ? movDesactivarAvisos() : movActivarAvisos(); });
   tag.appendChild(btn);
 }
-movRenderTag();
+// al abrir la app arrancamos de cero: Windows deja el numero del icono puesto aunque la app se haya cerrado
+movActualizarBadge();
+
+// ---------------- PTC: descarga de camiones por isla (A / B / C) ----------------
+// Cada descarga es un documento en 'ptc_descargas'. Mismos datos que la planilla "Descarga Camiones PTC"
+// (reporte SCADA): fecha (dia operativo), isla, horas, totalizadores de volumen y peso, H2O libre, remito,
+// chofer, transporte, operador PTC y operadora. En la compu se baja el Excel del mes con el mismo formato.
+var PTC_DATA = [];          // ultimas descargas (en vivo)
+var PTC_MES_CACHE = {};     // 'aaaa-mm' -> descargas de meses viejos (se piden una sola vez)
+var PTC_ISLAS = ['A', 'B', 'C'];
+// 'CARG' = Cargadero: CARGA de camiones (sale petroleo de PTC, en la isla C), con sus cisternas
+var PTC_GRUPOS = ['A', 'B', 'C', 'CARG'];
+var PTC_COLOR_ISLA = { A: '#0070C0', B: '#00B050', C: '#FFC000', CARG: '#E8590C' };
+var PTC_NOMBRE_GRUPO = { A: 'Isla A', B: 'Isla B', C: 'Isla C', CARG: 'Cargadero' };
+var PTC_OPERADORAS_CARGA = ['Refipampa'];
+var PTC_TRANSPORTES_CARGA = ['All Road'];
+function ptcGrupo(d){ return d.tipo === 'carga' ? 'CARG' : d.isla; }
+function ptcCistTotal(d){ return (d.cisterna1 || 0) + (d.cisterna2 || 0) + (d.cisterna3 || 0); }
+var PTC_OPERADORAS = ['Pluspetrol - Jarillosa', 'Pluspetrol - La Calera', 'Pluspetrol - Puesto Silva', 'TGS - Tratayen'];
+var PTC_TRANSPORTES = ['Peduzzi', 'TSB'];
+// logo de la planilla (PNG en base64). Vacio = sin logo
+var PTC_LOGO_B64 = '';
+var ptcIslaSel = (typeof safeGet === 'function' && safeGet('ptc_isla', 'A')) || 'A';
+var ptcMesSel = '';
+
+function ptcPad(n){ return String(n).padStart(2, '0'); }
+function ptcIsoFecha(d){ return d.getFullYear() + '-' + ptcPad(d.getMonth() + 1) + '-' + ptcPad(d.getDate()); }
+// dia operativo de PTC: en la planilla los camiones de la madrugada (hasta las 7 mas o menos) quedan con la
+// fecha del dia anterior, asi que antes de las 9 de la mañana todavia cuenta como el dia anterior
+var PTC_CORTE_HORA = 9;
+function ptcFechaOperativa(){
+  const d = new Date();
+  if(d.getHours() < PTC_CORTE_HORA) d.setDate(d.getDate() - 1);
+  return ptcIsoFecha(d);
+}
+function ptcMesActual(){ return ptcFechaOperativa().slice(0, 7); }
+// numeros como los escribe el operador: "176847,19", "176.847,19", "70739200", "70.739.200"
+function ptcNum(txt){
+  let s = String(txt == null ? '' : txt).trim().replace(/\s/g, '');
+  if(!s) return null;
+  if(s.includes(',')){ s = s.replace(/\./g, '').replace(',', '.'); }
+  else if((s.match(/\./g) || []).length > 1){ s = s.replace(/\./g, ''); }
+  const n = parseFloat(s);
+  return isNaN(n) ? null : n;
+}
+function ptcFmt(n, dec){
+  if(n == null || isNaN(n)) return '';
+  return Number(n).toLocaleString('es-AR', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+}
+function ptcEsc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+// orden dentro del dia operativo: las horas de la madrugada (antes de las 9) van al final del dia
+function ptcMinutosOperativos(hora){
+  if(!hora || !/^\d{1,2}:\d{2}/.test(hora)) return 9999;
+  const [h, m] = hora.split(':').map(Number);
+  return (h < PTC_CORTE_HORA ? h + 24 : h) * 60 + m;
+}
+function ptcOrden(a, b){
+  if(a.fecha !== b.fecha) return (a.fecha || '').localeCompare(b.fecha || '');
+  const d = ptcMinutosOperativos(a.horaInicial) - ptcMinutosOperativos(b.horaInicial);
+  return d !== 0 ? d : (a.clientTs || 0) - (b.clientTs || 0);
+}
+function ptcVolMasico(d){ return (d.volFinal != null && d.volInicial != null) ? d.volFinal - d.volInicial : null; }
+function ptcPesoMasico(d){ return (d.pesoFinal != null && d.pesoInicial != null) ? d.pesoFinal - d.pesoInicial : null; }
+function ptcFechaCorta(iso){
+  if(!iso) return '';
+  const [y, m, d] = iso.split('-').map(Number);
+  const f = new Date(y, m - 1, d);
+  const dias = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+  return dias[f.getDay()] + ' ' + ptcPad(d) + '/' + ptcPad(m) + '/' + y;
+}
+function ptcNombreMes(mes){
+  const n = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+  const [y, m] = mes.split('-').map(Number);
+  return n[m - 1] + ' ' + y;
+}
+
+// descargas de un mes: si el mes esta dentro de lo que ya tenemos en vivo, sale de ahi; si es viejo, se pide a la base
+function ptcDescargasDelMes(mes){
+  const vivas = PTC_DATA.filter(d => d.mes === mes);
+  const masVieja = PTC_DATA.length ? PTC_DATA.reduce((m, d) => (d.fecha && d.fecha < m ? d.fecha : m), '9999') : '9999';
+  const completo = PTC_DATA.length < PTC_LIMITE_VIVO || masVieja.slice(0, 7) < mes;
+  if(completo) return Promise.resolve(vivas);
+  if(PTC_MES_CACHE[mes]) return Promise.resolve(PTC_MES_CACHE[mes]);
+  if(!firestoreOk) return Promise.resolve(vivas);
+  return db.collection('ptc_descargas').where('mes', '==', mes).get().then(snap => {
+    const lista = [];
+    snap.forEach(doc => lista.push(Object.assign({ id: doc.id }, doc.data())));
+    PTC_MES_CACHE[mes] = lista;
+    return lista;
+  }).catch(() => vivas);
+}
+var PTC_LIMITE_VIVO = 800;
+
+// ultima descarga cargada en una isla (para arrastrar los totalizadores al formulario nuevo)
+function ptcUltimaDeIsla(grupo, excluirId){
+  const l = PTC_DATA.filter(d => ptcGrupo(d) === grupo && d.id !== excluirId).sort(ptcOrden);
+  return l.length ? l[l.length - 1] : null;
+}
+// descarga anterior a 'rec' en su misma isla (para la diferencia por volumen, como la columna Dif. X Vol)
+function ptcAnteriorA(rec, lista){
+  const l = lista.filter(d => ptcGrupo(d) === ptcGrupo(rec) && d.id !== rec.id).concat([rec]).sort(ptcOrden);
+  const i = l.indexOf(rec);
+  return i > 0 ? l[i - 1] : null;
+}
+
+function renderPtc(){
+  const main = document.getElementById('ptcMain');
+  if(!main) return;
+  if(!ptcMesSel) ptcMesSel = ptcMesActual();
+  const enCompu = !esMovil();
+  main.innerHTML = `
+    <div class="ptc-top">
+      <div class="ptc-islas">
+        ${PTC_GRUPOS.map(i => `<button type="button" class="ptc-isla${i === ptcIslaSel ? ' sel' : ''}" data-isla="${i}" style="--isla:${PTC_COLOR_ISLA[i]}">${PTC_NOMBRE_GRUPO[i]}</button>`).join('')}
+      </div>
+      <label class="ptc-mes">Mes <input type="month" id="ptcMes" value="${ptcMesSel}"></label>
+    </div>
+    <button type="button" class="ptc-nueva" id="ptcNuevaBtn">${ptcIslaSel === 'CARG' ? '+ Registrar carga en el Cargadero' : '+ Registrar descarga en Isla ' + ptcIslaSel}</button>
+    ${enCompu ? `<button type="button" class="ptc-excel" id="ptcExcelBtn">Descargar Excel de ${ptcNombreMes(ptcMesSel)} (Islas A, B, C y Cargadero)</button>` : ''}
+    <div id="ptcNotasCont"></div>
+    <div id="ptcResumen"></div>
+    <div id="ptcAvisoCont"></div>
+    <div id="ptcLista"><div class="empty-msg">Cargando…</div></div>`;
+  document.getElementById('ptcNotasCont').appendChild(crearNotasEquipoBox('PTC'));
+  // avisos de mantenimiento: uno para la isla/cargadero elegido y otro para cualquier equipo de PTC
+  const avisoCont = document.getElementById('ptcAvisoCont');
+  const tarjetaIsla = document.createElement('div');
+  tarjetaIsla.className = 'eq-card ptc-aviso-card';
+  tarjetaIsla.innerHTML = `<p class="eq-nombre">${PTC_NOMBRE_GRUPO[ptcIslaSel]}</p>`;
+  agregarAvisoATarjeta(tarjetaIsla, { origen: 'ptc', equipo: PTC_NOMBRE_GRUPO[ptcIslaSel], bateria: 'PTC', titulo: 'PTC · ' + PTC_NOMBRE_GRUPO[ptcIslaSel] });
+  avisoCont.appendChild(tarjetaIsla);
+  const tarjetaOtro = document.createElement('div');
+  tarjetaOtro.className = 'eq-card ptc-aviso-card';
+  tarjetaOtro.innerHTML = `<p class="eq-nombre">Otro equipo de PTC</p>
+    <input type="text" class="eq-nota ptc-aviso-equipo" placeholder="Nombre del equipo (ej: bomba de transferencia, caudalímetro, tanque…)">
+    <div class="ptc-aviso-otro-slot"></div>
+    <button type="button" class="aviso-mini-btn ptc-aviso-otro">Aviso de mantenimiento</button>`;
+  tarjetaOtro.querySelector('.ptc-aviso-otro').addEventListener('click', () => {
+    const inp = tarjetaOtro.querySelector('.ptc-aviso-equipo');
+    const eq = inp.value.trim();
+    if(!eq){ alert('Escribí el nombre del equipo para el aviso.'); inp.focus(); return; }
+    abrirAvisoEquipo({ origen: 'ptc', equipo: eq, bateria: 'PTC', titulo: 'PTC · ' + eq });
+  });
+  avisoCont.appendChild(tarjetaOtro);
+  // avisos abiertos de otros equipos de PTC (los que no son de una isla ni del cargadero)
+  const otrosAbiertos = avisosAbiertos().filter(a => avisoOrigen(a) === 'ptc' && !Object.values(PTC_NOMBRE_GRUPO).includes(avisoEquipo(a)));
+  if(otrosAbiertos.length){
+    tarjetaOtro.querySelector('.ptc-aviso-otro-slot').innerHTML = `<div class="aviso-en-ficha"><div class="k">Avisos abiertos en PTC</div>${otrosAbiertos.map(a => `<div class="aviso-linea"><span class="crit-pill ${avisoClaseCrit(a.criticidad)}">${avisoEsc(a.criticidad)}</span> <b>${avisoEsc(avisoEquipo(a))}</b> · ${avisoEsc(a.especialidad)}: ${avisoEsc(a.descripcion)}</div>`).join('')}</div>`;
+  }
+
+  if(!PTC_GRUPOS.includes(ptcIslaSel)) ptcIslaSel = 'A';
+  main.querySelectorAll('.ptc-isla').forEach(b => b.addEventListener('click', () => {
+    ptcIslaSel = b.dataset.isla;
+    safeSet('ptc_isla', ptcIslaSel);
+    renderPtc();
+  }));
+  document.getElementById('ptcMes').addEventListener('change', (e) => {
+    ptcMesSel = e.target.value || ptcMesActual();
+    renderPtc();
+  });
+  document.getElementById('ptcNuevaBtn').addEventListener('click', () => abrirPtcForm(null));
+  if(enCompu) document.getElementById('ptcExcelBtn').addEventListener('click', () => exportarExcelPtc(ptcMesSel));
+
+  const mes = ptcMesSel, isla = ptcIslaSel;
+  ptcDescargasDelMes(mes).then(listaMes => {
+    if(ptcMesSel !== mes || ptcIslaSel !== isla) return; // el usuario ya cambio de isla/mes
+    const deIsla = listaMes.filter(d => ptcGrupo(d) === isla).sort(ptcOrden);
+    const resumen = document.getElementById('ptcResumen');
+    const listaEl = document.getElementById('ptcLista');
+    if(!resumen || !listaEl) return;
+
+    const hoy = ptcFechaOperativa();
+    const deHoy = PTC_DATA.filter(d => ptcGrupo(d) === isla && d.fecha === hoy);
+    const totM3 = (l) => l.reduce((s, d) => s + (ptcVolMasico(d) || 0), 0);
+    const totKg = (l) => l.reduce((s, d) => s + (ptcPesoMasico(d) || 0), 0);
+    resumen.innerHTML = `
+      <div class="ptc-resumen" style="--isla:${PTC_COLOR_ISLA[isla]}">
+        <div><span>Hoy (día operativo)</span><b>${deHoy.length} ${deHoy.length === 1 ? 'camión' : 'camiones'}</b><small>${ptcFmt(totM3(deHoy), 2)} m³ · ${ptcFmt(totKg(deHoy), 0)} kg</small></div>
+        <div><span>${ptcNombreMes(mes)}</span><b>${deIsla.length} ${deIsla.length === 1 ? 'camión' : 'camiones'}</b><small>${ptcFmt(totM3(deIsla), 2)} m³ · ${ptcFmt(totKg(deIsla), 0)} kg</small></div>
+      </div>`;
+
+    if(!deIsla.length){
+      listaEl.innerHTML = `<div class="empty-msg">No hay ${isla === 'CARG' ? 'cargas en el Cargadero' : 'descargas en la Isla ' + isla} en ${ptcNombreMes(mes)}.</div>`;
+      return;
+    }
+    // agrupado por dia, el mas reciente arriba; dentro del dia en orden de descarga
+    const porDia = {};
+    deIsla.forEach(d => { (porDia[d.fecha] = porDia[d.fecha] || []).push(d); });
+    listaEl.innerHTML = '';
+    Object.keys(porDia).sort().reverse().forEach(fecha => {
+      const l = porDia[fecha];
+      const dia = document.createElement('div');
+      dia.className = 'ptc-dia';
+      dia.innerHTML = `<div class="ptc-dia-head"><b>${ptcFechaCorta(fecha)}</b><span>${l.length} ${l.length === 1 ? 'camión' : 'camiones'} · ${ptcFmt(totM3(l), 2)} m³ · ${ptcFmt(totKg(l), 0)} kg</span></div>`;
+      l.forEach(d => {
+        const ant = ptcAnteriorA(d, deIsla);
+        const dif = (ant && ant.volFinal != null && d.volInicial != null) ? Math.round((d.volInicial - ant.volFinal) * 100) / 100 : 0;
+        const row = document.createElement('button');
+        row.type = 'button';
+        row.className = 'ptc-row';
+        row.innerHTML = `
+          <span class="ptc-hora">${ptcEsc(d.horaInicial || '--:--')}–${ptcEsc(d.horaFinal || '--:--')}</span>
+          <span class="ptc-vol"><b>${ptcFmt(ptcVolMasico(d), 2)} m³</b><small>${ptcFmt(ptcPesoMasico(d), 0)} kg${d.h2o ? ' · H2O ' + ptcFmt(d.h2o, 2) : ''}${d.tipo === 'carga' && ptcCistTotal(d) ? '<br>Cist: ' + [d.cisterna1, d.cisterna2, d.cisterna3].filter(x => x != null).join(' / ') : ''}</small></span>
+          <span class="ptc-det">${d.remito ? 'Rto ' + ptcEsc(d.remito) + ' · ' : ''}${ptcEsc(d.chofer || '')}${d.transporte ? ' (' + ptcEsc(d.transporte) + ')' : ''}<br>${ptcEsc(d.operadora || '')}${d.operadorPtc ? ' · Op: ' + ptcEsc(d.operadorPtc) : ''}${dif ? `<br><em class="ptc-dif">Dif. x vol: ${ptcFmt(dif, 2)} m³ con la descarga anterior</em>` : ''}</span>`;
+        row.addEventListener('click', () => abrirPtcForm(d));
+        dia.appendChild(row);
+      });
+      listaEl.appendChild(dia);
+    });
+  });
+}
+
+function abrirPtcForm(rec){
+  const editando = !!rec;
+  const grupo = rec ? ptcGrupo(rec) : ptcIslaSel;
+  const esCarga = grupo === 'CARG';
+  const isla = esCarga ? 'C' : grupo;
+  const ult = ptcUltimaDeIsla(grupo, rec && rec.id);
+  const v = rec || {
+    fecha: ptcFechaOperativa(), isla,
+    volInicial: ult ? ult.volFinal : null, pesoInicial: ult ? ult.pesoFinal : null,
+    transporte: ult ? ult.transporte : (esCarga ? PTC_TRANSPORTES_CARGA[0] : ''),
+    operadora: ult ? ult.operadora : (esCarga ? PTC_OPERADORAS_CARGA[0] : ''),
+    operadorPtc: operadorName || '', h2o: 0
+  };
+  const usados = (k, base) => [...new Set(base.concat(PTC_DATA.map(d => (d[k] || '').trim())).filter(Boolean))].slice(0, 60);
+  const num = (n, dec) => (n == null || n === '') ? '' : String(dec != null ? Number(n).toFixed(dec) : n).replace('.', ',');
+
+  window._currentCardRec = null;
+  const card = document.getElementById('card');
+  card.innerHTML = `
+    <div class="card-head">
+      <div>
+        <h2>${editando ? (esCarga ? 'Editar carga' : 'Editar descarga') : (esCarga ? 'Carga de camión' : 'Descarga de camión')}</h2>
+        <span class="bat-pill" id="ptcPill" style="background:${PTC_COLOR_ISLA[grupo]}">PTC · ${esCarga ? 'Cargadero (Isla C)' : 'Isla ' + isla}</span>
+      </div>
+      <button class="close-btn" id="closeBtn">&times;</button>
+    </div>
+    <div class="camion-grid ptc-form">
+      <div class="camion-field"><label>Fecha (día operativo)</label><input type="date" id="ptcF_fecha" value="${ptcEsc(v.fecha || '')}"></div>
+      ${esCarga ? `<div class="camion-field"><label>Isla</label><select id="ptcF_isla" disabled><option value="C">Isla C (cargadero)</option></select></div>` : `<div class="camion-field"><label>Isla</label>
+        <select id="ptcF_isla">${PTC_ISLAS.map(i => `<option value="${i}" ${i === isla ? 'selected' : ''}>Isla ${i}</option>`).join('')}</select></div>`}
+      <div class="camion-field"><label>Hora inicial</label><input type="time" id="ptcF_hi" value="${ptcEsc(v.horaInicial || '')}"></div>
+      <div class="camion-field"><label>Hora final</label><input type="time" id="ptcF_hf" value="${ptcEsc(v.horaFinal || '')}"></div>
+      <div class="camion-field"><label>Vol. inicial (m³)</label><input type="text" inputmode="decimal" id="ptcF_vi" placeholder="ej: 176847,19" value="${num(v.volInicial)}"></div>
+      <div class="camion-field"><label>Vol. final (m³)</label><input type="text" inputmode="decimal" id="ptcF_vf" placeholder="ej: 176880,00" value="${num(v.volFinal)}"></div>
+      <div class="camion-field"><label>Peso inicial (kg)</label><input type="text" inputmode="numeric" id="ptcF_pi" placeholder="ej: 70739200" value="${num(v.pesoInicial)}"></div>
+      <div class="camion-field"><label>Peso final (kg)</label><input type="text" inputmode="numeric" id="ptcF_pf" placeholder="ej: 70767256" value="${num(v.pesoFinal)}"></div>
+      <div class="ptc-calc" id="ptcCalc"></div>
+      ${esCarga ? `
+      <div class="camion-field"><label>Cisterna 1 (m³)</label><input type="text" inputmode="decimal" id="ptcF_c1" placeholder="ej: 20" value="${num(v.cisterna1)}"></div>
+      <div class="camion-field"><label>Cisterna 2 (m³)</label><input type="text" inputmode="decimal" id="ptcF_c2" placeholder="vacío si no tiene" value="${num(v.cisterna2)}"></div>
+      <div class="camion-field"><label>Cisterna 3 (m³)</label><input type="text" inputmode="decimal" id="ptcF_c3" placeholder="vacío si no tiene" value="${num(v.cisterna3)}"></div>` : `
+      <div class="camion-field"><label>H2O libre</label><input type="text" inputmode="decimal" id="ptcF_h2o" placeholder="0" value="${num(v.h2o)}"></div>`}
+      <div class="camion-field"><label>Remito</label><input type="text" id="ptcF_rem" placeholder="ej: 0017-00012299" value="${ptcEsc(v.remito || '')}"></div>
+      <div class="camion-field"><label>Chofer</label><input type="text" id="ptcF_cho" list="ptcDlCho" placeholder="Apellido y nombre" value="${ptcEsc(v.chofer || '')}"></div>
+      <div class="camion-field"><label>Transporte</label><input type="text" id="ptcF_tra" list="ptcDlTra" placeholder="ej: Peduzzi" value="${ptcEsc(v.transporte || '')}"></div>
+      <div class="camion-field"><label>Operador PTC</label><input type="text" id="ptcF_op" list="ptcDlOp" placeholder="ej: Fabian J." value="${ptcEsc(v.operadorPtc || '')}"></div>
+      <div class="camion-field"><label>Operadora</label><input type="text" id="ptcF_ope" list="ptcDlOpe" placeholder="ej: Pluspetrol - Jarillosa" value="${ptcEsc(v.operadora || '')}"></div>
+    </div>
+    <datalist id="ptcDlCho">${usados('chofer', []).map(x => `<option value="${ptcEsc(x)}">`).join('')}</datalist>
+    <datalist id="ptcDlTra">${usados('transporte', esCarga ? PTC_TRANSPORTES_CARGA : PTC_TRANSPORTES).map(x => `<option value="${ptcEsc(x)}">`).join('')}</datalist>
+    <datalist id="ptcDlOp">${usados('operadorPtc', operadorName ? [operadorName] : []).map(x => `<option value="${ptcEsc(x)}">`).join('')}</datalist>
+    <datalist id="ptcDlOpe">${usados('operadora', esCarga ? PTC_OPERADORAS_CARGA : PTC_OPERADORAS).map(x => `<option value="${ptcEsc(x)}">`).join('')}</datalist>
+    <div class="aviso-error" id="ptcErr" style="display:none;"></div>
+    <div class="edit-actions">
+      <button class="save-btn" id="ptcGuardarBtn">${editando ? 'Guardar cambios' : 'Guardar descarga'}</button>
+      <button class="cancel-btn" id="ptcCancelBtn">Cancelar</button>
+    </div>
+    ${editando ? `<button type="button" class="ptc-borrar" id="ptcBorrarBtn">Eliminar esta ${esCarga ? 'carga' : 'descarga'}</button>` : ''}`;
+  card.scrollTop = 0;
+  document.getElementById('overlay').classList.add('show');
+  if(!modalHistoryPushed){
+    history.pushState({ pozosModal: true }, '');
+    modalHistoryPushed = true;
+  }
+  const $ = (id) => document.getElementById(id);
+  $('closeBtn').addEventListener('click', closeCard);
+  $('ptcCancelBtn').addEventListener('click', closeCard);
+
+  function calc(){
+    const vi = ptcNum($('ptcF_vi').value), vf = ptcNum($('ptcF_vf').value);
+    const pi = ptcNum($('ptcF_pi').value), pf = ptcNum($('ptcF_pf').value);
+    const isl = $('ptcF_isla').value;
+    const grp = esCarga ? 'CARG' : isl;
+    const ant = editando ? ptcAnteriorA(Object.assign({}, rec, { isla: isl, fecha: $('ptcF_fecha').value, horaInicial: $('ptcF_hi').value }), PTC_DATA.filter(d => d.id !== rec.id)) : ptcUltimaDeIsla(grp);
+    const partes = [];
+    partes.push(`<div><span>Vol. másico</span><b>${vi != null && vf != null ? ptcFmt(vf - vi, 2) + ' m³' : '—'}</b></div>`);
+    partes.push(`<div><span>Peso másico</span><b>${pi != null && pf != null ? ptcFmt(pf - pi, 0) + ' kg' : '—'}</b></div>`);
+    if(ant && ant.volFinal != null && vi != null){
+      const dif = Math.round((vi - ant.volFinal) * 100) / 100;
+      partes.push(`<div class="${dif ? 'ptc-dif' : ''}"><span>Dif. x vol</span><b>${ptcFmt(dif, 2)} m³</b></div>`);
+    }
+    if(esCarga){
+      const cs = ['ptcF_c1', 'ptcF_c2', 'ptcF_c3'].map(id => ptcNum($(id).value) || 0).reduce((a, b) => a + b, 0);
+      if(cs) partes.push(`<div><span>Cisternas</span><b>${ptcFmt(cs, 0)} m³</b></div>`);
+    }
+    $('ptcCalc').innerHTML = partes.join('');
+  }
+  ['ptcF_vi', 'ptcF_vf', 'ptcF_pi', 'ptcF_pf', 'ptcF_fecha', 'ptcF_hi'].concat(esCarga ? ['ptcF_c1', 'ptcF_c2', 'ptcF_c3'] : []).forEach(id => $(id).addEventListener('input', calc));
+  $('ptcF_isla').addEventListener('change', () => {
+    const isl = $('ptcF_isla').value;
+    $('ptcPill').textContent = 'PTC · Isla ' + isl;
+    $('ptcPill').style.background = PTC_COLOR_ISLA[isl];
+    if(!editando){
+      // al cambiar de isla, los totalizadores iniciales son los de esa isla
+      const u = ptcUltimaDeIsla(isl);
+      $('ptcF_vi').value = u && u.volFinal != null ? num(u.volFinal) : '';
+      $('ptcF_pi').value = u && u.pesoFinal != null ? num(u.pesoFinal) : '';
+    }
+    calc();
+  });
+  calc();
+
+  $('ptcGuardarBtn').addEventListener('click', () => {
+    const err = $('ptcErr');
+    const datos = {
+      fecha: $('ptcF_fecha').value,
+      isla: $('ptcF_isla').value,
+      horaInicial: $('ptcF_hi').value,
+      horaFinal: $('ptcF_hf').value,
+      volInicial: ptcNum($('ptcF_vi').value),
+      volFinal: ptcNum($('ptcF_vf').value),
+      pesoInicial: ptcNum($('ptcF_pi').value),
+      pesoFinal: ptcNum($('ptcF_pf').value),
+      h2o: esCarga ? 0 : (ptcNum($('ptcF_h2o').value) || 0),
+      remito: $('ptcF_rem').value.trim(),
+      chofer: $('ptcF_cho').value.trim(),
+      transporte: $('ptcF_tra').value.trim(),
+      operadorPtc: $('ptcF_op').value.trim(),
+      operadora: $('ptcF_ope').value.trim()
+    };
+    if(esCarga){
+      datos.tipo = 'carga';
+      datos.isla = 'C';
+      datos.cisterna1 = ptcNum($('ptcF_c1').value);
+      datos.cisterna2 = ptcNum($('ptcF_c2').value);
+      datos.cisterna3 = ptcNum($('ptcF_c3').value);
+    }
+    const falta = [];
+    if(!datos.fecha) falta.push('la fecha');
+    if(!datos.horaInicial) falta.push('la hora inicial');
+    if(datos.volInicial == null || datos.volFinal == null) falta.push('el volumen inicial y final');
+    let msg = falta.length ? 'Falta cargar ' + falta.join(', ') + '.' : '';
+    if(!msg && datos.volFinal < datos.volInicial) msg = 'El volumen final no puede ser menor que el inicial.';
+    if(!msg && datos.pesoInicial != null && datos.pesoFinal != null && datos.pesoFinal < datos.pesoInicial) msg = 'El peso final no puede ser menor que el inicial.';
+    if(msg){ err.textContent = msg; err.style.display = ''; return; }
+    if(datos.volFinal - datos.volInicial > 60 && !confirm('El volumen ' + (esCarga ? 'cargado' : 'descargado') + ' da ' + ptcFmt(datos.volFinal - datos.volInicial, 2) + ' m³, más de lo normal para un camión. ¿Está bien?')) return;
+    if(!puedeModificar()) return;
+    if(!firestoreOk){
+      alert('No hay conexion con el guardado compartido. Revisa tu internet e intenta de nuevo.');
+      return;
+    }
+    datos.mes = datos.fecha.slice(0, 7);
+    datos.operador = operadorName || 'Sin nombre';
+    datos.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
+    const ref = editando ? db.collection('ptc_descargas').doc(rec.id) : db.collection('ptc_descargas').doc();
+    if(!editando) datos.clientTs = Date.now();
+    const op = editando ? ref.set(datos, { merge: true }) : ref.set(datos);
+    op.catch((e) => alert('No se pudo guardar (' + e.message + '). Revisa tu conexion.'));
+    // lo mostramos ya, sin esperar a la base
+    const local = Object.assign({ id: ref.id }, rec || {}, datos, { _local: true });
+    PTC_DATA = PTC_DATA.filter(d => d.id !== ref.id).concat([local]);
+    Object.keys(PTC_MES_CACHE).forEach(k => { delete PTC_MES_CACHE[k]; });
+    ptcIslaSel = esCarga ? 'CARG' : datos.isla;
+    if(datos.mes !== ptcMesSel) ptcMesSel = datos.mes;
+    closeCard();
+    renderPtc();
+  });
+
+  if(editando){
+    $('ptcBorrarBtn').addEventListener('click', () => {
+      if(!confirm('¿Eliminar la ' + (esCarga ? 'carga' : 'descarga') + ' de las ' + (rec.horaInicial || '') + ' (' + PTC_NOMBRE_GRUPO[grupo] + ', remito ' + (rec.remito || 's/n') + ')?')) return;
+      if(!puedeModificar()) return;
+      db.collection('ptc_descargas').doc(rec.id).delete().catch((e) => alert('No se pudo eliminar (' + e.message + ').'));
+      PTC_DATA = PTC_DATA.filter(d => d.id !== rec.id);
+      Object.keys(PTC_MES_CACHE).forEach(k => { delete PTC_MES_CACHE[k]; });
+      closeCard();
+      renderPtc();
+    });
+  }
+}
+
+// Excel del mes, con el mismo formato que la planilla "Descarga Camiones PTC": una hoja por isla
+function exportarExcelPtc(mes){
+  if(typeof ExcelJS === 'undefined'){
+    alert('No se pudo generar el Excel (falta conexion a internet para cargar la libreria).');
+    return;
+  }
+  ptcDescargasDelMes(mes).then(lista => {
+    if(!lista.length && !confirm('No hay descargas ni cargas en ' + ptcNombreMes(mes) + '. ¿Bajar la planilla vacía igual?')) return;
+    const wb = ptcArmarLibro(lista, false);
+    const [yy, mm] = mes.split('-');
+    const nombre = `${mm}_${ptcNombreMes(mes).split(' ')[0]}_Descarga_Camiones_PTC - ${yy}.xlsx`;
+    return wb.xlsx.writeBuffer().then(buf => {
+      const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      downloadFile(blob, nombre);
+    });
+  }).catch((e) => alert('No se pudo generar el Excel de PTC (' + (e && e.message) + ').'));
+}
+
+// arma el libro con el formato de la planilla PTC. soloConDatos: solo las hojas que tienen camiones (para el reporte)
+function ptcArmarLibro(lista, soloConDatos, wbExistente){
+  {
+    const wb = wbExistente || new ExcelJS.Workbook();
+    wb.creator = 'Pozos Interactivo';
+    let logoId = null;
+    if(PTC_LOGO_B64){ try { logoId = wb.addImage({ base64: PTC_LOGO_B64, extension: 'png' }); } catch(e) {} }
+    const BANDA = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF8FAADC' } };
+    const MED = { style: 'medium' };
+    const HEADERS = ['Fecha', 'ISLA', 'Hora Inicial', 'Hora Final', 'Vol.Masico', 'H2O libre', 'Vol. Inicial', 'Vol. Final', 'Dif. X Vol', 'Peso Inicial', 'Peso Final', 'Peso.Masico', 'REMITO', 'Chofer', 'Transporte', 'Operador PTC', 'Operadora'];
+    const ANCHOS = { A: 3.1, B: 11.7, C: 10.4, D: 14.1, E: 12.7, F: 14, G: 12.7, H: 14.3, I: 14.3, J: 11.9, K: 14.3, L: 14.3, M: 14.9, N: 19.6, O: 28.1, P: 12.9, Q: 16.1, R: 27, S: 3.1 };
+    const horaExcel = (h) => {
+      if(!h || !/^\d{1,2}:\d{2}/.test(h)) return null;
+      const [hh, mm] = h.split(':').map(Number);
+      return (hh * 60 + mm) / 1440; // fraccion de dia, como guarda Excel las horas
+    };
+
+    PTC_ISLAS.forEach(isla => {
+      if(soloConDatos && !lista.some(d => ptcGrupo(d) === isla)) return;
+      const ws = wb.addWorksheet('Isla ' + isla, { views: [{ state: 'frozen', ySplit: 5, showGridLines: false, zoomScale: 80 }] });
+      Object.keys(ANCHOS).forEach(c => { ws.getColumn(c).width = ANCHOS[c]; });
+      // banda de encabezado (filas 1 a 5) con el recuadro del titulo
+      for(let r = 1; r <= 5; r++){
+        ws.getRow(r).height = r === 1 ? 14.1 : (r === 5 ? 18.75 : 26.1);
+        for(let c = 1; c <= 19; c++){
+          if(r === 1 && c === 1) continue;
+          ws.getCell(r, c).fill = BANDA;
+        }
+      }
+      for(let c = 2; c <= 18; c++){
+        const b = {};
+        if(c === 2) b.left = MED;
+        if(c === 18) b.right = MED;
+        ws.getCell(2, c).border = Object.assign({ top: MED }, b);
+        ws.getCell(3, c).border = Object.assign({}, b);
+        ws.getCell(4, c).border = Object.assign({ bottom: MED }, b);
+      }
+      const t = ws.getCell('J3');
+      t.value = 'REPORTE SCADA DESCARGA DE CAMIONES PTC';
+      t.font = { name: 'Calibri', size: 26, bold: true };
+      t.alignment = { horizontal: 'center', vertical: 'middle' };
+      if(logoId !== null){
+        ws.addImage(logoId, { tl: { col: 1.4, row: 1.25 }, ext: { width: 216, height: 83 }, editAs: 'oneCell' });
+      }
+      HEADERS.forEach((h, i) => {
+        const c = ws.getCell(5, i + 2);
+        c.value = h;
+        c.font = { name: 'Calibri', size: 14, bold: true };
+        c.alignment = { horizontal: 'center', vertical: 'middle' };
+        c.border = { top: MED, bottom: MED, left: MED, right: MED };
+      });
+
+      const filas = lista.filter(d => ptcGrupo(d) === isla).sort(ptcOrden);
+      filas.forEach((d, i) => {
+        const r = 6 + i;
+        const row = ws.getRow(r);
+        row.height = 18.75;
+        const [y, m, dd] = (d.fecha || '').split('-').map(Number);
+        row.getCell(2).value = d.fecha ? new Date(Date.UTC(y, m - 1, dd)) : null;
+        row.getCell(3).value = isla;
+        row.getCell(4).value = horaExcel(d.horaInicial);
+        row.getCell(5).value = horaExcel(d.horaFinal);
+        row.getCell(6).value = { formula: `I${r}-H${r}`, result: ptcVolMasico(d) };
+        row.getCell(7).value = d.h2o || 0;
+        row.getCell(8).value = d.volInicial;
+        row.getCell(9).value = d.volFinal;
+        row.getCell(10).value = i === 0 ? 0 : { formula: `H${r}-I${r - 1}` };
+        row.getCell(11).value = d.pesoInicial;
+        row.getCell(12).value = d.pesoFinal;
+        row.getCell(13).value = { formula: `L${r}-K${r}`, result: ptcPesoMasico(d) };
+        row.getCell(14).value = d.remito || '';
+        row.getCell(15).value = d.chofer || '';
+        row.getCell(16).value = d.transporte || '';
+        row.getCell(17).value = d.operadorPtc || '';
+        row.getCell(18).value = d.operadora || '';
+        for(let c = 2; c <= 18; c++){
+          const cell = row.getCell(c);
+          cell.font = { name: 'Calibri', size: 14 };
+          cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        }
+        row.getCell(2).numFmt = 'd-mmm';
+        row.getCell(4).numFmt = 'h:mm';
+        row.getCell(5).numFmt = 'h:mm';
+        [6, 8, 9, 10].forEach(c => { row.getCell(c).numFmt = '0.00'; });
+        [11, 12, 13].forEach(c => { row.getCell(c).numFmt = '0'; });
+        // linea gruesa abajo al terminar cada dia, como en la planilla
+        const sig = filas[i + 1];
+        if(!sig || sig.fecha !== d.fecha){
+          for(let c = 2; c <= 18; c++) row.getCell(c).border = { bottom: MED };
+        }
+      });
+      const ultima = Math.max(6, 5 + filas.length);
+      ws.autoFilter = { from: { row: 5, column: 2 }, to: { row: ultima, column: 18 } };
+      // letra de la isla en color (A azul, B verde, C naranja), igual que el formato condicional de la planilla
+      ws.addConditionalFormatting({
+        ref: `C6:C${ultima + 300}`,
+        rules: [
+          { type: 'cellIs', operator: 'equal', formulae: ['"A"'], style: { font: { color: { argb: 'FF0070C0' } } }, priority: 3 },
+          { type: 'cellIs', operator: 'equal', formulae: ['"B"'], style: { font: { color: { argb: 'FF00B050' } } }, priority: 2 },
+          { type: 'cellIs', operator: 'equal', formulae: ['"C"'], style: { font: { color: { argb: 'FFFFC000' } } }, priority: 1 }
+        ]
+      });
+      ws.pageSetup = { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0, paperSize: 9 };
+    });
+
+    // hoja Cargadero (CARGA de camiones en la isla C), mismo formato que la planilla: sin H2O ni Dif. X Vol,
+    // y con las cisternas a la derecha
+    if(!soloConDatos || lista.some(d => ptcGrupo(d) === 'CARG')){
+      const ws = wb.addWorksheet('Cargadero', { views: [{ state: 'frozen', ySplit: 5, showGridLines: false, zoomScale: 80 }] });
+      const ANCH = { A: 3.1, B: 11.7, C: 10.4, D: 14.1, E: 12.7, F: 14, G: 14.3, H: 14.3, I: 14.3, J: 16.6, K: 17.3, L: 19.6, M: 28.1, N: 17.3, O: 16.1, P: 27, Q: 3.1, R: 16.9, S: 14.7, T: 14.7 };
+      Object.keys(ANCH).forEach(c => { ws.getColumn(c).width = ANCH[c]; });
+      for(let r = 1; r <= 5; r++){
+        ws.getRow(r).height = r === 1 ? 14.1 : (r === 5 ? 18.75 : 26.1);
+        for(let c = 1; c <= 19; c++) ws.getCell(r, c).fill = BANDA;
+      }
+      for(let c = 2; c <= 16; c++){
+        const b = {};
+        if(c === 2) b.left = MED;
+        if(c === 16) b.right = MED;
+        ws.getCell(2, c).border = Object.assign({ top: MED }, b);
+        ws.getCell(3, c).border = Object.assign({}, b);
+        ws.getCell(4, c).border = Object.assign({ bottom: MED }, b);
+      }
+      const t = ws.getCell('J3');
+      t.value = 'REPORTE SCADA CARGA DE CAMIONES PTC';
+      t.font = { name: 'Calibri', size: 26, bold: true };
+      t.alignment = { horizontal: 'center', vertical: 'middle' };
+      if(logoId !== null){
+        ws.addImage(logoId, { tl: { col: 1.4, row: 1.25 }, ext: { width: 216, height: 83 }, editAs: 'oneCell' });
+      }
+      const HC = ['Fecha', 'ISLA', 'Hora Inicial', 'Hora Final', 'Vol.Masico', 'Vol. Inicial', 'Vol. Final', 'Peso Inicial', 'Peso Final', 'Peso.Masico', 'REMITO', 'Chofer', 'Transporte', 'Operador PTC', 'Operadora'];
+      HC.forEach((h, i) => {
+        const c = ws.getCell(5, i + 2);
+        c.value = h;
+        c.font = { name: 'Calibri', size: 14, bold: true };
+        c.alignment = { horizontal: 'center', vertical: 'middle' };
+        c.border = { top: MED, bottom: MED, left: MED, right: MED };
+      });
+      ['Cisterna 1', 'Cisterna 2', 'Cisterna 3'].forEach((h, i) => {
+        const c = ws.getCell(5, 18 + i);
+        c.value = h;
+        c.font = { name: 'Calibri', size: 14 };
+        c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFFF' } };
+        c.alignment = { horizontal: 'center', vertical: 'middle' };
+      });
+      const filas = lista.filter(d => ptcGrupo(d) === 'CARG').sort(ptcOrden);
+      filas.forEach((d, i) => {
+        const r = 6 + i;
+        const row = ws.getRow(r);
+        row.height = 18.75;
+        const [y, m, dd] = (d.fecha || '').split('-').map(Number);
+        row.getCell(2).value = d.fecha ? new Date(Date.UTC(y, m - 1, dd)) : null;
+        row.getCell(3).value = 'C';
+        row.getCell(4).value = horaExcel(d.horaInicial);
+        row.getCell(5).value = horaExcel(d.horaFinal);
+        row.getCell(6).value = { formula: `H${r}-G${r}`, result: ptcVolMasico(d) };
+        row.getCell(7).value = d.volInicial;
+        row.getCell(8).value = d.volFinal;
+        row.getCell(9).value = d.pesoInicial;
+        row.getCell(10).value = d.pesoFinal;
+        row.getCell(11).value = { formula: `J${r}-I${r}`, result: ptcPesoMasico(d) };
+        row.getCell(12).value = d.remito || '';
+        row.getCell(13).value = d.chofer || '';
+        row.getCell(14).value = d.transporte || '';
+        row.getCell(15).value = d.operadorPtc || '';
+        row.getCell(16).value = d.operadora || '';
+        row.getCell(18).value = d.cisterna1 != null ? d.cisterna1 : null;
+        row.getCell(19).value = d.cisterna2 != null ? d.cisterna2 : null;
+        row.getCell(20).value = d.cisterna3 != null ? d.cisterna3 : null;
+        for(let c = 2; c <= 20; c++){
+          if(c === 17) continue;
+          const cell = row.getCell(c);
+          cell.font = { name: 'Calibri', size: 14 };
+          cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        }
+        row.getCell(2).numFmt = 'd-mmm';
+        row.getCell(4).numFmt = 'h:mm';
+        row.getCell(5).numFmt = 'h:mm';
+        row.getCell(6).numFmt = '0.000';
+        row.getCell(7).numFmt = '0.000';
+        row.getCell(8).numFmt = '0.000';
+        [9, 10, 11].forEach(c => { row.getCell(c).numFmt = '0'; });
+        const sig = filas[i + 1];
+        if(!sig || sig.fecha !== d.fecha){
+          for(let c = 2; c <= 16; c++) row.getCell(c).border = { bottom: MED };
+        }
+      });
+      const ultima = Math.max(6, 5 + filas.length);
+      ws.autoFilter = { from: { row: 5, column: 2 }, to: { row: ultima, column: 16 } };
+      ws.addConditionalFormatting({
+        ref: `C6:C${ultima + 300}`,
+        rules: [{ type: 'cellIs', operator: 'equal', formulae: ['"C"'], style: { font: { color: { argb: 'FFFFC000' } } }, priority: 1 }]
+      });
+      ws.pageSetup = { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0, paperSize: 9 };
+    }
+
+    return wb;
+  }
+}
+
+// ---- Reporte de PTC (compu principal): lo nuevo desde el ultimo reporte enviado ----
+var ultimoReportePtcTs = null;
+function ptcFechaCarga(d){
+  return d._updatedAtDate || (d.clientTs ? new Date(d.clientTs) : null);
+}
+function pendientesPtc(){
+  const corte = ultimoReportePtcTs || new Date(0);
+  return PTC_DATA.filter(d => { const f = ptcFechaCarga(d); return f && f > corte; }).sort(ptcOrden);
+}
+function pendientesNotasPtc(){
+  const corte = ultimoReportePtcTs || new Date(0);
+  return EQUIPOS_NOTAS.filter(n => n.grupo === 'PTC' && n.texto && n._updatedAtDate && n._updatedAtDate > corte);
+}
+function marcarReportePtcEnviado(){
+  if(!firestoreOk) return;
+  db.collection('pozos_meta').doc('estado9am').set({
+    lastReportePtcTs: firebase.firestore.FieldValue.serverTimestamp()
+  }, { merge: true }).catch((err) => { console.error('No se pudo marcar el reporte de PTC como enviado', err); });
+}
+function exportReportePtc(){
+  if(typeof ExcelJS === 'undefined'){
+    alert('No se pudo generar el Excel (falta conexion a internet para cargar la libreria).');
+    return;
+  }
+  // el reporte es acumulado: todas las descargas/cargas del mes (del dia operativo de hoy), dia tras dia,
+  // en las hojas Isla A, Isla B, Isla C y Cargadero (asi no se pisa nada al cambiar el dia)
+  const mes = ptcMesActual();
+  ptcDescargasDelMes(mes).then(lista => {
+    if(!lista.length){
+      alert('No hay descargas ni cargas de PTC en ' + ptcNombreMes(mes) + ' todavia.');
+      return;
+    }
+    const wb = ptcArmarLibro(lista, false);
+    return wb.xlsx.writeBuffer().then(buffer => {
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      downloadOrShareBlob(blob, `Reporte_PTC_${todayStr().replace(/\//g, '-')}.xlsx`, 'Reporte de PTC');
+      marcarReportePtcEnviado();
+    });
+  }).catch((e) => alert('No se pudo generar el reporte de PTC (' + (e && e.message) + ').'));
+}
 
 function startSync(){
   if(!firestoreOk){
@@ -2047,6 +3070,7 @@ function startSync(){
     });
     if(document.getElementById('tanquesMain').style.display !== 'none'){ renderTanques(); }
     if(document.getElementById('piasMain').style.display !== 'none'){ renderPias(); }
+    if(document.getElementById('ptcMain').style.display !== 'none'){ renderPtc(); }
     if(document.getElementById('movMain').style.display !== 'none'){ renderMovimientos(); }
     updatePendCount();
   }, (err) => {
@@ -2101,6 +3125,7 @@ function startSync(){
     const data = doc.data();
     ultimoReporteBateriasTs = (data && data.lastReporteBateriasTs && data.lastReporteBateriasTs.toDate) ? data.lastReporteBateriasTs.toDate() : null;
     ultimoReporteAguaTs = (data && data.lastReporteAguaTs && data.lastReporteAguaTs.toDate) ? data.lastReporteAguaTs.toDate() : null;
+    ultimoReportePtcTs = (data && data.lastReportePtcTs && data.lastReportePtcTs.toDate) ? data.lastReportePtcTs.toDate() : null;
     refreshEverything();
   }, (err) => {
     console.error('Firestore sync error (meta9am)', err);
@@ -2189,6 +3214,20 @@ function startSync(){
     if(document.getElementById('piasMain').style.display !== 'none'){ renderPias(); }
     updatePendCount();
   }, (err) => { console.error('Firestore sync error (pias2_camiones)', err); });
+
+  // descargas de camiones en PTC (islas A/B/C): las ultimas, en vivo; los meses viejos se piden aparte
+  db.collection('ptc_descargas').orderBy('clientTs', 'desc').limit(PTC_LIMITE_VIVO).onSnapshot((snapshot) => {
+    detectarMovimientos(snapshot, 'ptc_descargas', true);
+    PTC_DATA = [];
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      PTC_DATA.push(Object.assign({ id: doc.id }, data, {
+        _updatedAtDate: (data.updatedAt && data.updatedAt.toDate) ? data.updatedAt.toDate() : (data.clientTs ? new Date(data.clientTs) : null)
+      }));
+    });
+    if(document.getElementById('ptcMain').style.display !== 'none'){ renderPtc(); }
+    updatePendCount();
+  }, (err) => { console.error('Firestore sync error (ptc_descargas)', err); });
 }
 
 // carga inicial de pozos de petroleo (solo corre una vez, la primera vez que la coleccion esta vacia)
@@ -3072,7 +4111,10 @@ function renderPrimarioTag(){
     ? '★ Compu principal (tocar para sacar)'
     : 'Marcar esta compu como principal';
 }
+document.getElementById('dispositivosBtn').addEventListener('click', habAbrirPanel);
+actualizarBotonDispositivos();
 document.getElementById('primarioTag').addEventListener('click', () => {
+  setTimeout(actualizarBotonDispositivos, 0);
   esDispositivoPrimario = !esDispositivoPrimario;
   safeSet('es_dispositivo_primario', esDispositivoPrimario ? '1' : '0');
   renderPrimarioTag();
@@ -3090,6 +4132,8 @@ function actualizarBotonParte(){
   // puede mandar estos reportes en cualquier momento
   if(bateriasBtn) bateriasBtn.style.display = esDispositivoPrimario ? '' : 'none';
   if(aguaBtn) aguaBtn.style.display = esDispositivoPrimario ? '' : 'none';
+  const ptcBtn = document.getElementById('reportePtcBtn');
+  if(ptcBtn) ptcBtn.style.display = esDispositivoPrimario ? '' : 'none';
   actualizarTabAvisos();
   if(!btn) return;
   if(!esDispositivoPrimario){
@@ -3108,6 +4152,9 @@ document.getElementById('reporteBateriasBtn').addEventListener('click', () => {
 });
 document.getElementById('reporteAguaBtn').addEventListener('click', () => {
   try { exportReporteAgua(); } catch(err) { alert('Error al generar el reporte de Agua: ' + (err && err.message ? err.message : err)); }
+});
+document.getElementById('reportePtcBtn').addEventListener('click', () => {
+  try { exportReportePtc(); } catch(err) { alert('Error al generar el reporte de PTC: ' + (err && err.message ? err.message : err)); }
 });
 
 function bateriaToInstalacion(bat){
@@ -3268,7 +4315,7 @@ function pendientesBombeoBaterias(){
 }
 function pendientesNotasBaterias(){
   const corte = corteDePendientesBaterias();
-  return EQUIPOS_NOTAS.filter(n => n.grupo !== 'Pias 2' && n.texto && n._updatedAtDate && n._updatedAtDate > corte)
+  return EQUIPOS_NOTAS.filter(n => n.grupo !== 'Pias 2' && n.grupo !== 'PTC' && n.texto && n._updatedAtDate && n._updatedAtDate > corte)
     .sort((a,b) => a._updatedAtDate - b._updatedAtDate);
 }
 function pendientesAguaTanques(){
@@ -3298,7 +4345,7 @@ function exportReporteBaterias(forzarTodos){
     return;
   }
   const base = forzarTodos ? TANQUES_DATA.filter(t => t.nivelTotal || t.nivelInterfaz) : pendientesBaterias();
-  const notasBase = forzarTodos ? EQUIPOS_NOTAS.filter(n => n.grupo !== 'Pias 2' && n.texto) : pendientesNotasBaterias();
+  const notasBase = forzarTodos ? EQUIPOS_NOTAS.filter(n => n.grupo !== 'Pias 2' && n.grupo !== 'PTC' && n.texto) : pendientesNotasBaterias();
   const bombeoBase = forzarTodos ? (BOMBEO_LOG || []).slice() : pendientesBombeoBaterias();
   if(base.length === 0 && notasBase.length === 0 && bombeoBase.length === 0){
     if(!forzarTodos){
@@ -3712,7 +4759,8 @@ POZOS.forEach(p => { ORIGINAL_POZOS[p.pozo] = Object.assign({}, p); });
 const POZOS_BASE = new Set(POZOS.map(p => p.pozo)); // los del listado original (no agregados desde la app)
 
 render('');
-startSync();
+// primero sabemos quien es este dispositivo (rapido: queda guardado), despues nos conectamos a la base
+habPreparar().then(() => startSync(), () => startSync());
 updatePendCount();
 if(storageBlocked){
   const warn = document.createElement('div');
@@ -4514,7 +5562,8 @@ var AVISO_ORIGENES = [
   { id: 'gas', label: 'Pozos gas' },
   { id: 'aib', label: 'AIB' },
   { id: 'bateria', label: 'Baterías' },
-  { id: 'pias2', label: 'Pías 2' }
+  { id: 'pias2', label: 'Pías 2' },
+  { id: 'ptc', label: 'PTC' }
 ];
 
 function avisoEsc(s){
@@ -4540,6 +5589,7 @@ function avisoEtiqueta(a){
   if(o === 'gas') return 'Pozo ' + avisoNumPozo(eq);
   if(o === 'aib') return 'AIB · Pozo ' + avisoNumPozo(eq);
   if(o === 'pias2') return 'Pías 2 · ' + eq;
+  if(o === 'ptc') return 'PTC · ' + eq;
   return (a.bateria ? a.bateria + ' · ' : '') + eq;
 }
 function avisosVisible(){
@@ -4847,6 +5897,10 @@ function renderAvisos(){
       document.getElementById('tabTanques').click();
     } else if(o === 'pias2'){
       document.getElementById('tabPias').click();
+    } else if(o === 'ptc'){
+      const g = Object.keys(PTC_NOMBRE_GRUPO).find(k => PTC_NOMBRE_GRUPO[k] === avisoEquipo(a));
+      if(g) ptcIslaSel = g;
+      document.getElementById('tabPtc').click();
     }
   }));
   main.querySelectorAll('.aviso-resolver').forEach(b => b.addEventListener('click', () => {
@@ -4871,8 +5925,8 @@ function abrirPestanaAvisos(){
 }
 
 // ---------------- Manejo de pestañas (helper generico) ----------------
-const TAB_IDS = ['tabLista','tabPlano','tabRed','tabCiclaje','tabMov','tabAib','tabTanques','tabPias','tabAvisos'];
-const MAIN_IDS = ['main','planoMain','redMain','ciclajeMain','movMain','aibMain','tanquesMain','piasMain','avisosMain'];
+const TAB_IDS = ['tabLista','tabPlano','tabRed','tabCiclaje','tabMov','tabAib','tabTanques','tabPias','tabPtc','tabAvisos'];
+const MAIN_IDS = ['main','planoMain','redMain','ciclajeMain','movMain','aibMain','tanquesMain','piasMain','ptcMain','avisosMain'];
 function switchTab(activeTabId, activeMainId){
   movMarcarVistos(activeTabId);
   TAB_IDS.forEach(id => document.getElementById(id).classList.toggle('active', id === activeTabId));
@@ -5111,6 +6165,9 @@ function renderMovimientos(){
         if(rec.grupo === 'Pias 2'){
           switchTab('tabPias', 'piasMain');
           renderPias();
+        } else if(rec.grupo === 'PTC'){
+          switchTab('tabPtc', 'ptcMain');
+          renderPtc();
         } else {
           bateriasAbiertas.add(rec.grupo);
           switchTab('tabTanques', 'tanquesMain');
@@ -5660,6 +6717,10 @@ document.getElementById('tabTanques').addEventListener('click', () => {
 document.getElementById('tabPias').addEventListener('click', () => {
   switchTab('tabPias', 'piasMain');
   renderPias();
+});
+document.getElementById('tabPtc').addEventListener('click', () => {
+  switchTab('tabPtc', 'ptcMain');
+  renderPtc();
 });
 
 // arranca mostrando el Plano por defecto (ya con todo declarado)
