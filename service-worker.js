@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pozos-cache-v5';
+const CACHE_NAME = 'pozos-cache-v6';
 const ASSETS = [
   './manifest.json',
   './icon-192.png',
@@ -9,6 +9,7 @@ const ASSETS = [
 const CDN_URLS = [
   'https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js',
   'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js',
+  'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js',
   'https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js'
 ];
 // cuanto esperamos a la red antes de abrir la version guardada (señal mala = la red "cuelga", no falla)
