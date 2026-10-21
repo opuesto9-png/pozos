@@ -1089,6 +1089,13 @@
   .bombeo-ultima{ font-size: .72rem; color: var(--muted); margin-top: 8px; }
 
 
+  /* ---------- aviso de version nueva ---------- */
+  #actualizarApp{ position:fixed; inset:0; z-index:9500; background:rgba(4,14,22,.9); display:flex; align-items:center; justify-content:center; padding:18px; box-sizing:border-box; }
+  #actualizarApp .ua-card{ width:100%; max-width:420px; background: var(--panel); border:2px solid #6FC9B0; border-radius:16px; padding:24px 20px; box-sizing:border-box; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.5); }
+  #actualizarApp .ua-ic{ width:56px; height:56px; margin:0 auto 10px; border-radius:50%; background:#123B34; color:#6FC9B0; display:flex; align-items:center; justify-content:center; }
+  #actualizarApp h2{ margin:0 0 8px; font-size:1.3rem; }
+  #actualizarApp p{ margin:0 0 16px; color:#BFD3DC; font-size:.9rem; line-height:1.4; }
+  #actualizarApp button{ width:100%; height:50px; border:0; border-radius:12px; background:#6FC9B0; color:#0B2436; font: inherit; font-size:1.05rem; font-weight:800; cursor:pointer; }
   /* ---------- nombre obligatorio ---------- */
   #nombreObligatorio{ position:fixed; inset:0; z-index:9000; background:rgba(4,14,22,.88); display:flex; align-items:center; justify-content:center; padding:18px; box-sizing:border-box; }
   #nombreObligatorio .no-card{ width:100%; max-width:420px; background: var(--panel); border:2px solid #E8B64A; border-radius:16px; padding:22px 20px; box-sizing:border-box; box-shadow:0 20px 60px rgba(0,0,0,.5); }
@@ -1683,11 +1690,17 @@ function habLatido(forzar){
   if(!forzar && (document.hidden || Date.now() - habUltimoLatido < 4 * 60e3)) return;
   habUltimoLatido = Date.now();
   db.collection('presencia').doc(HAB.uid).set({
-    operador: operadorName || '', ts: Date.now(), app: HAB_APP, tipo: habTipoDispositivo(), nombre: HAB.nombre || ''
+    operador: operadorName || '', ts: Date.now(), app: HAB_APP, tipo: habTipoDispositivo(), nombre: HAB.nombre || '', cerrada: false
   }, { merge: true }).catch(() => {});
 }
 setInterval(() => habLatido(false), 5 * 60e3);
-document.addEventListener('visibilitychange', () => { if(!document.hidden) habLatido(false); });
+document.addEventListener('visibilitychange', () => {
+  if(!document.hidden){ habLatido(true); return; }
+  if(HAB.estado === 'habilitado' && HAB.uid && firestoreOk){
+    habUltimoLatido = 0;
+    db.collection('presencia').doc(HAB.uid).set({ cerrada: true, ts: Date.now() }, { merge: true }).catch(() => {});
+  }
+});
 
 function habConsultar(){
   if(!HAB.uid) return;
@@ -1929,11 +1942,24 @@ function habMostrarNuevo(codigo, nombre){
 }
 
 function habFecha(ts){ return ts ? avisoFechaHora(ts) : '—'; }
+// lista en vivo: mientras el panel esta abierto escucha codigos, dispositivos y presencia, asi se ve
+// al instante cuando alguien abre la app o usa un codigo (sin tener que refrescar). Al cerrar el panel se corta.
+var habSubs = [];
+var habRefresco = null;
+function habCortarListas(){
+  habSubs.forEach(u => { try { u(); } catch(e) {} });
+  habSubs = [];
+  if(habRefresco){ clearInterval(habRefresco); habRefresco = null; }
+}
 function habCargarListas(){
+  habCortarListas();
   const invEl = document.getElementById('habInvs');
   const devEl = document.getElementById('habDevs');
   if(!invEl || !devEl) return;
-  db.collection('invitaciones').where('usado', '==', false).get({ source: 'server' }).then(snap => {
+  const sigueAbierto = () => !!document.getElementById('habDevs') && document.getElementById('overlay').classList.contains('show');
+  habSubs.push(db.collection('invitaciones').where('usado', '==', false).onSnapshot(snap => {
+    if(!sigueAbierto()){ habCortarListas(); return; }
+    const invEl = document.getElementById('habInvs');
     const l = [];
     snap.forEach(d => l.push(Object.assign({ id: d.id }, d.data())));
     l.sort((a, b) => (b.creadoTs || 0) - (a.creadoTs || 0));
@@ -1946,18 +1972,20 @@ function habCargarListas(){
     invEl.querySelectorAll('[data-borrar]').forEach(b => b.addEventListener('click', () => {
       if(!confirm('¿Anular el código ' + b.dataset.borrar + '? Ya no se va a poder usar.')) return;
       if(!puedeModificar()) return;
-      db.collection('invitaciones').doc(b.dataset.borrar).delete().then(habCargarListas).catch(err => alert('No se pudo (' + err.message + ').'));
+      db.collection('invitaciones').doc(b.dataset.borrar).delete().catch(err => alert('No se pudo (' + err.message + ').'));
     }));
-  }).catch(err => { invEl.innerHTML = '<div class="hab-vacio">No se pudo leer (' + avisoEsc(err.message) + ').</div>'; });
+  }, err => { const e = document.getElementById('habInvs'); if(e) e.innerHTML = '<div class="hab-vacio">No se pudo leer (' + avisoEsc(err.message) + ').</div>'; }));
 
-  const presP = db.collection('presencia').get({ source: 'server' }).then(snap => {
-    const m = {}; snap.forEach(d => { m[d.id] = d.data(); }); return m;
-  }).catch(() => ({}));
-  Promise.all([db.collection('dispositivos').get({ source: 'server' }), presP]).then(([snap, pres]) => {
+  let devSnap = null, pres = {};
+  const pintar = () => {
+    if(!sigueAbierto()){ habCortarListas(); return; }
+    if(!devSnap) return;
+    const devEl = document.getElementById('habDevs');
+    const snap = devSnap;
     const l = [];
     snap.forEach(d => l.push(Object.assign({ id: d.id }, d.data(), { _p: pres[d.id] || null })));
     const visto = (d) => Math.max(d.ultimoUso || 0, (d._p && d._p.ts) || 0);
-    const enLinea = (d) => !!(d._p && d._p.ts && Date.now() - d._p.ts < 10 * 60e3);
+    const enLinea = (d) => !!(d._p && d._p.ts && !d._p.cerrada && Date.now() - d._p.ts < 10 * 60e3);
     l.sort((a, b) => (enLinea(b) - enLinea(a)) || (visto(b) - visto(a)));
     if(!l.length){ devEl.innerHTML = '<div class="hab-vacio">Ninguno todavía.</div>'; return; }
     const nOn = l.filter(enLinea).length;
@@ -1976,15 +2004,22 @@ function habCargarListas(){
         : '¿Reactivar a ' + quien + '? Vuelve a funcionar normal enseguida.')) return;
       if(!puedeModificar()) return;
       db.collection('dispositivos').doc(b.dataset.pausar).update(pausar ? { pausado: true, pausadoTs: Date.now() } : { pausado: false, pausadoTs: null })
-        .then(habCargarListas).catch(err => alert('No se pudo (' + err.message + ').'));
+        .catch(err => alert('No se pudo (' + err.message + ').'));
     }));
     devEl.querySelectorAll('[data-quitar]').forEach(b => b.addEventListener('click', () => {
       if(!confirm('¿Quitar el acceso de ' + (b.dataset.nombre || 'este dispositivo') + '? Deja de ver y cargar datos (en Pozos y en Datos KTI).')) return;
       if(!puedeModificar()) return;
       db.collection('presencia').doc(b.dataset.quitar).delete().catch(() => {});
-      db.collection('dispositivos').doc(b.dataset.quitar).delete().then(habCargarListas).catch(err => alert('No se pudo (' + err.message + ').'));
+      db.collection('dispositivos').doc(b.dataset.quitar).delete().catch(err => alert('No se pudo (' + err.message + ').'));
     }));
-  }).catch(err => { devEl.innerHTML = '<div class="hab-vacio">No se pudo leer (' + avisoEsc(err.message) + ').</div>'; });
+  };
+  habSubs.push(db.collection('dispositivos').onSnapshot(snap => { devSnap = snap; pintar(); },
+    err => { const e = document.getElementById('habDevs'); if(e) e.innerHTML = '<div class="hab-vacio">No se pudo leer (' + avisoEsc(err.message) + ').</div>'; }));
+  habSubs.push(db.collection('presencia').onSnapshot(snap => {
+    pres = {}; snap.forEach(d => { pres[d.id] = d.data(); }); pintar();
+  }, () => {}));
+  // cada minuto se recalcula "en linea" (para que se apague solo el que cerro la app hace rato)
+  habRefresco = setInterval(pintar, 60e3);
 }
 
 let lastOverridesCount = 0;
@@ -7567,6 +7602,54 @@ function exigirNombre(){
   inp.addEventListener('keydown', (e) => { if(e.key === 'Enter') ok(); });
   setTimeout(() => inp.focus(), 50);
 }
+
+// ---------------- Aviso de version nueva ----------------
+// Cada index nuevo lleva un numero de version mas alto. La app se fija cada 5 minutos (y cada vez que
+// se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
+// un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
+// para no perder lo que se esta escribiendo.
+var APP_VERSION = 202610210140;
+var appVersionNueva = 0;
+function appBuscarActualizacion(){
+  if(!navigator.onLine || document.getElementById('actualizarApp')) return;
+  const url = location.pathname || './';
+  fetch(url, { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(txt => {
+    const m = txt && txt.match(/var APP_VERSION = (\d+);/);
+    if(m && parseInt(m[1], 10) > APP_VERSION){ appVersionNueva = parseInt(m[1], 10); appMostrarActualizar(); }
+  }).catch(() => {});
+}
+function appMostrarActualizar(){
+  if(!appVersionNueva || document.getElementById('actualizarApp')) return;
+  // no interrumpir una carga a medio hacer: se muestra apenas se cierre la ficha/formulario
+  if(document.getElementById('overlay').classList.contains('show')){ setTimeout(appMostrarActualizar, 3000); return; }
+  const el = document.createElement('div');
+  el.id = 'actualizarApp';
+  el.setAttribute('role', 'dialog');
+  el.setAttribute('aria-modal', 'true');
+  el.innerHTML = `<div class="ua-card">
+      <div class="ua-ic"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/></svg></div>
+      <h2>Hay una versión nueva</h2>
+      <p>La app se actualizó con mejoras. Tocá Actualizar para seguir usándola; lo que ya cargaste queda guardado.</p>
+      <button type="button" id="uaBtn">Actualizar</button>
+    </div>`;
+  document.body.appendChild(el);
+  el.querySelector('#uaBtn').addEventListener('click', () => {
+    el.querySelector('#uaBtn').textContent = 'Actualizando…';
+    const recargar = () => location.reload();
+    try {
+      if(navigator.serviceWorker && navigator.serviceWorker.getRegistration){
+        navigator.serviceWorker.getRegistration().then(reg => reg ? reg.update().catch(() => {}) : null).then(recargar, recargar);
+        setTimeout(recargar, 2500);
+        return;
+      }
+    } catch(e) {}
+    recargar();
+  });
+}
+setTimeout(appBuscarActualizacion, 8000);
+setInterval(appBuscarActualizacion, 5 * 60e3);
+document.addEventListener('visibilitychange', () => { if(!document.hidden) appBuscarActualizacion(); });
+window.addEventListener('online', appBuscarActualizacion);
 
 window.__seccionListo = true;
 irInicio();
