@@ -1091,6 +1091,10 @@
 
   .aib-ultimo{ font-size:.74rem; color: var(--muted); margin-top:8px; line-height:1.35; }
   .aib-ultimo small{ color: var(--muted); }
+  .mov-filtros{ display:flex; flex-wrap:wrap; gap:6px; padding:2px 0 10px; margin-bottom:4px; }
+  .mov-filtros .aviso-chip{ white-space:nowrap; flex:0 0 auto; }
+  .mov-filtros .aviso-chip.sel{ background:#1C7293; border-color:#1C7293; color:#fff; }
+  .mov-cnt{ font-size:.72rem; opacity:.8; margin-left:2px; }
   /* ---------- aviso de version nueva ---------- */
   #actualizarApp{ position:fixed; inset:0; z-index:9500; background:rgba(4,14,22,.9); display:flex; align-items:center; justify-content:center; padding:18px; box-sizing:border-box; }
   #actualizarApp .ua-card{ width:100%; max-width:420px; background: var(--panel); border:2px solid #6FC9B0; border-radius:16px; padding:24px 20px; box-sizing:border-box; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.5); }
@@ -2315,7 +2319,15 @@ function pendientesDeVelas(){
     .sort((a,b) => a._updatedAtDate - b._updatedAtDate);
 }
 
+var movRefrescoTimer = null;
+function movRefrescarSiAbierta(){
+  const m = document.getElementById('movMain');
+  if(!m || m.style.display === 'none' || typeof renderMovimientos !== 'function') return;
+  clearTimeout(movRefrescoTimer);
+  movRefrescoTimer = setTimeout(renderMovimientos, 300);
+}
 function updatePendCount(){
+  movRefrescarSiAbierta();
   const badge = document.getElementById('pendCount');
   if(badge){
     const n = pendientesDeReporte().length + pendientesDeReporteAib().length + pendientesDeReporteNotas().length + pendientesDeVelas().length;
@@ -6383,7 +6395,7 @@ function tiempoRelativo(date){
 function renderMovimientos(){
   const movMain = document.getElementById('movMain');
   movMain.innerHTML = `<div class="plano-note" style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
-    <span>Pozos y novedades de USPA (gas, petroleo y notas) ordenados por la ultima modificacion (de cualquier dispositivo), la mas reciente primero.</span>
+    <span>Todo lo que se cargó en el campo, de cualquier dispositivo, lo más reciente primero. Elegí un sector para ver solo ese.</span>
     <button type="button" id="limpiarMovBtn" class="clear-btn" style="white-space:nowrap;">Limpiar movimientos</button>
   </div>`;
   document.getElementById('limpiarMovBtn').addEventListener('click', () => {
@@ -6399,10 +6411,39 @@ function renderMovimientos(){
   const notasEquipoConMov = EQUIPOS_NOTAS.filter(n => n._updatedAtDate && n._updatedAtDate > corte).map(n => Object.assign({ _tipo: 'notaEquipo' }, n));
   const velasConMov = VELAS.filter(v => v._updatedAtDate && v._updatedAtDate > corte).map(v => Object.assign({ _tipo: 'vela' }, v));
   const compConMov = COMP_LECT.filter(l => l._updatedAtDate && l._updatedAtDate > corte).map(l => Object.assign({}, l, { _tipo: 'comp' }));
-  const conMovimiento = [...gasConMov, ...oilConMov, ...notasConMov, ...notasEquipoConMov, ...velasConMov, ...compConMov].sort((a,b) => b._updatedAtDate - a._updatedAtDate);
+  const desde = (lista, tipo) => (lista || []).filter(x => x._updatedAtDate && x._updatedAtDate > corte).map(x => Object.assign({}, x, { _tipo: tipo }));
+  const todos = [...gasConMov, ...oilConMov, ...notasConMov, ...notasEquipoConMov, ...velasConMov, ...compConMov,
+    ...desde(TANQUES_DATA, 'tanque'), ...desde(BOMBEO_LOG, 'bombeo'), ...desde(PIAS2_TANQUES_DATA, 'piasTanque'),
+    ...desde(PIAS2_EQUIPOS_DATA, 'piasEquipo'), ...desde(PIAS2_CAMIONES_DATA, 'camion'), ...desde(PTC_DATA, 'ptc')
+  ].sort((a,b) => b._updatedAtDate - a._updatedAtDate);
+
+  // filtro por sector (queda recordado en este dispositivo)
+  const sectorDe = (r) => {
+    switch(r._tipo){
+      case 'gas': case 'vela': case 'nota': return 'gas';
+      case 'comp': return 'comp';
+      case 'oil': return 'aib';
+      case 'tanque': case 'bombeo': return 'bat';
+      case 'piasTanque': case 'piasEquipo': case 'camion': return 'pias';
+      case 'ptc': return 'ptc';
+      case 'notaEquipo': return r.grupo === 'Pias 2' ? 'pias' : (r.grupo === 'PTC' ? 'ptc' : 'bat');
+    }
+    return 'gas';
+  };
+  const SECTORES = [['todo', 'Todo'], ['gas', 'Gas'], ['comp', 'Compresión'], ['aib', 'AIB'], ['bat', 'Baterías'], ['pias', 'Pías 2'], ['ptc', 'PTC']];
+  let filtro = safeGet('mov_filtro', 'todo');
+  if(!SECTORES.some(x => x[0] === filtro)) filtro = 'todo';
+  const cuenta = { todo: todos.length };
+  todos.forEach(r => { const k = sectorDe(r); cuenta[k] = (cuenta[k] || 0) + 1; });
+  const chips = document.createElement('div');
+  chips.className = 'mov-filtros';
+  chips.innerHTML = SECTORES.map(([k, t]) => `<button type="button" class="aviso-chip${k === filtro ? ' sel' : ''}" data-f="${k}">${t}${cuenta[k] ? ` <span class="mov-cnt">${cuenta[k]}</span>` : ''}</button>`).join('');
+  chips.querySelectorAll('[data-f]').forEach(b => b.addEventListener('click', () => { safeSet('mov_filtro', b.dataset.f); renderMovimientos(); }));
+  movMain.appendChild(chips);
+  const conMovimiento = filtro === 'todo' ? todos : todos.filter(r => sectorDe(r) === filtro);
 
   if(conMovimiento.length === 0){
-    movMain.innerHTML += '<div class="empty-msg">Todavia no hay movimientos registrados.</div>';
+    movMain.insertAdjacentHTML('beforeend', '<div class="empty-msg">' + (filtro === 'todo' ? 'Todavia no hay movimientos registrados.' : 'No hay movimientos en este sector.') + '</div>');
     return;
   }
 
@@ -6464,6 +6505,52 @@ function renderMovimientos(){
       `;
       row.addEventListener('click', () => document.getElementById('tabComp').click());
       movMain.appendChild(row);
+      return;
+    }
+
+    // filas de Baterias, Pias 2 y PTC (mismo formato)
+    const filaSimple = (titulo, sub, detalle, pill, pillClase, alTocar) => {
+      const row = document.createElement('div');
+      row.className = 'ciclaje-row';
+      row.innerHTML = `
+        <div class="cr-left">
+          <div class="cr-pozo">${avisoEsc(titulo)} <span style="color:var(--muted); font-weight:400; font-size:0.75rem;">${avisoEsc(sub || '')}</span></div>
+          <div class="cr-detail">${rec.operador ? `<b>${avisoEsc(rec.operador)}</b> &middot; ` : ''}${tiempoRelativo(rec._updatedAtDate)}${detalle ? ' &middot; ' + avisoEsc(detalle) : ''}</div>
+        </div>
+        <div class="cr-estado ${pillClase}">${avisoEsc(pill)}</div>`;
+      row.addEventListener('click', alTocar);
+      movMain.appendChild(row);
+    };
+    const irA = (tab) => () => document.getElementById(tab).click();
+    if(rec._tipo === 'tanque'){
+      filaSimple(rec.nombre || 'Tanque', rec.bateria, `Nivel total ${rec.nivelTotal || '?'} cm · interfaz ${rec.nivelInterfaz || '?'} cm`, 'Medición', 'sd',
+        () => { if(rec.bateria) bateriasAbiertas.add(rec.bateria); document.getElementById('tabTanques').click(); });
+      return;
+    }
+    if(rec._tipo === 'bombeo'){
+      const bb = (rec.bombasEnServicio || []);
+      filaSimple('Bombeo a PTC', rec.bateria, bb.length ? `${bb.join(' y ')} en servicio · ${String(rec.alturaCm == null ? '?' : rec.alturaCm).replace('.', ',')} cm → ${bombeoFmt(rec.volumenM3 || 0, 2)} m³` : 'Sin bombas en servicio', 'Bombeo', 'sd',
+        () => { if(rec.bateria) bateriasAbiertas.add(rec.bateria); document.getElementById('tabTanques').click(); });
+      return;
+    }
+    if(rec._tipo === 'piasTanque'){
+      filaSimple(rec.nombre || 'Tanque', 'Pías 2', `Nivel total ${rec.nivelTotal || '?'} cm · interfaz ${rec.nivelInterfaz || '?'} cm`, 'Medición', 'sd', irA('tabPias'));
+      return;
+    }
+    if(rec._tipo === 'piasEquipo'){
+      const falla = rec.estado === 'Falla';
+      filaSimple(rec.nombre || 'Equipo', 'Pías 2', rec.nota || '', falla ? 'En falla' : 'Operativa', falla ? 'cerrado' : 'abierto', irA('tabPias'));
+      return;
+    }
+    if(rec._tipo === 'camion'){
+      filaSimple('Camión de agua', 'Pías 2', `${rec.horaEntrada || ''}${rec.horaSalida ? '–' + rec.horaSalida : ''} · ${rec.volumen || '?'} m³${rec.remito ? ' · Rto ' + rec.remito : ''}${rec.chofer ? ' · ' + rec.chofer : ''}`, 'Camión', 'sd', irA('tabPias'));
+      return;
+    }
+    if(rec._tipo === 'ptc'){
+      const g = ptcGrupo(rec);
+      filaSimple(rec.tipo === 'carga' ? 'Carga en Cargadero' : 'Descarga Isla ' + (rec.isla || '?'), 'PTC',
+        `${rec.horaInicial || ''}${rec.horaFinal ? '–' + rec.horaFinal : ''} · ${ptcFmt(ptcVolMasico(rec), 2)} m³${rec.remito ? ' · Rto ' + rec.remito : ''}${rec.chofer ? ' · ' + rec.chofer : ''}`,
+        rec.tipo === 'carga' ? 'Carga' : 'Descarga', 'sd', () => { ptcIslaSel = g; document.getElementById('tabPtc').click(); });
       return;
     }
 
@@ -7636,7 +7723,7 @@ function exigirNombre(){
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202610210215;
+var APP_VERSION = 202610210250;
 var appVersionNueva = 0;
 function appBuscarActualizacion(){
   if(!navigator.onLine || document.getElementById('actualizarApp')) return;
