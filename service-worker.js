@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pozos-cache-v6';
+const CACHE_NAME = 'pozos-cache-v7';
 const ASSETS = [
   './manifest.json',
   './icon-192.png',

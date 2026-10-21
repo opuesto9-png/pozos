@@ -1,17 +1,37 @@
 {
-  "name": "Pozos Interactivo - Centenario",
-  "short_name": "Pozos",
-  "description": "Control de pozos de gas por bateria (USPA2-5), ciclaje y parte de campo - Yacimiento Centenario",
+  "name": "Centenario Interactivo",
+  "short_name": "CI",
+  "description": "Operación del Yacimiento Centenario: pozos de gas, compresión BP, AIB, baterías, Pías 2, PTC y partes de campo",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#14181d",
-  "theme_color": "#14181d",
+  "background_color": "#0B2436",
+  "theme_color": "#0B2436",
   "icons": [
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ]
 }
