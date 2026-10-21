@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pozos por USPA</title>
+<title>Centenario Interactivo</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B2436">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Pozos">
+<meta name="apple-mobile-web-app-title" content="CI">
 <style>
   :root{
     --bg: #0B2436;
@@ -1186,7 +1186,7 @@
 </div>
 
 <header>
-  <div class="nav-marca"><div class="kicker">YAC. CENTENARIO</div><h1>Pozos Interactivo</h1></div>
+  <div class="nav-marca"><div class="kicker">YAC. CENTENARIO</div><h1>Centenario Interactivo</h1></div>
   <div class="nav-seccion">
     <button type="button" class="nav-volver" id="navVolverBtn" aria-label="Volver al inicio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg>Inicio</button>
     <h2 class="nav-titulo" id="navTitulo"></h2>
@@ -2299,7 +2299,7 @@ var MOV_AV_NUEVOS = [];   // { key, tab, texto, ts }
 var MOV_AV_AUDIO = null;
 var MOV_AV_COLA = [];
 var MOV_AV_TIMER = null;
-var MOV_AV_TITULO = 'Pozos por USPA';
+var MOV_AV_TITULO = 'Centenario Interactivo';
 // a que pestaña pertenece cada coleccion (al abrir esa pestaña se dan por vistos sus movimientos)
 var MOV_AV_TABS = {
   pozos_overrides: 'tabLista', pozos_velas: 'tabLista', uspa_notas: 'tabLista', aib_pozos: 'tabAib',
@@ -2433,7 +2433,7 @@ async function movAvisar(nuevas){
   movToast('Movimiento nuevo: ' + texto);
   if(!movAvisosOn() || !document.hidden || !('Notification' in window) || Notification.permission !== 'granted') return;
   try {
-    const titulo = nuevas.length === 1 ? 'Pozos: movimiento nuevo' : 'Pozos: ' + nuevas.length + ' movimientos nuevos';
+    const titulo = nuevas.length === 1 ? 'CI: movimiento nuevo' : 'CI: ' + nuevas.length + ' movimientos nuevos';
     const opts = { body: texto, icon: 'icon-192.png', badge: 'icon-192.png', tag: 'pozos-movimientos', renotify: true };
     const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration();
     if(reg) reg.showNotification(titulo, opts); else new Notification(titulo, opts);
@@ -2900,7 +2900,7 @@ function exportarExcelPtc(mes){
 function ptcArmarLibro(lista, soloConDatos, wbExistente){
   {
     const wb = wbExistente || new ExcelJS.Workbook();
-    wb.creator = 'Pozos Interactivo';
+    wb.creator = 'Centenario Interactivo';
     let logoId = null;
     if(PTC_LOGO_B64){ try { logoId = wb.addImage({ base64: PTC_LOGO_B64, extension: 'png' }); } catch(e) {} }
     const BANDA = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF8FAADC' } };
