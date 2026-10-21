@@ -1089,6 +1089,8 @@
   .bombeo-ultima{ font-size: .72rem; color: var(--muted); margin-top: 8px; }
 
 
+  .aib-ultimo{ font-size:.74rem; color: var(--muted); margin-top:8px; line-height:1.35; }
+  .aib-ultimo small{ color: var(--muted); }
   /* ---------- aviso de version nueva ---------- */
   #actualizarApp{ position:fixed; inset:0; z-index:9500; background:rgba(4,14,22,.9); display:flex; align-items:center; justify-content:center; padding:18px; box-sizing:border-box; }
   #actualizarApp .ua-card{ width:100%; max-width:420px; background: var(--panel); border:2px solid #6FC9B0; border-radius:16px; padding:24px 20px; box-sizing:border-box; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.5); }
@@ -2072,10 +2074,10 @@ let PIAS2_CAMIONES_DATA = []; // descargas de camiones de agua en Pias 2 (colecc
 let bateriasAbiertas = new Set(); // que acordeones de bateria estan desplegados (local, no se guarda)
 
 function guardarMedicionTanque(coleccion, nombre, bateria, nivelTotal, nivelInterfaz){
-  if(!puedeModificar()) return;
+  if(!puedeModificar()) return false;
   if(!firestoreOk){
     alert('No hay conexion con el guardado compartido. Revisa tu internet e intenta de nuevo.');
-    return;
+    return false;
   }
   db.collection(coleccion).doc(nombre).set({
     nombre, bateria,
@@ -2230,6 +2232,7 @@ function crearNotasEquipoBox(grupo){
   return notasBox;
 }
 
+function horaAhoraHHMM(){ const d = new Date(); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
 function saveAibPozo(pozoKey, newFields){
   if(!firestoreOk){
     alert('No hay conexion con el guardado compartido. Revisa tu internet e intenta de nuevo.');
@@ -3343,9 +3346,9 @@ function startSync(){
         _updatedAtDate: (data.updatedAt && data.updatedAt.toDate) ? data.updatedAt.toDate() : null
       }));
     });
-    if(snapshot.size === 0 && !safeGet('aib_seeded_v1', '')){
-      sembrarAibInicial();
-    }
+    // OJO: aca habia una "carga inicial" de AIB que se disparaba si la primera foto llegaba vacia.
+    // En un celular nuevo esa primera foto puede venir vacia de la memoria del telefono (antes de que
+    // conteste el servidor) y pisaba los AIB reales con valores viejos. La base ya tiene sus datos: se saco.
     if(document.getElementById('aibMain').style.display !== 'none'){
       renderAib();
     }
@@ -6655,24 +6658,25 @@ function renderAib(){
         </div>
         <div class="aib-field">
           <div class="time-label">Hora de verificacion</div>
-          <input type="time" class="edit-input time-input aib-hora" value="${rec.hora || ''}">
+          <input type="time" class="edit-input time-input aib-hora" value="${horaAhoraHHMM()}">
         </div>
       </div>
       <div class="aib-fields">
         <div class="aib-field">
           <div class="time-label">BP (${pressureUnit === 'psi' ? 'psi' : 'kg/cm2'})</div>
-          <input type="text" class="edit-input aib-bp" value="${aibPresionDisplayValue(rec.bp).toString().replace(/"/g,'&quot;')}" placeholder="ej: 14,7">
+          <input type="text" class="edit-input aib-bp" value="" placeholder="${rec.bp ? ('último: ' + aibPresionDisplayValue(rec.bp)).toString().replace(/"/g,'&quot;') : 'ej: 14,7'}">
         </div>
         <div class="aib-field">
           <div class="time-label">PL (${pressureUnit === 'psi' ? 'psi' : 'kg/cm2'})</div>
-          <input type="text" class="edit-input aib-pl" value="${aibPresionDisplayValue(rec.pl).toString().replace(/"/g,'&quot;')}" placeholder="ej: 3">
+          <input type="text" class="edit-input aib-pl" value="" placeholder="${rec.pl ? ('último: ' + aibPresionDisplayValue(rec.pl)).toString().replace(/"/g,'&quot;') : 'ej: 3'}">
         </div>
       </div>
       <label class="aib-perdidas-check" style="display:${estadoActual==='Parado'?'none':''};">
-        <input type="checkbox" class="aib-perdidas" ${rec.perdidas ? 'checked' : ''}> Con perdidas por vastago
+        <input type="checkbox" class="aib-perdidas"> Con perdidas por vastago
       </label>
-      <input type="text" class="edit-input aib-nota" value="${(rec.nota||'').replace(/"/g,'&quot;')}" placeholder="Nota extra (opcional)" style="margin-top:6px;">
-      <div class="aib-preview">${buildAibNovedad(Object.assign({}, rec, { estado: estadoActual }))}</div>
+      <input type="text" class="edit-input aib-nota" value="" placeholder="Nota extra (opcional)" style="margin-top:6px;">
+      ${rec._updatedAtDate ? `<div class="aib-ultimo">Último control: ${avisoEsc(buildAibNovedad(Object.assign({}, rec, { estado: estadoActual })))} <small>(${rec.hora ? avisoEsc(rec.hora) + ' · ' : ''}${tiempoRelativo(rec._updatedAtDate)}${rec.operador ? ' · ' + avisoEsc(rec.operador) : ''})</small></div>` : ''}
+      <div class="aib-preview"></div>
       <button class="save-btn aib-save-btn">Guardar</button>
     `;
     row.querySelector('.cr-remove').addEventListener('click', () => {
@@ -6709,7 +6713,14 @@ function renderAib(){
     row.querySelector('.aib-perdidas').addEventListener('change', updatePreview);
     row.querySelector('.aib-nota').addEventListener('input', updatePreview);
     row.querySelector('.aib-motivo').addEventListener('change', updatePreview);
+    updatePreview();
     row.querySelector('.aib-save-btn').addEventListener('click', () => {
+      // cada control se carga de nuevo: sin BP y PL no se guarda (asi nadie manda valores viejos sin querer)
+      if(estadoSeleccionado !== 'Parado' && (!row.querySelector('.aib-bp').value.trim() || !row.querySelector('.aib-pl').value.trim())){
+        alert('Cargá BP y PL antes de guardar (si no hay dato, poné S/D).');
+        (row.querySelector('.aib-bp').value.trim() ? row.querySelector('.aib-pl') : row.querySelector('.aib-bp')).focus();
+        return;
+      }
       if(!puedeModificar()) return;
       const bateria = row.querySelector('.aib-bateria').value.trim() || 'Sin bateria';
       const hora = row.querySelector('.aib-hora').value;
@@ -6719,6 +6730,9 @@ function renderAib(){
       const nota = row.querySelector('.aib-nota').value.trim();
       const motivoParo = row.querySelector('.aib-motivo').value;
       saveAibPozo(rec.pozo, { hora, bp, pl, perdidas, nota, bateria, estado: estadoSeleccionado, motivoParo });
+      ['.aib-bp', '.aib-pl', '.aib-nota'].forEach(sel => { row.querySelector(sel).value = ''; });
+      row.querySelector('.aib-perdidas').checked = false;
+      updatePreview();
     });
     agregarAvisoATarjeta(row, { origen: 'aib', equipo: rec.pozo, bateria: rec.bateria || '', titulo: 'AIB · ' + rec.pozo });
     aibMain.appendChild(row);
@@ -6744,15 +6758,22 @@ function crearTarjetaTanque(nombre, bateria, coleccion, datos){
       <p class="tk-ultima">${ultimaTxt}</p>
     </div>
     <div class="tk-fields">
-      <div class="tk-field"><label>Nivel Total (cm)</label><input type="text" class="tk-total" placeholder="ej: 90,23" value="${rec ? (rec.nivelTotal||'') : ''}"></div>
-      <div class="tk-field"><label>Nivel Interfaz (cm)</label><input type="text" class="tk-interfaz" placeholder="ej: 30,00" value="${rec ? (rec.nivelInterfaz||'') : ''}"></div>
+      <div class="tk-field"><label>Nivel Total (cm)</label><input type="text" inputmode="decimal" class="tk-total" placeholder="${rec && rec.nivelTotal ? 'último: ' + String(rec.nivelTotal).replace(/"/g, '&quot;') : 'ej: 90,23'}" value=""></div>
+      <div class="tk-field"><label>Nivel Interfaz (cm)</label><input type="text" inputmode="decimal" class="tk-interfaz" placeholder="${rec && rec.nivelInterfaz ? 'último: ' + String(rec.nivelInterfaz).replace(/"/g, '&quot;') : 'ej: 30,00'}" value=""></div>
     </div>
     <button class="tk-save">Guardar medicion</button>
   `;
   card.querySelector('.tk-save').addEventListener('click', () => {
     const nt = card.querySelector('.tk-total').value.trim();
     const ni = card.querySelector('.tk-interfaz').value.trim();
-    guardarMedicionTanque(coleccion, nombre, bateria, nt, ni);
+    if(!nt || !ni){
+      alert('Cargá Nivel Total y Nivel Interfaz antes de guardar la medición.');
+      (nt ? card.querySelector('.tk-interfaz') : card.querySelector('.tk-total')).focus();
+      return;
+    }
+    if(guardarMedicionTanque(coleccion, nombre, bateria, nt, ni) === false) return;
+    card.querySelector('.tk-total').value = '';
+    card.querySelector('.tk-interfaz').value = '';
   });
   agregarAvisoATarjeta(card, { origen: coleccion === 'pias2_tanques' ? 'pias2' : 'bateria', equipo: nombre, bateria: bateria, titulo: nombre });
   return card;
@@ -6768,7 +6789,8 @@ function crearTarjetaEquipo(nombre, tipo, datos){
       <p class="eq-nombre">${nombre}</p>
       <button type="button" class="eq-badge ${estadoActual === 'Falla' ? 'falla' : 'op'}">${estadoActual === 'Falla' ? 'EN FALLA' : 'OPERATIVA'}</button>
     </div>
-    <textarea class="eq-nota" rows="2" placeholder="Cargar novedad si entra en falla...">${rec ? (rec.nota||'') : ''}</textarea>
+    ${rec && rec.nota ? `<div class="aib-ultimo">Última novedad: ${avisoEsc(rec.nota)}</div>` : ''}
+    <textarea class="eq-nota" rows="2" placeholder="Cargar novedad si entra en falla..."></textarea>
     <button class="eq-save">Guardar</button>
   `;
   const badge = card.querySelector('.eq-badge');
@@ -6780,7 +6802,13 @@ function crearTarjetaEquipo(nombre, tipo, datos){
     badge.textContent = estadoLocal === 'Falla' ? 'EN FALLA' : 'OPERATIVA';
   });
   card.querySelector('.eq-save').addEventListener('click', () => {
-    guardarEquipoPias2(nombre, tipo, estadoLocal, card.querySelector('.eq-nota').value.trim());
+    const nota = card.querySelector('.eq-nota').value.trim();
+    if(estadoLocal === 'Falla' && !nota){
+      alert('Contá qué falla tiene antes de guardar.');
+      card.querySelector('.eq-nota').focus();
+      return;
+    }
+    guardarEquipoPias2(nombre, tipo, estadoLocal, nota);
   });
   agregarAvisoATarjeta(card, { origen: 'pias2', equipo: nombre, bateria: 'Pias 2', titulo: nombre });
   return card;
@@ -6838,7 +6866,7 @@ function crearBloqueBombeo(bat){
     <div class="bombeo-calc" hidden>
       <div class="tk-field">
         <label>Altura ${cfg.tanque} (cm)</label>
-        <input type="text" inputmode="decimal" class="bombeo-altura" placeholder="ej: 84,28" value="${alturaSugerida.replace(/"/g, '&quot;')}">
+        <input type="text" inputmode="decimal" class="bombeo-altura" placeholder="${alturaSugerida ? 'última: ' + alturaSugerida.replace(/"/g, '&quot;') + ' cm' : 'ej: 84,28'}" value="">
       </div>
       <div class="bombeo-res"></div>
     </div>
@@ -7608,7 +7636,7 @@ function exigirNombre(){
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202610210140;
+var APP_VERSION = 202610210215;
 var appVersionNueva = 0;
 function appBuscarActualizacion(){
   if(!navigator.onLine || document.getElementById('actualizarApp')) return;
