@@ -1082,6 +1082,58 @@
   .bombeo-cero{ font-size: 1.1rem; color: #e6a49d; }
   .bombeo-nota{ font-size: .74rem; color: var(--muted); line-height: 1.35; }
   .bombeo-ultima{ font-size: .72rem; color: var(--muted); margin-top: 8px; }
+
+  /* ---------- menu principal: inicio con tarjetas (opcion B) ---------- */
+  .nav-marca{ display:none; }
+  .nav-seccion{ display:none; align-items:center; gap:10px; margin-bottom:6px; }
+  .nav-volver{ display:flex; align-items:center; gap:4px; background: var(--panel); border:1px solid var(--line); color: var(--text);
+    border-radius:10px; padding:0 12px 0 8px; height:40px; font-size:0.9rem; font-weight:600; cursor:pointer; }
+  .nav-volver svg{ width:20px; height:20px; }
+  .nav-titulo{ font-size:1.25rem; font-weight:700; margin:0; }
+  body.modo-inicio header > h1, body.modo-seccion header > h1{ display:none; }
+  body.modo-inicio .nav-marca{ display:block; margin-bottom:6px; }
+  .nav-marca .kicker{ font-size:0.72rem; font-weight:700; letter-spacing:1.5px; color:#E8B64A; }
+  .nav-marca h1{ font-size:1.6rem; margin:2px 0 0; font-weight:700; }
+  body.modo-seccion .nav-seccion{ display:flex; }
+  body.modo-inicio header > p, body.modo-inicio .legend, body.modo-inicio .tabs,
+  body.modo-inicio .unit-toggle, body.modo-inicio .toolbar .export-btn{ display:none !important; }
+  body.modo-seccion header > p{ display:none; }
+  body.modo-seccion.sec-tabLista header > p{ display:block; }
+  body.modo-seccion .legend{ display:none; }
+  body.modo-seccion.sec-tabLista .legend, body.modo-seccion.sec-tabPlano .legend{ display:flex; }
+  body.modo-seccion.sin-busqueda .search{ display:none; }
+  body.modo-seccion .tabs .tab-btn.fuera-grupo{ display:none !important; }
+  body.modo-seccion.tabs-solo .tabs{ display:none; }
+  body.modo-inicio main{ display:none !important; }
+  #inicio{ display:none; padding: 14px 16px 24px; max-width: 760px; margin: 0 auto; }
+  body.modo-inicio #inicio{ display:flex; flex-direction:column; gap:14px; }
+  .ini-grupo{ font-size:0.75rem; font-weight:700; letter-spacing:1px; color:#9FB3C3; margin-top:4px; }
+  .ini-grid{ display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:10px; }
+  @media (min-width: 620px){ .ini-grid{ grid-template-columns: repeat(4, minmax(0,1fr)); } }
+  .ini-tile{ position:relative; display:flex; flex-direction:column; align-items:flex-start; gap:6px; text-align:left;
+    background: var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px; color: var(--text);
+    font: inherit; cursor:pointer; min-height:104px; }
+  .ini-tile:active{ transform: scale(.98); }
+  .ini-tile:hover{ border-color:#2E5470; }
+  .ini-tile svg{ width:26px; height:26px; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .ini-tile.gas svg{ stroke:#E8B64A; }
+  .ini-tile.otro svg{ stroke:#7FC4DE; }
+  .ini-tile .t{ font-size:1rem; font-weight:700; }
+  .ini-tile .s{ font-size:0.78rem; color:#9FB3C3; }
+  .ini-nuevo{ position:absolute; top:10px; right:10px; background:#E8B64A; color:#14283A; font-size:0.68rem; font-weight:800;
+    border-radius:10px; padding:2px 7px; }
+  .ini-fila{ display:flex; gap:10px; margin-top:6px; }
+  .ini-btn{ flex:1; display:flex; align-items:center; justify-content:center; gap:8px; height:48px; background: var(--panel);
+    border:1px solid var(--line); border-radius:12px; color: var(--text); font: inherit; font-size:0.92rem; font-weight:600; cursor:pointer; }
+  .ini-btn svg{ width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .ini-badge{ background:#E05A47; color:#fff; font-size:0.7rem; font-weight:700; border-radius:9px; padding:1px 7px; }
+  .ini-enviar{ display:flex; align-items:center; justify-content:center; gap:8px; height:52px; background:#E8B64A; color:#14283A;
+    border:0; border-radius:12px; font: inherit; font-size:0.95rem; font-weight:700; cursor:pointer; }
+  .ini-enviar svg{ width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .ini-enviar .ini-badge{ background:#14283A; color:#E8B64A; }
+  .env-lista{ display:flex; flex-direction:column; gap:8px; margin-top:6px; }
+  .env-lista button{ display:flex; align-items:center; justify-content:space-between; gap:8px; min-height:48px; padding:0 14px;
+    background: var(--panel); border:1px solid var(--line); border-radius:12px; color: var(--text); font: inherit; font-size:0.95rem; font-weight:600; cursor:pointer; text-align:left; }
 </style>
 </head>
 <body>
@@ -1093,6 +1145,11 @@
 </div>
 
 <header>
+  <div class="nav-marca"><div class="kicker">YAC. CENTENARIO</div><h1>Pozos Interactivo</h1></div>
+  <div class="nav-seccion">
+    <button type="button" class="nav-volver" id="navVolverBtn" aria-label="Volver al inicio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg>Inicio</button>
+    <h2 class="nav-titulo" id="navTitulo"></h2>
+  </div>
   <h1>Pozos por USPA</h1>
   <div class="status-bar">
     <span id="connBadge" class="conn-badge"></span>
@@ -1111,7 +1168,7 @@
     <span><span class="dot" style="background:#2b323b; opacity:.5"></span>Sin datos todavia</span>
   </div>
   <div class="tabs">
-    <button class="tab-btn" id="tabLista">Gas</button>
+    <button class="tab-btn" id="tabLista">Lista</button>
     <button class="tab-btn active" id="tabPlano">Plano (colectoras)</button>
     <button class="tab-btn" id="tabRed">Red</button>
     <button class="tab-btn" id="tabCiclaje">Ciclaje</button>
@@ -1138,6 +1195,28 @@
   </div>
 </header>
 
+
+<section id="inicio" aria-label="Inicio">
+  <div class="ini-grupo">GAS</div>
+  <div class="ini-grid">
+    <button type="button" class="ini-tile gas" data-tab="tabLista"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c2 3 5 5 5 9a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-5 1-8z"/></svg><span class="t">Pozos de gas</span><span class="s">Lista por USPA</span><span class="ini-nuevo" style="display:none;"></span></button>
+    <button type="button" class="ini-tile gas" data-tab="tabPlano"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/></svg><span class="t">Plano</span><span class="s">Por colectora</span><span class="ini-nuevo" style="display:none;"></span></button>
+    <button type="button" class="ini-tile gas" data-tab="tabRed"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="12" cy="18" r="2"/><path d="M7.5 7.5l3.5 8.5M16.5 7.5L13 16M8 6h8"/></svg><span class="t">Red</span><span class="s">Radial y esquema</span><span class="ini-nuevo" style="display:none;"></span></button>
+    <button type="button" class="ini-tile gas" data-tab="tabCiclaje"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 0 1-14 5"/><path d="M4 12a8 8 0 0 1 14-5"/><path d="M18 3v4h-4M6 21v-4h4"/></svg><span class="t">Ciclaje</span><span class="s">Pozos en ciclaje</span><span class="ini-nuevo" style="display:none;"></span></button>
+  </div>
+  <div class="ini-grupo">PETRÓLEO, AGUA Y PTC</div>
+  <div class="ini-grid">
+    <button type="button" class="ini-tile otro" data-tab="tabAib"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18M8 21l3-9 3 9"/><path d="M4 8l14-3"/><path d="M11 12V6.5"/><path d="M18 5v8"/></svg><span class="t">AIB</span><span class="s">BP, PL y estado</span><span class="ini-nuevo" style="display:none;"></span></button>
+    <button type="button" class="ini-tile otro" data-tab="tabTanques"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M5 10h14"/></svg><span class="t">Baterías</span><span class="s">Tanques y bombeo</span><span class="ini-nuevo" style="display:none;"></span></button>
+    <button type="button" class="ini-tile otro" data-tab="tabPias"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11z"/></svg><span class="t">Pías 2</span><span class="s">Equipos y camiones</span><span class="ini-nuevo" style="display:none;"></span></button>
+    <button type="button" class="ini-tile otro" data-tab="tabPtc"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 7h11v9H2zM13 10h4l3 3v3h-7"/><circle cx="6" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg><span class="t">PTC</span><span class="s">Descargas por isla</span><span class="ini-nuevo" style="display:none;"></span></button>
+  </div>
+  <div class="ini-fila">
+    <button type="button" class="ini-btn" data-tab="tabMov"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Movimientos <span class="ini-badge" id="iniMovBadge" style="display:none;"></span></button>
+    <button type="button" class="ini-btn" data-tab="tabAvisos" id="iniAvisosBtn" style="display:none;"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/></svg>Avisos <span class="ini-badge" id="iniAvisosBadge" style="display:none;"></span></button>
+  </div>
+  <button type="button" class="ini-enviar" id="iniEnviarBtn" style="display:none;"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg>Enviar partes y reportes <span class="ini-badge" id="iniEnviarBadge" style="display:none;"></span></button>
+</section>
 <main id="main" style="display:none;"></main>
 <main id="planoMain"></main>
 <main id="redMain" style="display:none;"></main>
@@ -2270,6 +2349,7 @@ function movProcesarCola(){
 }
 
 function movActualizarBadge(){
+  if(typeof inicioActualizar === 'function') inicioActualizar();
   if(!movAvisosActivo()) return;
   const n = MOV_AV_NUEVOS.length;
   try {
@@ -4194,6 +4274,7 @@ document.getElementById('primarioTag').addEventListener('click', () => {
 renderPrimarioTag();
 
 function actualizarBotonParte(){
+  if(typeof inicioActualizar === 'function') setTimeout(inicioActualizar, 0);
   const btn = document.getElementById('parteBtn');
   const exportarBtn = document.getElementById('exportarTodoBtn');
   const bateriasBtn = document.getElementById('reporteBateriasBtn');
@@ -5703,6 +5784,7 @@ function refrescarMarcasAvisos(){
 }
 
 function actualizarBadgeAvisos(){
+  if(typeof inicioActualizar === 'function') setTimeout(inicioActualizar, 0);
   const badge = document.getElementById('avisosBadge');
   if(!badge) return;
   const n = avisosAbiertos().length;
@@ -6801,6 +6883,125 @@ document.getElementById('tabPtc').addEventListener('click', () => {
 
 // arranca mostrando el Plano por defecto (ya con todo declarado)
 renderPlano();
+
+// ---------------- Menu principal: pantalla de Inicio con tarjetas ----------------
+// Al abrir la app se ve el Inicio (tarjetas por area). Tocar una tarjeta entra a esa seccion;
+// "‹ Inicio" o el boton Atras del celular vuelven. Dentro de Gas y de Petroleo quedan las
+// pestañas hermanas para pasar de una a otra sin volver al inicio.
+const SECCION_TITULO = { tabLista: 'Pozos de gas', tabPlano: 'Plano (colectoras)', tabRed: 'Red', tabCiclaje: 'Ciclaje',
+  tabMov: 'Últimos movimientos', tabAib: 'AIB', tabTanques: 'Baterías', tabPias: 'Pías 2', tabPtc: 'PTC', tabAvisos: 'Avisos' };
+const SECCION_GRUPO = { tabLista: 'gas', tabPlano: 'gas', tabRed: 'gas', tabCiclaje: 'gas', tabAib: 'oil', tabTanques: 'oil' };
+const SECCION_CON_BUSQUEDA = ['tabLista', 'tabPlano', 'tabRed', 'tabAvisos'];
+let seccionActual = null;
+
+function entrarSeccion(tabId){
+  const b = document.body;
+  const veniaDeInicio = !seccionActual;
+  seccionActual = tabId;
+  b.classList.remove('modo-inicio');
+  b.classList.add('modo-seccion');
+  [...b.classList].filter(c => c.startsWith('sec-')).forEach(c => b.classList.remove(c));
+  b.classList.add('sec-' + tabId);
+  b.classList.toggle('sin-busqueda', !SECCION_CON_BUSQUEDA.includes(tabId));
+  const grupo = SECCION_GRUPO[tabId];
+  b.classList.toggle('tabs-solo', !grupo);
+  TAB_IDS.forEach(id => document.getElementById(id).classList.toggle('fuera-grupo', !grupo || SECCION_GRUPO[id] !== grupo));
+  document.getElementById('navTitulo').textContent = grupo === 'gas' ? 'Gas' : (grupo === 'oil' ? 'Petróleo' : (SECCION_TITULO[tabId] || ''));
+  if(veniaDeInicio){
+    try { history.pushState({ pozosSeccion: true }, ''); } catch(e) {}
+    window.scrollTo(0, 0);
+  }
+}
+
+function irInicio(){
+  seccionActual = null;
+  const b = document.body;
+  b.classList.remove('modo-seccion', 'sin-busqueda', 'tabs-solo');
+  [...b.classList].filter(c => c.startsWith('sec-')).forEach(c => b.classList.remove(c));
+  b.classList.add('modo-inicio');
+  inicioActualizar();
+  window.scrollTo(0, 0);
+}
+
+function inicioActualizar(){
+  const nuevos = (typeof MOV_AV_NUEVOS !== 'undefined') ? MOV_AV_NUEVOS : [];
+  document.querySelectorAll('#inicio .ini-tile').forEach(t => {
+    const n = nuevos.filter(x => x.tab === t.dataset.tab).length;
+    const badge = t.querySelector('.ini-nuevo');
+    badge.textContent = n === 1 ? '1 nuevo' : n + ' nuevos';
+    badge.style.display = n ? '' : 'none';
+  });
+  const movN = nuevos.length;
+  const mb = document.getElementById('iniMovBadge');
+  if(mb){ mb.textContent = movN > 99 ? '99+' : String(movN); mb.style.display = movN ? '' : 'none'; }
+  // Avisos y envio de reportes: solo donde ya estaban (compu principal)
+  const tabAv = document.getElementById('tabAvisos');
+  const avBtn = document.getElementById('iniAvisosBtn');
+  if(avBtn) avBtn.style.display = (tabAv && tabAv.style.display !== 'none') ? '' : 'none';
+  const avOrig = document.getElementById('avisosBadge');
+  const avB = document.getElementById('iniAvisosBadge');
+  if(avB && avOrig){ avB.textContent = avOrig.textContent; avB.style.display = avOrig.style.display; }
+  const env = document.getElementById('iniEnviarBtn');
+  const ids = ['parteBtn', 'reporteBateriasBtn', 'reporteAguaBtn', 'reportePtcBtn', 'exportarTodoBtn'];
+  const visibles = ids.filter(id => { const e = document.getElementById(id); return e && e.style.display !== 'none'; });
+  if(env) env.style.display = visibles.length ? '' : 'none';
+  let pend = 0;
+  ['pendCount', 'pendCountBaterias', 'pendCountAgua', 'pendCountPtc'].forEach(id => {
+    const e = document.getElementById(id);
+    if(e && e.style.display !== 'none') pend += parseInt(e.textContent, 10) || 0;
+  });
+  const eb = document.getElementById('iniEnviarBadge');
+  if(eb){ eb.textContent = String(pend); eb.style.display = pend ? '' : 'none'; }
+}
+
+function abrirMenuEnviar(){
+  window._currentCardRec = null;
+  const card = document.getElementById('card');
+  document.getElementById('overlay').classList.add('show');
+  if(!modalHistoryPushed){ history.pushState({ pozosModal: true }, ''); modalHistoryPushed = true; }
+  const ops = [
+    ['parteBtn', 'Enviar parte de campo', 'pendCount'],
+    ['reporteBateriasBtn', 'Enviar reporte de Baterías', 'pendCountBaterias'],
+    ['reporteAguaBtn', 'Enviar reporte de Agua', 'pendCountAgua'],
+    ['reportePtcBtn', 'Enviar reporte de PTC', 'pendCountPtc'],
+    ['exportarTodoBtn', 'Exportar todo', null]
+  ].filter(([id]) => { const e = document.getElementById(id); return e && e.style.display !== 'none'; });
+  card.innerHTML = `
+    <div class="card-head">
+      <div><h2>Enviar partes y reportes</h2></div>
+      <button class="close-btn" id="closeBtn">&times;</button>
+    </div>
+    <div class="env-lista">${ops.map(([id, txt, pid]) => {
+      const pe = pid && document.getElementById(pid);
+      const n = (pe && pe.style.display !== 'none') ? pe.textContent : '';
+      return `<button type="button" data-id="${id}"><span>${txt}</span>${n ? `<span class="pend-badge">${n}</span>` : ''}</button>`;
+    }).join('')}</div>`;
+  document.getElementById('closeBtn').addEventListener('click', closeCard);
+  card.querySelectorAll('.env-lista button').forEach(b => b.addEventListener('click', () => {
+    const id = b.getAttribute('data-id');
+    closeCard();
+    setTimeout(() => document.getElementById(id).click(), 50);
+  }));
+}
+
+// cualquier forma de abrir una pestaña (tocarla, un aviso, el sistema) entra en modo seccion
+TAB_IDS.forEach(id => document.getElementById(id).addEventListener('click', () => entrarSeccion(id), true));
+document.querySelectorAll('#inicio [data-tab]').forEach(b => b.addEventListener('click', () => document.getElementById(b.dataset.tab).click()));
+document.getElementById('iniEnviarBtn').addEventListener('click', abrirMenuEnviar);
+document.getElementById('navVolverBtn').addEventListener('click', () => {
+  if(history.state && history.state.pozosSeccion) history.back(); else irInicio();
+});
+window.addEventListener('popstate', () => {
+  // Atras del celular: si ya no estamos parados en el estado de la seccion, volvemos al Inicio
+  // (si lo que se cerro fue una ficha, el estado de la seccion sigue y no pasa nada)
+  if(seccionActual && !(history.state && history.state.pozosSeccion)) irInicio();
+});
+// buscar desde el Inicio lleva a la lista de pozos de gas con el filtro puesto
+document.getElementById('searchBox').addEventListener('input', (e) => {
+  if(!seccionActual && e.target.value.trim()) document.getElementById('tabLista').click();
+});
+
+irInicio();
 
 </script>
 
