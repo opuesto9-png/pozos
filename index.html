@@ -1083,6 +1083,47 @@
   .bombeo-nota{ font-size: .74rem; color: var(--muted); line-height: 1.35; }
   .bombeo-ultima{ font-size: .72rem; color: var(--muted); margin-top: 8px; }
 
+
+  /* ---------- Compresion BP (compresores Hoerbiger) ---------- */
+  .comp-top{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom: 10px; }
+  .comp-top .ptc-excel{ margin:0; flex:1; }
+  .comp-card{ padding: 12px 14px; }
+  .comp-head{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .comp-head .u{ font-size: 1.05rem; font-weight: 800; font-family: 'Consolas','SF Mono',monospace; }
+  .comp-head .pz{ font-size: .85rem; color: var(--muted); }
+  .comp-pill{ margin-left:auto; font-size:.7rem; font-weight:800; padding:3px 10px; border-radius:8px; letter-spacing:.04em; }
+  .comp-pill.marcha{ background:#123B34; color:#6FC9B0; }
+  .comp-pill.parado{ background:#4A2A22; color:#F2A08F; }
+  .comp-pill.sd{ background: var(--bg); color: var(--muted); }
+  .comp-ult{ font-size:.74rem; color: var(--muted); margin-top:6px; }
+  .comp-vals{ display:grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap:6px; margin-top:8px; }
+  .comp-vals div{ background: var(--bg); border:1px solid var(--line); border-radius:6px; padding:5px 6px; display:flex; flex-direction:column; min-width:0; }
+  .comp-vals span{ font-size:.6rem; color: var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+  .comp-vals b{ font-size:.82rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .comp-nota{ font-size:.8rem; margin-top:8px; color:#F2A08F; }
+  .comp-acc{ display:flex; gap:8px; margin-top:10px; }
+  .comp-cargar{ flex:1; padding:10px; border-radius:8px; font: inherit; font-size:.85rem; font-weight:700; cursor:pointer; background: var(--amber-dim); border:1px solid var(--amber); color: var(--text); }
+  .comp-hist-btn{ padding:10px 12px; border-radius:8px; font: inherit; font-size:.8rem; cursor:pointer; background:none; border:1px solid var(--line); color: var(--muted); }
+  .comp-hist{ margin-top:8px; display:flex; flex-direction:column; gap:4px; }
+  .comp-hist button{ text-align:left; background: var(--bg); border:1px solid var(--line); border-radius:6px; padding:7px 9px; color: var(--text); font: inherit; font-size:.74rem; cursor:pointer; line-height:1.35; }
+  .comp-hist button small{ color: var(--muted); }
+  .comp-pend{ font-size:.66rem; font-weight:700; color:#E8B64A; }
+  .comp-est{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; }
+  .comp-est button{ padding:11px; border-radius:8px; font: inherit; font-weight:800; cursor:pointer; background: var(--bg); border:2px solid var(--line); color: var(--muted); }
+  .comp-est button.sel.marcha{ border-color:#6FC9B0; color:#6FC9B0; background:#123B34; }
+  .comp-est button.sel.parado{ border-color:#F2A08F; color:#F2A08F; background:#4A2A22; }
+  .comp-succ{ display:flex; gap:6px; }
+  .comp-succ input{ flex:1; min-width:0; }
+  .comp-succ select{ width:auto !important; flex:0 0 auto; }
+  .comp-prev{ margin-top:10px; background: var(--bg); border:1px dashed var(--line); border-radius:8px; padding:8px 10px; font-size:.78rem; }
+  .comp-prev span{ display:block; font-size:.64rem; color: var(--muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:3px; }
+  .comp-asig{ display:flex; flex-direction:column; gap:8px; }
+  .comp-asig-row{ display:grid; grid-template-columns: 82px 1fr 92px 36px; gap:6px; align-items:center; }
+  .comp-asig-row input, .comp-asig-row select{ width:100%; background: var(--bg); border:1px solid var(--line); color: var(--text); padding:8px; border-radius:6px; font: inherit; font-size:.82rem; box-sizing:border-box; }
+  .comp-asig-row .u{ font-weight:800; font-family:'Consolas','SF Mono',monospace; font-size:.85rem; }
+  .comp-asig-row .x{ background:none; border:1px solid #6b2a24; color:#e6a49d; border-radius:6px; height:36px; cursor:pointer; font-size:1rem; }
+  .ini-tile.ancho{ grid-column: span 2; min-height: 0; flex-direction:row; align-items:center; gap:12px; }
+  .ini-tile.ancho .tx{ display:flex; flex-direction:column; gap:2px; }
   /* ---------- menu principal: inicio con tarjetas (opcion B) ---------- */
   .nav-marca{ display:none; }
   .nav-seccion{ display:none; align-items:center; gap:10px; margin-bottom:6px; }
@@ -1172,6 +1213,7 @@
     <button class="tab-btn active" id="tabPlano">Plano (colectoras)</button>
     <button class="tab-btn" id="tabRed">Red</button>
     <button class="tab-btn" id="tabCiclaje">Ciclaje</button>
+    <button class="tab-btn" id="tabComp">Compresión BP</button>
     <button class="tab-btn" id="tabMov">Últimos movimientos</button>
     <button class="tab-btn" id="tabAib">AIB</button>
     <button class="tab-btn" id="tabTanques">Baterias</button>
@@ -1185,6 +1227,7 @@
     <button class="tab-btn export-btn" id="reporteBateriasBtn">Enviar reporte de Baterías <span id="pendCountBaterias" class="pend-badge" style="display:none;"></span></button>
     <button class="tab-btn export-btn" id="reporteAguaBtn">Enviar reporte de Agua <span id="pendCountAgua" class="pend-badge" style="display:none;"></span></button>
     <button class="tab-btn export-btn" id="reportePtcBtn">Enviar reporte de PTC <span id="pendCountPtc" class="pend-badge" style="display:none;"></span></button>
+    <button class="tab-btn export-btn" id="reporteCompBtn">Enviar reporte de Compresión <span id="pendCountComp" class="pend-badge" style="display:none;"></span></button>
     <div class="unit-toggle">
       <button class="unit-btn active" id="unitKg">kg/cm&sup2;</button>
       <button class="unit-btn" id="unitPsi">psi</button>
@@ -1203,6 +1246,7 @@
     <button type="button" class="ini-tile gas" data-tab="tabPlano"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/></svg><span class="t">Plano</span><span class="s">Por colectora</span><span class="ini-nuevo" style="display:none;"></span></button>
     <button type="button" class="ini-tile gas" data-tab="tabRed"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="12" cy="18" r="2"/><path d="M7.5 7.5l3.5 8.5M16.5 7.5L13 16M8 6h8"/></svg><span class="t">Red</span><span class="s">Radial y esquema</span><span class="ini-nuevo" style="display:none;"></span></button>
     <button type="button" class="ini-tile gas" data-tab="tabCiclaje"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 0 1-14 5"/><path d="M4 12a8 8 0 0 1 14-5"/><path d="M18 3v4h-4M6 21v-4h4"/></svg><span class="t">Ciclaje</span><span class="s">Pozos en ciclaje</span><span class="ini-nuevo" style="display:none;"></span></button>
+    <button type="button" class="ini-tile gas ancho" data-tab="tabComp"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 13l4-4"/><path d="M9 3h6"/><path d="M12 3v2"/></svg><span class="tx"><span class="t">Compresión BP Hoerbiger</span><span class="s">Lecturas de compresores por pozo</span></span><span class="ini-nuevo" style="display:none;"></span></button>
   </div>
   <div class="ini-grupo">PETRÓLEO, AGUA Y PTC</div>
   <div class="ini-grid">
@@ -1221,6 +1265,7 @@
 <main id="planoMain"></main>
 <main id="redMain" style="display:none;"></main>
 <main id="ciclajeMain" style="display:none;"></main>
+<main id="compMain" style="display:none;"></main>
 <main id="movMain" style="display:none;"></main>
 <main id="aibMain" style="display:none;"></main>
 <main id="tanquesMain" style="display:none;"></main>
@@ -2212,6 +2257,11 @@ function updatePendCount(){
     const np = pendientesPtc().length + pendientesNotasPtc().length;
     if(np > 0){ badgePtc.style.display = ''; badgePtc.textContent = np; } else { badgePtc.style.display = 'none'; }
   }
+  const badgeComp = document.getElementById('pendCountComp');
+  if(badgeComp){
+    const nc = compPendientes().length;
+    if(nc > 0){ badgeComp.style.display = ''; badgeComp.textContent = nc; } else { badgeComp.style.display = 'none'; }
+  }
 }
 
 function refreshEverything(){
@@ -2254,7 +2304,7 @@ var MOV_AV_TITULO = 'Pozos por USPA';
 var MOV_AV_TABS = {
   pozos_overrides: 'tabLista', pozos_velas: 'tabLista', uspa_notas: 'tabLista', aib_pozos: 'tabAib',
   baterias_tanques: 'tabTanques', baterias_bombeo_log: 'tabTanques', equipos_notas: 'tabTanques',
-  pias2_tanques: 'tabPias', pias2_equipos: 'tabPias', pias2_camiones: 'tabPias', ptc_descargas: 'tabPtc', avisos_mtto: 'tabAvisos'
+  pias2_tanques: 'tabPias', pias2_equipos: 'tabPias', pias2_camiones: 'tabPias', ptc_descargas: 'tabPtc', avisos_mtto: 'tabAvisos', compresores_lecturas: 'tabComp'
 };
 
 function movAvisosActivo(){ return !esMovil(); }
@@ -2299,6 +2349,7 @@ function movTexto(col, id, d){
     case 'pias2_equipos': return (d.nombre || id) + ' · Pías 2';
     case 'pias2_camiones': return 'Camión de agua' + (d.remito ? ' (remito ' + d.remito + ')' : '') + ' · Pías 2';
     case 'ptc_descargas': return (d.tipo === 'carga' ? 'Carga PTC Cargadero' : 'Descarga PTC Isla ' + (d.isla || '?')) + (d.remito ? ' (remito ' + d.remito + ')' : '');
+    case 'compresores_lecturas': return 'Compresor ' + (d.unidad || '') + (d.estado === 'parado' ? ' (parado)' : '');
     case 'avisos_mtto': return 'Aviso de mtto: ' + (d.equipo || d.pozo || '') + (d.criticidad ? ' (' + d.criticidad + ')' : '');
   }
   return id;
@@ -3255,6 +3306,7 @@ function startSync(){
     ultimoReporteBateriasTs = (data && data.lastReporteBateriasTs && data.lastReporteBateriasTs.toDate) ? data.lastReporteBateriasTs.toDate() : null;
     ultimoReporteAguaTs = (data && data.lastReporteAguaTs && data.lastReporteAguaTs.toDate) ? data.lastReporteAguaTs.toDate() : null;
     ultimoReportePtcTs = (data && data.lastReportePtcTs && data.lastReportePtcTs.toDate) ? data.lastReportePtcTs.toDate() : null;
+    ultimoReporteCompTs = (data && data.lastReporteCompTs && data.lastReporteCompTs.toDate) ? data.lastReporteCompTs.toDate() : null;
     refreshEverything();
   }, (err) => {
     console.error('Firestore sync error (meta9am)', err);
@@ -3357,6 +3409,8 @@ function startSync(){
     if(document.getElementById('ptcMain').style.display !== 'none'){ renderPtc(); }
     updatePendCount();
   }, (err) => { console.error('Firestore sync error (ptc_descargas)', err); });
+
+  iniciarCompSync();
 }
 
 // carga inicial de pozos de petroleo (solo corre una vez, la primera vez que la coleccion esta vacia)
@@ -4286,6 +4340,8 @@ function actualizarBotonParte(){
   if(aguaBtn) aguaBtn.style.display = esDispositivoPrimario ? '' : 'none';
   const ptcBtn = document.getElementById('reportePtcBtn');
   if(ptcBtn) ptcBtn.style.display = esDispositivoPrimario ? '' : 'none';
+  const compBtn = document.getElementById('reporteCompBtn');
+  if(compBtn) compBtn.style.display = esDispositivoPrimario ? '' : 'none';
   actualizarTabAvisos();
   if(!btn) return;
   if(!esDispositivoPrimario){
@@ -4304,6 +4360,9 @@ document.getElementById('reporteBateriasBtn').addEventListener('click', () => {
 });
 document.getElementById('reporteAguaBtn').addEventListener('click', () => {
   try { exportReporteAgua(); } catch(err) { alert('Error al generar el reporte de Agua: ' + (err && err.message ? err.message : err)); }
+});
+document.getElementById('reporteCompBtn').addEventListener('click', () => {
+  try { exportReporteComp(); } catch(err) { alert('Error al generar el reporte de Compresión: ' + (err && err.message ? err.message : err)); }
 });
 document.getElementById('reportePtcBtn').addEventListener('click', () => {
   try { exportReportePtc(); } catch(err) { alert('Error al generar el reporte de PTC: ' + (err && err.message ? err.message : err)); }
@@ -5742,6 +5801,7 @@ function avisoEtiqueta(a){
   if(o === 'aib') return 'AIB · Pozo ' + avisoNumPozo(eq);
   if(o === 'pias2') return 'Pías 2 · ' + eq;
   if(o === 'ptc') return 'PTC · ' + eq;
+  if(o === 'compresor') return 'Compresor ' + eq;
   return (a.bateria ? a.bateria + ' · ' : '') + eq;
 }
 function avisosVisible(){
@@ -6055,6 +6115,8 @@ function renderAvisos(){
       document.getElementById('tabTanques').click();
     } else if(o === 'pias2'){
       document.getElementById('tabPias').click();
+    } else if(o === 'compresor'){
+      document.getElementById('tabComp').click();
     } else if(o === 'ptc'){
       const g = Object.keys(PTC_NOMBRE_GRUPO).find(k => PTC_NOMBRE_GRUPO[k] === avisoEquipo(a));
       if(g) ptcIslaSel = g;
@@ -6083,9 +6145,10 @@ function abrirPestanaAvisos(){
 }
 
 // ---------------- Manejo de pestañas (helper generico) ----------------
-const TAB_IDS = ['tabLista','tabPlano','tabRed','tabCiclaje','tabMov','tabAib','tabTanques','tabPias','tabPtc','tabAvisos'];
-const MAIN_IDS = ['main','planoMain','redMain','ciclajeMain','movMain','aibMain','tanquesMain','piasMain','ptcMain','avisosMain'];
+const TAB_IDS = ['tabLista','tabPlano','tabRed','tabCiclaje','tabComp','tabMov','tabAib','tabTanques','tabPias','tabPtc','tabAvisos'];
+const MAIN_IDS = ['main','planoMain','redMain','ciclajeMain','compMain','movMain','aibMain','tanquesMain','piasMain','ptcMain','avisosMain'];
 function switchTab(activeTabId, activeMainId){
+  if(window.__seccionListo && seccionActual !== activeTabId) entrarSeccion(activeTabId);
   movMarcarVistos(activeTabId);
   TAB_IDS.forEach(id => document.getElementById(id).classList.toggle('active', id === activeTabId));
   MAIN_IDS.forEach(id => document.getElementById(id).style.display = (id === activeMainId) ? '' : 'none');
@@ -6255,7 +6318,8 @@ function renderMovimientos(){
   const notasConMov = USPA_NOTAS.filter(n => n._updatedAtDate && n._updatedAtDate > corte).map(n => Object.assign({ _tipo: 'nota' }, n));
   const notasEquipoConMov = EQUIPOS_NOTAS.filter(n => n._updatedAtDate && n._updatedAtDate > corte).map(n => Object.assign({ _tipo: 'notaEquipo' }, n));
   const velasConMov = VELAS.filter(v => v._updatedAtDate && v._updatedAtDate > corte).map(v => Object.assign({ _tipo: 'vela' }, v));
-  const conMovimiento = [...gasConMov, ...oilConMov, ...notasConMov, ...notasEquipoConMov, ...velasConMov].sort((a,b) => b._updatedAtDate - a._updatedAtDate);
+  const compConMov = COMP_LECT.filter(l => l._updatedAtDate && l._updatedAtDate > corte).map(l => Object.assign({}, l, { _tipo: 'comp' }));
+  const conMovimiento = [...gasConMov, ...oilConMov, ...notasConMov, ...notasEquipoConMov, ...velasConMov, ...compConMov].sort((a,b) => b._updatedAtDate - a._updatedAtDate);
 
   if(conMovimiento.length === 0){
     movMain.innerHTML += '<div class="empty-msg">Todavia no hay movimientos registrados.</div>';
@@ -6304,6 +6368,21 @@ function renderMovimientos(){
         const target = POZOS.find(p => p.pozo === rec.pozo);
         if(target) openCard(target, target.bateria || 'Sin bateria');
       });
+      movMain.appendChild(row);
+      return;
+    }
+
+    if(rec._tipo === 'comp'){
+      const row = document.createElement('div');
+      row.className = 'ciclaje-row';
+      row.innerHTML = `
+        <div class="cr-left">
+          <div class="cr-pozo">Compresor ${compEsc(rec.unidad)} <span style="color:var(--muted); font-weight:400; font-size:0.75rem;">${compEsc(rec.pozo || '')} &middot; ${compEsc(bateriaToInstalacion(rec.uspa))}</span></div>
+          <div class="cr-detail">${rec.operador ? `<b>${compEsc(rec.operador)}</b> &middot; ` : ''}${tiempoRelativo(rec._updatedAtDate)}${rec.hora ? ' &middot; hora: ' + compEsc(rec.hora) : ''} &middot; ${compEsc(compNovedad(rec))}</div>
+        </div>
+        <div class="cr-estado ${rec.estado === 'parado' ? 'cerrado' : 'abierto'}">${rec.estado === 'parado' ? 'Parado' : 'Marcha'}</div>
+      `;
+      row.addEventListener('click', () => document.getElementById('tabComp').click());
       movMain.appendChild(row);
       return;
     }
@@ -6881,6 +6960,415 @@ document.getElementById('tabPtc').addEventListener('click', () => {
   renderPtc();
 });
 
+
+// ---------------- Compresion BP: compresores Hoerbiger asignados a pozos ----------------
+// 'compresores_bp': un documento por unidad (U-xxx) con el pozo y la USPA asignados (los cambios de asignacion).
+// 'compresores_lecturas': cada lectura (PB, succion, descarga, caudal, RPM o unidad parada). Cada lectura
+// entra sola al proximo parte de campo como novedad del equipo, con el mismo texto que se escribia a mano.
+var COMP_DEFAULT = [
+  { unidad: 'U-1243', pozo: 'Ce-1097', uspa: 'USPA2' },
+  { unidad: 'U-1028', pozo: 'Ce-1081', uspa: 'USPA2' },
+  { unidad: 'U-873', pozo: 'Ce-1494', uspa: 'USPA3' },
+  { unidad: 'U-1230', pozo: 'Ce-1122', uspa: 'USPA3' },
+  { unidad: 'U-811', pozo: 'Ce-1122', uspa: 'USPA3' },
+  { unidad: 'U-1015', pozo: 'Ce-1158', uspa: 'USPA3' },
+  { unidad: 'U-831', pozo: 'E/R Ce-1154', uspa: 'USPA3' }
+];
+var COMP_CFG = {};      // unidad -> cambios guardados en 'compresores_bp'
+var COMP_LECT = [];     // ultimas lecturas (en vivo)
+var COMP_LIMITE = 400;
+var COMP_USPAS = ['USPA2', 'USPA3', 'USPA4', 'USPA5'];
+var COMP_SUCC_UNIDADES = ['psi', 'Bar', 'Kg/cm2'];
+var compHistAbiertos = new Set();
+
+function compEsc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+function compNumU(u){ const m = String(u || '').match(/\d+/); return m ? parseInt(m[0], 10) : 0; }
+function compNormU(txt){
+  const t = String(txt || '').trim().toUpperCase().replace(/\s+/g, '');
+  if(!t) return '';
+  const m = t.match(/^U-?(\d+)$/) || t.match(/^(\d+)$/);
+  return m ? 'U-' + m[1] : t;
+}
+function compUnidades(){
+  const mapa = {};
+  COMP_DEFAULT.forEach((c, i) => { mapa[c.unidad] = Object.assign({ orden: i }, c); });
+  Object.keys(COMP_CFG).forEach(u => { mapa[u] = Object.assign({ orden: 100 + compNumU(u) }, mapa[u] || {}, COMP_CFG[u], { unidad: u }); });
+  return Object.values(mapa).filter(c => c.activo !== false)
+    .sort((a, b) => (a.uspa || 'Z').localeCompare(b.uspa || 'Z') || (a.orden - b.orden));
+}
+function compLecturasDe(unidad){
+  return COMP_LECT.filter(l => l.unidad === unidad).sort((a, b) => (b.clientTs || 0) - (a.clientTs || 0));
+}
+// mismo texto que se venia escribiendo en el parte
+function compNovedad(l){
+  if(l.estado === 'parado') return 'Unidad se encuentra parada' + (l.nota ? ' ' + l.nota : '');
+  const p = [];
+  if(l.pb) p.push('#PB: ' + l.pb + ' Kg/cm2');
+  if(l.succion) p.push('#Succion: ' + l.succion + ' ' + (l.succionUnidad || 'psi'));
+  if(l.descarga) p.push('#Descarga: ' + l.descarga + ' Kg/cm2');
+  if(l.caudal) p.push('Caudal: ' + l.caudal + ' M3/D');
+  if(l.rpm) p.push('RPM: ' + l.rpm);
+  let t = p.join(' - ');
+  if(l.nota) t += (t ? ' - ' : '') + l.nota;
+  return t || 'Unidad en marcha';
+}
+var ultimoReporteCompTs = null;
+function compCorte(){ return ultimoReporteCompTs || new Date(0); }
+function compPendientes(){
+  const corte = compCorte();
+  return (COMP_LECT || []).filter(l => l._updatedAtDate && l._updatedAtDate > corte).sort((a, b) => a._updatedAtDate - b._updatedAtDate);
+}
+function compHoraAhora(){ const d = new Date(); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
+function compIsoHoy(){ const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+
+function iniciarCompSync(){
+  if(!firestoreOk) return;
+  db.collection('compresores_bp').onSnapshot((snapshot) => {
+    COMP_CFG = {};
+    snapshot.forEach(doc => { COMP_CFG[doc.id] = doc.data(); });
+    if(document.getElementById('compMain').style.display !== 'none') renderComp();
+  }, (err) => { console.error('Firestore sync error (compresores_bp)', err); });
+  db.collection('compresores_lecturas').orderBy('clientTs', 'desc').limit(COMP_LIMITE).onSnapshot((snapshot) => {
+    detectarMovimientos(snapshot, 'compresores_lecturas', true);
+    COMP_LECT = [];
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      COMP_LECT.push(Object.assign({ id: doc.id }, data, {
+        _updatedAtDate: (data.updatedAt && data.updatedAt.toDate) ? data.updatedAt.toDate() : (data.clientTs ? new Date(data.clientTs) : null)
+      }));
+    });
+    if(document.getElementById('compMain').style.display !== 'none') renderComp();
+    updatePendCount();
+  }, (err) => { console.error('Firestore sync error (compresores_lecturas)', err); });
+}
+
+function renderComp(){
+  const main = document.getElementById('compMain');
+  if(!main) return;
+  const corte = compCorte();
+  main.innerHTML = `<div class="plano-note">Compresores Hoerbiger de baja presión asignados a cada pozo. Cada lectura que cargues entra sola al próximo reporte de Compresión, con el mismo texto que se escribía a mano.</div>
+    <div class="comp-top"><button type="button" class="ptc-excel" id="compAsigBtn">Cambiar asignación de pozos / agregar compresor</button></div>
+    <div id="compLista"></div>`;
+  document.getElementById('compAsigBtn').addEventListener('click', abrirCompAsignacion);
+  const lista = document.getElementById('compLista');
+  const unidades = compUnidades();
+  let uspaActual = null;
+  unidades.forEach(c => {
+    if(c.uspa !== uspaActual){
+      uspaActual = c.uspa;
+      const t = document.createElement('div');
+      t.className = 'uspa-title';
+      t.textContent = USPA_TITLES[c.uspa] || c.uspa || 'Sin USPA';
+      t.style.background = BAT_COLORS[c.uspa] || '#7a828d';
+      t.style.marginTop = '6px';
+      lista.appendChild(t);
+    }
+    const lects = compLecturasDe(c.unidad);
+    const ult = lects[0];
+    const est = !ult ? 'sd' : (ult.estado === 'parado' ? 'parado' : 'marcha');
+    const card = document.createElement('div');
+    card.className = 'eq-card comp-card';
+    const v = (lbl, val, un) => `<div><span>${lbl}</span><b>${val ? compEsc(val) + (un ? ' ' + un : '') : '—'}</b></div>`;
+    card.innerHTML = `
+      <div class="comp-head"><span class="u">${compEsc(c.unidad)}</span><span class="pz">${compEsc(c.pozo || 'sin pozo asignado')}</span>
+        <span class="comp-pill ${est}">${est === 'sd' ? 'SIN LECTURA' : est.toUpperCase()}</span></div>
+      ${ult ? `<div class="comp-ult">Última lectura: ${compEsc(ult.hora || '')}${ult._updatedAtDate ? ' (' + tiempoRelativo(ult._updatedAtDate) + ')' : ''}${ult.operador ? ' · ' + compEsc(ult.operador) : ''}${ult._updatedAtDate && ult._updatedAtDate > corte ? ' · <span class="comp-pend">va en el próximo reporte</span>' : ''}</div>` : '<div class="comp-ult">Todavía no tiene lecturas cargadas.</div>'}
+      ${ult && ult.estado !== 'parado' ? `<div class="comp-vals">${v('PB', ult.pb, '')}${v('Succión', ult.succion, ult.succionUnidad || 'psi')}${v('Descarga', ult.descarga, '')}${v('Caudal', ult.caudal, '')}${v('RPM', ult.rpm, '')}</div>` : ''}
+      ${ult && (ult.estado === 'parado' || ult.nota) ? `<div class="comp-nota">${compEsc(ult.estado === 'parado' ? compNovedad(ult) : ult.nota)}</div>` : ''}
+      <div class="comp-acc">
+        <button type="button" class="comp-cargar">+ Cargar lectura</button>
+        ${lects.length ? `<button type="button" class="comp-hist-btn">Historial (${lects.length})</button>` : ''}
+      </div>
+      ${compHistAbiertos.has(c.unidad) ? `<div class="comp-hist">${lects.slice(0, 15).map(l => `<button type="button" data-id="${compEsc(l.id)}"><b>${compEsc(l.fecha ? l.fecha.slice(8, 10) + '/' + l.fecha.slice(5, 7) : '')} ${compEsc(l.hora || '')}</b> · ${compEsc(compNovedad(l))} <small>${l.operador ? '· ' + compEsc(l.operador) : ''}</small></button>`).join('')}</div>` : ''}`;
+    card.querySelector('.comp-cargar').addEventListener('click', () => abrirCompForm(c, null));
+    const hb = card.querySelector('.comp-hist-btn');
+    if(hb) hb.addEventListener('click', () => {
+      if(compHistAbiertos.has(c.unidad)) compHistAbiertos.delete(c.unidad); else compHistAbiertos.add(c.unidad);
+      renderComp();
+    });
+    card.querySelectorAll('.comp-hist button').forEach(b => b.addEventListener('click', () => {
+      const l = COMP_LECT.find(x => x.id === b.dataset.id);
+      if(l) abrirCompForm(c, l);
+    }));
+    lista.appendChild(card);
+  });
+  if(!unidades.length) lista.innerHTML = '<div class="empty-msg">No hay compresores cargados. Agregalos con el botón de arriba.</div>';
+}
+
+function abrirCompForm(c, rec){
+  const editando = !!rec;
+  const ult = compLecturasDe(c.unidad)[0];
+  const v = rec || { estado: 'marcha', hora: compHoraAhora(), succionUnidad: (ult && ult.succionUnidad) || 'psi' };
+  let estado = v.estado === 'parado' ? 'parado' : 'marcha';
+  window._currentCardRec = null;
+  const card = document.getElementById('card');
+  card.innerHTML = `
+    <div class="card-head">
+      <div>
+        <h2>${editando ? 'Editar lectura' : 'Lectura'} ${compEsc(c.unidad)}</h2>
+        <span class="bat-pill" style="background:${BAT_COLORS[c.uspa] || '#7a828d'}">${compEsc(USPA_TITLES[c.uspa] || c.uspa || 'Sin USPA')} · ${compEsc(c.pozo || 'sin pozo')}</span>
+      </div>
+      <button class="close-btn" id="closeBtn">&times;</button>
+    </div>
+    <div class="comp-est">
+      <button type="button" class="marcha" data-e="marcha">EN MARCHA</button>
+      <button type="button" class="parado" data-e="parado">PARADO</button>
+    </div>
+    <div class="camion-grid">
+      <div class="camion-field"><label for="compF_hora">Hora</label><input type="time" id="compF_hora" value="${compEsc(v.hora || '')}"></div>
+      <div class="camion-field comp-marcha"><label for="compF_pb">PB (Kg/cm²)</label><input type="text" inputmode="decimal" id="compF_pb" placeholder="ej: 1,2" value="${compEsc(v.pb || '')}"></div>
+      <div class="camion-field comp-marcha"><label for="compF_succ">Succión</label><div class="comp-succ"><input type="text" inputmode="decimal" id="compF_succ" placeholder="ej: 18" value="${compEsc(v.succion || '')}"><select id="compF_succU" aria-label="Unidad de la succión">${COMP_SUCC_UNIDADES.map(u => `<option ${u === (v.succionUnidad || 'psi') ? 'selected' : ''}>${u}</option>`).join('')}</select></div></div>
+      <div class="camion-field comp-marcha"><label for="compF_desc">Descarga (Kg/cm²)</label><input type="text" inputmode="decimal" id="compF_desc" placeholder="ej: 5,6" value="${compEsc(v.descarga || '')}"></div>
+      <div class="camion-field comp-marcha"><label for="compF_caudal">Caudal (M3/D)</label><input type="text" inputmode="numeric" id="compF_caudal" placeholder="ej: 9957" value="${compEsc(v.caudal || '')}"></div>
+      <div class="camion-field comp-marcha"><label for="compF_rpm">RPM</label><input type="text" inputmode="numeric" id="compF_rpm" placeholder="ej: 1754" value="${compEsc(v.rpm || '')}"></div>
+    </div>
+    <div class="camion-field" style="margin-top:8px;"><label for="compF_nota" id="compF_notaLbl">Nota (opcional)</label><input type="text" id="compF_nota" value="${compEsc(v.nota || '')}"></div>
+    <div class="comp-prev"><span>Así sale en el reporte</span><div id="compPrev"></div></div>
+    <div class="aviso-error" id="compErr" style="display:none;"></div>
+    <div class="edit-actions">
+      <button class="save-btn" id="compGuardarBtn">${editando ? 'Guardar cambios' : 'Guardar lectura'}</button>
+      <button class="cancel-btn" id="compCancelBtn">Cancelar</button>
+    </div>
+    ${editando ? '<button type="button" class="ptc-borrar" id="compBorrarBtn">Eliminar esta lectura</button>' : ''}`;
+  card.scrollTop = 0;
+  document.getElementById('overlay').classList.add('show');
+  if(!modalHistoryPushed){ history.pushState({ pozosModal: true }, ''); modalHistoryPushed = true; }
+  const $ = (id) => document.getElementById(id);
+  $('closeBtn').addEventListener('click', closeCard);
+  $('compCancelBtn').addEventListener('click', closeCard);
+  const leer = () => ({
+    estado, hora: $('compF_hora').value,
+    pb: $('compF_pb').value.trim(), succion: $('compF_succ').value.trim(), succionUnidad: $('compF_succU').value,
+    descarga: $('compF_desc').value.trim(), caudal: $('compF_caudal').value.trim(), rpm: $('compF_rpm').value.trim(),
+    nota: $('compF_nota').value.trim()
+  });
+  function pintar(){
+    card.querySelectorAll('.comp-est button').forEach(b => b.classList.toggle('sel', b.dataset.e === estado));
+    card.querySelectorAll('.comp-marcha').forEach(el => { el.style.display = estado === 'parado' ? 'none' : ''; });
+    $('compF_notaLbl').textContent = estado === 'parado' ? 'Motivo / falla (ej: falla 15)' : 'Nota (opcional)';
+    $('compF_nota').placeholder = estado === 'parado' ? 'ej: falla 15' : 'ej: pérdida de aceite';
+    $('compPrev').textContent = compNovedad(leer());
+  }
+  card.querySelectorAll('.comp-est button').forEach(b => b.addEventListener('click', () => { estado = b.dataset.e; pintar(); }));
+  ['compF_pb', 'compF_succ', 'compF_succU', 'compF_desc', 'compF_caudal', 'compF_rpm', 'compF_nota'].forEach(id => {
+    $(id).addEventListener('input', pintar);
+    $(id).addEventListener('change', pintar);
+  });
+  pintar();
+
+  $('compGuardarBtn').addEventListener('click', () => {
+    const datos = leer();
+    const err = $('compErr');
+    let msg = '';
+    if(!datos.hora) msg = 'Falta la hora.';
+    else if(datos.estado === 'marcha' && !(datos.pb || datos.succion || datos.descarga || datos.caudal || datos.rpm || datos.nota)) msg = 'Cargá al menos un valor (PB, succión, descarga, caudal o RPM).';
+    if(msg){ err.textContent = msg; err.style.display = ''; return; }
+    if(datos.estado === 'parado'){ ['pb', 'succion', 'descarga', 'caudal', 'rpm'].forEach(k => { datos[k] = ''; }); }
+    if(!puedeModificar()) return;
+    if(!firestoreOk){ alert('No hay conexion con el guardado compartido. Revisa tu internet e intenta de nuevo.'); return; }
+    datos.unidad = c.unidad;
+    datos.pozo = c.pozo || '';
+    datos.uspa = c.uspa || '';
+    datos.operador = operadorName || 'Sin nombre';
+    datos.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
+    const ref = editando ? db.collection('compresores_lecturas').doc(rec.id) : db.collection('compresores_lecturas').doc();
+    if(!editando){ datos.clientTs = Date.now(); datos.fecha = compIsoHoy(); }
+    const op = editando ? ref.set(datos, { merge: true }) : ref.set(datos);
+    op.catch((e) => alert('No se pudo guardar (' + e.message + '). Revisa tu conexion.'));
+    const local = Object.assign({ id: ref.id }, rec || {}, datos, { _updatedAtDate: new Date(), _local: true });
+    COMP_LECT = COMP_LECT.filter(l => l.id !== ref.id).concat([local]);
+    closeCard();
+    renderComp();
+    updatePendCount();
+  });
+  if(editando){
+    $('compBorrarBtn').addEventListener('click', () => {
+      if(!confirm('¿Eliminar la lectura de las ' + (rec.hora || '') + ' del ' + c.unidad + '?')) return;
+      if(!puedeModificar()) return;
+      db.collection('compresores_lecturas').doc(rec.id).delete().catch((e) => alert('No se pudo eliminar (' + e.message + ').'));
+      COMP_LECT = COMP_LECT.filter(l => l.id !== rec.id);
+      closeCard();
+      renderComp();
+      updatePendCount();
+    });
+  }
+}
+
+// cambiar el pozo / USPA de cada compresor, agregar o sacar compresores
+function abrirCompAsignacion(){
+  const unidades = compUnidades();
+  window._currentCardRec = null;
+  const card = document.getElementById('card');
+  const fila = (c, nuevo) => `<div class="comp-asig-row" data-u="${compEsc(c.unidad || '')}">
+      ${nuevo ? `<input type="text" class="cu" placeholder="U-000" aria-label="Unidad">` : `<span class="u">${compEsc(c.unidad)}</span>`}
+      <input type="text" class="cp" placeholder="Pozo (ej: Ce-1097)" value="${compEsc(c.pozo || '')}" aria-label="Pozo de ${compEsc(c.unidad || 'la unidad nueva')}">
+      <select class="cb" aria-label="USPA">${COMP_USPAS.map(b => `<option value="${b}" ${b === c.uspa ? 'selected' : ''}>${USPA_TITLES[b] || b}</option>`).join('')}</select>
+      ${nuevo ? '<span></span>' : `<button type="button" class="x" title="Sacar este compresor" aria-label="Sacar ${compEsc(c.unidad)}">&times;</button>`}
+    </div>`;
+  card.innerHTML = `
+    <div class="card-head">
+      <div><h2>Compresores y pozos</h2><span class="bat-pill" style="background:#4c8fb0">Compresión BP Hoerbiger</span></div>
+      <button class="close-btn" id="closeBtn">&times;</button>
+    </div>
+    <p class="hab-ayuda" style="margin-top:0">Cambiá el pozo o la USPA de cada compresor cuando lo muevan. Las lecturas viejas quedan como estaban.</p>
+    <div class="comp-asig" id="compAsigLista">${unidades.map(c => fila(c, false)).join('')}</div>
+    <div class="k hab-k" style="margin-top:14px">Agregar compresor</div>
+    <div class="comp-asig" id="compAsigNuevo">${fila({ uspa: 'USPA3' }, true)}</div>
+    <div class="aviso-error" id="compAsigErr" style="display:none;"></div>
+    <div class="edit-actions">
+      <button class="save-btn" id="compAsigGuardar">Guardar</button>
+      <button class="cancel-btn" id="compAsigCancel">Cancelar</button>
+    </div>`;
+  card.scrollTop = 0;
+  document.getElementById('overlay').classList.add('show');
+  if(!modalHistoryPushed){ history.pushState({ pozosModal: true }, ''); modalHistoryPushed = true; }
+  const quitar = new Set();
+  document.getElementById('closeBtn').addEventListener('click', closeCard);
+  document.getElementById('compAsigCancel').addEventListener('click', closeCard);
+  card.querySelectorAll('#compAsigLista .x').forEach(b => b.addEventListener('click', () => {
+    const row = b.closest('.comp-asig-row');
+    const u = row.dataset.u;
+    if(quitar.has(u)){ quitar.delete(u); row.style.opacity = ''; b.innerHTML = '&times;'; }
+    else { quitar.add(u); row.style.opacity = '.4'; b.textContent = '↺'; }
+  }));
+  document.getElementById('compAsigGuardar').addEventListener('click', () => {
+    const cambios = [];
+    card.querySelectorAll('#compAsigLista .comp-asig-row').forEach(row => {
+      const u = row.dataset.u;
+      const c = unidades.find(x => x.unidad === u);
+      const pozo = row.querySelector('.cp').value.trim();
+      const uspa = row.querySelector('.cb').value;
+      if(quitar.has(u)) cambios.push([u, { unidad: u, activo: false }]);
+      else if(!c || c.pozo !== pozo || c.uspa !== uspa) cambios.push([u, { unidad: u, pozo, uspa, activo: true }]);
+    });
+    const nr = card.querySelector('#compAsigNuevo .comp-asig-row');
+    const nu = compNormU(nr.querySelector('.cu').value);
+    const err = document.getElementById('compAsigErr');
+    if(nu){
+      if(unidades.some(c => c.unidad === nu)){ err.textContent = 'El ' + nu + ' ya está en la lista.'; err.style.display = ''; return; }
+      cambios.push([nu, { unidad: nu, pozo: nr.querySelector('.cp').value.trim(), uspa: nr.querySelector('.cb').value, activo: true }]);
+    }
+    if(!cambios.length){ closeCard(); return; }
+    if(!puedeModificar()) return;
+    if(!firestoreOk){ alert('No hay conexion con el guardado compartido. Revisa tu internet e intenta de nuevo.'); return; }
+    cambios.forEach(([u, d]) => {
+      d.operador = operadorName || 'Sin nombre';
+      d.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
+      db.collection('compresores_bp').doc(u).set(d, { merge: true }).catch((e) => alert('No se pudo guardar ' + u + ' (' + e.message + ').'));
+      COMP_CFG[u] = Object.assign({}, COMP_CFG[u] || {}, d);
+    });
+    closeCard();
+    renderComp();
+  });
+}
+
+
+// ---- Reporte de Compresion (compu principal): las lecturas nuevas desde el ultimo reporte enviado ----
+// Formato de la planilla de compresion: Fecha | Hora | Uspa | Unidad | Novedad, y al costado la tabla
+// "MC Hoerbiger" con el pozo asignado a cada unidad.
+function marcarReporteCompEnviado(){
+  if(!firestoreOk) return;
+  db.collection('pozos_meta').doc('estado9am').set({
+    lastReporteCompTs: firebase.firestore.FieldValue.serverTimestamp()
+  }, { merge: true }).catch((err) => { console.error('No se pudo marcar el reporte de Compresion como enviado', err); });
+}
+function compOrdenReporte(a, b){
+  return (a.fecha || '').localeCompare(b.fecha || '') || (a.hora || '').localeCompare(b.hora || '') || ((a.clientTs || 0) - (b.clientTs || 0));
+}
+function exportReporteComp(forzarHoy){
+  let lista = forzarHoy
+    ? (COMP_LECT || []).filter(l => l._updatedAtDate && l._updatedAtDate >= inicioDiaOperativo(new Date()))
+    : compPendientes();
+  if(!lista.length){
+    if(!forzarHoy){
+      if(confirm('No hay lecturas de compresores nuevas desde el último reporte.\n\n¿Generar igual el reporte con todas las lecturas de hoy (día operativo)?')) exportReporteComp(true);
+      return;
+    }
+    alert('No hay lecturas de compresores cargadas hoy.');
+    return;
+  }
+  lista = lista.slice().sort(compOrdenReporte);
+  if(typeof ExcelJS === 'undefined'){
+    let text = 'REPORTE COMPRESION BP - YAC. CENTENARIO\n\n';
+    let uspaAnt = null;
+    lista.forEach(l => {
+      const u = l.uspa !== uspaAnt ? bateriaToInstalacion(l.uspa) : '';
+      uspaAnt = l.uspa;
+      text += `${compFechaCorta(l.fecha)} | ${l.hora || ''} | ${u} | ${l.unidad} | ${compNovedad(l)}\n`;
+    });
+    if(navigator.share){ navigator.share({ title: 'Reporte de Compresión', text }).catch(()=>{}); }
+    else if(navigator.clipboard){ navigator.clipboard.writeText(text).then(()=>alert('Copiado.')); }
+    else { prompt('Copia este texto:', text); }
+    marcarReporteCompEnviado();
+    return;
+  }
+  const wb = compArmarLibro(lista);
+  wb.xlsx.writeBuffer().then(buffer => {
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    downloadOrShareBlob(blob, `Reporte_Compresion_${todayStr().replace(/\//g, '-')}.xlsx`, 'Reporte de Compresión');
+    marcarReporteCompEnviado();
+  }).catch((e) => alert('No se pudo generar el reporte de Compresión (' + (e && e.message) + ').'));
+}
+function compFechaCorta(iso){
+  if(!iso) return '';
+  const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const [y, m, d] = iso.split('-').map(Number);
+  return d + '-' + meses[m - 1];
+}
+function compArmarLibro(lista){
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet('Compresion');
+  const F = 'Calibri', FS = 11;
+  ws.columns = [{ width: 3 }, { width: 10 }, { width: 9 }, { width: 14 }, { width: 11 }, { width: 98 }, { width: 3 }, { width: 11 }, { width: 13 }];
+  ws.getCell('B2').value = 'REPORTE COMPRESIÓN BP - YAC. CENTENARIO';
+  ws.getCell('B2').font = { name: F, size: 13, bold: true };
+  const borde = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+  const gris = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9D9D9' } };
+  const celeste = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFB7DEE8' } };
+  let r = 4;
+  ['FECHA', 'HORA', 'INSTALACION', 'UNIDAD', 'NOVEDAD'].forEach((t, i) => {
+    const c = ws.getCell(r, 2 + i);
+    c.value = t; c.font = { name: F, size: FS, bold: true }; c.border = borde; c.fill = gris;
+    c.alignment = { horizontal: 'center', vertical: 'middle' };
+  });
+  r++;
+  let uspaAnt = null;
+  lista.forEach(l => {
+    const [y, m, d] = (l.fecha || compIsoHoy()).split('-').map(Number);
+    const vals = [new Date(y, m - 1, d, 12), l.hora || '', l.uspa !== uspaAnt ? bateriaToInstalacion(l.uspa) : '', l.unidad, compNovedad(l)];
+    uspaAnt = l.uspa;
+    vals.forEach((v, i) => {
+      const c = ws.getCell(r, 2 + i);
+      c.value = v; c.font = { name: F, size: FS }; c.border = borde;
+      c.alignment = { horizontal: 'center', vertical: 'middle' };
+    });
+    ws.getCell(r, 2).numFmt = 'd-mmm';
+    r++;
+  });
+  // tabla de asignacion "MC Hoerbiger"
+  let t = 4;
+  ws.mergeCells(t, 8, t, 9);
+  const h = ws.getCell(t, 8);
+  h.value = 'MC Hoerbiger'; h.font = { name: F, size: FS, bold: true }; h.fill = celeste; h.border = borde;
+  h.alignment = { horizontal: 'center' };
+  ws.getCell(t, 9).border = borde;
+  t++;
+  compUnidades().forEach(c => {
+    [c.unidad, c.pozo || ''].forEach((v, i) => {
+      const cell = ws.getCell(t, 8 + i);
+      cell.value = v; cell.font = { name: F, size: FS }; cell.fill = celeste; cell.border = borde;
+    });
+    t++;
+  });
+  ws.pageSetup = { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0, paperSize: 9 };
+  return wb;
+}
+
+document.getElementById('tabComp').addEventListener('click', () => {
+  switchTab('tabComp', 'compMain');
+  renderComp();
+});
+
 // arranca mostrando el Plano por defecto (ya con todo declarado)
 renderPlano();
 
@@ -6888,11 +7376,11 @@ renderPlano();
 // Al abrir la app se ve el Inicio (tarjetas por area). Tocar una tarjeta entra a esa seccion;
 // "‹ Inicio" o el boton Atras del celular vuelven. Dentro de Gas y de Petroleo quedan las
 // pestañas hermanas para pasar de una a otra sin volver al inicio.
-const SECCION_TITULO = { tabLista: 'Pozos de gas', tabPlano: 'Plano (colectoras)', tabRed: 'Red', tabCiclaje: 'Ciclaje',
+const SECCION_TITULO = { tabLista: 'Pozos de gas', tabPlano: 'Plano (colectoras)', tabRed: 'Red', tabCiclaje: 'Ciclaje', tabComp: 'Compresión BP',
   tabMov: 'Últimos movimientos', tabAib: 'AIB', tabTanques: 'Baterías', tabPias: 'Pías 2', tabPtc: 'PTC', tabAvisos: 'Avisos' };
-const SECCION_GRUPO = { tabLista: 'gas', tabPlano: 'gas', tabRed: 'gas', tabCiclaje: 'gas', tabAib: 'oil', tabTanques: 'oil' };
+const SECCION_GRUPO = { tabLista: 'gas', tabPlano: 'gas', tabRed: 'gas', tabCiclaje: 'gas', tabComp: 'gas', tabAib: 'oil', tabTanques: 'oil' };
 const SECCION_CON_BUSQUEDA = ['tabLista', 'tabPlano', 'tabRed', 'tabAvisos'];
-let seccionActual = null;
+var seccionActual = null;
 
 function entrarSeccion(tabId){
   const b = document.body;
@@ -6942,11 +7430,11 @@ function inicioActualizar(){
   const avB = document.getElementById('iniAvisosBadge');
   if(avB && avOrig){ avB.textContent = avOrig.textContent; avB.style.display = avOrig.style.display; }
   const env = document.getElementById('iniEnviarBtn');
-  const ids = ['parteBtn', 'reporteBateriasBtn', 'reporteAguaBtn', 'reportePtcBtn', 'exportarTodoBtn'];
+  const ids = ['parteBtn', 'reporteBateriasBtn', 'reporteAguaBtn', 'reportePtcBtn', 'reporteCompBtn', 'exportarTodoBtn'];
   const visibles = ids.filter(id => { const e = document.getElementById(id); return e && e.style.display !== 'none'; });
   if(env) env.style.display = visibles.length ? '' : 'none';
   let pend = 0;
-  ['pendCount', 'pendCountBaterias', 'pendCountAgua', 'pendCountPtc'].forEach(id => {
+  ['pendCount', 'pendCountBaterias', 'pendCountAgua', 'pendCountPtc', 'pendCountComp'].forEach(id => {
     const e = document.getElementById(id);
     if(e && e.style.display !== 'none') pend += parseInt(e.textContent, 10) || 0;
   });
@@ -6964,6 +7452,7 @@ function abrirMenuEnviar(){
     ['reporteBateriasBtn', 'Enviar reporte de Baterías', 'pendCountBaterias'],
     ['reporteAguaBtn', 'Enviar reporte de Agua', 'pendCountAgua'],
     ['reportePtcBtn', 'Enviar reporte de PTC', 'pendCountPtc'],
+    ['reporteCompBtn', 'Enviar reporte de Compresión', 'pendCountComp'],
     ['exportarTodoBtn', 'Exportar todo', null]
   ].filter(([id]) => { const e = document.getElementById(id); return e && e.style.display !== 'none'; });
   card.innerHTML = `
@@ -7001,6 +7490,7 @@ document.getElementById('searchBox').addEventListener('input', (e) => {
   if(!seccionActual && e.target.value.trim()) document.getElementById('tabLista').click();
 });
 
+window.__seccionListo = true;
 irInicio();
 
 </script>
