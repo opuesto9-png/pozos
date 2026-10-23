@@ -1123,6 +1123,9 @@
   .ped-tag.urg{ background:#4A2A22; color:#F2A08F; }
   .ped-tag.auto{ background:#1B2A55; color:#9DB8FF; }
   .ped-tag.curso{ background:#123B34; color:#6FC9B0; }
+  .ped-vinc{ font-size:.76rem; color: var(--muted); margin-left:34px; }
+  .ped-posible{ margin-left:34px; background:#1B2A55; border:1px solid #3B4F8F; border-radius:8px; padding:8px 10px; font-size:.8rem; color:#DCE5FF; }
+  .ped-posible b{ color:#9DB8FF; }
   .ped-ev{ font-size:.8rem; color:#6FC9B0; margin-left:34px; }
   .ped-ev.no{ color:#F2A08F; }
   .ped-acc{ display:flex; gap:6px; margin-left:34px; flex-wrap:wrap; }
@@ -7292,13 +7295,81 @@ function pedBuscarCumplimiento(p){
   }
   return null;
 }
+
+// ---- "Otra tarea": se vincula sola al pozo/equipo que nombra el texto ----
+// Ej: "Cambiar empaquetaduras en el 1273" -> AIB Ce-1273, palabra clave "empaquetaduras".
+// Si se carga algo de ese equipo con esa palabra (nota, novedad, motivo), queda HECHO solo.
+// Si se carga algo de ese equipo sin la palabra, la app pregunta "¿es esto?" y se confirma con un toque.
+function pedSinAcentos(t){ return String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+var PED_GENERICAS = ['cambi', 'revis', 'verif', 'contr', 'reali', 'hacer', 'chequ', 'contr', 'contro', 'pozo', 'equip', 'bater', 'tanqu', 'compr', 'march', 'parad', 'abier', 'abrir', 'cerra', 'cerrar', 'presi', 'urgen', 'antes', 'despu', 'avisa', 'sala', 'favor', 'manan', 'tarde', 'noche', 'turno', 'mismo', 'tambi', 'donde', 'cuand', 'desde', 'hasta', 'sobre', 'entre', 'luego'];
+function pedPalabras(texto){
+  return [...new Set(pedSinAcentos(texto).split(/[^a-zñ]+/).filter(w => w.length >= 5).map(w => w.slice(0, 6)).filter(w => !PED_GENERICAS.some(g => w.startsWith(g))))];
+}
+function pedVinculos(texto){
+  const t = String(texto || '');
+  const v = [];
+  (t.match(/\b(?:ce-?\s?)?(\d{3,4}(?:-\d)?)\b/gi) || []).forEach(m => {
+    const n = 'Ce-' + m.replace(/^ce-?\s?/i, '');
+    if(AIB_POZOS.some(x => x.pozo === n)) v.push({ tipo: 'aib', id: n });
+    else if(POZOS.some(x => x.pozo === n)) v.push({ tipo: 'pozo', id: n });
+  });
+  (t.match(/\bU-?\s?\d{3,4}\b/gi) || []).forEach(m => { const u = compNormU(m.replace(/\s/g, '')); if(compUnidades().some(c => c.unidad === u)) v.push({ tipo: 'comp', id: u }); });
+  const tN = pedSinAcentos(t).replace(/\s+/g, '');
+  const nombres = [];
+  Object.keys(TANQUES_BATERIAS).forEach(b => TANQUES_BATERIAS[b].forEach(n => nombres.push({ tipo: 'tanque', id: n, grupo: b })));
+  PIAS2_TANQUES_NOMBRES.forEach(n => nombres.push({ tipo: 'tanque', id: n, grupo: 'Pias 2' }));
+  (typeof COMPRESORES_PIAS2 !== 'undefined' ? COMPRESORES_PIAS2 : []).concat(typeof BOMBAS_PIAS2 !== 'undefined' ? BOMBAS_PIAS2 : []).forEach(n => nombres.push({ tipo: 'equipo', id: n }));
+  Object.keys(BOMBEO_PTC).forEach(b => BOMBEO_PTC[b].bombas.forEach(n => nombres.push({ tipo: 'equipo', id: n, grupo: b })));
+  nombres.forEach(o => {
+    const corto = pedSinAcentos(o.id.split(' ')[0]).replace(/\s+/g, '');   // "tk-101", "p-101a"
+    if(corto.length >= 4 && new RegExp('(^|[^a-z0-9])' + corto.replace(/[-]/g, '-?') + '([^0-9a-z]|$)').test(pedSinAcentos(t))) v.push(o);
+  });
+  return v.filter((x, i) => v.findIndex(y => y.tipo === x.tipo && y.id === x.id) === i);
+}
+// todo lo cargado despues de 'desde' sobre ese equipo, con el texto escrito a mano por el operador
+function pedEventosDe(vinc, desde){
+  const ev = [];
+  const add = (r, texto, resumen) => { const ts = pedTs(r); if(ts > desde) ev.push({ ts, por: r.operador, texto: texto || '', resumen: resumen || texto || '' }); };
+  const menciona = (n) => { const a = pedSinAcentos((n.equipo || '') + ' ' + (n.texto || '')); const idN = pedSinAcentos(vinc.id); const num = idN.replace(/^ce-/, ''); return a.includes(idN) || (vinc.tipo === 'aib' || vinc.tipo === 'pozo' ? new RegExp('\\b' + num + '\\b').test(a) : false); };
+  if(vinc.tipo === 'aib'){ const r = AIB_POZOS.find(x => x.pozo === vinc.id); if(r) add(r, [r.nota, r.motivoParo].filter(Boolean).join(' · '), buildAibNovedad(r)); }
+  if(vinc.tipo === 'pozo'){
+    const r = POZOS.find(x => x.pozo === vinc.id);
+    if(r) add(r, [(r.updatedFields || []).includes('notas') ? r.notas : '', r.horarioNota].filter(Boolean).join(' · '), (r.estado ? r.estado + ' · ' : '') + 'ficha actualizada');
+    VELAS.filter(x => x.pozo === vinc.id).forEach(x => add(x, '', fraseVela(x.tipo, x.numero)));
+  }
+  if(vinc.tipo === 'comp') COMP_LECT.filter(x => x.unidad === vinc.id).forEach(x => add(x, x.nota || '', compNovedad(x)));
+  if(vinc.tipo === 'tanque'){ const l = vinc.grupo === 'Pias 2' ? PIAS2_TANQUES_DATA : TANQUES_DATA; l.filter(x => x.nombre === vinc.id).forEach(x => add(x, '', 'Nivel total ' + (x.nivelTotal || '?') + ' / interfaz ' + (x.nivelInterfaz || '?') + ' cm')); }
+  if(vinc.tipo === 'equipo') PIAS2_EQUIPOS_DATA.filter(x => x.nombre === vinc.id).forEach(x => add(x, x.nota || '', (x.estado || '') + (x.nota ? ' · ' + x.nota : '')));
+  // novedades (USPA y equipos) que nombran al equipo
+  USPA_NOTAS.concat(EQUIPOS_NOTAS).filter(menciona).forEach(n => add(n, n.texto, 'Novedad: ' + (n.equipo ? n.equipo + ' - ' : '') + n.texto));
+  return ev.sort((a, b) => a.ts - b.ts);
+}
+function pedBuscarOtro(p){
+  const vincs = pedVinculos(p.detalle);
+  if(!vincs.length) return null;
+  const claves = pedPalabras(p.detalle);
+  const desde = Math.max(p.creadoTs || 0, p.ignorarHasta || 0);
+  let posible = null;
+  for(const v of vincs){
+    for(const e of pedEventosDe(v, desde)){
+      const t = pedSinAcentos(e.texto);
+      if(claves.length && claves.some(k => t.includes(k))) return { por: e.por, ts: e.ts, ev: v.id + ': ' + (e.texto || e.resumen) };
+      if(!posible) posible = { posible: true, por: e.por, ts: e.ts, ev: v.id + ': ' + e.resumen };
+    }
+  }
+  return posible;
+}
 var pedAutoTimer = null;
 function pedProgramarAuto(){ clearTimeout(pedAutoTimer); pedAutoTimer = setTimeout(pedAutoCompletar, 800); }
 function pedAutoCompletar(){
   if(!firestoreOk || !PEDIDOS.length || (typeof habBloqueado === 'function' && habBloqueado())) return;
-  PEDIDOS.filter(p => p.estado === 'pendiente' && p.tipo !== 'otro').forEach(p => {
-    const m = pedBuscarCumplimiento(p);
-    if(!m) return;
+  let cambioPosible = false;
+  PEDIDOS.filter(p => p.estado === 'pendiente').forEach(p => {
+    const m = p.tipo === 'otro' ? pedBuscarOtro(p) : pedBuscarCumplimiento(p);
+    const antes = p._posible ? p._posible.ts : 0;
+    p._posible = (m && m.posible) ? m : null;
+    if((p._posible ? p._posible.ts : 0) !== antes) cambioPosible = true;
+    if(!m || m.posible) return;
     if(m.fase === 1){
       const d1 = { paso1Ts: m.ts || Date.now(), paso1Por: m.por || 'Sin nombre', paso1Ev: m.ev, paso1Hora: m.hora1 || '', finEsperado: m.fin || '' };
       Object.assign(p, d1);
@@ -7310,6 +7381,7 @@ function pedAutoCompletar(){
     Object.assign(p, datos);
     db.collection('pedidos').doc(p.id).update(datos).catch(() => {});
   });
+  if(cambioPosible && document.getElementById('pedMain') && document.getElementById('pedMain').style.display !== 'none') renderPedidos();
 }
 
 function pedDelDia(){
@@ -7407,10 +7479,27 @@ function pedItem(p){
   el.innerHTML = `<div class="ped-l1">${ic}<div class="ped-tit">${avisoEsc(pedTitulo(p))}<small>${meta}</small></div>
       ${p.prioridad === 'urgente' ? '<span class="ped-tag urg">URGENTE</span>' : ''}${p.estado === 'pendiente' && p.paso1Ts ? '<span class="ped-tag curso">EN CURSO</span>' : ''}${p.auto && p.estado === 'hecho' ? '<span class="ped-tag auto">AUTOMÁTICO</span>' : ''}</div>
     ${p.estado === 'pendiente' && p.paso1Ts ? `<div class="ped-ev">${avisoEsc(p.paso1Ev || '')} por ${avisoEsc(p.paso1Por || '—')}${p.finEsperado ? ' · <b>' + (p.tipo === 'abrir' ? 'cerrar' : 'reabrir') + ' a las ' + avisoEsc(p.finEsperado) + '</b>' : ''}</div>${pedVencido(p) ? `<div class="ped-ev no">Ya pasó la hora: falta ${p.tipo === 'abrir' ? 'cerrarlo' : 'reabrirlo'} y cargarlo en la app.</div>` : ''}` : ''}
+    ${p.estado === 'pendiente' && p.tipo === 'otro' ? (() => { const v = pedVinculos(p.detalle); return v.length ? `<div class="ped-vinc">Vinculado a ${v.map(x => avisoEsc(x.id)).join(', ')}${pedPalabras(p.detalle).length ? ' · se marca solo si la nota dice “' + avisoEsc(pedPalabras(p.detalle).join('”, “')) + '…”' : ''}</div>` : '<div class="ped-vinc">Sin pozo ni equipo en el texto: se marca a mano.</div>'; })() : ''}
+    ${p.estado === 'pendiente' && p._posible ? `<div class="ped-posible"><b>¿Es esto?</b> ${avisoEsc(p._posible.por || '—')} cargó a las ${pedHoraTs(p._posible.ts)} → ${avisoEsc(p._posible.ev)}<div class="ped-acc" style="margin-left:0;margin-top:6px"><button type="button" class="si ped-pos-si">Sí, está hecho</button><button type="button" class="ped-pos-no">No es esto</button></div></div>` : ''}
     ${p.estado === 'hecho' ? `<div class="ped-ev">Hecho por ${avisoEsc(p.hechoPor || '—')} a las ${pedHoraTs(p.hechoTs)}${p.evidencia ? ' · ' + avisoEsc(p.evidencia) : ''}${p.nota ? ' · ' + avisoEsc(p.nota) : ''}</div>` : ''}
     ${p.estado === 'no' ? `<div class="ped-ev no">No se pudo (${avisoEsc(p.hechoPor || '—')}, ${pedHoraTs(p.hechoTs)}): ${avisoEsc(p.nota || 'sin motivo')}</div>` : ''}
     <div class="ped-acc"></div>`;
-  const acc = el.querySelector('.ped-acc');
+  const acc = el.querySelector('.ped-acc:not(.ped-posible .ped-acc)') || el.querySelectorAll('.ped-acc')[el.querySelectorAll('.ped-acc').length - 1];
+  const posSi = el.querySelector('.ped-pos-si'), posNo = el.querySelector('.ped-pos-no');
+  if(posSi) posSi.addEventListener('click', () => {
+    if(!puedeModificar()) return;
+    const m = p._posible;
+    const datos = { estado: 'hecho', auto: true, hechoPor: m.por || 'Sin nombre', hechoTs: m.ts || Date.now(), evidencia: m.ev || '', nota: 'confirmado por ' + (operadorName || '—') };
+    Object.assign(p, datos); p._posible = null;
+    db.collection('pedidos').doc(p.id).update(datos).catch(e => alert('No se pudo guardar (' + e.message + ').'));
+    renderPedidos(); pedActualizarInicio();
+  });
+  if(posNo) posNo.addEventListener('click', () => {
+    const datos = { ignorarHasta: p._posible.ts };
+    Object.assign(p, datos); p._posible = null;
+    db.collection('pedidos').doc(p.id).update(datos).catch(() => {});
+    renderPedidos();
+  });
   const btn = (txt, cls, fn) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = txt; if(cls) b.className = cls; b.addEventListener('click', fn); acc.appendChild(b); };
   if(p.estado === 'pendiente'){
     if(p.tipo !== 'otro') btn('Ir a cargarlo', 'ir', () => pedIrA(p));
@@ -7518,7 +7607,7 @@ function abrirPedidoForm(){
     $('pedDurLbl').textContent = t.id === 'cerrar' ? '¿Por cuántas horas? (opcional, después se reabre)' : '¿Por cuántas horas? (opcional, después se cierra)';
     $('pedDur').placeholder = t.id === 'cerrar' ? 'ej: 4  (vacío = queda cerrado)' : 'ej: 2  (vacío = queda abierto)';
     const durN = parseFloat(($('pedDur').value || '').replace(',', '.')) || 0;
-    $('pedAutoNota').textContent = t.id === 'otro' ? 'Esta tarea la marca a mano quien la hace.'
+    $('pedAutoNota').textContent = t.id === 'otro' ? 'Nombrá el pozo o equipo en el texto (ej: “Cambiar empaquetaduras en el AIB 1273”). Cuando carguen una nota o novedad de ese equipo con esa palabra, se marca sola. Si no, se marca a mano.'
       : ((t.id === 'abrir' || t.id === 'cerrar') && durN ? 'Queda “en curso” cuando se ' + (t.id === 'abrir' ? 'abra' : 'cierre') + ', y se marca hecho cuando se cargue el ' + (t.id === 'abrir' ? 'cierre' : 'la reapertura') + '.' : 'Se marca hecho solo cuando alguien cargue el dato en la app.');
   }
   card.querySelectorAll('#pedTipos .aviso-chip').forEach(b => b.addEventListener('click', () => { tipo = b.dataset.t; $('pedObj').value = ''; pintar(); }));
@@ -8148,7 +8237,7 @@ function exigirNombre(){
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202610231310;
+var APP_VERSION = 202610231340;
 var appVersionNueva = 0;
 function appBuscarActualizacion(){
   if(!navigator.onLine || document.getElementById('actualizarApp')) return;
