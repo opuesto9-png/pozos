@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Centenario Interactivo</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B2436">
@@ -11,6 +11,44 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="CI">
+<script>
+/* ---- Android y iPhone: instalar la app y que el teléfono no borre lo guardado ----
+   En iPhone, si se usa desde Safari (sin instalar), el sistema borra los datos guardados a los 7 días
+   sin abrirla y la habilitación no es la misma que la de la app del inicio. Por eso se pide instalarla. */
+(function () {
+  var KEY = 'pozos';
+  try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function () {}); } catch (e) {}
+  var ua = navigator.userAgent || '';
+  var ios = /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  var android = /Android/i.test(ua);
+  var instalada = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+  window.__iosNoInstalada = ios && !instalada;
+  if ((!ios && !android) || instalada) return;
+  var cerrado = 0; try { cerrado = +localStorage.getItem('inst_cerrado_' + KEY) || 0; } catch (e) {}
+  if (Date.now() - cerrado < 3 * 24 * 3600e3) return;
+  var promptEv = null;
+  window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); promptEv = e; mostrar(); });
+  function mostrar() {
+    var viejo = document.getElementById('instBan'); if (viejo) viejo.remove();
+    var el = document.createElement('div');
+    el.id = 'instBan';
+    el.setAttribute('role', 'dialog');
+    el.style.cssText = 'position:fixed;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:8000;background:#12324A;color:#fff;border:2px solid #6FC9B0;border-radius:14px;padding:14px 14px 12px;box-shadow:0 10px 40px rgba(0,0,0,.5);font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;';
+    var txt = ios
+      ? '<b style="font-size:16px">Instalá la app en el iPhone</b><br>Tocá <b>Compartir</b> (el cuadrado con la flecha <span aria-hidden="true">⬆</span>, abajo en Safari) y después <b>"Agregar a inicio"</b>. Abrí siempre la app desde ese ícono: si la usás desde Safari, el iPhone borra lo guardado y la habilitación.'
+      : '<b style="font-size:16px">Instalá la app en el celular</b><br>' + (promptEv ? 'Tocá <b>Instalar</b> y abrila desde el ícono.' : 'Tocá los tres puntos <b>⋮</b> de Chrome y después <b>"Instalar app"</b> o <b>"Agregar a pantalla principal"</b>.');
+    el.innerHTML = '<div>' + txt + '</div><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">' +
+      '<button type="button" id="instNo" style="padding:9px 14px;border-radius:9px;border:1px solid rgba(255,255,255,.3);background:transparent;color:#fff;font:inherit">Ahora no</button>' +
+      (promptEv ? '<button type="button" id="instSi" style="padding:9px 16px;border-radius:9px;border:0;background:#6FC9B0;color:#0B2436;font:inherit;font-weight:800">Instalar</button>' : '') + '</div>';
+    document.body.appendChild(el);
+    document.getElementById('instNo').onclick = function () { try { localStorage.setItem('inst_cerrado_' + KEY, String(Date.now())); } catch (e) {} el.remove(); };
+    var si = document.getElementById('instSi');
+    if (si) si.onclick = function () { el.remove(); promptEv.prompt(); promptEv = null; };
+  }
+  document.addEventListener('DOMContentLoaded', function () { setTimeout(function () { if (!document.getElementById('instBan')) mostrar(); }, ios ? 2500 : 8000); });
+})();
+</script>
+
 <style>
   :root{
     --bg: #0B2436;
@@ -32,10 +70,11 @@
     color: var(--text);
     font-family: 'Segoe UI', -apple-system, Roboto, Arial, sans-serif;
     min-height: 100vh;
-    padding-bottom: 60px;
+    padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
   }
   header{
-    padding: 22px 18px 14px;
+    /* en iPhone con muesca el título no queda debajo de la hora */
+    padding: calc(22px + env(safe-area-inset-top, 0px)) 18px 14px;
     border-bottom: 1px solid var(--line);
     position: sticky;
     top: 0;
@@ -1682,7 +1721,10 @@ function habPreparar(){
     const cod = habNormalizar(new URLSearchParams(location.search).get('equipo'));
     if(cod){
       try { history.replaceState(null, '', location.pathname + location.hash); } catch(e) {}
-      if(!yaOk) habRegistrar(cod);
+      if(!yaOk && window.__iosNoInstalada){
+        // en iPhone el link abre Safari/WhatsApp, que no es la app instalada: el código se gastaría en el lugar equivocado
+        setTimeout(() => alert('Código ' + cod + '\n\nEn iPhone el código se pone dentro de la app instalada:\n1) Tocá Compartir (cuadrado con flecha) y "Agregar a inicio".\n2) Abrí la app desde ese ícono.\n3) Escribí este código: ' + cod), 600);
+      } else if(!yaOk) habRegistrar(cod);
     }
   });
 }
@@ -1827,7 +1869,7 @@ function habRenderBanner(){
   }
   el.innerHTML = `
     <b>${habEsteDispositivo()} todavía no está ${habHabilitadoTxt()}.</b>
-    <span>Escribí el código que te pasó el encargado (se pone una sola vez):</span>
+    <span>Escribí el código que te pasó el encargado (se pone una sola vez):${/iPhone|iPad|iPod/i.test(navigator.userAgent) ? ' <br><i>En iPhone, Centenario Interactivo y Datos KTI se habilitan cada una con su propio código.</i>' : ''}</span>
     <div class="hab-row">
       <input id="habCodigo" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="12" placeholder="Código (ej: K7P4QX)">
       <button type="button" id="habBtn">Habilitar</button>
@@ -3964,14 +4006,14 @@ function renderCardEdit(rec, bat){
         <div>
           <div class="time-label">Horas cerrado</div>
           <div class="input-with-clear">
-            <input type="number" inputmode="decimal" min="0" step="0.5" class="edit-input time-input" id="cicloCerrado" value="${cicloCerradoVal}">
+            <input type="text" inputmode="decimal" autocomplete="off" class="edit-input time-input" id="cicloCerrado" value="${cicloCerradoVal}">
             <button type="button" class="field-clear-btn" id="clearCicloCerrado" title="Borrar horas cerrado">&times;</button>
           </div>
         </div>
         <div>
           <div class="time-label">Horas abierto</div>
           <div class="input-with-clear">
-            <input type="number" inputmode="decimal" min="0" step="0.5" class="edit-input time-input" id="cicloAbierto" value="${cicloAbiertoVal}">
+            <input type="text" inputmode="decimal" autocomplete="off" class="edit-input time-input" id="cicloAbierto" value="${cicloAbiertoVal}">
             <button type="button" class="field-clear-btn" id="clearCicloAbierto" title="Borrar horas abierto">&times;</button>
           </div>
         </div>
@@ -4070,8 +4112,9 @@ function renderCardEdit(rec, bat){
     const hC = document.getElementById('horaCierre').value;
     const nota = document.getElementById('horarioNota').value.trim();
 
-    const cicloCerradoNum = document.getElementById('cicloCerrado').value.trim();
-    const cicloAbiertoNum = document.getElementById('cicloAbierto').value.trim();
+    // en iPhone el teclado decimal pone coma: se acepta coma o punto
+    const cicloCerradoNum = document.getElementById('cicloCerrado').value.trim().replace(',', '.').replace(/[^\d.]/g, '');
+    const cicloAbiertoNum = document.getElementById('cicloAbierto').value.trim().replace(',', '.').replace(/[^\d.]/g, '');
     if(cicloCerradoNum && cicloAbiertoNum){
       newFields.ciclo = `${cicloCerradoNum}c x ${cicloAbiertoNum}a`;
     } else {
@@ -7723,7 +7766,7 @@ function exigirNombre(){
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202610210250;
+var APP_VERSION = 202610231130;
 var appVersionNueva = 0;
 function appBuscarActualizacion(){
   if(!navigator.onLine || document.getElementById('actualizarApp')) return;
