@@ -1150,6 +1150,28 @@
   .ped-tipos{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
   .ped-tipos .aviso-chip.sel{ background:#E8B64A; border-color:#E8B64A; color:#14283A; }
   .ped-form-nota{ font-size:.78rem; color: var(--muted); margin:6px 0 0; }
+  .cic-todos{ display:flex; gap:8px; align-items:center; font-size:.8rem; color: var(--muted); margin:4px 0 10px; }
+  .cic-card{ background: var(--panel); border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin-bottom:8px; }
+  .cic-head{ display:flex; align-items:center; gap:8px; }
+  .cic-pozo{ flex:1; text-align:left; background:none; border:0; color: var(--text); font: inherit; font-weight:800; font-size:1rem; padding:0; cursor:pointer; font-family:'Consolas','SF Mono',monospace; }
+  .cic-pozo small{ font-family: inherit; font-weight:400; color: var(--muted); font-size:.75rem; margin-left:4px; }
+  .cic-ref{ font-size:.74rem; color: var(--muted); margin:3px 0 6px; }
+  .cic-items{ display:flex; flex-direction:column; gap:5px; }
+  .cic-it{ display:flex; align-items:center; gap:8px; font-size:.85rem; padding:6px 8px; border-radius:8px; background: var(--bg); border:1px solid var(--line); }
+  .cic-it.prox{ border-color:#E8B64A; }
+  .cic-it.hecho{ border-color:#1F5446; }
+  .cic-it em{ color:#E8B64A; font-style:normal; font-weight:700; }
+  .cic-ic{ flex:0 0 20px; height:20px; border-radius:50%; border:2px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:.75rem; font-weight:900; }
+  .cic-it.hecho .cic-ic{ background:#123B34; border-color:#123B34; color:#6FC9B0; }
+  .cic-tx{ flex:1; min-width:0; }
+  .cic-tx small{ color: var(--muted); }
+  .cic-it.hecho .cic-tx b{ color:#6FC9B0; }
+  .cic-mano{ font: inherit; font-size:.72rem; font-weight:700; padding:5px 8px; border-radius:7px; cursor:pointer; background:none; border:1px solid var(--line); color: var(--muted); white-space:nowrap; }
+  .cic-vacio{ font-size:.8rem; color: var(--muted); }
+  .cic-edit{ font: inherit; font-size:.75rem; font-weight:700; padding:6px 10px; border-radius:7px; cursor:pointer; background:none; border:1px solid #7FC4DE; color:#7FC4DE; white-space:nowrap; }
+  .cic-card.sug{ opacity:.9; border-style:dashed; }
+  .cic-it em.no{ color:#F2A08F; }
+  .cic-frow{ display:grid; grid-template-columns: 1fr 1fr 36px; gap:6px; margin-bottom:6px; align-items:center; }
   /* ---------- aviso de version nueva ---------- */
   #actualizarApp{ position:fixed; inset:0; z-index:9500; background:rgba(4,14,22,.9); display:flex; align-items:center; justify-content:center; padding:18px; box-sizing:border-box; }
   #actualizarApp .ua-card{ width:100%; max-width:420px; background: var(--panel); border:2px solid #6FC9B0; border-radius:16px; padding:24px 20px; box-sizing:border-box; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.5); }
@@ -1293,7 +1315,7 @@
     <button class="tab-btn" id="tabLista">Lista</button>
     <button class="tab-btn active" id="tabPlano">Plano (colectoras)</button>
     <button class="tab-btn" id="tabRed">Red</button>
-    <button class="tab-btn" id="tabCiclaje">Ciclaje</button>
+    <button class="tab-btn" id="tabCiclaje">Ciclaje del día</button>
     <button class="tab-btn" id="tabComp">Compresión BP</button>
     <button class="tab-btn" id="tabMov">Últimos movimientos</button>
     <button class="tab-btn" id="tabPed">Pedidos del día</button>
@@ -1323,14 +1345,14 @@
 
 <section id="inicio" aria-label="Inicio">
   <div class="ini-grid">
-    <button type="button" class="ini-tile ped" data-tab="tabPed"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4h6v3H9z"/><path d="M8 5H6v16h12V5h-2"/><path d="M9 12l2 2 4-4"/><path d="M9 17h6"/></svg><span class="tx"><span class="t">Pedidos del día</span><span class="s" id="iniPedSub">Lo que pidió el supervisor, se tacha solo al cargarlo</span></span><span class="ped-cnt" id="iniPedCnt" style="display:none;"></span></button>
+    <button type="button" class="ini-tile ped" data-tab="tabPed"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4h6v3H9z"/><path d="M8 5H6v16h12V5h-2"/><path d="M9 12l2 2 4-4"/><path d="M9 17h6"/></svg><span class="tx"><span class="t" id="iniPedTit">Pedidos del día</span><span class="s" id="iniPedSub">Lo que pidió el supervisor, se tacha solo al cargarlo</span></span><span class="ped-cnt" id="iniPedCnt" style="display:none;"></span></button>
   </div>
   <div class="ini-grupo">GAS</div>
   <div class="ini-grid">
     <button type="button" class="ini-tile gas" data-tab="tabLista"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c2 3 5 5 5 9a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-5 1-8z"/></svg><span class="t">Pozos de gas</span><span class="s">Lista por USPA</span><span class="ini-nuevo" style="display:none;"></span></button>
     <button type="button" class="ini-tile gas" data-tab="tabPlano"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/></svg><span class="t">Plano</span><span class="s">Por colectora</span><span class="ini-nuevo" style="display:none;"></span></button>
     <button type="button" class="ini-tile gas" data-tab="tabRed"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="12" cy="18" r="2"/><path d="M7.5 7.5l3.5 8.5M16.5 7.5L13 16M8 6h8"/></svg><span class="t">Red</span><span class="s">Radial y esquema</span><span class="ini-nuevo" style="display:none;"></span></button>
-    <button type="button" class="ini-tile gas" data-tab="tabCiclaje"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 0 1-14 5"/><path d="M4 12a8 8 0 0 1 14-5"/><path d="M18 3v4h-4M6 21v-4h4"/></svg><span class="t">Ciclaje</span><span class="s">Pozos en ciclaje</span><span class="ini-nuevo" style="display:none;"></span></button>
+    <button type="button" class="ini-tile gas" data-tab="tabCiclaje"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 0 1-14 5"/><path d="M4 12a8 8 0 0 1 14-5"/><path d="M18 3v4h-4M6 21v-4h4"/></svg><span class="t">Ciclaje del día</span><span class="s" id="iniCicSub">Pozos a maniobrar hoy</span><span class="ini-nuevo" style="display:none;"></span></button>
     <button type="button" class="ini-tile gas ancho" data-tab="tabComp"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 13l4-4"/><path d="M9 3h6"/><path d="M12 3v2"/></svg><span class="tx"><span class="t">Compresión BP Hoerbiger</span><span class="s">Lecturas de compresores por pozo</span></span><span class="ini-nuevo" style="display:none;"></span></button>
   </div>
   <div class="ini-grupo">PETRÓLEO, AGUA Y PTC</div>
@@ -2389,6 +2411,7 @@ function movRefrescarSiAbierta(){
 function updatePendCount(){
   movRefrescarSiAbierta();
   if(typeof pedProgramarAuto === 'function') pedProgramarAuto();
+  if(typeof cicProgramarAuto === 'function') cicProgramarAuto();
   const badge = document.getElementById('pendCount');
   if(badge){
     const n = pendientesDeReporte().length + pendientesDeReporteAib().length + pendientesDeReporteNotas().length + pendientesDeVelas().length;
@@ -2501,7 +2524,7 @@ function movTexto(col, id, d){
     case 'pias2_equipos': return (d.nombre || id) + ' · Pías 2';
     case 'pias2_camiones': return 'Camión de agua' + (d.remito ? ' (remito ' + d.remito + ')' : '') + ' · Pías 2';
     case 'ptc_descargas': return (d.tipo === 'carga' ? 'Carga PTC Cargadero' : 'Descarga PTC Isla ' + (d.isla || '?')) + (d.remito ? ' (remito ' + d.remito + ')' : '');
-    case 'pedidos': return 'Pedido: ' + (d.titulo || '');
+    case 'pedidos': return 'Pedido: ' + (typeof pedTitulo === 'function' ? pedTitulo(d) : (d.detalle || ''));
     case 'compresores_lecturas': return 'Compresor ' + (d.unidad || '') + (d.estado === 'parado' ? ' (parado)' : '');
     case 'avisos_mtto': return 'Aviso de mtto: ' + (d.equipo || d.pozo || '') + (d.criticidad ? ' (' + d.criticidad + ')' : '');
   }
@@ -3565,6 +3588,7 @@ function startSync(){
 
   iniciarCompSync();
   iniciarPedidosSync();
+  iniciarCiclajeSync();
 }
 
 // carga inicial de pozos de petroleo (solo corre una vez, la primera vez que la coleccion esta vacia)
@@ -6369,69 +6393,399 @@ function onCiclajeInputKeydown(e){
   if(e.key === 'Enter') agregarPozoCiclaje();
 }
 
-function renderCiclaje(){
-  const ciclajeMain = document.getElementById('ciclajeMain');
-  ciclajeMain.innerHTML = `<div class="plano-note">Pozos en ciclaje hoy. Agregalos o sacalos con los controles de abajo, ya que van cambiando.</div>
-    <div class="add-ciclaje-row">
-      <input type="text" id="addCiclajeInput" placeholder="Agregar pozo (ej: 1580)" class="edit-input" onkeydown="onCiclajeInputKeydown(event)">
-      <button id="addCiclajeBtn" class="add-ciclaje-btn" onclick="agregarPozoCiclaje()">Agregar</button>
-    </div>`;
-
-  const enCiclaje = POZOS.filter(isEnCiclaje);
-
-  const groups = groupByBateria(enCiclaje);
-  const order = ["USPA2","USPA3","USPA4","USPA5","Sin bateria"];
-
-  order.forEach(bat => {
-    if(!groups[bat]) return;
-    const items = groups[bat].sort((a,b) => a.pozo.localeCompare(b.pozo, undefined, {numeric:true}));
-    const block = document.createElement('div');
-    block.className = 'uspa-block';
-
-    const title = document.createElement('div');
-    title.className = 'uspa-title';
-    title.textContent = `${USPA_TITLES[bat] || bat} (${items.length})`;
-    title.style.background = BAT_COLORS[bat] || '#7a828d';
-    block.appendChild(title);
-
-    items.forEach(rec => {
-      const isManual = (rec.optim && rec.optim.toLowerCase().includes('manual')) || (rec.notas && rec.notas.toLowerCase().includes('manual'));
-      const estadoClass = rec.estado === 'Abierto' ? 'abierto' : (rec.estado === 'Cerrado' ? 'cerrado' : 'sd');
-      const estadoLabel = rec.estado || 'sin dato';
-      const detailBits = [];
-      if(rec.ciclo) detailBits.push(`Ciclo: ${rec.ciclo}`);
-      if(rec.horario) detailBits.push(`Horario: ${rec.horario}`);
-      if(isManual) detailBits.push(`<span class="cr-manual">Con optimizador, operado en manual</span>`);
-
-      const row = document.createElement('div');
-      row.className = 'ciclaje-row';
-      row.innerHTML = `
-        <div class="cr-left">
-          <div class="cr-pozo">${rec.pozo}</div>
-          <div class="cr-detail">${detailBits.join(' &middot; ') || 'Sin detalle de ciclo'}</div>
-        </div>
-        <div class="cr-estado ${estadoClass}">${estadoLabel}</div>
-        <button class="cr-remove" title="Quitar de ciclaje">&times;</button>
-      `;
-      row.querySelector('.cr-left').addEventListener('click', () => openCard(rec, bat));
-      row.querySelector('.cr-estado').addEventListener('click', () => openCard(rec, bat));
-      row.querySelector('.cr-remove').addEventListener('click', (e) => {
-        e.stopPropagation();
-        if(!puedeModificar()) return;
-        rec.enCiclaje = false;
-        rec._edited = true;
-        saveEdit(rec.pozo, { enCiclaje: false });
-        renderCiclaje();
-      });
-      block.appendChild(row);
-    });
-
-    ciclajeMain.appendChild(block);
-  });
-
-  if(enCiclaje.length === 0){
-    ciclajeMain.innerHTML += '<div class="empty-msg">No hay pozos marcados en ciclaje todavia.</div>';
+// ---------------- Ciclaje del dia ----------------
+// Para cada pozo en ciclaje se calcula que maniobra le toca HOY (dia operativo, desde las 06:00):
+//  - si tiene horario fijo ("Abrir 16:00 - Cerrar 22:00 / ..."), esas maniobras en orden;
+//  - si tiene ciclo "6c x 90a" (horas cerrado x horas abierto), la proxima segun cuando se abrio/cerro por ultima vez.
+// Las horas son de referencia, no se marca nada como atrasado por la hora. Cuando el operador carga una apertura o
+// un cierre de ese pozo, su propia app lo anota (coleccion 'ciclaje_eventos') y la maniobra se tacha sola.
+var CICLO_EV = [];
+var cicVerTodos = false;
+function cicParseCiclo(t){
+  const m = String(t || '').match(/(\d+(?:[.,]\d+)?)\s*c\s*x\s*(\d+(?:[.,]\d+)?)\s*a/i);
+  return m ? { cH: parseFloat(m[1].replace(',', '.')), aH: parseFloat(m[2].replace(',', '.')) } : null;
+}
+function cicParseHorario(t){
+  const l = [];
+  const re = /(abr\w*|cerr\w*|cierr\w*)\s*(?:a las\s*)?(\d{1,2}):(\d{2})/gi;
+  let m;
+  while((m = re.exec(String(t || '')))){
+    const mins = parseInt(m[2], 10) * 60 + parseInt(m[3], 10);
+    l.push({ tipo: /^abr/i.test(m[1]) ? 'abrir' : 'cerrar', hora: String(m[2]).padStart(2, '0') + ':' + m[3], orden: (mins - 360 + 1440) % 1440 });
   }
+  // sin repetidos (el horario suele repetir la primera maniobra al final) y si a la misma hora dice cerrar y abrir,
+  // el pozo sigue igual: no es una maniobra
+  const unicos = l.filter((m, i) => l.findIndex(x => x.tipo === m.tipo && x.hora === m.hora) === i);
+  return unicos.filter(m => !unicos.some(x => x.hora === m.hora && x.tipo !== m.tipo)).sort((x, y) => x.orden - y.orden);
+}
+function cicDiaInicio(){ return cicInicioDia(cicHoy()); }
+// fecha/hora real de la ultima apertura o cierre cargado (hora HH:MM + dia en que se guardo)
+function cicFechaDe(r, campo){
+  const hh = String(r[campo] || '').match(/^(\d{1,2}):(\d{2})/);
+  if(!hh) return 0;
+  const base = r._updatedAtDate ? r._updatedAtDate.getTime() : Date.now();
+  const d = new Date(base); d.setHours(parseInt(hh[1], 10), parseInt(hh[2], 10), 0, 0);
+  let t = d.getTime();
+  if(t > base + 10 * 60e3) t -= 86400e3;
+  return t;
+}
+function cicHora(ts){ const d = new Date(ts); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
+function cicEventosHoy(pozo){ const ini = cicDiaInicio(); return CICLO_EV.filter(e => e.pozo === pozo && e.ts >= ini).sort((a, b) => a.ts - b.ts); }
+
+// plan del dia de un pozo: [{tipo, hora, hecho:{...}|null, ref:'horario'|'ciclo'}]
+function cicPlanHoy(r){
+  const evs = cicEventosHoy(r.pozo);
+  const plan = cicParseHorario(r.horario);
+  if(plan.length){
+    const usados = new Set();
+    plan.forEach(m => {
+      const e = evs.find(x => x.tipo === m.tipo && !usados.has(x.id));
+      if(e){ usados.add(e.id); m.hecho = e; }
+    });
+    const extras = evs.filter(x => !usados.has(x.id)).map(e => ({ tipo: e.tipo, hora: e.hora, hecho: e, extra: true }));
+    return { modo: 'horario', items: plan.concat(extras).map(m => Object.assign({ ref: 'horario' }, m)) };
+  }
+  const ciclo = cicParseCiclo(r.ciclo);
+  const items = evs.map(e => ({ tipo: e.tipo, hora: e.hora, hecho: e }));
+  if(ciclo){
+    // proxima maniobra segun la ultima apertura/cierre conocido
+    const tA = cicFechaDe(r, 'horaApertura'), tC = cicFechaDe(r, 'horaCierre');
+    let prox = null;
+    if(tA || tC){
+      if(tA >= tC) prox = { tipo: 'cerrar', ts: tA + ciclo.aH * 3600e3 };
+      else prox = { tipo: 'abrir', ts: tC + ciclo.cH * 3600e3 };
+    }
+    const fin = cicDiaInicio() + 86400e3;
+    if(prox && prox.ts < fin) items.push({ tipo: prox.tipo, hora: cicHora(prox.ts), aprox: true, ts: prox.ts, yaToca: prox.ts <= Date.now() });
+    return { modo: 'ciclo', ciclo, items, prox };
+  }
+  return { modo: 'nada', items };
+}
+function cicTocaHoy(r){ const pl = cicPlanHoy(r); return pl.items.length > 0; }
+// ---- PLAN de ciclaje por dia y turno (lo carga el supervisor desde la compu) ----
+// 'ciclaje_plan': un documento por dia + turno + pozo, con sus maniobras [{tipo:'abrir'|'cerrar', hora:'HH:MM'}].
+// Turno dia 07-19, turno noche 19-07 (el dia de ciclaje va de 07:00 a 07:00). El celular ve solo el plan de hoy.
+var CIC_PLAN = [];
+var cicDiaSel = '';
+var TURNO_DIA_INI = 7, TURNO_DIA_FIN = 19;
+var CIC_TURNOS = { dia: 'Turno día (07 a 19)', noche: 'Turno noche (19 a 07)' };
+// el dia de ciclaje va de 07:00 a 07:00 (turno dia + turno noche)
+function cicHoy(){ const d = new Date(Date.now() - TURNO_DIA_INI * 3600e3); return pedIso(d); }
+function cicInicioDia(iso){ const [y, m, d] = iso.split('-').map(Number); return new Date(y, m - 1, d, TURNO_DIA_INI, 0, 0, 0).getTime(); }
+function cicOrden(hora){ const m = String(hora || '').match(/^(\d{1,2}):(\d{2})/); if(!m) return 0; return (parseInt(m[1], 10) * 60 + parseInt(m[2], 10) - TURNO_DIA_INI * 60 + 1440) % 1440; }
+function cicTurnoDeHora(hora){ return cicOrden(hora) < (TURNO_DIA_FIN - TURNO_DIA_INI) * 60 ? 'dia' : 'noche'; }
+function cicTurnoActual(){ const h = new Date().getHours(); return (h >= TURNO_DIA_INI && h < TURNO_DIA_FIN) ? 'dia' : 'noche'; }
+function cicPlanDe(fecha){ return CIC_PLAN.filter(p => p.fecha === fecha); }
+function cicHayPlan(fecha){ return cicPlanDe(fecha).length > 0; }
+
+// estado de las maniobras planificadas de un pozo en un dia: cada apertura/cierre cargado tacha la proxima del mismo tipo
+function cicEstadoPlan(fecha, pozo){
+  const items = [];
+  cicPlanDe(fecha).filter(p => p.pozo === pozo).forEach(p => (p.maniobras || []).forEach(m => items.push({ planId: p.id, turno: p.turno, tipo: m.tipo, hora: m.hora, orden: cicOrden(m.hora) })));
+  items.sort((x, y) => x.orden - y.orden);
+  const ini = cicInicioDia(fecha), fin = ini + 86400e3;
+  CICLO_EV.filter(e => e.pozo === pozo && e.ts >= ini && e.ts < fin).sort((x, y) => x.ts - y.ts).forEach(e => {
+    const eo = (e.ts - ini) / 60e3;
+    // la hora es de referencia: toma la proxima pendiente de ese tipo (sin adelantarse mas de 3 h)
+    let it = items.find(i => !i.hecho && i.tipo === e.tipo && i.orden <= eo + 180) || items.find(i => !i.hecho && i.tipo === e.tipo);
+    if(it) it.hecho = e;
+    else items.push({ tipo: e.tipo, hora: e.hora, hecho: e, extra: true, orden: eo, turno: eo < (TURNO_DIA_FIN - TURNO_DIA_INI) * 60 ? 'dia' : 'noche' });
+  });
+  return items;
+}
+function cicPendientes(){
+  const hoy = cicHoy();
+  if(cicHayPlan(hoy)){
+    const pozos = [...new Set(cicPlanDe(hoy).map(p => p.pozo))];
+    return pozos.reduce((n, pz) => n + cicEstadoPlan(hoy, pz).filter(i => !i.hecho && !i.extra).length, 0);
+  }
+  return POZOS.filter(isEnCiclaje).reduce((n, r) => n + cicPlanHoy(r).items.filter(i => !i.hecho && !i.extra).length, 0);
+}
+
+// cada apertura/cierre cargado de un pozo en ciclaje (o en el plan) queda anotado (lo hace la app de quien lo carga)
+var cicAutoTimer = null;
+function cicProgramarAuto(){ clearTimeout(cicAutoTimer); cicAutoTimer = setTimeout(cicAnotar, 900); }
+function cicAnotar(){
+  if(!firestoreOk || (typeof habBloqueado === 'function' && habBloqueado())) return;
+  const ini = cicDiaInicio();
+  const hoy = cicHoy();
+  const delPlan = new Set(cicPlanDe(hoy).concat(cicPlanDe(pedSumarDias(hoy, -1))).map(p => p.pozo));
+  let nuevos = 0;
+  POZOS.filter(r => isEnCiclaje(r) || delPlan.has(r.pozo)).forEach(r => {
+    const ts = r._updatedAtDate ? r._updatedAtDate.getTime() : 0;
+    if(ts < ini - 6 * 3600e3) return;
+    const uf = r.updatedFields || [];
+    [['horaApertura', 'abrir'], ['horaCierre', 'cerrar']].forEach(([campo, tipo]) => {
+      if(!uf.includes(campo) || !r[campo]) return;
+      const id = r.pozo + '_' + ts + '_' + tipo;
+      if(CICLO_EV.some(e => e.id === id)) return;
+      const ev = { pozo: r.pozo, tipo, hora: r[campo], ts, por: r.operador || 'Sin nombre', fecha: pedIso(new Date(ts - TURNO_DIA_INI * 3600e3)) };
+      CICLO_EV.push(Object.assign({ id, _local: true }, ev));
+      nuevos++;
+      db.collection('ciclaje_eventos').doc(id).set(ev).catch(() => {});
+    });
+  });
+  cicActualizarInicio();
+  if(nuevos && document.getElementById('ciclajeMain').style.display !== 'none') renderCiclaje();
+}
+function iniciarCiclajeSync(){
+  if(!firestoreOk) return;
+  db.collection('ciclaje_eventos').orderBy('ts', 'desc').limit(600).onSnapshot(snap => {
+    const locales = CICLO_EV.filter(e => e._local);
+    CICLO_EV = [];
+    snap.forEach(d => CICLO_EV.push(Object.assign({ id: d.id }, d.data())));
+    locales.forEach(e => { if(!CICLO_EV.some(x => x.id === e.id)) CICLO_EV.push(e); });
+    cicActualizarInicio();
+    if(document.getElementById('ciclajeMain').style.display !== 'none') renderCiclaje();
+  }, err => console.error('Firestore sync error (ciclaje_eventos)', err));
+  db.collection('ciclaje_plan').orderBy('fecha', 'desc').limit(500).onSnapshot(snap => {
+    CIC_PLAN = [];
+    snap.forEach(d => CIC_PLAN.push(Object.assign({ id: d.id }, d.data())));
+    cicActualizarInicio();
+    cicProgramarAuto();
+    if(document.getElementById('ciclajeMain').style.display !== 'none') renderCiclaje();
+  }, err => console.error('Firestore sync error (ciclaje_plan)', err));
+}
+function cicActualizarInicio(){
+  const sub = document.getElementById('iniCicSub');
+  if(!sub) return;
+  const n = cicPendientes();
+  sub.textContent = n ? n + (n === 1 ? ' maniobra para hoy' : ' maniobras para hoy') : (cicHayPlan(cicHoy()) ? 'Ciclaje de hoy completo' : 'Pozos a maniobrar hoy');
+}
+function cicMarcarMano(r, item){
+  if(!confirm('¿Marcar a mano “' + (item.tipo === 'abrir' ? 'Abrir' : 'Cerrar') + ' ' + r.pozo + '” como hecha? (lo ideal es cargarla en la ficha del pozo)')) return;
+  if(!puedeModificar()) return;
+  const ts = Date.now();
+  const id = r.pozo + '_' + ts + '_' + item.tipo + '_m';
+  const ev = { pozo: r.pozo, tipo: item.tipo, hora: cicHora(ts), ts, por: operadorName || 'Sin nombre', manual: true, fecha: pedIso(new Date(ts - TURNO_DIA_INI * 3600e3)) };
+  CICLO_EV.push(Object.assign({ id, _local: true }, ev));
+  db.collection('ciclaje_eventos').doc(id).set(ev).catch(e => alert('No se pudo guardar (' + e.message + ').'));
+  renderCiclaje();
+}
+
+// sugerencia de maniobras para un pozo (de su horario fijo o de su ciclo), separadas por turno
+function cicSugerencia(r, fecha){
+  const l = cicParseHorario(r.horario).map(m => ({ tipo: m.tipo, hora: m.hora }));
+  if(!l.length && fecha === cicHoy()){
+    cicPlanHoy(r).items.filter(i => !i.hecho && !i.extra).forEach(i => l.push({ tipo: i.tipo, hora: i.hora }));
+  }
+  return l.sort((x, y) => cicOrden(x.hora) - cicOrden(y.hora));
+}
+
+function cicBarraDias(){
+  const hoy = cicHoy();
+  const dias = [];
+  for(let i = -3; i <= 3; i++) dias.push(pedSumarDias(cicDiaSel, i));
+  const chip = (iso) => {
+    const n = pedNombreDia(iso, false, cicHoy());
+    const pl = cicPlanDe(iso);
+    const pozos = [...new Set(pl.map(p => p.pozo))];
+    const pend = iso <= hoy ? pozos.reduce((k, pz) => k + cicEstadoPlan(iso, pz).filter(i => !i.hecho && !i.extra).length, 0) : pl.reduce((k, p) => k + (p.maniobras || []).length, 0);
+    return `<button type="button" class="ped-dia${iso === cicDiaSel ? ' sel' : ''}${iso === hoy ? ' hoy' : ''}" data-cdia="${iso}"><b>${n.dia}</b><span>${n.num}</span>${pl.length ? `<i class="${pend ? 'p' : 'ok'}">${pend ? pozos.length + 'p' : '✓'}</i>` : ''}</button>`;
+  };
+  return `<div class="ped-dias">
+      <button type="button" class="ped-dia flecha" data-cdia="${pedSumarDias(cicDiaSel, -7)}" aria-label="Semana anterior">‹</button>
+      ${dias.map(chip).join('')}
+      <button type="button" class="ped-dia flecha" data-cdia="${pedSumarDias(cicDiaSel, 7)}" aria-label="Semana siguiente">›</button>
+    </div>
+    <div class="ped-dias-acc">${cicDiaSel !== hoy ? `<button type="button" class="ped-hoy-btn" data-cdia="${hoy}">Volver a hoy</button>` : ''}<label class="ped-fecha">Ir a fecha <input type="date" id="cicFechaSel" value="${cicDiaSel}"></label></div>`;
+}
+
+// una tarjeta de pozo con sus maniobras (plan) y el estado de cada una
+function cicTarjetaPlan(doc, fecha, enCompu){
+  const r = POZOS.find(x => x.pozo === doc.pozo) || { pozo: doc.pozo, bateria: 'Sin bateria' };
+  const bat = r.bateria || 'Sin bateria';
+  const hoy = cicHoy();
+  const items = fecha <= hoy ? cicEstadoPlan(fecha, doc.pozo).filter(i => i.planId === doc.id || (i.extra && i.turno === doc.turno))
+    : (doc.maniobras || []).map(m => ({ tipo: m.tipo, hora: m.hora, orden: cicOrden(m.hora) })).sort((x, y) => x.orden - y.orden);
+  const card = document.createElement('div');
+  card.className = 'cic-card';
+  const estado = r.estado === 'Abierto' ? 'abierto' : (r.estado === 'Cerrado' ? 'cerrado' : 'sd');
+  card.innerHTML = `<div class="cic-head">
+      <button type="button" class="cic-pozo">${avisoEsc(doc.pozo)} <small>${avisoEsc(USPA_TITLES[bat] || bat)}</small></button>
+      ${fecha === hoy ? `<span class="cr-estado ${estado}">${avisoEsc(r.estado || 'sin dato')}</span>` : ''}
+      ${enCompu ? '<button type="button" class="cic-edit">Editar</button><button class="cr-remove" title="Quitar del ciclaje de este día">&times;</button>' : ''}
+    </div>
+    ${doc.nota ? `<div class="cic-ref">${avisoEsc(doc.nota)}</div>` : ''}
+    <div class="cic-items"></div>`;
+  const cont = card.querySelector('.cic-items');
+  const primeraPend = fecha === hoy ? items.findIndex(i => !i.hecho && !i.extra) : -1;
+  items.forEach((it, k) => {
+    const row = document.createElement('div');
+    row.className = 'cic-it' + (it.hecho ? ' hecho' : '') + (k === primeraPend ? ' prox' : '');
+    const verbo = it.tipo === 'abrir' ? 'Abrir' : 'Cerrar';
+    row.innerHTML = it.hecho
+      ? `<span class="cic-ic">✓</span><span class="cic-tx"><b>${verbo === 'Abrir' ? 'Abierto' : 'Cerrado'} ${avisoEsc(it.hecho.hora || '')}</b>${it.hora && !it.extra && it.hora !== it.hecho.hora ? ' <small>(ref. ' + avisoEsc(it.hora) + ')</small>' : ''}${it.extra ? ' <small>(maniobra extra)</small>' : ''}<small> · ${avisoEsc(it.hecho.por || '')}${it.hecho.manual ? ' · a mano' : ''}</small></span>`
+      : `<span class="cic-ic"></span><span class="cic-tx"><b>${verbo}</b> a las ${avisoEsc(it.hora)}${fecha < hoy ? ' <em class="no">· no se cargó</em>' : ''}</span>${fecha === hoy ? '<button type="button" class="cic-mano">Hecho a mano</button>' : ''}`;
+    const bm = row.querySelector('.cic-mano');
+    if(bm) bm.addEventListener('click', (e) => { e.stopPropagation(); cicMarcarMano(r, it); });
+    cont.appendChild(row);
+  });
+  card.querySelector('.cic-pozo').addEventListener('click', () => { if(r.pozo && POZOS.includes(r)) openCard(r, bat); });
+  const ed = card.querySelector('.cic-edit');
+  if(ed) ed.addEventListener('click', () => cicAbrirForm({ doc }));
+  const rm = card.querySelector('.cr-remove');
+  if(rm) rm.addEventListener('click', () => {
+    if(!confirm('¿Sacar ' + doc.pozo + ' del ' + CIC_TURNOS[doc.turno].toLowerCase() + ' de este día?')) return;
+    if(!puedeModificar()) return;
+    db.collection('ciclaje_plan').doc(doc.id).delete().catch(e => alert('No se pudo (' + e.message + ').'));
+    CIC_PLAN = CIC_PLAN.filter(x => x.id !== doc.id);
+    renderCiclaje();
+  });
+  return card;
+}
+
+function renderCiclaje(){
+  const main = document.getElementById('ciclajeMain');
+  const enCompu = !esMovil();
+  const hoy = cicHoy();
+  if(!enCompu || !cicDiaSel) cicDiaSel = hoy;
+  const fecha = cicDiaSel;
+  const plan = cicPlanDe(fecha);
+  const turnoAct = cicTurnoActual();
+  main.innerHTML = `<div class="plano-note">${enCompu ? 'Cargá para cada día qué pozos se ciclan en el turno día y en el turno noche. ' : ''}Las horas son de referencia: cuando se carga la apertura o el cierre en la ficha del pozo, la maniobra se tacha sola.</div>
+    ${enCompu ? cicBarraDias() : ''}
+    <div class="ped-dia-tit">Ciclaje · ${avisoEsc(pedNombreDia(fecha, true, cicHoy()))}${!enCompu ? ' <small>(lo carga el supervisor; vos cargá las maniobras en la ficha del pozo)</small>' : ''}</div>
+    ${enCompu ? `<div class="ped-top">
+      ${fecha >= hoy ? `<button type="button" class="ped-nuevo-btn" id="cicNuevoBtn">+ Agregar pozo a este día</button>` : ''}
+      ${fecha >= hoy && !plan.length && cicHayPlan(pedSumarDias(fecha, -1)) ? `<button type="button" class="ped-copiar-btn" id="cicCopiarBtn">Copiar el ciclaje del día anterior</button>` : ''}
+    </div>` : ''}
+    <div id="cicCuerpo"></div>`;
+  main.querySelectorAll('[data-cdia]').forEach(b => b.addEventListener('click', () => { cicDiaSel = b.dataset.cdia; renderCiclaje(); }));
+  const fs = document.getElementById('cicFechaSel');
+  if(fs) fs.addEventListener('change', () => { if(fs.value){ cicDiaSel = fs.value; renderCiclaje(); } });
+  const nb = document.getElementById('cicNuevoBtn');
+  if(nb) nb.addEventListener('click', () => cicAbrirForm({}));
+  const cb = document.getElementById('cicCopiarBtn');
+  if(cb) cb.addEventListener('click', () => cicCopiarDia(pedSumarDias(fecha, -1), fecha));
+  const cuerpo = document.getElementById('cicCuerpo');
+
+  if(plan.length){
+    const turnos = (fecha === hoy && turnoAct === 'noche') ? ['noche', 'dia'] : ['dia', 'noche'];
+    turnos.forEach(t => {
+      const docs = plan.filter(p => p.turno === t).sort((x, y) => cicOrden(((x.maniobras || [])[0] || {}).hora) - cicOrden(((y.maniobras || [])[0] || {}).hora));
+      const g = document.createElement('div');
+      g.innerHTML = `<div class="ped-grupo">${t === 'dia' ? '☀' : '☾'} ${CIC_TURNOS[t]}${fecha === hoy && t === turnoAct ? ' · <span style="color:#E8B64A">turno actual</span>' : ''} (${docs.length})</div>`;
+      if(!docs.length) g.insertAdjacentHTML('beforeend', '<div class="cic-vacio" style="margin-bottom:8px">Sin pozos para ciclar en este turno.</div>');
+      docs.forEach(d => g.appendChild(cicTarjetaPlan(d, fecha, enCompu)));
+      cuerpo.appendChild(g);
+    });
+  } else {
+    cuerpo.insertAdjacentHTML('beforeend', `<p class="ped-resumen">${fecha === hoy ? 'Todavía no se cargó el ciclaje de hoy.' : (fecha > hoy ? 'Todavía no se cargó el ciclaje de este día.' : 'No hubo ciclaje cargado ese día.')}</p>`);
+  }
+
+  // sugeridos segun horario/ciclo de cada pozo: en la compu para planificar; en el celular solo si hoy no hay plan
+  const mostrarSug = fecha >= hoy && (enCompu || !plan.length);
+  if(mostrarSug){
+    const enPlan = new Set(plan.map(p => p.pozo));
+    const sug = POZOS.filter(isEnCiclaje).filter(r => !enPlan.has(r.pozo)).map(r => ({ r, l: cicSugerencia(r, fecha) })).filter(x => x.l.length);
+    if(sug.length){
+      const g = document.createElement('div');
+      g.innerHTML = `<div class="ped-grupo">${enCompu ? 'Sugeridos según el horario o ciclo de cada pozo' : 'Según el horario o ciclo de cada pozo'} (${sug.length})</div>`;
+      sug.forEach(({ r, l }) => {
+        const c = document.createElement('div');
+        c.className = 'cic-card sug';
+        c.innerHTML = `<div class="cic-head"><button type="button" class="cic-pozo">${avisoEsc(r.pozo)} <small>${avisoEsc(r.horario ? 'horario fijo' : 'ciclo ' + (r.ciclo || ''))}</small></button>${enCompu ? '<button type="button" class="cic-edit">Agregar al día</button>' : ''}</div>
+          <div class="cic-ref">${l.map(m => (m.tipo === 'abrir' ? 'Abrir ' : 'Cerrar ') + m.hora).join(' · ')}</div>`;
+        c.querySelector('.cic-pozo').addEventListener('click', () => openCard(r, r.bateria || 'Sin bateria'));
+        const add = c.querySelector('.cic-edit');
+        if(add) add.addEventListener('click', () => cicAbrirForm({ pozo: r.pozo, maniobras: l }));
+        g.appendChild(c);
+      });
+      cuerpo.appendChild(g);
+    }
+  }
+}
+
+function cicCopiarDia(desde, hasta){
+  const src = cicPlanDe(desde);
+  if(!src.length) return;
+  if(!confirm('¿Copiar los ' + src.length + ' pozos del ciclaje del ' + pedNombreDia(desde, true, cicHoy()) + ' a este día?')) return;
+  if(!puedeModificar()) return;
+  src.forEach(d => {
+    const nuevo = { fecha: hasta, turno: d.turno, pozo: d.pozo, maniobras: d.maniobras || [], nota: d.nota || '', creadoPor: operadorName || 'Sin nombre', creadoTs: Date.now() };
+    const id = hasta + '_' + d.turno + '_' + d.pozo;
+    db.collection('ciclaje_plan').doc(id).set(nuevo).catch(() => {});
+    CIC_PLAN = CIC_PLAN.filter(x => x.id !== id).concat([Object.assign({ id }, nuevo)]);
+  });
+  renderCiclaje();
+}
+
+function cicAbrirForm(opt){
+  const doc = opt.doc || null;
+  const fecha = doc ? doc.fecha : cicDiaSel;
+  let man = (doc ? doc.maniobras : opt.maniobras || []).map(m => ({ tipo: m.tipo, hora: m.hora }));
+  if(!man.length) man = [{ tipo: 'abrir', hora: '' }, { tipo: 'cerrar', hora: '' }];
+  let turno = doc ? doc.turno : (man[0] && man[0].hora ? cicTurnoDeHora(man[0].hora) : 'dia');
+  // si viene una sugerencia con maniobras de los dos turnos, se carga solo la del turno elegido
+  const todas = man.slice();
+  if(!doc && todas.some(m => m.hora)) man = todas.filter(m => !m.hora || cicTurnoDeHora(m.hora) === turno);
+  window._currentCardRec = null;
+  const card = document.getElementById('card');
+  const filas = () => man.map((m, i) => `<div class="cic-frow" data-i="${i}">
+      <select class="edit-input cic-ftipo" aria-label="Maniobra"><option value="abrir" ${m.tipo === 'abrir' ? 'selected' : ''}>Abrir</option><option value="cerrar" ${m.tipo === 'cerrar' ? 'selected' : ''}>Cerrar</option></select>
+      <input type="time" class="edit-input time-input cic-fhora" value="${m.hora || ''}" aria-label="Hora">
+      <button type="button" class="cr-remove cic-fx" aria-label="Quitar maniobra">&times;</button></div>`).join('');
+  card.innerHTML = `
+    <div class="card-head">
+      <div><h2>${doc ? 'Editar ciclaje' : 'Agregar pozo al ciclaje'}</h2><span class="bat-pill" style="background:#3f8f7a">${avisoEsc(pedNombreDia(fecha, true, cicHoy()))}</span></div>
+      <button class="close-btn" id="closeBtn">&times;</button>
+    </div>
+    <div class="time-label">Pozo</div>
+    <input type="text" class="edit-input" id="cicFPozo" list="cicFPozoDl" placeholder="ej: 1559" value="${avisoEsc(doc ? doc.pozo : (opt.pozo || ''))}" autocomplete="off">
+    <datalist id="cicFPozoDl">${POZOS.map(p => `<option value="${avisoEsc(p.pozo)}">`).join('')}</datalist>
+    <div class="time-label" style="margin-top:8px">Turno</div>
+    <div class="estado-toggle" style="margin:0"><button type="button" class="estado-btn abierto${turno === 'dia' ? ' active' : ''}" data-tu="dia">☀ DÍA (07-19)</button><button type="button" class="estado-btn cerrado${turno === 'noche' ? ' active' : ''}" data-tu="noche">☾ NOCHE (19-07)</button></div>
+    <div class="time-label" style="margin-top:8px">Maniobras (las horas son de referencia)</div>
+    <div id="cicFRows">${filas()}</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+      <button type="button" class="ped-copiar-btn" id="cicFMas" style="flex:1">+ Agregar maniobra</button>
+      <button type="button" class="ped-copiar-btn" id="cicFSug" style="flex:1">Completar con su horario/ciclo</button>
+    </div>
+    <div class="time-label" style="margin-top:8px">Nota (opcional)</div>
+    <input type="text" class="edit-input" id="cicFNota" placeholder="ej: complementario a Ce-1564" value="${avisoEsc(doc ? (doc.nota || '') : '')}">
+    <div class="aviso-error" id="cicFErr" style="display:none;"></div>
+    <div class="edit-actions"><button class="save-btn" id="cicFGuardar">Guardar</button><button class="cancel-btn" id="cicFCancel">Cancelar</button></div>`;
+  card.scrollTop = 0;
+  document.getElementById('overlay').classList.add('show');
+  if(!modalHistoryPushed){ history.pushState({ pozosModal: true }, ''); modalHistoryPushed = true; }
+  const $ = (id) => document.getElementById(id);
+  const leer = () => { man = [...card.querySelectorAll('.cic-frow')].map(f => ({ tipo: f.querySelector('.cic-ftipo').value, hora: f.querySelector('.cic-fhora').value })); };
+  const pintarFilas = () => {
+    $('cicFRows').innerHTML = filas();
+    card.querySelectorAll('.cic-fx').forEach(b => b.addEventListener('click', () => { leer(); man.splice(parseInt(b.closest('.cic-frow').dataset.i, 10), 1); pintarFilas(); }));
+  };
+  pintarFilas();
+  $('closeBtn').addEventListener('click', closeCard);
+  $('cicFCancel').addEventListener('click', closeCard);
+  card.querySelectorAll('[data-tu]').forEach(b => b.addEventListener('click', () => { turno = b.dataset.tu; card.querySelectorAll('[data-tu]').forEach(x => x.classList.toggle('active', x === b)); }));
+  $('cicFMas').addEventListener('click', () => { leer(); const ult = man[man.length - 1]; man.push({ tipo: ult && ult.tipo === 'abrir' ? 'cerrar' : 'abrir', hora: '' }); pintarFilas(); });
+  $('cicFSug').addEventListener('click', () => {
+    const r = POZOS.find(x => x.pozo === pedNormPozo($('cicFPozo').value));
+    if(!r){ $('cicFErr').textContent = 'Primero elegí el pozo.'; $('cicFErr').style.display = ''; return; }
+    const l = cicSugerencia(r, fecha).filter(m => cicTurnoDeHora(m.hora) === turno);
+    if(!l.length){ $('cicFErr').textContent = 'Ese pozo no tiene horario ni ciclo que caiga en el ' + CIC_TURNOS[turno].toLowerCase() + '.'; $('cicFErr').style.display = ''; return; }
+    $('cicFErr').style.display = 'none';
+    man = l.map(m => ({ tipo: m.tipo, hora: m.hora })); pintarFilas();
+  });
+  $('cicFGuardar').addEventListener('click', () => {
+    leer();
+    const pozo = pedNormPozo($('cicFPozo').value);
+    const err = $('cicFErr');
+    const maniobras = man.filter(m => m.hora).sort((x, y) => cicOrden(x.hora) - cicOrden(y.hora));
+    let msg = '';
+    if(!POZOS.some(p => p.pozo === pozo)) msg = 'No encontré el pozo ' + (pozo || '') + ' en la lista.';
+    else if(!maniobras.length) msg = 'Cargá al menos una maniobra con su hora.';
+    if(msg){ err.textContent = msg; err.style.display = ''; return; }
+    if(!puedeModificar()) return;
+    if(!firestoreOk){ alert('No hay conexion con el guardado compartido. Revisa tu internet e intenta de nuevo.'); return; }
+    const id = fecha + '_' + turno + '_' + pozo;
+    const datos = { fecha, turno, pozo, maniobras, nota: $('cicFNota').value.trim(), creadoPor: operadorName || 'Sin nombre', creadoTs: doc ? (doc.creadoTs || Date.now()) : Date.now() };
+    if(doc && doc.id !== id){ db.collection('ciclaje_plan').doc(doc.id).delete().catch(() => {}); CIC_PLAN = CIC_PLAN.filter(x => x.id !== doc.id); }
+    db.collection('ciclaje_plan').doc(id).set(datos).catch(e => alert('No se pudo guardar (' + e.message + ').'));
+    CIC_PLAN = CIC_PLAN.filter(x => x.id !== id).concat([Object.assign({ id }, datos)]);
+    closeCard(); renderCiclaje(); cicActualizarInicio();
+  });
 }
 
 document.getElementById('tabCiclaje').addEventListener('click', () => {
@@ -7408,9 +7762,9 @@ function pedFechaDe(p){ return p.fecha || (p.creadoTs ? pedIso(inicioDiaOperativ
 function pedSumarDias(iso, n){ const [y, m, d] = iso.split('-').map(Number); return pedIso(new Date(y, m - 1, d + n, 12)); }
 function pedInicioDia(iso){ const [y, m, d] = iso.split('-').map(Number); return new Date(y, m - 1, d, 6, 0, 0, 0).getTime(); }
 var PED_DIAS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-function pedNombreDia(iso, largo){
+function pedNombreDia(iso, largo, hoyRef){
   const [y, m, d] = iso.split('-').map(Number); const dt = new Date(y, m - 1, d, 12);
-  const hoy = pedHoy();
+  const hoy = hoyRef || pedHoy();
   const rel = iso === hoy ? 'Hoy' : (iso === pedSumarDias(hoy, 1) ? 'Mañana' : (iso === pedSumarDias(hoy, -1) ? 'Ayer' : ''));
   if(largo) return (rel ? rel + ', ' : '') + ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'][dt.getDay()] + ' ' + d + '/' + String(m).padStart(2, '0');
   return { dia: rel || PED_DIAS[dt.getDay()], num: d + '/' + m };
@@ -7422,6 +7776,8 @@ function pedAtrasados(){ const hoy = pedHoy(); return PEDIDOS.filter(p => p.esta
 // para "lo que se ve hoy" (inicio, celulares): lo de hoy + atrasados
 function pedDelDia(){ return pedDeFecha(pedHoy()).concat(pedAtrasados()); }
 function pedActualizarInicio(){
+  const tit = document.getElementById('iniPedTit'), sub = document.getElementById('iniPedSub');
+  if(tit && !esMovil()){ tit.textContent = 'Supervisores'; if(sub) sub.textContent = 'Cargar y seguir los pedidos del día'; }
   const cnt = document.getElementById('iniPedCnt');
   if(!cnt) return;
   const pend = pedDelDia().filter(p => p.estado === 'pendiente');
@@ -7471,7 +7827,7 @@ function renderPedidos(){
   const hechos = lista.filter(p => p.estado === 'hecho').sort((a, b) => (b.hechoTs || 0) - (a.hechoTs || 0));
   const nos = lista.filter(p => p.estado === 'no').sort((a, b) => (b.hechoTs || 0) - (a.hechoTs || 0));
   const total = lista.length;
-  main.innerHTML = `<div class="plano-note">Los pedidos del supervisor, en vez del grupo de WhatsApp. Cuando alguien carga en la app lo que se pidió (cierra el pozo, mide el tanque, carga la lectura), el pedido se marca <b>hecho solo</b>. Las “otras tareas” se marcan a mano.</div>
+  main.innerHTML = `<div class="plano-note">${verDias ? 'Supervisores: cargá los pedidos de cada día. ' : ''}Los pedidos del supervisor, en vez del grupo de WhatsApp. Cuando alguien carga en la app lo que se pidió (cierra el pozo, mide el tanque, carga la lectura), el pedido se marca <b>hecho solo</b>. Las “otras tareas” se marcan a mano.</div>
     ${verDias ? pedBarraDias() : ''}
     <div class="ped-dia-tit">${avisoEsc(pedNombreDia(pedDiaSel, true))}${!verDias ? ' <small>(los pedidos los carga el supervisor desde la compu; cuando hagas uno, marcalo hecho)</small>' : ''}</div>
     <div class="ped-top">
@@ -8148,7 +8504,7 @@ renderPlano();
 // Al abrir la app se ve el Inicio (tarjetas por area). Tocar una tarjeta entra a esa seccion;
 // "‹ Inicio" o el boton Atras del celular vuelven. Dentro de Gas y de Petroleo quedan las
 // pestañas hermanas para pasar de una a otra sin volver al inicio.
-const SECCION_TITULO = { tabLista: 'Pozos de gas', tabPlano: 'Plano (colectoras)', tabRed: 'Red', tabCiclaje: 'Ciclaje', tabComp: 'Compresión BP',
+const SECCION_TITULO = { tabLista: 'Pozos de gas', tabPlano: 'Plano (colectoras)', tabRed: 'Red', tabCiclaje: 'Ciclaje del día', tabComp: 'Compresión BP',
   tabMov: 'Últimos movimientos', tabPed: 'Pedidos del día', tabAib: 'AIB', tabTanques: 'Baterías', tabPias: 'Pías 2', tabPtc: 'PTC', tabAvisos: 'Avisos' };
 const SECCION_GRUPO = { tabLista: 'gas', tabPlano: 'gas', tabRed: 'gas', tabCiclaje: 'gas', tabComp: 'gas', tabAib: 'oil', tabTanques: 'oil' };
 const SECCION_CON_BUSQUEDA = ['tabLista', 'tabPlano', 'tabRed', 'tabAvisos'];
@@ -8166,7 +8522,7 @@ function entrarSeccion(tabId){
   const grupo = SECCION_GRUPO[tabId];
   b.classList.toggle('tabs-solo', !grupo);
   TAB_IDS.forEach(id => document.getElementById(id).classList.toggle('fuera-grupo', !grupo || SECCION_GRUPO[id] !== grupo));
-  document.getElementById('navTitulo').textContent = grupo === 'gas' ? 'Gas' : (grupo === 'oil' ? 'Petróleo' : (SECCION_TITULO[tabId] || ''));
+  document.getElementById('navTitulo').textContent = grupo === 'gas' ? 'Gas' : (grupo === 'oil' ? 'Petróleo' : (tabId === 'tabPed' && !esMovil() ? 'Supervisores' : (SECCION_TITULO[tabId] || '')));
   if(veniaDeInicio){
     try { history.pushState({ pozosSeccion: true }, ''); } catch(e) {}
     window.scrollTo(0, 0);
@@ -8304,7 +8660,7 @@ function exigirNombre(){
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202610231440;
+var APP_VERSION = 202610231630;
 var appVersionNueva = 0;
 function appBuscarActualizacion(){
   if(!navigator.onLine || document.getElementById('actualizarApp')) return;
