@@ -1818,20 +1818,31 @@ function habPreparar(){
 var habUltimoLatido = 0;
 function habLatido(forzar){
   if(HAB.estado !== 'habilitado' || !HAB.uid || !firestoreOk) return;
-  if(!forzar && (document.hidden || Date.now() - habUltimoLatido < 4 * 60e3)) return;
+  if(!forzar && (document.hidden || Date.now() - habUltimoLatido < 90e3)) return;
   habUltimoLatido = Date.now();
   db.collection('presencia').doc(HAB.uid).set({
     operador: operadorName || '', ts: Date.now(), app: HAB_APP, tipo: habTipoDispositivo(), nombre: HAB.nombre || '', cerrada: false
   }, { merge: true }).catch(() => {});
 }
-setInterval(() => habLatido(false), 5 * 60e3);
+// latido cada 2 min con la app a la vista; "en linea" dura 5 min sin latido. Asi, aunque el aviso de
+// "cerre la app" no llegue a salir (el celu congela la app al toque, sobre todo con datos moviles),
+// el dispositivo se apaga solo en la lista a los pocos minutos.
+setInterval(() => habLatido(false), 2 * 60e3);
+var habUltimaDespedida = 0;
+function habDespedida(){
+  if(HAB.estado !== 'habilitado' || !HAB.uid || !firestoreOk) return;
+  if(Date.now() - habUltimaDespedida < 3000) return; // visibilitychange + pagehide + freeze llegan juntos
+  habUltimaDespedida = Date.now();
+  habUltimoLatido = 0;
+  db.collection('presencia').doc(HAB.uid).set({ cerrada: true, ts: Date.now() }, { merge: true }).catch(() => {});
+}
 document.addEventListener('visibilitychange', () => {
   if(!document.hidden){ habLatido(true); return; }
-  if(HAB.estado === 'habilitado' && HAB.uid && firestoreOk){
-    habUltimoLatido = 0;
-    db.collection('presencia').doc(HAB.uid).set({ cerrada: true, ts: Date.now() }, { merge: true }).catch(() => {});
-  }
+  habDespedida();
 });
+window.addEventListener('pagehide', habDespedida);
+document.addEventListener('freeze', habDespedida);
+window.addEventListener('pageshow', () => { if(!document.hidden) habLatido(true); });
 
 function habConsultar(){
   if(!HAB.uid) return;
@@ -2116,7 +2127,8 @@ function habCargarListas(){
     const l = [];
     snap.forEach(d => l.push(Object.assign({ id: d.id }, d.data(), { _p: pres[d.id] || null })));
     const visto = (d) => Math.max(d.ultimoUso || 0, (d._p && d._p.ts) || 0);
-    const enLinea = (d) => !!(d._p && d._p.ts && !d._p.cerrada && Date.now() - d._p.ts < 10 * 60e3);
+    const enLinea = (d) => !!(d._p && d._p.ts && !d._p.cerrada && Date.now() - d._p.ts < 5 * 60e3);
+    const haceMin = (ts) => { const m = Math.floor((Date.now() - ts) / 60e3); return m <= 0 ? 'recién' : 'hace ' + m + ' min'; };
     l.sort((a, b) => (enLinea(b) - enLinea(a)) || (visto(b) - visto(a)));
     if(!l.length){ devEl.innerHTML = '<div class="hab-vacio">Ninguno todavía.</div>'; return; }
     const nOn = l.filter(enLinea).length;
@@ -2124,7 +2136,7 @@ function habCargarListas(){
         <span><b>${avisoEsc(d.nombre || 'Sin nombre')}</b> · ${avisoEsc(d.tipo || '')}${d.admin ? ' <em>(admin)</em>' : ''}${d.id === HAB.uid ? ' <em>(esta compu)</em>' : ''}${d.pausado ? ' <em class="hab-pausa">EN PAUSA</em>' : ''}
           ${enLinea(d) ? '<span class="hab-linea on">● en línea</span>' : ''}
           <span class="hab-op">${d._p && d._p.operador ? 'Lo usa: <b>' + avisoEsc(d._p.operador) + '</b>' : '<span style="color:var(--muted)">Todavía no se sabe quién lo usa (aparece cuando abra la app actualizada)</span>'}</span>
-          <small>código ${avisoEsc(d.codigo || '—')} · habilitado ${habFecha(d.creadoTs)} · ${enLinea(d) ? 'activo ahora' : 'visto por última vez ' + habFecha(visto(d))}${d.pausado && d.pausadoTs ? ' · en pausa desde ' + habFecha(d.pausadoTs) : ''}</small></span>
+          <small>código ${avisoEsc(d.codigo || '—')} · habilitado ${habFecha(d.creadoTs)} · ${enLinea(d) ? 'activo ahora (señal ' + haceMin(d._p.ts) + ')' : 'visto por última vez ' + habFecha(visto(d))}${d.pausado && d.pausadoTs ? ' · en pausa desde ' + habFecha(d.pausadoTs) : ''}</small></span>
         ${d.id === HAB.uid ? '' : `<span class="hab-acc"><button type="button" class="hab-mini" data-pausar="${avisoEsc(d.id)}" data-nombre="${avisoEsc(d.nombre || '')}" data-pausado="${d.pausado ? '1' : ''}">${d.pausado ? 'Reactivar' : 'Pausar'}</button><button type="button" class="hab-mini rojo" data-quitar="${avisoEsc(d.id)}" data-nombre="${avisoEsc(d.nombre || '')}">Quitar</button></span>`}
       </div>`).join('');
     devEl.querySelectorAll('[data-pausar]').forEach(b => b.addEventListener('click', () => {
@@ -2149,8 +2161,8 @@ function habCargarListas(){
   habSubs.push(db.collection('presencia').onSnapshot(snap => {
     pres = {}; snap.forEach(d => { pres[d.id] = d.data(); }); pintar();
   }, () => {}));
-  // cada minuto se recalcula "en linea" (para que se apague solo el que cerro la app hace rato)
-  habRefresco = setInterval(pintar, 60e3);
+  // cada 30 s se recalcula "en linea" (para que se apague solo el que cerro la app hace rato)
+  habRefresco = setInterval(pintar, 30e3);
 }
 
 let lastOverridesCount = 0;
@@ -8942,7 +8954,7 @@ function exigirNombre(){
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202610231735;
+var APP_VERSION = 202610231750;
 var appVersionNueva = 0;
 function appBuscarActualizacion(){
   if(!navigator.onLine || document.getElementById('actualizarApp')) return;
