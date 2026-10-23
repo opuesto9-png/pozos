@@ -5940,10 +5940,14 @@ function redSetupZoomPan(svg, stage, controlsWrap){
       } else {
         const ct = e.changedTouches && e.changedTouches[0];
         const el = ct && document.elementFromPoint ? document.elementFromPoint(ct.clientX, ct.clientY) : null;
-        const nodeEl = el && el.closest ? el.closest('.rnode.pozo') : null;
+        const nodeEl = el && el.closest ? el.closest('.rnode.pozo, .rnode.trunk, .rnode.bateria') : null;
         if(nodeEl){
           redSuppressClick = true; // por si el navegador igual dispara el click sintetico despues
-          selectRedPozo(nodeEl.getAttribute('data-pozo'));
+          setTimeout(() => { redSuppressClick = false; }, 450); // si ese click no llega, que no se trague el proximo toque
+          const grupo = nodeEl.getAttribute('data-grupo');
+          if(nodeEl.classList.contains('pozo')) selectRedPozo(nodeEl.getAttribute('data-pozo'));
+          else if(nodeEl.classList.contains('trunk')) selectRedRama({ tipo: 'col', grupo, colectora: nodeEl.getAttribute('data-colectora') });
+          else selectRedRama({ tipo: 'bat', grupo });
         }
       }
     }
@@ -8938,7 +8942,7 @@ function exigirNombre(){
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202610231700;
+var APP_VERSION = 202610231735;
 var appVersionNueva = 0;
 function appBuscarActualizacion(){
   if(!navigator.onLine || document.getElementById('actualizarApp')) return;
