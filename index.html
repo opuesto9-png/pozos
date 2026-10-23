@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Centenario Interactivo</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B2436">
@@ -11,44 +11,6 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="CI">
-<script>
-/* ---- Android y iPhone: instalar la app y que el teléfono no borre lo guardado ----
-   En iPhone, si se usa desde Safari (sin instalar), el sistema borra los datos guardados a los 7 días
-   sin abrirla y la habilitación no es la misma que la de la app del inicio. Por eso se pide instalarla. */
-(function () {
-  var KEY = 'pozos';
-  try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function () {}); } catch (e) {}
-  var ua = navigator.userAgent || '';
-  var ios = /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-  var android = /Android/i.test(ua);
-  var instalada = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
-  window.__iosNoInstalada = ios && !instalada;
-  if ((!ios && !android) || instalada) return;
-  var cerrado = 0; try { cerrado = +localStorage.getItem('inst_cerrado_' + KEY) || 0; } catch (e) {}
-  if (Date.now() - cerrado < 3 * 24 * 3600e3) return;
-  var promptEv = null;
-  window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); promptEv = e; mostrar(); });
-  function mostrar() {
-    var viejo = document.getElementById('instBan'); if (viejo) viejo.remove();
-    var el = document.createElement('div');
-    el.id = 'instBan';
-    el.setAttribute('role', 'dialog');
-    el.style.cssText = 'position:fixed;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:8000;background:#12324A;color:#fff;border:2px solid #6FC9B0;border-radius:14px;padding:14px 14px 12px;box-shadow:0 10px 40px rgba(0,0,0,.5);font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;';
-    var txt = ios
-      ? '<b style="font-size:16px">Instalá la app en el iPhone</b><br>Tocá <b>Compartir</b> (el cuadrado con la flecha <span aria-hidden="true">⬆</span>, abajo en Safari) y después <b>"Agregar a inicio"</b>. Abrí siempre la app desde ese ícono: si la usás desde Safari, el iPhone borra lo guardado y la habilitación.'
-      : '<b style="font-size:16px">Instalá la app en el celular</b><br>' + (promptEv ? 'Tocá <b>Instalar</b> y abrila desde el ícono.' : 'Tocá los tres puntos <b>⋮</b> de Chrome y después <b>"Instalar app"</b> o <b>"Agregar a pantalla principal"</b>.');
-    el.innerHTML = '<div>' + txt + '</div><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">' +
-      '<button type="button" id="instNo" style="padding:9px 14px;border-radius:9px;border:1px solid rgba(255,255,255,.3);background:transparent;color:#fff;font:inherit">Ahora no</button>' +
-      (promptEv ? '<button type="button" id="instSi" style="padding:9px 16px;border-radius:9px;border:0;background:#6FC9B0;color:#0B2436;font:inherit;font-weight:800">Instalar</button>' : '') + '</div>';
-    document.body.appendChild(el);
-    document.getElementById('instNo').onclick = function () { try { localStorage.setItem('inst_cerrado_' + KEY, String(Date.now())); } catch (e) {} el.remove(); };
-    var si = document.getElementById('instSi');
-    if (si) si.onclick = function () { el.remove(); promptEv.prompt(); promptEv = null; };
-  }
-  document.addEventListener('DOMContentLoaded', function () { setTimeout(function () { if (!document.getElementById('instBan')) mostrar(); }, ios ? 2500 : 8000); });
-})();
-</script>
-
 <style>
   :root{
     --bg: #0B2436;
@@ -70,11 +32,10 @@
     color: var(--text);
     font-family: 'Segoe UI', -apple-system, Roboto, Arial, sans-serif;
     min-height: 100vh;
-    padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: 60px;
   }
   header{
-    /* en iPhone con muesca el título no queda debajo de la hora */
-    padding: calc(22px + env(safe-area-inset-top, 0px)) 18px 14px;
+    padding: 22px 18px 14px;
     border-bottom: 1px solid var(--line);
     position: sticky;
     top: 0;
@@ -1134,6 +1095,61 @@
   .mov-filtros .aviso-chip{ white-space:nowrap; flex:0 0 auto; }
   .mov-filtros .aviso-chip.sel{ background:#1C7293; border-color:#1C7293; color:#fff; }
   .mov-cnt{ font-size:.72rem; opacity:.8; margin-left:2px; }
+
+  /* ---------- Pedidos del dia ---------- */
+  .ini-tile.ped{ grid-column: 1 / -1; flex-direction:row; align-items:center; gap:12px; min-height:0; border-color:#E8B64A; background: color-mix(in srgb, #E8B64A 12%, var(--panel)); }
+  .ini-tile.ped svg{ stroke:#E8B64A; }
+  .ini-tile.ped .tx{ display:flex; flex-direction:column; gap:2px; flex:1; }
+  .ped-cnt{ background:#E8B64A; color:#14283A; font-weight:800; font-size:.85rem; border-radius:12px; padding:3px 10px; white-space:nowrap; }
+  .ped-cnt.urg{ background:#E05A47; color:#fff; }
+  .ped-cnt.ok{ background:#123B34; color:#6FC9B0; }
+  .ped-top{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
+  .ped-top button{ flex:1 1 160px; }
+  .ped-nuevo-btn{ padding:12px; border-radius:10px; font: inherit; font-weight:800; font-size:.95rem; cursor:pointer; background:#E8B64A; color:#14283A; border:0; }
+  .ped-copiar-btn{ padding:12px; border-radius:10px; font: inherit; font-weight:700; font-size:.88rem; cursor:pointer; background:none; color: var(--text); border:1.5px solid var(--line); }
+  .ped-resumen{ font-size:.85rem; color: var(--muted); margin: 0 0 8px; }
+  .ped-grupo{ font-size:.74rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color: var(--muted); margin:14px 0 6px; }
+  .ped-item{ background: var(--panel); border:1px solid var(--line); border-radius:10px; padding:11px 12px; margin-bottom:8px; display:flex; flex-direction:column; gap:6px; }
+  .ped-item.urgente{ border-left:4px solid #E05A47; }
+  .ped-item.hecho{ opacity:.92; }
+  .ped-l1{ display:flex; gap:8px; align-items:flex-start; }
+  .ped-ic{ flex:0 0 26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:.9rem; }
+  .ped-ic.pend{ border:2px solid var(--line); color: var(--muted); }
+  .ped-ic.hecho{ background:#123B34; color:#6FC9B0; }
+  .ped-ic.no{ background:#4A2A22; color:#F2A08F; }
+  .ped-tit{ flex:1; font-weight:700; font-size:.95rem; line-height:1.3; }
+  .ped-tit small{ display:block; font-weight:400; color: var(--muted); font-size:.78rem; margin-top:2px; }
+  .ped-tag{ font-size:.66rem; font-weight:800; border-radius:6px; padding:2px 7px; white-space:nowrap; }
+  .ped-tag.urg{ background:#4A2A22; color:#F2A08F; }
+  .ped-tag.auto{ background:#1B2A55; color:#9DB8FF; }
+  .ped-tag.curso{ background:#123B34; color:#6FC9B0; }
+  .ped-dias{ display:grid; grid-template-columns: 28px repeat(7, minmax(0,1fr)) 28px; gap:4px; margin-bottom:6px; }
+  .ped-dia{ position:relative; display:flex; flex-direction:column; align-items:center; gap:1px; padding:7px 2px; border-radius:10px; border:1.5px solid var(--line); background: var(--panel); color: var(--text); font: inherit; cursor:pointer; min-width:0; }
+  .ped-dia b{ font-size:.78rem; } .ped-dia span{ font-size:.68rem; color: var(--muted); }
+  .ped-dia.flecha{ font-size:1.2rem; font-weight:800; justify-content:center; padding:0; }
+  .ped-dia.hoy{ border-color:#E8B64A; }
+  .ped-dia.sel{ background:#E8B64A; border-color:#E8B64A; color:#14283A; } .ped-dia.sel span{ color:#14283A; }
+  .ped-dia i{ position:absolute; top:-6px; right:-4px; font-style:normal; font-size:.62rem; font-weight:800; border-radius:8px; padding:0 5px; background:#E05A47; color:#fff; }
+  .ped-dia i.ok{ background:#123B34; color:#6FC9B0; }
+  .ped-dias-acc{ display:flex; gap:10px; align-items:center; justify-content:flex-end; flex-wrap:wrap; margin-bottom:8px; }
+  .ped-hoy-btn{ font: inherit; font-size:.8rem; font-weight:700; background:none; border:1px solid #E8B64A; color:#E8B64A; border-radius:8px; padding:5px 10px; cursor:pointer; }
+  .ped-fecha{ font-size:.78rem; color: var(--muted); display:flex; align-items:center; gap:6px; }
+  .ped-fecha input{ background: var(--bg); border:1px solid var(--line); color: var(--text); border-radius:6px; padding:4px 6px; font: inherit; font-size:.8rem; color-scheme: dark; }
+  .ped-dia-tit{ font-size:1.05rem; font-weight:800; margin: 2px 0 10px; text-transform: none; }
+  .ped-dia-tit::first-letter{ text-transform: uppercase; }
+  .ped-dia-tit small{ font-weight:400; font-size:.75rem; color: var(--muted); }
+  .ped-vinc{ font-size:.76rem; color: var(--muted); margin-left:34px; }
+  .ped-posible{ margin-left:34px; background:#1B2A55; border:1px solid #3B4F8F; border-radius:8px; padding:8px 10px; font-size:.8rem; color:#DCE5FF; }
+  .ped-posible b{ color:#9DB8FF; }
+  .ped-ev{ font-size:.8rem; color:#6FC9B0; margin-left:34px; }
+  .ped-ev.no{ color:#F2A08F; }
+  .ped-acc{ display:flex; gap:6px; margin-left:34px; flex-wrap:wrap; }
+  .ped-acc button{ font: inherit; font-size:.78rem; font-weight:700; padding:7px 11px; border-radius:8px; cursor:pointer; background:none; border:1px solid var(--line); color: var(--text); }
+  .ped-acc .si{ border-color:#6FC9B0; color:#6FC9B0; }
+  .ped-acc .ir{ border-color:#7FC4DE; color:#7FC4DE; }
+  .ped-tipos{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+  .ped-tipos .aviso-chip.sel{ background:#E8B64A; border-color:#E8B64A; color:#14283A; }
+  .ped-form-nota{ font-size:.78rem; color: var(--muted); margin:6px 0 0; }
   /* ---------- aviso de version nueva ---------- */
   #actualizarApp{ position:fixed; inset:0; z-index:9500; background:rgba(4,14,22,.9); display:flex; align-items:center; justify-content:center; padding:18px; box-sizing:border-box; }
   #actualizarApp .ua-card{ width:100%; max-width:420px; background: var(--panel); border:2px solid #6FC9B0; border-radius:16px; padding:24px 20px; box-sizing:border-box; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.5); }
@@ -1280,6 +1296,7 @@
     <button class="tab-btn" id="tabCiclaje">Ciclaje</button>
     <button class="tab-btn" id="tabComp">Compresión BP</button>
     <button class="tab-btn" id="tabMov">Últimos movimientos</button>
+    <button class="tab-btn" id="tabPed">Pedidos del día</button>
     <button class="tab-btn" id="tabAib">AIB</button>
     <button class="tab-btn" id="tabTanques">Baterias</button>
     <button class="tab-btn" id="tabPias">Pías 2</button>
@@ -1305,6 +1322,9 @@
 
 
 <section id="inicio" aria-label="Inicio">
+  <div class="ini-grid">
+    <button type="button" class="ini-tile ped" data-tab="tabPed"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4h6v3H9z"/><path d="M8 5H6v16h12V5h-2"/><path d="M9 12l2 2 4-4"/><path d="M9 17h6"/></svg><span class="tx"><span class="t">Pedidos del día</span><span class="s" id="iniPedSub">Lo que pidió el supervisor, se tacha solo al cargarlo</span></span><span class="ped-cnt" id="iniPedCnt" style="display:none;"></span></button>
+  </div>
   <div class="ini-grupo">GAS</div>
   <div class="ini-grid">
     <button type="button" class="ini-tile gas" data-tab="tabLista"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c2 3 5 5 5 9a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-5 1-8z"/></svg><span class="t">Pozos de gas</span><span class="s">Lista por USPA</span><span class="ini-nuevo" style="display:none;"></span></button>
@@ -1332,6 +1352,7 @@
 <main id="ciclajeMain" style="display:none;"></main>
 <main id="compMain" style="display:none;"></main>
 <main id="movMain" style="display:none;"></main>
+<main id="pedMain" style="display:none;"></main>
 <main id="aibMain" style="display:none;"></main>
 <main id="tanquesMain" style="display:none;"></main>
 <main id="piasMain" style="display:none;"></main>
@@ -1721,10 +1742,7 @@ function habPreparar(){
     const cod = habNormalizar(new URLSearchParams(location.search).get('equipo'));
     if(cod){
       try { history.replaceState(null, '', location.pathname + location.hash); } catch(e) {}
-      if(!yaOk && window.__iosNoInstalada){
-        // en iPhone el link abre Safari/WhatsApp, que no es la app instalada: el código se gastaría en el lugar equivocado
-        setTimeout(() => alert('Código ' + cod + '\n\nEn iPhone el código se pone dentro de la app instalada:\n1) Tocá Compartir (cuadrado con flecha) y "Agregar a inicio".\n2) Abrí la app desde ese ícono.\n3) Escribí este código: ' + cod), 600);
-      } else if(!yaOk) habRegistrar(cod);
+      if(!yaOk) habRegistrar(cod);
     }
   });
 }
@@ -1869,7 +1887,7 @@ function habRenderBanner(){
   }
   el.innerHTML = `
     <b>${habEsteDispositivo()} todavía no está ${habHabilitadoTxt()}.</b>
-    <span>Escribí el código que te pasó el encargado (se pone una sola vez):${/iPhone|iPad|iPod/i.test(navigator.userAgent) ? ' <br><i>En iPhone, Centenario Interactivo y Datos KTI se habilitan cada una con su propio código.</i>' : ''}</span>
+    <span>Escribí el código que te pasó el encargado (se pone una sola vez):</span>
     <div class="hab-row">
       <input id="habCodigo" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="12" placeholder="Código (ej: K7P4QX)">
       <button type="button" id="habBtn">Habilitar</button>
@@ -2370,6 +2388,7 @@ function movRefrescarSiAbierta(){
 }
 function updatePendCount(){
   movRefrescarSiAbierta();
+  if(typeof pedProgramarAuto === 'function') pedProgramarAuto();
   const badge = document.getElementById('pendCount');
   if(badge){
     const n = pendientesDeReporte().length + pendientesDeReporteAib().length + pendientesDeReporteNotas().length + pendientesDeVelas().length;
@@ -2437,7 +2456,7 @@ var MOV_AV_TITULO = 'Centenario Interactivo';
 var MOV_AV_TABS = {
   pozos_overrides: 'tabLista', pozos_velas: 'tabLista', uspa_notas: 'tabLista', aib_pozos: 'tabAib',
   baterias_tanques: 'tabTanques', baterias_bombeo_log: 'tabTanques', equipos_notas: 'tabTanques',
-  pias2_tanques: 'tabPias', pias2_equipos: 'tabPias', pias2_camiones: 'tabPias', ptc_descargas: 'tabPtc', avisos_mtto: 'tabAvisos', compresores_lecturas: 'tabComp'
+  pias2_tanques: 'tabPias', pias2_equipos: 'tabPias', pias2_camiones: 'tabPias', ptc_descargas: 'tabPtc', avisos_mtto: 'tabAvisos', compresores_lecturas: 'tabComp', pedidos: 'tabPed'
 };
 
 function movAvisosActivo(){ return !esMovil(); }
@@ -2482,6 +2501,7 @@ function movTexto(col, id, d){
     case 'pias2_equipos': return (d.nombre || id) + ' · Pías 2';
     case 'pias2_camiones': return 'Camión de agua' + (d.remito ? ' (remito ' + d.remito + ')' : '') + ' · Pías 2';
     case 'ptc_descargas': return (d.tipo === 'carga' ? 'Carga PTC Cargadero' : 'Descarga PTC Isla ' + (d.isla || '?')) + (d.remito ? ' (remito ' + d.remito + ')' : '');
+    case 'pedidos': return 'Pedido: ' + (d.titulo || '');
     case 'compresores_lecturas': return 'Compresor ' + (d.unidad || '') + (d.estado === 'parado' ? ' (parado)' : '');
     case 'avisos_mtto': return 'Aviso de mtto: ' + (d.equipo || d.pozo || '') + (d.criticidad ? ' (' + d.criticidad + ')' : '');
   }
@@ -3544,6 +3564,7 @@ function startSync(){
   }, (err) => { console.error('Firestore sync error (ptc_descargas)', err); });
 
   iniciarCompSync();
+  iniciarPedidosSync();
 }
 
 // carga inicial de pozos de petroleo (solo corre una vez, la primera vez que la coleccion esta vacia)
@@ -4006,14 +4027,14 @@ function renderCardEdit(rec, bat){
         <div>
           <div class="time-label">Horas cerrado</div>
           <div class="input-with-clear">
-            <input type="text" inputmode="decimal" autocomplete="off" class="edit-input time-input" id="cicloCerrado" value="${cicloCerradoVal}">
+            <input type="number" inputmode="decimal" min="0" step="0.5" class="edit-input time-input" id="cicloCerrado" value="${cicloCerradoVal}">
             <button type="button" class="field-clear-btn" id="clearCicloCerrado" title="Borrar horas cerrado">&times;</button>
           </div>
         </div>
         <div>
           <div class="time-label">Horas abierto</div>
           <div class="input-with-clear">
-            <input type="text" inputmode="decimal" autocomplete="off" class="edit-input time-input" id="cicloAbierto" value="${cicloAbiertoVal}">
+            <input type="number" inputmode="decimal" min="0" step="0.5" class="edit-input time-input" id="cicloAbierto" value="${cicloAbiertoVal}">
             <button type="button" class="field-clear-btn" id="clearCicloAbierto" title="Borrar horas abierto">&times;</button>
           </div>
         </div>
@@ -4112,9 +4133,8 @@ function renderCardEdit(rec, bat){
     const hC = document.getElementById('horaCierre').value;
     const nota = document.getElementById('horarioNota').value.trim();
 
-    // en iPhone el teclado decimal pone coma: se acepta coma o punto
-    const cicloCerradoNum = document.getElementById('cicloCerrado').value.trim().replace(',', '.').replace(/[^\d.]/g, '');
-    const cicloAbiertoNum = document.getElementById('cicloAbierto').value.trim().replace(',', '.').replace(/[^\d.]/g, '');
+    const cicloCerradoNum = document.getElementById('cicloCerrado').value.trim();
+    const cicloAbiertoNum = document.getElementById('cicloAbierto').value.trim();
     if(cicloCerradoNum && cicloAbiertoNum){
       newFields.ciclo = `${cicloCerradoNum}c x ${cicloAbiertoNum}a`;
     } else {
@@ -6280,8 +6300,8 @@ function abrirPestanaAvisos(){
 }
 
 // ---------------- Manejo de pestañas (helper generico) ----------------
-const TAB_IDS = ['tabLista','tabPlano','tabRed','tabCiclaje','tabComp','tabMov','tabAib','tabTanques','tabPias','tabPtc','tabAvisos'];
-const MAIN_IDS = ['main','planoMain','redMain','ciclajeMain','compMain','movMain','aibMain','tanquesMain','piasMain','ptcMain','avisosMain'];
+const TAB_IDS = ['tabLista','tabPlano','tabRed','tabCiclaje','tabComp','tabMov','tabPed','tabAib','tabTanques','tabPias','tabPtc','tabAvisos'];
+const MAIN_IDS = ['main','planoMain','redMain','ciclajeMain','compMain','movMain','pedMain','aibMain','tanquesMain','piasMain','ptcMain','avisosMain'];
 function switchTab(activeTabId, activeMainId){
   if(window.__seccionListo && seccionActual !== activeTabId) entrarSeccion(activeTabId);
   movMarcarVistos(activeTabId);
@@ -7196,6 +7216,522 @@ document.getElementById('tabPtc').addEventListener('click', () => {
 });
 
 
+// ---------------- Pedidos del dia ----------------
+// El supervisor carga cada pedido en la app (en vez del grupo de WhatsApp). Cuando un operador carga en la app
+// el dato que corresponde (cierra el pozo, mide el tanque, carga la lectura del compresor...), el pedido se marca
+// HECHO solo, con quien lo hizo, la hora y lo que cargo. Los pedidos de "otra tarea" se marcan a mano.
+var PEDIDOS = [];
+var pedCargaInicial = false;
+var PED_TIPOS = [
+  { id: 'abrir', label: 'Abrir pozo', obj: 'pozo', verbo: 'Abrir' },
+  { id: 'cerrar', label: 'Cerrar pozo', obj: 'pozo', verbo: 'Cerrar' },
+  { id: 'velas', label: 'Lanzar velas', obj: 'pozo', verbo: 'Lanzar velas en' },
+  { id: 'aib', label: 'Control AIB', obj: 'aib', verbo: 'Controlar AIB' },
+  { id: 'tanque', label: 'Medir tanque', obj: 'tanque', verbo: 'Medir' },
+  { id: 'bombeo', label: 'Bombeo a PTC', obj: 'bateria', verbo: 'Bombear a PTC desde' },
+  { id: 'compresor', label: 'Lectura compresor', obj: 'compresor', verbo: 'Lectura del' },
+  { id: 'otro', label: 'Otra tarea', obj: '', verbo: '' }
+];
+function pedTipo(id){ return PED_TIPOS.find(t => t.id === id) || PED_TIPOS[PED_TIPOS.length - 1]; }
+function pedDuracion(p){
+  if(p.duracionHs) return p.duracionHs;
+  if((p.tipo === 'abrir' || p.tipo === 'cerrar') && p.detalle){
+    const m = String(p.detalle).match(/(\d+(?:[.,]\d+)?)\s*(h|hs|hr|hrs|hora|horas)\b/i);
+    if(m) return parseFloat(m[1].replace(',', '.'));
+  }
+  return 0;
+}
+function pedDurTxt(h){ return (Math.round(h * 10) / 10).toString().replace('.', ',') + ' h'; }
+function pedSumarHoras(hhmm, h){
+  const m = String(hhmm || '').match(/^(\d{1,2}):(\d{2})/);
+  if(!m) return '';
+  const t = (parseInt(m[1], 10) * 60 + parseInt(m[2], 10) + Math.round(h * 60)) % 1440;
+  return String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(t % 60).padStart(2, '0');
+}
+function pedTitulo(p){
+  if(p.tipo === 'otro') return p.detalle || 'Tarea';
+  const t = pedTipo(p.tipo);
+  let obj = p.objetivo || '';
+  if(p.tipo === 'tanque' && p.grupo) obj += ' (' + p.grupo + ')';
+  const dur = pedDuracion(p);
+  return t.verbo + ' ' + obj + (dur ? ' por ' + pedDurTxt(dur) : '') + (p.hora ? ' a las ' + p.hora : '');
+}
+function pedHoraTs(ts){ return ts ? new Date(ts).toTimeString().slice(0, 5) : ''; }
+function pedTs(r){ return r && r._updatedAtDate ? r._updatedAtDate.getTime() : (r && r.clientTs) || 0; }
+function pedNormPozo(t){ t = String(t || '').trim(); if(/^\d/.test(t)) t = 'Ce-' + t; return t.replace(/^ce-?/i, 'Ce-'); }
+
+// busca en lo cargado algo que cumpla el pedido (despues de que se creo)
+function pedBuscarCumplimiento(p){
+  const c = Math.max(p.creadoTs || 0, pedInicioDia(pedFechaDe(p)));
+  const desp = (r) => pedTs(r) > c;
+  if((p.tipo === 'abrir' || p.tipo === 'cerrar') && pedDuracion(p)){
+    // "abrir por 2 h": 1) se abre -> queda EN CURSO con la hora en que hay que cerrarlo; 2) se cierra -> HECHO
+    const r = POZOS.find(x => x.pozo === p.objetivo);
+    if(!r) return null;
+    const c1 = p.tipo === 'abrir' ? 'horaApertura' : 'horaCierre';
+    const c2 = p.tipo === 'abrir' ? 'horaCierre' : 'horaApertura';
+    const uf = r.updatedFields || [];
+    const txt1 = () => (p.tipo === 'abrir' ? 'Abierto ' : 'Cerrado ') + r[c1];
+    const txt2 = () => (p.tipo === 'abrir' ? 'cerrado ' : 'reabierto ') + r[c2] + (p.tipo === 'abrir' && r.presionCierre ? ' (' + r.presionCierre + ' kg/cm²)' : '');
+    if(!p.paso1Ts){
+      if(!(desp(r) && r[c1] && uf.includes(c1))) return null;
+      // se cargaron las dos horas juntas: queda hecho de una
+      if(r[c2] && uf.includes(c2)) return { por: r.operador, ts: pedTs(r), ev: txt1() + ' → ' + txt2() };
+      return { fase: 1, por: r.operador, ts: pedTs(r), ev: txt1(), hora1: r[c1], fin: pedSumarHoras(r[c1], pedDuracion(p)) };
+    }
+    if(pedTs(r) > p.paso1Ts && r[c2] && uf.includes(c2)) return { por: r.operador, ts: pedTs(r), ev: (p.paso1Ev || txt1()) + ' → ' + txt2() };
+    return null;
+  }
+  if(p.tipo === 'abrir' || p.tipo === 'cerrar'){
+    const r = POZOS.find(x => x.pozo === p.objetivo);
+    const campo = p.tipo === 'abrir' ? 'horaApertura' : 'horaCierre';
+    if(r && desp(r) && r[campo] && (r.updatedFields || []).includes(campo)){
+      const ev = p.tipo === 'abrir'
+        ? 'Abierto ' + r.horaApertura + (r.presion && r.presion !== 's/d' ? ' · ' + r.presion : '')
+        : 'Cerrado ' + r.horaCierre + (r.presionCierre ? ' · ' + r.presionCierre + ' kg/cm²' : '');
+      return { por: r.operador, ts: pedTs(r), ev };
+    }
+  } else if(p.tipo === 'velas'){
+    const v = VELAS.filter(x => x.pozo === p.objetivo && desp(x)).sort((a, b) => pedTs(a) - pedTs(b))[0];
+    if(v) return { por: v.operador, ts: pedTs(v), ev: fraseVela(v.tipo, v.numero) };
+  } else if(p.tipo === 'aib'){
+    const r = AIB_POZOS.find(x => x.pozo === p.objetivo);
+    if(r && desp(r)) return { por: r.operador, ts: pedTs(r), ev: buildAibNovedad(r) };
+  } else if(p.tipo === 'tanque'){
+    const lista = p.grupo === 'Pias 2' ? PIAS2_TANQUES_DATA : TANQUES_DATA;
+    const r = lista.find(x => x.nombre === p.objetivo && (!p.grupo || p.grupo === 'Pias 2' || x.bateria === p.grupo));
+    if(r && desp(r)) return { por: r.operador, ts: pedTs(r), ev: 'Nivel total ' + (r.nivelTotal || '?') + ' cm · interfaz ' + (r.nivelInterfaz || '?') + ' cm' };
+  } else if(p.tipo === 'bombeo'){
+    const b = BOMBEO_LOG.filter(x => x.bateria === p.objetivo && desp(x)).sort((a, b2) => pedTs(a) - pedTs(b2))[0];
+    if(b) return { por: b.operador, ts: pedTs(b), ev: (b.bombasEnServicio || []).length ? (b.bombasEnServicio.join(' y ') + ' · ' + bombeoFmt(b.volumenM3 || 0, 2) + ' m³') : 'Sin bombas en servicio' };
+  } else if(p.tipo === 'compresor'){
+    const l = COMP_LECT.filter(x => x.unidad === p.objetivo && desp(x)).sort((a, b) => pedTs(a) - pedTs(b))[0];
+    if(l) return { por: l.operador, ts: pedTs(l), ev: compNovedad(l) };
+  }
+  return null;
+}
+
+// ---- "Otra tarea": se vincula sola al pozo/equipo que nombra el texto ----
+// Ej: "Cambiar empaquetaduras en el 1273" -> AIB Ce-1273, palabra clave "empaquetaduras".
+// Si se carga algo de ese equipo con esa palabra (nota, novedad, motivo), queda HECHO solo.
+// Si se carga algo de ese equipo sin la palabra, la app pregunta "¿es esto?" y se confirma con un toque.
+function pedSinAcentos(t){ return String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+var PED_GENERICAS = ['cambi', 'revis', 'verif', 'contr', 'reali', 'hacer', 'chequ', 'contr', 'contro', 'pozo', 'equip', 'bater', 'tanqu', 'compr', 'march', 'parad', 'abier', 'abrir', 'cerra', 'cerrar', 'presi', 'urgen', 'antes', 'despu', 'avisa', 'sala', 'favor', 'manan', 'tarde', 'noche', 'turno', 'mismo', 'tambi', 'donde', 'cuand', 'desde', 'hasta', 'sobre', 'entre', 'luego'];
+function pedPalabras(texto){
+  return [...new Set(pedSinAcentos(texto).split(/[^a-zñ]+/).filter(w => w.length >= 5).map(w => w.slice(0, 6)).filter(w => !PED_GENERICAS.some(g => w.startsWith(g))))];
+}
+function pedVinculos(texto){
+  const t = String(texto || '');
+  const v = [];
+  (t.match(/\b(?:ce-?\s?)?(\d{3,4}(?:-\d)?)\b/gi) || []).forEach(m => {
+    const n = 'Ce-' + m.replace(/^ce-?\s?/i, '');
+    if(AIB_POZOS.some(x => x.pozo === n)) v.push({ tipo: 'aib', id: n });
+    else if(POZOS.some(x => x.pozo === n)) v.push({ tipo: 'pozo', id: n });
+  });
+  (t.match(/\bU-?\s?\d{3,4}\b/gi) || []).forEach(m => { const u = compNormU(m.replace(/\s/g, '')); if(compUnidades().some(c => c.unidad === u)) v.push({ tipo: 'comp', id: u }); });
+  const tN = pedSinAcentos(t).replace(/\s+/g, '');
+  const nombres = [];
+  Object.keys(TANQUES_BATERIAS).forEach(b => TANQUES_BATERIAS[b].forEach(n => nombres.push({ tipo: 'tanque', id: n, grupo: b })));
+  PIAS2_TANQUES_NOMBRES.forEach(n => nombres.push({ tipo: 'tanque', id: n, grupo: 'Pias 2' }));
+  (typeof COMPRESORES_PIAS2 !== 'undefined' ? COMPRESORES_PIAS2 : []).concat(typeof BOMBAS_PIAS2 !== 'undefined' ? BOMBAS_PIAS2 : []).forEach(n => nombres.push({ tipo: 'equipo', id: n }));
+  Object.keys(BOMBEO_PTC).forEach(b => BOMBEO_PTC[b].bombas.forEach(n => nombres.push({ tipo: 'equipo', id: n, grupo: b })));
+  nombres.forEach(o => {
+    const corto = pedSinAcentos(o.id.split(' ')[0]).replace(/\s+/g, '');   // "tk-101", "p-101a"
+    if(corto.length >= 4 && new RegExp('(^|[^a-z0-9])' + corto.replace(/[-]/g, '-?') + '([^0-9a-z]|$)').test(pedSinAcentos(t))) v.push(o);
+  });
+  return v.filter((x, i) => v.findIndex(y => y.tipo === x.tipo && y.id === x.id) === i);
+}
+// todo lo cargado despues de 'desde' sobre ese equipo, con el texto escrito a mano por el operador
+function pedEventosDe(vinc, desde){
+  const ev = [];
+  const add = (r, texto, resumen) => { const ts = pedTs(r); if(ts > desde) ev.push({ ts, por: r.operador, texto: texto || '', resumen: resumen || texto || '' }); };
+  const menciona = (n) => { const a = pedSinAcentos((n.equipo || '') + ' ' + (n.texto || '')); const idN = pedSinAcentos(vinc.id); const num = idN.replace(/^ce-/, ''); return a.includes(idN) || (vinc.tipo === 'aib' || vinc.tipo === 'pozo' ? new RegExp('\\b' + num + '\\b').test(a) : false); };
+  if(vinc.tipo === 'aib'){ const r = AIB_POZOS.find(x => x.pozo === vinc.id); if(r) add(r, [r.nota, r.motivoParo].filter(Boolean).join(' · '), buildAibNovedad(r)); }
+  if(vinc.tipo === 'pozo'){
+    const r = POZOS.find(x => x.pozo === vinc.id);
+    if(r) add(r, [(r.updatedFields || []).includes('notas') ? r.notas : '', r.horarioNota].filter(Boolean).join(' · '), (r.estado ? r.estado + ' · ' : '') + 'ficha actualizada');
+    VELAS.filter(x => x.pozo === vinc.id).forEach(x => add(x, '', fraseVela(x.tipo, x.numero)));
+  }
+  if(vinc.tipo === 'comp') COMP_LECT.filter(x => x.unidad === vinc.id).forEach(x => add(x, x.nota || '', compNovedad(x)));
+  if(vinc.tipo === 'tanque'){ const l = vinc.grupo === 'Pias 2' ? PIAS2_TANQUES_DATA : TANQUES_DATA; l.filter(x => x.nombre === vinc.id).forEach(x => add(x, '', 'Nivel total ' + (x.nivelTotal || '?') + ' / interfaz ' + (x.nivelInterfaz || '?') + ' cm')); }
+  if(vinc.tipo === 'equipo') PIAS2_EQUIPOS_DATA.filter(x => x.nombre === vinc.id).forEach(x => add(x, x.nota || '', (x.estado || '') + (x.nota ? ' · ' + x.nota : '')));
+  // novedades (USPA y equipos) que nombran al equipo
+  USPA_NOTAS.concat(EQUIPOS_NOTAS).filter(menciona).forEach(n => add(n, n.texto, 'Novedad: ' + (n.equipo ? n.equipo + ' - ' : '') + n.texto));
+  return ev.sort((a, b) => a.ts - b.ts);
+}
+function pedBuscarOtro(p){
+  const vincs = pedVinculos(p.detalle);
+  if(!vincs.length) return null;
+  const claves = pedPalabras(p.detalle);
+  const desde = Math.max(p.creadoTs || 0, p.ignorarHasta || 0, pedInicioDia(pedFechaDe(p)));
+  let posible = null;
+  for(const v of vincs){
+    for(const e of pedEventosDe(v, desde)){
+      const t = pedSinAcentos(e.texto);
+      if(claves.length && claves.some(k => t.includes(k))) return { por: e.por, ts: e.ts, ev: v.id + ': ' + (e.texto || e.resumen) };
+      if(!posible) posible = { posible: true, por: e.por, ts: e.ts, ev: v.id + ': ' + e.resumen };
+    }
+  }
+  return posible;
+}
+var pedAutoTimer = null;
+function pedProgramarAuto(){ clearTimeout(pedAutoTimer); pedAutoTimer = setTimeout(pedAutoCompletar, 800); }
+function pedAutoCompletar(){
+  if(!firestoreOk || !PEDIDOS.length || (typeof habBloqueado === 'function' && habBloqueado())) return;
+  let cambioPosible = false;
+  const hoyIso = pedHoy();
+  PEDIDOS.filter(p => p.estado === 'pendiente' && pedFechaDe(p) <= hoyIso).forEach(p => {
+    const m = p.tipo === 'otro' ? pedBuscarOtro(p) : pedBuscarCumplimiento(p);
+    const antes = p._posible ? p._posible.ts : 0;
+    p._posible = (m && m.posible) ? m : null;
+    if((p._posible ? p._posible.ts : 0) !== antes) cambioPosible = true;
+    if(!m || m.posible) return;
+    if(m.fase === 1){
+      const d1 = { paso1Ts: m.ts || Date.now(), paso1Por: m.por || 'Sin nombre', paso1Ev: m.ev, paso1Hora: m.hora1 || '', finEsperado: m.fin || '' };
+      Object.assign(p, d1);
+      db.collection('pedidos').doc(p.id).update(d1).catch(() => {});
+      return;
+    }
+    p.estado = 'hecho';
+    const datos = { estado: 'hecho', auto: true, hechoPor: m.por || 'Sin nombre', hechoTs: m.ts || Date.now(), evidencia: m.ev || '' };
+    Object.assign(p, datos);
+    db.collection('pedidos').doc(p.id).update(datos).catch(() => {});
+  });
+  if(cambioPosible && document.getElementById('pedMain') && document.getElementById('pedMain').style.display !== 'none') renderPedidos();
+}
+
+// ---- dias: cada pedido es de un dia (dia operativo, arranca 06:00). La compu ve y planifica cualquier dia;
+// los celulares/tablets ven solo HOY (mas los atrasados de dias anteriores que siguen pendientes).
+function pedIso(d){ return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function pedHoy(){ return pedIso(inicioDiaOperativo(new Date())); }
+function pedFechaDe(p){ return p.fecha || (p.creadoTs ? pedIso(inicioDiaOperativo(new Date(p.creadoTs))) : pedHoy()); }
+function pedSumarDias(iso, n){ const [y, m, d] = iso.split('-').map(Number); return pedIso(new Date(y, m - 1, d + n, 12)); }
+function pedInicioDia(iso){ const [y, m, d] = iso.split('-').map(Number); return new Date(y, m - 1, d, 6, 0, 0, 0).getTime(); }
+var PED_DIAS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+function pedNombreDia(iso, largo){
+  const [y, m, d] = iso.split('-').map(Number); const dt = new Date(y, m - 1, d, 12);
+  const hoy = pedHoy();
+  const rel = iso === hoy ? 'Hoy' : (iso === pedSumarDias(hoy, 1) ? 'Mañana' : (iso === pedSumarDias(hoy, -1) ? 'Ayer' : ''));
+  if(largo) return (rel ? rel + ', ' : '') + ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'][dt.getDay()] + ' ' + d + '/' + String(m).padStart(2, '0');
+  return { dia: rel || PED_DIAS[dt.getDay()], num: d + '/' + m };
+}
+function pedPuedeVerDias(){ return !esMovil(); }
+var pedDiaSel = '';
+function pedDeFecha(iso){ return PEDIDOS.filter(p => pedFechaDe(p) === iso); }
+function pedAtrasados(){ const hoy = pedHoy(); return PEDIDOS.filter(p => p.estado === 'pendiente' && pedFechaDe(p) < hoy); }
+// para "lo que se ve hoy" (inicio, celulares): lo de hoy + atrasados
+function pedDelDia(){ return pedDeFecha(pedHoy()).concat(pedAtrasados()); }
+function pedActualizarInicio(){
+  const cnt = document.getElementById('iniPedCnt');
+  if(!cnt) return;
+  const pend = pedDelDia().filter(p => p.estado === 'pendiente');
+  const urg = pend.some(p => p.prioridad === 'urgente');
+  const hechosHoy = pedDelDia().filter(p => p.estado === 'hecho').length;
+  if(pend.length){ cnt.textContent = pend.length + (pend.length === 1 ? ' pendiente' : ' pendientes'); cnt.className = 'ped-cnt' + (urg ? ' urg' : ''); cnt.style.display = ''; }
+  else if(hechosHoy){ cnt.textContent = 'Todo hecho'; cnt.className = 'ped-cnt ok'; cnt.style.display = ''; }
+  else cnt.style.display = 'none';
+}
+
+function iniciarPedidosSync(){
+  if(!firestoreOk) return;
+  db.collection('pedidos').orderBy('creadoTs', 'desc').limit(300).onSnapshot((snap) => {
+    detectarMovimientos(snap, 'pedidos', true);
+    // aviso en el celular cuando llega un pedido nuevo (no en la primera carga ni si lo cargo este mismo)
+    if(pedCargaInicial && typeof snap.docChanges === 'function'){
+      snap.docChanges().forEach(ch => {
+        const d = ch.doc.data();
+        if(ch.type === 'added' && !(ch.doc.metadata && ch.doc.metadata.hasPendingWrites) && d.estado === 'pendiente' && d.creadoPor !== operadorName && pedFechaDe(d) <= pedHoy()){
+          if(typeof movToast === 'function') movToast('Pedido nuevo' + (d.prioridad === 'urgente' ? ' URGENTE' : '') + ': ' + pedTitulo(d) + (d.creadoPor ? ' (' + d.creadoPor + ')' : ''));
+          if(typeof movDing === 'function') movDing();
+        }
+      });
+    }
+    pedCargaInicial = true;
+    PEDIDOS = [];
+    snap.forEach(doc => {
+      const d = doc.data();
+      PEDIDOS.push(Object.assign({ id: doc.id }, d, { _updatedAtDate: d.creadoTs ? new Date(d.creadoTs) : null }));
+    });
+    pedActualizarInicio();
+    pedProgramarAuto();
+    if(document.getElementById('pedMain').style.display !== 'none') renderPedidos();
+  }, (err) => { console.error('Firestore sync error (pedidos)', err); });
+}
+
+function renderPedidos(){
+  const main = document.getElementById('pedMain');
+  if(!main) return;
+  const hoy = pedHoy();
+  const verDias = pedPuedeVerDias();
+  if(!verDias || !pedDiaSel) pedDiaSel = hoy;
+  const esHoy = pedDiaSel === hoy;
+  const atras = esHoy ? pedAtrasados() : [];
+  const lista = pedDeFecha(pedDiaSel);
+  const pend = lista.filter(p => p.estado === 'pendiente').sort((a, b) => ((b.prioridad === 'urgente') - (a.prioridad === 'urgente')) || ((a.hora || '99') .localeCompare(b.hora || '99')) || (a.creadoTs - b.creadoTs));
+  const hechos = lista.filter(p => p.estado === 'hecho').sort((a, b) => (b.hechoTs || 0) - (a.hechoTs || 0));
+  const nos = lista.filter(p => p.estado === 'no').sort((a, b) => (b.hechoTs || 0) - (a.hechoTs || 0));
+  const total = lista.length;
+  main.innerHTML = `<div class="plano-note">Los pedidos del supervisor, en vez del grupo de WhatsApp. Cuando alguien carga en la app lo que se pidió (cierra el pozo, mide el tanque, carga la lectura), el pedido se marca <b>hecho solo</b>. Las “otras tareas” se marcan a mano.</div>
+    ${verDias ? pedBarraDias() : ''}
+    <div class="ped-dia-tit">${avisoEsc(pedNombreDia(pedDiaSel, true))}${!verDias ? ' <small>(en el celular se ven solo los pedidos de hoy)</small>' : ''}</div>
+    <div class="ped-top">
+      <button type="button" class="ped-nuevo-btn" id="pedNuevoBtn">+ Nuevo pedido${verDias && !esHoy ? ' para el ' + avisoEsc(pedNombreDia(pedDiaSel).num) : ''}</button>
+      <button type="button" class="ped-copiar-btn" id="pedCopiarBtn">Copiar resumen para WhatsApp</button>
+    </div>
+    <p class="ped-resumen">${total ? `${esHoy ? 'Hoy' : 'Ese día'}: <b>${hechos.length} de ${total}</b> hechos${pend.length ? ' · ' + pend.length + ' pendiente' + (pend.length === 1 ? '' : 's') : ''}${nos.length ? ' · ' + nos.length + ' no se pudo' : ''}` : (esHoy ? 'Todavía no hay pedidos para hoy.' : (pedDiaSel > hoy ? 'Todavía no hay pedidos cargados para ese día.' : 'No hubo pedidos ese día.'))}</p>
+    <div id="pedLista"></div>`;
+  document.getElementById('pedNuevoBtn').addEventListener('click', () => abrirPedidoForm());
+  main.querySelectorAll('[data-dia]').forEach(b => b.addEventListener('click', () => { pedDiaSel = b.dataset.dia; renderPedidos(); }));
+  const selFecha = document.getElementById('pedFechaSel');
+  if(selFecha) selFecha.addEventListener('change', () => { if(selFecha.value){ pedDiaSel = selFecha.value; renderPedidos(); } });
+  document.getElementById('pedCopiarBtn').addEventListener('click', pedCopiarResumen);
+  const cont = document.getElementById('pedLista');
+  const grupo = (titulo, items) => {
+    if(!items.length) return;
+    const g = document.createElement('div');
+    g.innerHTML = `<div class="ped-grupo">${titulo} (${items.length})</div>`;
+    items.forEach(p => g.appendChild(pedItem(p)));
+    cont.appendChild(g);
+  };
+  grupo('Atrasados de días anteriores', atras.sort((a, b) => pedFechaDe(a).localeCompare(pedFechaDe(b))));
+  grupo(pedDiaSel > hoy ? 'Programados' : 'Pendientes', pend);
+  grupo('Hechos', hechos);
+  grupo('No se pudo', nos);
+}
+
+function pedBarraDias(){
+  const hoy = pedHoy();
+  const dias = [];
+  for(let i = -3; i <= 3; i++) dias.push(pedSumarDias(pedDiaSel, i));
+  const chip = (iso) => {
+    const n = pedNombreDia(iso);
+    const l = pedDeFecha(iso);
+    const pend = l.filter(p => p.estado === 'pendiente').length;
+    return `<button type="button" class="ped-dia${iso === pedDiaSel ? ' sel' : ''}${iso === hoy ? ' hoy' : ''}" data-dia="${iso}"><b>${n.dia}</b><span>${n.num}</span>${l.length ? `<i class="${pend ? 'p' : 'ok'}">${pend ? pend : '✓'}</i>` : ''}</button>`;
+  };
+  return `<div class="ped-dias">
+      <button type="button" class="ped-dia flecha" data-dia="${pedSumarDias(pedDiaSel, -7)}" aria-label="Semana anterior">‹</button>
+      ${dias.map(chip).join('')}
+      <button type="button" class="ped-dia flecha" data-dia="${pedSumarDias(pedDiaSel, 7)}" aria-label="Semana siguiente">›</button>
+    </div>
+    <div class="ped-dias-acc">${pedDiaSel !== hoy ? `<button type="button" class="ped-hoy-btn" data-dia="${hoy}">Volver a hoy</button>` : ''}<label class="ped-fecha">Ir a fecha <input type="date" id="pedFechaSel" value="${pedDiaSel}"></label></div>`;
+}
+
+function pedIrA(p){
+  if(p.tipo === 'abrir' || p.tipo === 'cerrar' || p.tipo === 'velas'){
+    const r = POZOS.find(x => x.pozo === p.objetivo);
+    if(r){ document.getElementById('tabLista').click(); openCard(r, r.bateria || 'Sin bateria'); }
+  } else if(p.tipo === 'aib') document.getElementById('tabAib').click();
+  else if(p.tipo === 'tanque'){ if(p.grupo === 'Pias 2') document.getElementById('tabPias').click(); else { bateriasAbiertas.add(p.grupo); document.getElementById('tabTanques').click(); } }
+  else if(p.tipo === 'bombeo'){ bateriasAbiertas.add(p.objetivo); document.getElementById('tabTanques').click(); }
+  else if(p.tipo === 'compresor') document.getElementById('tabComp').click();
+}
+
+// pasaron mas de 10 minutos de la hora en que habia que cerrar/reabrir
+function pedVencido(p){
+  if(!p.paso1Ts || !p.finEsperado || p.estado !== 'pendiente') return false;
+  const dur = pedDuracion(p);
+  return Date.now() > p.paso1Ts + (dur * 60 + 10) * 60e3;
+}
+function pedItem(p){
+  const el = document.createElement('div');
+  el.className = 'ped-item' + (p.prioridad === 'urgente' && p.estado === 'pendiente' ? ' urgente' : '') + (p.estado !== 'pendiente' ? ' hecho' : '');
+  const ic = p.estado === 'hecho' ? '<span class="ped-ic hecho" aria-label="Hecho">✓</span>' : (p.estado === 'no' ? '<span class="ped-ic no" aria-label="No se pudo">✕</span>' : '<span class="ped-ic pend" aria-label="Pendiente"></span>');
+  const meta = (pedFechaDe(p) < pedHoy() && p.estado === 'pendiente' ? '<b style="color:#F2A08F">Era para el ' + avisoEsc(pedNombreDia(pedFechaDe(p), true).replace(/^(Ayer|Hoy|Mañana), /, '')) + '</b> · ' : '') + 'Pedido por ' + avisoEsc(p.creadoPor || '—') + ' a las ' + pedHoraTs(p.creadoTs) + (p.tipo !== 'otro' && p.detalle ? ' · ' + avisoEsc(p.detalle) : '');
+  el.innerHTML = `<div class="ped-l1">${ic}<div class="ped-tit">${avisoEsc(pedTitulo(p))}<small>${meta}</small></div>
+      ${p.prioridad === 'urgente' ? '<span class="ped-tag urg">URGENTE</span>' : ''}${p.estado === 'pendiente' && p.paso1Ts ? '<span class="ped-tag curso">EN CURSO</span>' : ''}${p.auto && p.estado === 'hecho' ? '<span class="ped-tag auto">AUTOMÁTICO</span>' : ''}</div>
+    ${p.estado === 'pendiente' && p.paso1Ts ? `<div class="ped-ev">${avisoEsc(p.paso1Ev || '')} por ${avisoEsc(p.paso1Por || '—')}${p.finEsperado ? ' · <b>' + (p.tipo === 'abrir' ? 'cerrar' : 'reabrir') + ' a las ' + avisoEsc(p.finEsperado) + '</b>' : ''}</div>${pedVencido(p) ? `<div class="ped-ev no">Ya pasó la hora: falta ${p.tipo === 'abrir' ? 'cerrarlo' : 'reabrirlo'} y cargarlo en la app.</div>` : ''}` : ''}
+    ${p.estado === 'pendiente' && p.tipo === 'otro' ? (() => { const v = pedVinculos(p.detalle); return v.length ? `<div class="ped-vinc">Vinculado a ${v.map(x => avisoEsc(x.id)).join(', ')}${pedPalabras(p.detalle).length ? ' · se marca solo si la nota dice “' + avisoEsc(pedPalabras(p.detalle).join('”, “')) + '…”' : ''}</div>` : '<div class="ped-vinc">Sin pozo ni equipo en el texto: se marca a mano.</div>'; })() : ''}
+    ${p.estado === 'pendiente' && p._posible ? `<div class="ped-posible"><b>¿Es esto?</b> ${avisoEsc(p._posible.por || '—')} cargó a las ${pedHoraTs(p._posible.ts)} → ${avisoEsc(p._posible.ev)}<div class="ped-acc" style="margin-left:0;margin-top:6px"><button type="button" class="si ped-pos-si">Sí, está hecho</button><button type="button" class="ped-pos-no">No es esto</button></div></div>` : ''}
+    ${p.estado === 'hecho' ? `<div class="ped-ev">Hecho por ${avisoEsc(p.hechoPor || '—')} a las ${pedHoraTs(p.hechoTs)}${p.evidencia ? ' · ' + avisoEsc(p.evidencia) : ''}${p.nota ? ' · ' + avisoEsc(p.nota) : ''}</div>` : ''}
+    ${p.estado === 'no' ? `<div class="ped-ev no">No se pudo (${avisoEsc(p.hechoPor || '—')}, ${pedHoraTs(p.hechoTs)}): ${avisoEsc(p.nota || 'sin motivo')}</div>` : ''}
+    <div class="ped-acc"></div>`;
+  const acc = el.querySelector('.ped-acc:not(.ped-posible .ped-acc)') || el.querySelectorAll('.ped-acc')[el.querySelectorAll('.ped-acc').length - 1];
+  const posSi = el.querySelector('.ped-pos-si'), posNo = el.querySelector('.ped-pos-no');
+  if(posSi) posSi.addEventListener('click', () => {
+    if(!puedeModificar()) return;
+    const m = p._posible;
+    const datos = { estado: 'hecho', auto: true, hechoPor: m.por || 'Sin nombre', hechoTs: m.ts || Date.now(), evidencia: m.ev || '', nota: 'confirmado por ' + (operadorName || '—') };
+    Object.assign(p, datos); p._posible = null;
+    db.collection('pedidos').doc(p.id).update(datos).catch(e => alert('No se pudo guardar (' + e.message + ').'));
+    renderPedidos(); pedActualizarInicio();
+  });
+  if(posNo) posNo.addEventListener('click', () => {
+    const datos = { ignorarHasta: p._posible.ts };
+    Object.assign(p, datos); p._posible = null;
+    db.collection('pedidos').doc(p.id).update(datos).catch(() => {});
+    renderPedidos();
+  });
+  const btn = (txt, cls, fn) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = txt; if(cls) b.className = cls; b.addEventListener('click', fn); acc.appendChild(b); };
+  if(p.estado === 'pendiente'){
+    if(p.tipo !== 'otro') btn('Ir a cargarlo', 'ir', () => pedIrA(p));
+    btn(p.tipo === 'otro' ? 'Marcar hecho' : 'Hecho (a mano)', 'si', () => pedMarcar(p, 'hecho'));
+    btn('No se pudo', '', () => pedMarcar(p, 'no'));
+    btn('Anular', '', () => pedAnular(p));
+  } else {
+    btn('Volver a pendiente', '', () => pedReabrir(p));
+  }
+  return el;
+}
+
+function pedMarcar(p, estado){
+  let nota = '';
+  if(estado === 'no'){
+    nota = (window.prompt('¿Por qué no se pudo? (ej: sin acceso, falta repuesto)', '') || '').trim();
+    if(!nota){ alert('Escribí el motivo para marcarlo como “no se pudo”.'); return; }
+  } else if(p.tipo === 'otro'){
+    nota = (window.prompt('Nota (opcional): qué se hizo', '') || '').trim();
+  }
+  if(!puedeModificar()) return;
+  const datos = { estado, auto: false, hechoPor: operadorName || 'Sin nombre', hechoTs: Date.now(), nota, evidencia: '' };
+  Object.assign(p, datos);
+  db.collection('pedidos').doc(p.id).update(datos).catch(e => alert('No se pudo guardar (' + e.message + ').'));
+  renderPedidos(); pedActualizarInicio();
+}
+function pedReabrir(p){
+  if(!confirm('¿Volver “' + pedTitulo(p) + '” a pendiente?')) return;
+  if(!puedeModificar()) return;
+  // al reabrir, cuenta solo lo que se cargue desde ahora
+  // los de "abrir/cerrar por X horas" conservan su hora de pedido: si el pozo ya se abrio, vuelve a quedar en curso
+  const datos = { estado: 'pendiente', auto: false, hechoPor: '', hechoTs: 0, nota: '', evidencia: '', creadoTs: pedDuracion(p) ? p.creadoTs : Date.now(), paso1Ts: 0, paso1Por: '', paso1Ev: '', paso1Hora: '', finEsperado: '' };
+  Object.assign(p, datos);
+  db.collection('pedidos').doc(p.id).update(datos).catch(e => alert('No se pudo guardar (' + e.message + ').'));
+  renderPedidos(); pedActualizarInicio();
+}
+function pedAnular(p){
+  if(!confirm('¿Anular el pedido “' + pedTitulo(p) + '”? Se borra de la lista.')) return;
+  if(!puedeModificar()) return;
+  db.collection('pedidos').doc(p.id).delete().catch(e => alert('No se pudo (' + e.message + ').'));
+  PEDIDOS = PEDIDOS.filter(x => x.id !== p.id);
+  renderPedidos(); pedActualizarInicio();
+}
+
+function pedOpciones(obj){
+  if(obj === 'pozo') return POZOS.map(p => p.pozo);
+  if(obj === 'aib') return AIB_POZOS.map(p => p.pozo);
+  if(obj === 'compresor') return compUnidades().map(c => c.unidad + (c.pozo ? ' · ' + c.pozo : ''));
+  if(obj === 'bateria') return Object.keys(BOMBEO_PTC);
+  if(obj === 'tanque'){
+    const l = [];
+    Object.keys(TANQUES_BATERIAS).forEach(b => TANQUES_BATERIAS[b].forEach(t => l.push(t + ' · ' + b)));
+    PIAS2_TANQUES_NOMBRES.forEach(t => l.push(t + ' · Pias 2'));
+    return l;
+  }
+  return [];
+}
+
+function abrirPedidoForm(){
+  let tipo = 'cerrar', prio = 'normal';
+  window._currentCardRec = null;
+  const card = document.getElementById('card');
+  card.innerHTML = `
+    <div class="card-head">
+      <div><h2>Nuevo pedido</h2><span class="bat-pill" style="background:#B9861C">Pedidos del día</span></div>
+      <button class="close-btn" id="closeBtn">&times;</button>
+    </div>
+    <div class="time-label">¿Qué hay que hacer?</div>
+    <div class="ped-tipos" id="pedTipos">${PED_TIPOS.map(t => `<button type="button" class="aviso-chip" data-t="${t.id}">${t.label}</button>`).join('')}</div>
+    <div id="pedObjWrap">
+      <div class="time-label" id="pedObjLbl">Pozo</div>
+      <input type="text" class="edit-input" id="pedObj" list="pedObjDl" autocomplete="off">
+      <datalist id="pedObjDl"></datalist>
+    </div>
+    <div id="pedDurWrap" style="margin-top:8px">
+      <div class="time-label" id="pedDurLbl">¿Por cuántas horas? (opcional)</div>
+      <input type="text" inputmode="decimal" class="edit-input" id="pedDur" placeholder="ej: 2  (vacío = queda abierto)">
+    </div>
+    <div class="time-label" style="margin-top:8px" id="pedDetLbl">Detalle (opcional)</div>
+    <input type="text" class="edit-input" id="pedDet" placeholder="ej: avisar a sala de control antes">
+    ${pedPuedeVerDias() ? `<div class="time-label" style="margin-top:8px">Día</div><input type="date" class="edit-input" id="pedFecha" value="${pedDiaSel || pedHoy()}" min="${pedHoy()}">` : ''}
+    <div class="aib-fields" style="margin-top:8px">
+      <div class="aib-field"><div class="time-label">Hora (opcional)</div><input type="time" class="edit-input time-input" id="pedHora"></div>
+      <div class="aib-field"><div class="time-label">Prioridad</div>
+        <div class="estado-toggle" style="margin:0"><button type="button" class="estado-btn abierto active" data-p="normal">NORMAL</button><button type="button" class="estado-btn cerrado" data-p="urgente">URGENTE</button></div></div>
+    </div>
+    <p class="ped-form-nota" id="pedAutoNota"></p>
+    <div class="aviso-error" id="pedErr" style="display:none;"></div>
+    <div class="edit-actions"><button class="save-btn" id="pedGuardar">Cargar pedido</button><button class="cancel-btn" id="pedCancel">Cancelar</button></div>`;
+  card.scrollTop = 0;
+  document.getElementById('overlay').classList.add('show');
+  if(!modalHistoryPushed){ history.pushState({ pozosModal: true }, ''); modalHistoryPushed = true; }
+  const $ = (id) => document.getElementById(id);
+  $('closeBtn').addEventListener('click', closeCard);
+  $('pedCancel').addEventListener('click', closeCard);
+  const LBL = { pozo: 'Pozo (ej: 1126)', aib: 'Pozo AIB', tanque: 'Tanque', bateria: 'Batería', compresor: 'Compresor' };
+  function pintar(){
+    const t = pedTipo(tipo);
+    card.querySelectorAll('#pedTipos .aviso-chip').forEach(b => b.classList.toggle('sel', b.dataset.t === tipo));
+    $('pedObjWrap').style.display = t.obj ? '' : 'none';
+    $('pedObjLbl').textContent = LBL[t.obj] || '';
+    $('pedObjDl').innerHTML = pedOpciones(t.obj).map(o => `<option value="${avisoEsc(o)}">`).join('');
+    $('pedDetLbl').textContent = t.id === 'otro' ? 'Tarea' : 'Detalle (opcional)';
+    $('pedDet').placeholder = t.id === 'otro' ? 'ej: Revisar pérdida en separador SG 8' : 'ej: avisar a sala de control antes';
+    $('pedDurWrap').style.display = (t.id === 'abrir' || t.id === 'cerrar') ? '' : 'none';
+    $('pedDurLbl').textContent = t.id === 'cerrar' ? '¿Por cuántas horas? (opcional, después se reabre)' : '¿Por cuántas horas? (opcional, después se cierra)';
+    $('pedDur').placeholder = t.id === 'cerrar' ? 'ej: 4  (vacío = queda cerrado)' : 'ej: 2  (vacío = queda abierto)';
+    const durN = parseFloat(($('pedDur').value || '').replace(',', '.')) || 0;
+    $('pedAutoNota').textContent = t.id === 'otro' ? 'Nombrá el pozo o equipo en el texto (ej: “Cambiar empaquetaduras en el AIB 1273”). Cuando carguen una nota o novedad de ese equipo con esa palabra, se marca sola. Si no, se marca a mano.'
+      : ((t.id === 'abrir' || t.id === 'cerrar') && durN ? 'Queda “en curso” cuando se ' + (t.id === 'abrir' ? 'abra' : 'cierre') + ', y se marca hecho cuando se cargue el ' + (t.id === 'abrir' ? 'cierre' : 'la reapertura') + '.' : 'Se marca hecho solo cuando alguien cargue el dato en la app.');
+  }
+  card.querySelectorAll('#pedTipos .aviso-chip').forEach(b => b.addEventListener('click', () => { tipo = b.dataset.t; $('pedObj').value = ''; pintar(); }));
+  $('pedDur').addEventListener('input', pintar);
+  card.querySelectorAll('[data-p]').forEach(b => b.addEventListener('click', () => { prio = b.dataset.p; card.querySelectorAll('[data-p]').forEach(x => x.classList.toggle('active', x === b)); }));
+  pintar();
+  $('pedGuardar').addEventListener('click', () => {
+    const t = pedTipo(tipo);
+    const err = $('pedErr');
+    let objetivo = $('pedObj').value.trim(), grupo = '';
+    const detalle = $('pedDet').value.trim();
+    let msg = '';
+    if(t.id === 'otro'){ if(!detalle) msg = 'Escribí la tarea.'; }
+    else if(!objetivo) msg = 'Falta indicar ' + (LBL[t.obj] || 'el equipo').toLowerCase().replace(/ \(.*/, '') + '.';
+    if(!msg && t.obj === 'pozo'){ objetivo = pedNormPozo(objetivo); if(!POZOS.some(p => p.pozo === objetivo)) msg = 'No encontré el pozo ' + objetivo + ' en la lista.'; }
+    if(!msg && t.obj === 'aib'){ objetivo = pedNormPozo(objetivo); if(!AIB_POZOS.some(p => p.pozo === objetivo)) msg = 'No encontré el AIB ' + objetivo + '.'; }
+    if(!msg && t.obj === 'compresor'){ objetivo = compNormU(objetivo.split('·')[0]); if(!compUnidades().some(c => c.unidad === objetivo)) msg = 'No encontré el compresor ' + objetivo + '.'; }
+    if(!msg && t.obj === 'bateria'){ const b = Object.keys(BOMBEO_PTC).find(x => x.toLowerCase() === objetivo.toLowerCase()); if(!b) msg = 'Elegí la batería de la lista.'; else objetivo = b; }
+    if(!msg && t.obj === 'tanque'){
+      const partes = objetivo.split('·').map(x => x.trim());
+      const op = pedOpciones('tanque').find(o => o.toLowerCase() === objetivo.toLowerCase() || o.toLowerCase().startsWith(partes[0].toLowerCase() + ' ·'));
+      if(!op) msg = 'Elegí el tanque de la lista.'; else { objetivo = op.split('·')[0].trim(); grupo = op.split('·')[1].trim(); }
+    }
+    const durTxt = (t.id === 'abrir' || t.id === 'cerrar') ? ($('pedDur').value || '').trim().replace(',', '.') : '';
+    const duracionHs = durTxt ? parseFloat(durTxt) : 0;
+    if(!msg && $('pedFecha') && $('pedFecha').value && $('pedFecha').value < pedHoy()) msg = 'No se pueden cargar pedidos para días que ya pasaron.';
+    if(!msg && durTxt && !(duracionHs > 0 && duracionHs <= 72)) msg = 'Las horas tienen que ser un número (ej: 2 o 1,5).';
+    if(msg){ err.textContent = msg; err.style.display = ''; return; }
+    if(!puedeModificar()) return;
+    if(!firestoreOk){ alert('No hay conexion con el guardado compartido. Revisa tu internet e intenta de nuevo.'); return; }
+    const datos = { tipo, objetivo: t.obj ? objetivo : '', grupo, detalle, duracionHs, hora: $('pedHora').value, prioridad: prio, estado: 'pendiente',
+      creadoPor: operadorName || 'Sin nombre', creadoTs: Date.now(), fecha: ($('pedFecha') && $('pedFecha').value) || pedHoy() };
+    const ref = db.collection('pedidos').doc();
+    ref.set(datos).catch(e => alert('No se pudo guardar (' + e.message + ').'));
+    PEDIDOS = [Object.assign({ id: ref.id }, datos)].concat(PEDIDOS.filter(x => x.id !== ref.id));
+    if(pedPuedeVerDias()) pedDiaSel = datos.fecha;
+    closeCard(); renderPedidos(); pedActualizarInicio();
+  });
+}
+
+function pedCopiarResumen(){
+  const dia = (pedPuedeVerDias() && pedDiaSel) ? pedDiaSel : pedHoy();
+  const l = dia === pedHoy() ? pedDelDia() : pedDeFecha(dia);
+  const hechos = l.filter(p => p.estado === 'hecho'), pend = l.filter(p => p.estado === 'pendiente'), nos = l.filter(p => p.estado === 'no');
+  const hoy = dia.slice(8, 10) + '/' + dia.slice(5, 7);
+  let t = `PEDIDOS ${hoy} — ${hechos.length} de ${l.length} hechos\n`;
+  hechos.forEach(p => { t += `✅ ${pedTitulo(p)} — ${p.hechoPor || ''} ${pedHoraTs(p.hechoTs)}${p.evidencia ? ' · ' + p.evidencia : ''}${p.nota ? ' · ' + p.nota : ''}\n`; });
+  pend.forEach(p => { t += p.paso1Ts
+    ? `⏱ ${pedTitulo(p)} — en curso: ${p.paso1Ev || ''}${p.finEsperado ? ', ' + (p.tipo === 'abrir' ? 'cerrar' : 'reabrir') + ' a las ' + p.finEsperado : ''}\n`
+    : `⏳ ${pedTitulo(p)}${p.prioridad === 'urgente' ? ' (URGENTE)' : ''} — pendiente\n`; });
+  nos.forEach(p => { t += `❌ ${pedTitulo(p)} — no se pudo: ${p.nota || ''} (${p.hechoPor || ''})\n`; });
+  if(navigator.share && esMovil()){ navigator.share({ title: 'Pedidos del día', text: t }).catch(() => {}); return; }
+  if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(() => movToast('Resumen copiado: pegalo en el grupo de WhatsApp.')).catch(() => prompt('Copiá el resumen:', t));
+  else prompt('Copiá el resumen:', t);
+}
+
+document.getElementById('tabPed').addEventListener('click', () => {
+  switchTab('tabPed', 'pedMain');
+  renderPedidos();
+});
+
 // ---------------- Compresion BP: compresores Hoerbiger asignados a pozos ----------------
 // 'compresores_bp': un documento por unidad (U-xxx) con el pozo y la USPA asignados (los cambios de asignacion).
 // 'compresores_lecturas': cada lectura (PB, succion, descarga, caudal, RPM o unidad parada). Cada lectura
@@ -7612,7 +8148,7 @@ renderPlano();
 // "‹ Inicio" o el boton Atras del celular vuelven. Dentro de Gas y de Petroleo quedan las
 // pestañas hermanas para pasar de una a otra sin volver al inicio.
 const SECCION_TITULO = { tabLista: 'Pozos de gas', tabPlano: 'Plano (colectoras)', tabRed: 'Red', tabCiclaje: 'Ciclaje', tabComp: 'Compresión BP',
-  tabMov: 'Últimos movimientos', tabAib: 'AIB', tabTanques: 'Baterías', tabPias: 'Pías 2', tabPtc: 'PTC', tabAvisos: 'Avisos' };
+  tabMov: 'Últimos movimientos', tabPed: 'Pedidos del día', tabAib: 'AIB', tabTanques: 'Baterías', tabPias: 'Pías 2', tabPtc: 'PTC', tabAvisos: 'Avisos' };
 const SECCION_GRUPO = { tabLista: 'gas', tabPlano: 'gas', tabRed: 'gas', tabCiclaje: 'gas', tabComp: 'gas', tabAib: 'oil', tabTanques: 'oil' };
 const SECCION_CON_BUSQUEDA = ['tabLista', 'tabPlano', 'tabRed', 'tabAvisos'];
 var seccionActual = null;
@@ -7651,6 +8187,7 @@ function inicioActualizar(){
   document.querySelectorAll('#inicio .ini-tile').forEach(t => {
     const n = nuevos.filter(x => x.tab === t.dataset.tab).length;
     const badge = t.querySelector('.ini-nuevo');
+    if(!badge) return;
     badge.textContent = n === 1 ? '1 nuevo' : n + ' nuevos';
     badge.style.display = n ? '' : 'none';
   });
@@ -7766,7 +8303,7 @@ function exigirNombre(){
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202610231130;
+var APP_VERSION = 202610231400;
 var appVersionNueva = 0;
 function appBuscarActualizacion(){
   if(!navigator.onLine || document.getElementById('actualizarApp')) return;
