@@ -558,6 +558,49 @@
   .red-trail b{ color: var(--text); font-weight:600; }
   .red-trail .arrow{ color: var(--muted); }
   .red-panel .rfoot{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  /* ---- Vista radial v2 ---- */
+  .red2 .r2-band{ opacity: 0.10; }
+  .red2 .rnode.bateria.lit ~ .r2-band{ opacity: 0.18; }
+  .red2 .redge{ stroke: #2E5876; stroke-width: 1.4; }
+  .red2 .r2-edge-pozo{ stroke-width: 1; }
+  .red2 .r2-edge-bat{ stroke-width: 3; opacity: 0.8; }
+  .red2 .redge.lit{ stroke: #6FC9B0; stroke-width: 2.4; opacity: 1; }
+  .red2 .redge.dim{ opacity: 0.12; }
+  .red2 .rwell{ stroke-width: 2; }
+  .red2 .rwell.abierto{ fill:#5fa85f; stroke:#8fd08f; }
+  .red2 .rwell.cerrado{ fill:#c0524a; stroke:#e08a80; }
+  .red2 .rwell.sd{ fill: #0B2436; stroke: #7C93A6; }
+  .red2 .r2-hit{ fill: transparent; }
+  .red2 .rnode.selected .rwell{ fill:#F0C46A; stroke:#fff; }
+  .red2 .r2-pozo-label{ font-family:'Consolas','SF Mono',monospace; font-size: 10px; fill: #C5D3DE; dominant-baseline: middle; pointer-events:none; opacity: 0; transition: opacity .2s; }
+  .red2.z-pozo .r2-pozo-label{ opacity: 1; }
+  .red2 .rnode.selected .r2-pozo-label{ opacity: 1; fill: #F0C46A; font-weight: 700; }
+  .red2 .r2-col{ fill: #0B2436; stroke: #2E5876; stroke-width: 1.6; }
+  .red2 .rnode.trunk.sincol .r2-col{ stroke-dasharray: 4 3; }
+  .red2 .rnode.trunk.lit .r2-col, .red2 .rnode.trunk.selected .r2-col{ stroke: #6FC9B0; stroke-width: 2.4; }
+  .red2 .r2-col-label{ font-family:'Segoe UI',sans-serif; font-size: 10px; font-weight: 600; fill: #E9EEF2; text-anchor: middle; pointer-events:none; opacity: 0; }
+  .red2 .r2-col-cnt{ font-family:'Consolas','SF Mono',monospace; font-size: 9px; fill: #9FB3C3; text-anchor: middle; pointer-events:none; }
+  .red2:not(.z-col) .r2-col-cnt{ font-size: 13px; font-weight: 700; fill: #E9EEF2; transform-box: fill-box; }
+  .red2.z-col .r2-col-label{ opacity: 1; }
+  .red2 .r2-bat{ fill: #123249; stroke-width: 2.5; }
+  .red2 .r2-bat-label{ font-family:'Segoe UI',sans-serif; font-size: 24px; font-weight: 700; fill: #E9EEF2; text-anchor: middle; pointer-events:none; }
+  .red2 .r2-bat-cnt{ font-family:'Segoe UI',sans-serif; font-size: 15px; font-weight: 600; fill: #9FB3C3; text-anchor: middle; pointer-events:none; }
+  .red2 .r2-kti{ font-family:'Segoe UI',sans-serif; font-size: 26px; font-weight: 700; fill: #E9EEF2; text-anchor: middle; pointer-events:none; }
+  .red2 .r2-sub{ font-family:'Segoe UI',sans-serif; font-size: 11px; fill: #9FB3C3; text-anchor: middle; pointer-events:none; }
+  .red2 .r2-col-dot{ fill: #0B2436; stroke: #2E5876; stroke-width: 1.6; display: none; }
+  .red2:not(.z-col) .rnode.trunk.chica .r2-col, .red2:not(.z-col) .rnode.trunk.chica .r2-col-cnt{ display: none; }
+  .red2:not(.z-col) .rnode.trunk.chica .r2-col-dot{ display: inline; }
+  .red2 .rnode.trunk.chica.lit .r2-col-dot, .red2 .rnode.trunk.chica.selected .r2-col-dot{ stroke: #6FC9B0; stroke-width: 2.4; }
+  .red2 .rnode.bateria.lit .r2-bat, .red2 .rnode.bateria.selected .r2-bat{ stroke-width: 4; }
+  .red2 .rnode.bateria.selected .r2-bat{ fill: #163C50; }
+  .red-rama .rstats{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }
+  .red-rama .rstats div{ background: var(--bg); border-radius:8px; padding:6px 8px; display:flex; flex-direction:column; }
+  .red-rama .rstats b{ font-size:1.1rem; }
+  .red-rama .rstats span{ font-size:0.7rem; color: var(--muted); }
+  .red-rama .rchips{ display:flex; flex-wrap:wrap; gap:5px; }
+  .red-rama .rchips button{ font-family:'Consolas','SF Mono',monospace; font-size:0.78rem; padding:4px 8px; border-radius:6px; border:1px solid var(--line); background: var(--bg); color: var(--text); cursor:pointer; }
+  .red-rama .rchips button.ab{ border-color:#5fa85f; } .red-rama .rchips button.ce{ border-color:#c0524a; }
+  .red-rama .rchips button .c{ color: var(--muted); }
   .red-open-btn, .red-clear-btn{ font-size:0.78rem; border-radius:7px; padding:6px 12px; cursor:pointer; }
   .red-open-btn{ background: var(--amber-dim); border:1px solid var(--amber); color: var(--text); font-weight:600; }
   .red-clear-btn{ background:none; border:1px solid var(--line); color: var(--amber); }
@@ -5261,6 +5304,7 @@ const RED_USPA_ORDEN = ['USPA2','USPA5','USPA3','USPA4'];
 
 let redView = 'radial';
 let redSelected = null; // nombre de pozo
+let redSelRama = null;  // { tipo:'col', grupo, colectora } o { tipo:'bat', grupo }: colectora o USPA tocada
 let redFiltro = 'all';  // 'all' o una bateria (USPA2, USPA3...)
 let redSearchTerm = ''; // texto del buscador de arriba (searchBox), en minusculas
 
@@ -5547,10 +5591,138 @@ function buildRedRadial(grupos){
   return svg;
 }
 
+// ---- Vista radial v2: espacio por pozo, colectora centrada en su abanico, curvas sin flechas,
+// franjas por USPA, contadores de abiertos y etiquetas radiales que aparecen al acercar ----
+function redContar(wells){
+  let ab = 0; wells.forEach(w => { if(w.estado === 'Abierto') ab++; });
+  return { ab, total: wells.length };
+}
+function redColCorto(name){
+  if(name === 'Sin colectora cargada') return 's/ colectora';
+  return name.replace(/^Col\.\s*/, '').replace(/\s*-\s*BP$/, ' BP');
+}
+function buildRedRadial2(grupos){
+  const visibles = redVisibleGrupos(grupos);
+  const nodePos = {}, colPos = {};
+  const size = 860, cx = size/2, cy = size/2;
+  const rKti = 50, rBat = 128, rCol = 238, rPozo = 322, rLabel = 334, rBandIn = 86, rBandOut = 400;
+  const gapDeg = visibles.length > 1 ? 7 : 0;
+  let total = 0; visibles.forEach(g => g.colectoras.forEach(c => { total += c.wells.length; }));
+  if(total === 0) total = 1;
+  const usable = (visibles.length > 1 ? 360 : 300) - gapDeg * visibles.length;
+  const slot = usable / total;
+
+  const svg = redSvgEl('svg', { viewBox: `0 0 ${size} ${size}`, role: 'img', class: 'red2',
+    'aria-label': 'Diagrama radial de la red: KTI en el centro, USPAs, colectoras y pozos hacia afuera' });
+  const bandLayer = redSvgEl('g', {}), edgesLayer = redSvgEl('g', {}), nodesLayer = redSvgEl('g', {});
+  function pt(r, deg){ const rad = deg * Math.PI / 180; return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) }; }
+  function curva(r1, a1, r2, a2){
+    const rm = (r1 + r2) / 2, p1 = pt(r1, a1), c1 = pt(rm, a1), c2 = pt(rm, a2), p2 = pt(r2, a2);
+    return `M${p1.x.toFixed(1)},${p1.y.toFixed(1)} C${c1.x.toFixed(1)},${c1.y.toFixed(1)} ${c2.x.toFixed(1)},${c2.y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
+  }
+  function sector(r0, r1, a0, a1){
+    const p0 = pt(r1, a0), p1 = pt(r1, a1), p2 = pt(r0, a1), p3 = pt(r0, a0), big = (a1 - a0) > 180 ? 1 : 0;
+    return `M${p0.x},${p0.y} A${r1},${r1} 0 ${big} 1 ${p1.x},${p1.y} L${p2.x},${p2.y} A${r0},${r0} 0 ${big} 0 ${p3.x},${p3.y} Z`;
+  }
+
+  // geometria: cada pozo ocupa el mismo angulo; la colectora va al medio de sus pozos
+  let angle = -90 - usable / 2 - (visibles.length > 1 ? gapDeg / 2 : 0) + gapDeg / 2;
+  const geo = visibles.map(g => {
+    const a0 = angle;
+    const cols = g.colectoras.map(c => {
+      const ws = c.wells.map(w => { const a = angle + slot / 2; angle += slot; return { w, a }; });
+      return { c, ws, a: (ws[0].a + ws[ws.length - 1].a) / 2 };
+    });
+    const a1 = angle; angle += gapDeg;
+    return { g, a0, a1, aMid: (a0 + a1) / 2, cols };
+  });
+  const batPt = {}; geo.forEach(x => { batPt[x.g.id] = { a: x.aMid, p: pt(rBat, x.aMid) }; });
+
+  const kGroup = redSvgEl('g', { class: 'rnode kti', tabindex: '0', role: 'img', 'aria-label': RED_KTI_LABEL });
+  kGroup.appendChild(redSvgEl('circle', { class: 'rkti', cx, cy, r: rKti }));
+  const kl1 = redSvgEl('text', { class: 'r2-kti', x: cx, y: cy + 2 }); kl1.textContent = 'KTI';
+  const kl2 = redSvgEl('text', { class: 'r2-sub', x: cx, y: cy + 22 }); kl2.textContent = 'Planta de Gas';
+  kGroup.appendChild(kl1); kGroup.appendChild(kl2);
+
+  geo.forEach(x => {
+    const g = x.g, color = ({ USPA2: '#4f86c6', USPA3: '#3fa394', USPA4: '#c49a45', USPA5: '#9a7fd0' })[g.id] || '#4c8fb0';
+    const all = []; g.colectoras.forEach(c => c.wells.forEach(w => all.push(w)));
+    const cnt = redContar(all);
+    bandLayer.appendChild(redSvgEl('path', { class: 'r2-band', 'data-grupo': g.id, d: sector(rBandIn, rBandOut, x.a0 - 1.5, x.a1 + 1.5), fill: color }));
+
+    // USPA -> KTI (o -> otra USPA)
+    const bp = batPt[g.id];
+    let d;
+    if(g.destino === 'KTI') d = curva(rBat - 26, bp.a, rKti, bp.a);
+    else if(batPt[g.destino]) { const o = batPt[g.destino]; d = curva(rBat - 10, bp.a, rBat - 10, o.a); }
+    if(d) edgesLayer.appendChild(redSvgEl('path', { class: 'redge r2-edge-bat', 'data-grupo': g.id, d, stroke: color }));
+
+    const bGroup = redSvgEl('g', { class: 'rnode bateria', 'data-grupo': g.id, tabindex: '0', role: 'button',
+      'aria-label': `${g.label}: ${cnt.ab} de ${cnt.total} pozos abiertos` });
+    bGroup.appendChild(redSvgEl('rect', { class: 'r2-bat', x: bp.p.x - 62, y: bp.p.y - 30, width: 124, height: 60, rx: 12, stroke: color }));
+    const bl = redSvgEl('text', { class: 'r2-bat-label', x: bp.p.x, y: bp.p.y - 4 }); bl.textContent = g.label.replace('Batería ', '');
+    const bs = redSvgEl('text', { class: 'r2-bat-cnt', x: bp.p.x, y: bp.p.y + 18 }); bs.textContent = `${cnt.ab}/${cnt.total} abiertos`;
+    bGroup.appendChild(bl); bGroup.appendChild(bs);
+    nodesLayer.appendChild(bGroup);
+
+    x.cols.forEach(cc => {
+      const c = cc.c, cp = pt(rCol, cc.a), ccnt = redContar(c.wells), sinCol = c.name === 'Sin colectora cargada';
+      edgesLayer.appendChild(redSvgEl('path', { class: 'redge', 'data-colectora': c.name, 'data-grupo': g.id,
+        d: curva(rCol - 14, cc.a, rBat + 30, bp.a) }));
+      cc.ws.forEach(wa => {
+        edgesLayer.appendChild(redSvgEl('path', { class: 'redge r2-edge-pozo', 'data-pozo': wa.w.pozo, 'data-colectora': c.name, 'data-grupo': g.id,
+          d: curva(rPozo - 7, wa.a, rCol + 14, cc.a) }));
+        const wp = pt(rPozo, wa.a);
+        const wMatch = redSearchTerm && wa.w.pozo.toLowerCase().includes(redSearchTerm);
+        const ng = redSvgEl('g', { class: 'rnode pozo' + (wMatch ? ' match' : ''), 'data-pozo': wa.w.pozo, 'data-colectora': c.name, 'data-grupo': g.id,
+          tabindex: '0', role: 'button', 'aria-label': `Pozo ${wa.w.pozo}, ${c.name}, ${wa.w.estado || 'sin dato'}` });
+        ng.appendChild(redSvgEl('circle', { class: 'rwell ' + redEstadoClass(wa.w) + (wMatch ? ' match' : ''), cx: wp.x, cy: wp.y, r: 6.5 }));
+        // area tactil mas grande que el puntito
+        ng.appendChild(redSvgEl('circle', { class: 'r2-hit', cx: wp.x, cy: wp.y, r: 13 }));
+        let a = ((wa.a % 360) + 360) % 360;
+        const izq = a > 90 && a < 270;
+        const lp = pt(rLabel, wa.a);
+        const lab = redSvgEl('text', { class: 'r2-pozo-label', x: lp.x, y: lp.y,
+          transform: `rotate(${izq ? a + 180 : a} ${lp.x} ${lp.y})`, 'text-anchor': izq ? 'end' : 'start' });
+        lab.textContent = wa.w.pozo.replace('Ce-', '');
+        ng.appendChild(lab);
+        nodesLayer.appendChild(ng);
+        nodePos[wa.w.pozo] = { x: wp.x, y: wp.y };
+      });
+      const tg = redSvgEl('g', { class: 'rnode trunk' + (sinCol ? ' sincol' : '') + (c.wells.length <= 2 ? ' chica' : ''), 'data-colectora': c.name, 'data-grupo': g.id, tabindex: '0', role: 'button',
+        'aria-label': `${c.name}: ${ccnt.ab} de ${ccnt.total} abiertos` });
+      tg.appendChild(redSvgEl('rect', { class: 'r2-col', x: cp.x - 34, y: cp.y - 15, width: 68, height: 30, rx: 15 }));
+      if(c.wells.length <= 2) tg.appendChild(redSvgEl('circle', { class: 'r2-col-dot', cx: cp.x, cy: cp.y, r: 7 }));
+      const tl = redSvgEl('text', { class: 'r2-col-label', x: cp.x, y: cp.y - 1 });
+      tl.textContent = redColCorto(c.name).slice(0, 11);
+      const tc = redSvgEl('text', { class: 'r2-col-cnt', x: cp.x, y: cp.y + 10 }); tc.textContent = `${ccnt.ab}/${ccnt.total}`;
+      tg.appendChild(tl); tg.appendChild(tc);
+      nodesLayer.appendChild(tg);
+      colPos[g.id + '|' + c.name] = { x: cp.x, y: cp.y };
+    });
+  });
+  nodesLayer.appendChild(kGroup);
+
+  svg.appendChild(bandLayer);
+  svg.appendChild(edgesLayer);
+  svg.appendChild(nodesLayer);
+  svg._redViewBox = { x: 0, y: 0, w: size, h: size };
+  svg._redNodePos = nodePos;
+  svg._redColPos = colPos;
+  return svg;
+}
+// Detalle segun el zoom: lejos se ve la estructura; al acercar aparecen nombres de colectora y numeros de pozo
+function redAplicarDetalle(svg, viewW){
+  const base = svg._redViewBox ? svg._redViewBox.w : 860;
+  const z = base / viewW;
+  svg.classList.toggle('z-col', z >= 1.5);
+  svg.classList.toggle('z-pozo', z >= 2.2);
+}
+
 function redCaptionFor(v){
   return v === 'tree'
     ? 'Los pozos (arriba) convergen por colectora y USPA hasta su planta compresora y KTI (abajo).'
-    : 'KTI en el centro; cada USPA con su compresora real, las colectoras y los pozos en la punta de cada rayo.';
+    : 'KTI en el centro; cada franja es una USPA. Los números (5/9) son pozos abiertos / total. Acercá para ver el número de cada pozo.';
 }
 
 function renderRed(){
@@ -5569,7 +5741,7 @@ function renderRed(){
   const wrap = document.createElement('div');
   wrap.className = 'red-wrap';
   wrap.innerHTML = `
-    <div class="plano-note">Red de captación con el estado en vivo de cada pozo, segun el plano "RED DE CAPTACION DE GAS - YAC. CENTENARIO" (Act. Agosto 2017). El agrupamiento por compresora es una lectura del plano y puede tener alguna imprecision; el estado de cada pozo sale de la lista de pozos, en vivo. Tocá un pozo para ver su recorrido.</div>
+    <div class="plano-note">Red de captación con el estado en vivo de cada pozo, segun el plano "RED DE CAPTACION DE GAS - YAC. CENTENARIO" (Act. Agosto 2017). El agrupamiento por compresora es una lectura del plano y puede tener alguna imprecision; el estado de cada pozo sale de la lista de pozos, en vivo. Tocá un pozo, una colectora o una USPA; acercá para ver los números.</div>
     <div class="red-toolbar">
       <div class="red-filter" id="redViewTabs" role="group" aria-label="Forma del diagrama">
         <button type="button" class="tab-btn" id="redTabRadial" style="border-radius:20px;">Vista radial</button>
@@ -5623,7 +5795,7 @@ function buildRedFilter(grupos){
 }
 function setRedFiltro(id){
   redFiltro = id;
-  redSelected = null;
+  redSelected = null; redSelRama = null;
   const grupos = window._redGrupos || buildRedGrupos();
   buildRedFilter(grupos);
   renderRedStage(grupos);
@@ -5638,6 +5810,7 @@ function redClampZoomW(state, w){
 }
 function redApplyViewBox(state){
   state.svg.setAttribute('viewBox', `${state.x} ${state.y} ${state.w} ${state.h}`);
+  if(state.svg.classList.contains('red2')) redAplicarDetalle(state.svg, state.w);
 }
 function redZoomAtPoint(state, factor, pivotX, pivotY){
   const newW = redClampZoomW(state, state.w * factor);
@@ -5804,7 +5977,7 @@ function renderRedStage(grupos){
     stage.innerHTML = '<div class="empty-msg">No hay pozos que coincidan con esa busqueda en esta red.</div>';
     return;
   }
-  const svg = redView === 'tree' ? buildRedTree(grupos) : buildRedRadial(grupos);
+  const svg = redView === 'tree' ? buildRedTree(grupos) : buildRedRadial2(grupos);
   svg.classList.add('fit');
   const fig = document.createElement('figure');
   fig.appendChild(svg);
@@ -5822,6 +5995,17 @@ function renderRedStage(grupos){
   `;
   stage.appendChild(controls);
   const zoomState = redSetupZoomPan(svg, stage, controls);
+  window._redZoomState = zoomState;
+  stage.querySelectorAll('.rnode.trunk, .rnode.bateria').forEach(ng => {
+    const elegir = () => {
+      if(redSuppressClick){ redSuppressClick = false; return; }
+      const grupo = ng.getAttribute('data-grupo');
+      if(ng.classList.contains('trunk')) selectRedRama({ tipo: 'col', grupo, colectora: ng.getAttribute('data-colectora') });
+      else selectRedRama({ tipo: 'bat', grupo });
+    };
+    ng.addEventListener('click', elegir);
+    ng.addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); elegir(); } });
+  });
 
   stage.querySelectorAll('.rnode.pozo').forEach(ng => {
     ng.addEventListener('click', () => {
@@ -5852,6 +6036,28 @@ function applyRedSelection(grupos){
   if(!stage) return;
   const nodes = stage.querySelectorAll('.rnode');
   const edges = stage.querySelectorAll('.redge');
+  if(redSelRama){
+    const chainIds = redChainFrom(grupos, redSelRama.grupo);
+    const enRama = el => el.getAttribute('data-grupo') === redSelRama.grupo &&
+      (redSelRama.tipo === 'bat' || el.getAttribute('data-colectora') === redSelRama.colectora);
+    nodes.forEach(n => {
+      n.classList.remove('lit','dim','selected');
+      if(n.classList.contains('kti')) n.classList.add('lit');
+      else if(n.classList.contains('bateria')){
+        const g = n.getAttribute('data-grupo');
+        if(redSelRama.tipo === 'bat' && g === redSelRama.grupo) n.classList.add('selected');
+        else n.classList.add(chainIds.indexOf(g) !== -1 ? 'lit' : 'dim');
+      }
+      else if(enRama(n)) n.classList.add(n.classList.contains('trunk') && redSelRama.tipo === 'col' ? 'selected' : 'lit');
+      else n.classList.add('dim');
+    });
+    edges.forEach(e => {
+      e.classList.remove('lit','dim');
+      const chain = !e.hasAttribute('data-pozo') && !e.hasAttribute('data-colectora') && chainIds.indexOf(e.getAttribute('data-grupo')) !== -1;
+      e.classList.add(chain || enRama(e) ? 'lit' : 'dim');
+    });
+    return;
+  }
   if(!redSelected){
     nodes.forEach(n => n.classList.remove('lit','dim','selected'));
     edges.forEach(e => e.classList.remove('lit','dim'));
@@ -5879,18 +6085,90 @@ function applyRedSelection(grupos){
 }
 
 function selectRedPozo(pozo){
-  redSelected = pozo;
+  redSelected = pozo; redSelRama = null;
   const grupos = window._redGrupos || buildRedGrupos();
   applyRedSelection(grupos);
   renderRedPanel(grupos);
 }
 
+function selectRedRama(rama){
+  redSelRama = rama; redSelected = null;
+  const grupos = window._redGrupos || buildRedGrupos();
+  applyRedSelection(grupos);
+  renderRedPanel(grupos);
+  // colectora tocada con la red lejos: acercamos a esa rama para que se lean los pozos
+  const st = window._redZoomState;
+  if(rama.tipo === 'bat' && st) redZoomReset(st);
+  if(rama.tipo === 'col' && st && st.svg._redColPos && st.svg._redNodePos && (st.baseW / st.w) < 2.2){
+    const cp = st.svg._redColPos[rama.grupo + '|' + rama.colectora];
+    const g = redGrupoById(grupos, rama.grupo);
+    const c = g && g.colectoras.find(x => x.name === rama.colectora);
+    if(cp && c && c.wells.length){
+      let mx = 0, my = 0, n = 0;
+      c.wells.forEach(w => { const q = st.svg._redNodePos[w.pozo]; if(q){ mx += q.x; my += q.y; n++; } });
+      if(n){ mx /= n; my /= n; redZoomToPoint(st, (cp.x + mx) / 2, (cp.y + my) / 2, st.baseW * 0.38); }
+    }
+  }
+}
+function redRamaPanel(grupos, panel){
+  const esc = t => String(t == null ? '' : t).replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+  const g = redGrupoById(grupos, redSelRama.grupo);
+  if(!g){ redSelRama = null; return false; }
+  const chainIds = redChainFrom(grupos, g.id);
+  const trail = [];
+  chainIds.forEach(id => { const gg = redGrupoById(grupos, id); if(gg){ trail.push(gg.label); if(gg.compresora) trail.push(gg.compresora); } });
+  trail.push('KTI');
+  let wells = [], titulo, chipsHtml;
+  if(redSelRama.tipo === 'col'){
+    const c = g.colectoras.find(x => x.name === redSelRama.colectora);
+    if(!c){ redSelRama = null; return false; }
+    wells = c.wells; titulo = c.name;
+    chipsHtml = wells.map(w => `<button type="button" data-pozo="${esc(w.pozo)}" class="${redEstadoClass(w) === 'abierto' ? 'ab' : (redEstadoClass(w) === 'cerrado' ? 'ce' : '')}">${esc(w.pozo.replace('Ce-', ''))}</button>`).join('');
+  } else {
+    g.colectoras.forEach(c => c.wells.forEach(w => wells.push(w)));
+    titulo = g.label;
+    chipsHtml = g.colectoras.map(c => { const k = redContar(c.wells);
+      return `<button type="button" data-col="${esc(c.name)}">${esc(redColCorto(c.name))} <span class="c">${k.ab}/${k.total}</span></button>`; }).join('');
+  }
+  const k = redContar(wells);
+  const ce = wells.filter(w => w.estado === 'Cerrado').length;
+  panel.className = 'red-panel red-rama';
+  panel.innerHTML = `<div class="pname">${esc(titulo)}</div>
+    <div class="red-trail">${trail.map(t => '<b>' + esc(t) + '</b>').join('<span class="arrow">&rarr;</span>')}</div>
+    <div class="rstats"><div><b>${k.total}</b><span>pozos</span></div><div><b style="color:#8fd08f">${k.ab}</b><span>abiertos</span></div><div><b style="color:#e08a80">${ce}</b><span>cerrados</span></div></div>
+    <div class="rchips">${chipsHtml}</div>
+    <div class="rfoot">
+      <button type="button" class="red-open-btn" id="redCopiarRama">Copiar listado</button>
+      <button type="button" class="red-clear-btn" id="redClearBtn">Ver toda la red</button>
+    </div>`;
+  panel.querySelectorAll('.rchips button[data-pozo]').forEach(b => b.addEventListener('click', () => selectRedPozo(b.getAttribute('data-pozo'))));
+  panel.querySelectorAll('.rchips button[data-col]').forEach(b => b.addEventListener('click', () => selectRedRama({ tipo: 'col', grupo: g.id, colectora: b.getAttribute('data-col') })));
+  document.getElementById('redCopiarRama').addEventListener('click', () => {
+    const ab = wells.filter(w => w.estado === 'Abierto').map(w => w.pozo);
+    const cer = wells.filter(w => w.estado === 'Cerrado').map(w => w.pozo);
+    const sd = wells.filter(w => w.estado !== 'Abierto' && w.estado !== 'Cerrado').map(w => w.pozo);
+    let txt = `${titulo} (${trail.join(' → ')}): ${k.total} pozos, ${k.ab} abiertos, ${ce} cerrados.`;
+    if(ab.length) txt += `\nAbiertos: ${ab.join(', ')}`;
+    if(cer.length) txt += `\nCerrados: ${cer.join(', ')}`;
+    if(sd.length) txt += `\nSin dato: ${sd.join(', ')}`;
+    const ok = () => { const b = document.getElementById('redCopiarRama'); if(b){ b.textContent = 'Copiado ✓'; setTimeout(() => { if(b) b.textContent = 'Copiar listado'; }, 1800); } };
+    if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(ok, () => prompt('Copiá el listado:', txt));
+    else prompt('Copiá el listado:', txt);
+  });
+  document.getElementById('redClearBtn').addEventListener('click', () => {
+    redSelRama = null; redSelected = null; applyRedSelection(grupos); renderRedPanel(grupos);
+    if(window._redZoomState) redZoomReset(window._redZoomState);
+  });
+  return true;
+}
+
 function renderRedPanel(grupos){
   const panel = document.getElementById('redPanel');
   if(!panel) return;
+  if(redSelRama && redRamaPanel(grupos, panel)) return;
   if(!redSelected){
     panel.className = 'red-panel empty';
-    panel.innerHTML = 'Elegí un pozo en el diagrama para ver su recorrido completo hasta KTI.';
+    panel.innerHTML = 'Tocá un pozo, una colectora o una USPA para ver su recorrido y resumen.';
     return;
   }
   const info = (window._redPozoInfo || {})[redSelected];
@@ -8660,7 +8938,7 @@ function exigirNombre(){
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202610231630;
+var APP_VERSION = 202610231700;
 var appVersionNueva = 0;
 function appBuscarActualizacion(){
   if(!navigator.onLine || document.getElementById('actualizarApp')) return;
