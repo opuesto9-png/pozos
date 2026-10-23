@@ -1122,6 +1122,7 @@
   .ped-tag{ font-size:.66rem; font-weight:800; border-radius:6px; padding:2px 7px; white-space:nowrap; }
   .ped-tag.urg{ background:#4A2A22; color:#F2A08F; }
   .ped-tag.auto{ background:#1B2A55; color:#9DB8FF; }
+  .ped-tag.curso{ background:#123B34; color:#6FC9B0; }
   .ped-ev{ font-size:.8rem; color:#6FC9B0; margin-left:34px; }
   .ped-ev.no{ color:#F2A08F; }
   .ped-acc{ display:flex; gap:6px; margin-left:34px; flex-wrap:wrap; }
@@ -7214,12 +7215,28 @@ var PED_TIPOS = [
   { id: 'otro', label: 'Otra tarea', obj: '', verbo: '' }
 ];
 function pedTipo(id){ return PED_TIPOS.find(t => t.id === id) || PED_TIPOS[PED_TIPOS.length - 1]; }
+function pedDuracion(p){
+  if(p.duracionHs) return p.duracionHs;
+  if((p.tipo === 'abrir' || p.tipo === 'cerrar') && p.detalle){
+    const m = String(p.detalle).match(/(\d+(?:[.,]\d+)?)\s*(h|hs|hr|hrs|hora|horas)\b/i);
+    if(m) return parseFloat(m[1].replace(',', '.'));
+  }
+  return 0;
+}
+function pedDurTxt(h){ return (Math.round(h * 10) / 10).toString().replace('.', ',') + ' h'; }
+function pedSumarHoras(hhmm, h){
+  const m = String(hhmm || '').match(/^(\d{1,2}):(\d{2})/);
+  if(!m) return '';
+  const t = (parseInt(m[1], 10) * 60 + parseInt(m[2], 10) + Math.round(h * 60)) % 1440;
+  return String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(t % 60).padStart(2, '0');
+}
 function pedTitulo(p){
   if(p.tipo === 'otro') return p.detalle || 'Tarea';
   const t = pedTipo(p.tipo);
   let obj = p.objetivo || '';
   if(p.tipo === 'tanque' && p.grupo) obj += ' (' + p.grupo + ')';
-  return t.verbo + ' ' + obj + (p.hora ? ' a las ' + p.hora : '');
+  const dur = pedDuracion(p);
+  return t.verbo + ' ' + obj + (dur ? ' por ' + pedDurTxt(dur) : '') + (p.hora ? ' a las ' + p.hora : '');
 }
 function pedHoraTs(ts){ return ts ? new Date(ts).toTimeString().slice(0, 5) : ''; }
 function pedTs(r){ return r && r._updatedAtDate ? r._updatedAtDate.getTime() : (r && r.clientTs) || 0; }
@@ -7229,6 +7246,24 @@ function pedNormPozo(t){ t = String(t || '').trim(); if(/^\d/.test(t)) t = 'Ce-'
 function pedBuscarCumplimiento(p){
   const c = p.creadoTs || 0;
   const desp = (r) => pedTs(r) > c;
+  if((p.tipo === 'abrir' || p.tipo === 'cerrar') && pedDuracion(p)){
+    // "abrir por 2 h": 1) se abre -> queda EN CURSO con la hora en que hay que cerrarlo; 2) se cierra -> HECHO
+    const r = POZOS.find(x => x.pozo === p.objetivo);
+    if(!r) return null;
+    const c1 = p.tipo === 'abrir' ? 'horaApertura' : 'horaCierre';
+    const c2 = p.tipo === 'abrir' ? 'horaCierre' : 'horaApertura';
+    const uf = r.updatedFields || [];
+    const txt1 = () => (p.tipo === 'abrir' ? 'Abierto ' : 'Cerrado ') + r[c1];
+    const txt2 = () => (p.tipo === 'abrir' ? 'cerrado ' : 'reabierto ') + r[c2] + (p.tipo === 'abrir' && r.presionCierre ? ' (' + r.presionCierre + ' kg/cm²)' : '');
+    if(!p.paso1Ts){
+      if(!(desp(r) && r[c1] && uf.includes(c1))) return null;
+      // se cargaron las dos horas juntas: queda hecho de una
+      if(r[c2] && uf.includes(c2)) return { por: r.operador, ts: pedTs(r), ev: txt1() + ' → ' + txt2() };
+      return { fase: 1, por: r.operador, ts: pedTs(r), ev: txt1(), hora1: r[c1], fin: pedSumarHoras(r[c1], pedDuracion(p)) };
+    }
+    if(pedTs(r) > p.paso1Ts && r[c2] && uf.includes(c2)) return { por: r.operador, ts: pedTs(r), ev: (p.paso1Ev || txt1()) + ' → ' + txt2() };
+    return null;
+  }
   if(p.tipo === 'abrir' || p.tipo === 'cerrar'){
     const r = POZOS.find(x => x.pozo === p.objetivo);
     const campo = p.tipo === 'abrir' ? 'horaApertura' : 'horaCierre';
@@ -7264,6 +7299,12 @@ function pedAutoCompletar(){
   PEDIDOS.filter(p => p.estado === 'pendiente' && p.tipo !== 'otro').forEach(p => {
     const m = pedBuscarCumplimiento(p);
     if(!m) return;
+    if(m.fase === 1){
+      const d1 = { paso1Ts: m.ts || Date.now(), paso1Por: m.por || 'Sin nombre', paso1Ev: m.ev, paso1Hora: m.hora1 || '', finEsperado: m.fin || '' };
+      Object.assign(p, d1);
+      db.collection('pedidos').doc(p.id).update(d1).catch(() => {});
+      return;
+    }
     p.estado = 'hecho';
     const datos = { estado: 'hecho', auto: true, hechoPor: m.por || 'Sin nombre', hechoTs: m.ts || Date.now(), evidencia: m.ev || '' };
     Object.assign(p, datos);
@@ -7352,13 +7393,20 @@ function pedIrA(p){
   else if(p.tipo === 'compresor') document.getElementById('tabComp').click();
 }
 
+// pasaron mas de 10 minutos de la hora en que habia que cerrar/reabrir
+function pedVencido(p){
+  if(!p.paso1Ts || !p.finEsperado || p.estado !== 'pendiente') return false;
+  const dur = pedDuracion(p);
+  return Date.now() > p.paso1Ts + (dur * 60 + 10) * 60e3;
+}
 function pedItem(p){
   const el = document.createElement('div');
   el.className = 'ped-item' + (p.prioridad === 'urgente' && p.estado === 'pendiente' ? ' urgente' : '') + (p.estado !== 'pendiente' ? ' hecho' : '');
   const ic = p.estado === 'hecho' ? '<span class="ped-ic hecho" aria-label="Hecho">✓</span>' : (p.estado === 'no' ? '<span class="ped-ic no" aria-label="No se pudo">✕</span>' : '<span class="ped-ic pend" aria-label="Pendiente"></span>');
   const meta = 'Pedido por ' + avisoEsc(p.creadoPor || '—') + ' a las ' + pedHoraTs(p.creadoTs) + (p.tipo !== 'otro' && p.detalle ? ' · ' + avisoEsc(p.detalle) : '');
   el.innerHTML = `<div class="ped-l1">${ic}<div class="ped-tit">${avisoEsc(pedTitulo(p))}<small>${meta}</small></div>
-      ${p.prioridad === 'urgente' ? '<span class="ped-tag urg">URGENTE</span>' : ''}${p.auto && p.estado === 'hecho' ? '<span class="ped-tag auto">AUTOMÁTICO</span>' : ''}</div>
+      ${p.prioridad === 'urgente' ? '<span class="ped-tag urg">URGENTE</span>' : ''}${p.estado === 'pendiente' && p.paso1Ts ? '<span class="ped-tag curso">EN CURSO</span>' : ''}${p.auto && p.estado === 'hecho' ? '<span class="ped-tag auto">AUTOMÁTICO</span>' : ''}</div>
+    ${p.estado === 'pendiente' && p.paso1Ts ? `<div class="ped-ev">${avisoEsc(p.paso1Ev || '')} por ${avisoEsc(p.paso1Por || '—')}${p.finEsperado ? ' · <b>' + (p.tipo === 'abrir' ? 'cerrar' : 'reabrir') + ' a las ' + avisoEsc(p.finEsperado) + '</b>' : ''}</div>${pedVencido(p) ? `<div class="ped-ev no">Ya pasó la hora: falta ${p.tipo === 'abrir' ? 'cerrarlo' : 'reabrirlo'} y cargarlo en la app.</div>` : ''}` : ''}
     ${p.estado === 'hecho' ? `<div class="ped-ev">Hecho por ${avisoEsc(p.hechoPor || '—')} a las ${pedHoraTs(p.hechoTs)}${p.evidencia ? ' · ' + avisoEsc(p.evidencia) : ''}${p.nota ? ' · ' + avisoEsc(p.nota) : ''}</div>` : ''}
     ${p.estado === 'no' ? `<div class="ped-ev no">No se pudo (${avisoEsc(p.hechoPor || '—')}, ${pedHoraTs(p.hechoTs)}): ${avisoEsc(p.nota || 'sin motivo')}</div>` : ''}
     <div class="ped-acc"></div>`;
@@ -7393,7 +7441,8 @@ function pedReabrir(p){
   if(!confirm('¿Volver “' + pedTitulo(p) + '” a pendiente?')) return;
   if(!puedeModificar()) return;
   // al reabrir, cuenta solo lo que se cargue desde ahora
-  const datos = { estado: 'pendiente', auto: false, hechoPor: '', hechoTs: 0, nota: '', evidencia: '', creadoTs: Date.now() };
+  // los de "abrir/cerrar por X horas" conservan su hora de pedido: si el pozo ya se abrio, vuelve a quedar en curso
+  const datos = { estado: 'pendiente', auto: false, hechoPor: '', hechoTs: 0, nota: '', evidencia: '', creadoTs: pedDuracion(p) ? p.creadoTs : Date.now(), paso1Ts: 0, paso1Por: '', paso1Ev: '', paso1Hora: '', finEsperado: '' };
   Object.assign(p, datos);
   db.collection('pedidos').doc(p.id).update(datos).catch(e => alert('No se pudo guardar (' + e.message + ').'));
   renderPedidos(); pedActualizarInicio();
@@ -7436,6 +7485,10 @@ function abrirPedidoForm(){
       <input type="text" class="edit-input" id="pedObj" list="pedObjDl" autocomplete="off">
       <datalist id="pedObjDl"></datalist>
     </div>
+    <div id="pedDurWrap" style="margin-top:8px">
+      <div class="time-label" id="pedDurLbl">¿Por cuántas horas? (opcional)</div>
+      <input type="text" inputmode="decimal" class="edit-input" id="pedDur" placeholder="ej: 2  (vacío = queda abierto)">
+    </div>
     <div class="time-label" style="margin-top:8px" id="pedDetLbl">Detalle (opcional)</div>
     <input type="text" class="edit-input" id="pedDet" placeholder="ej: avisar a sala de control antes">
     <div class="aib-fields" style="margin-top:8px">
@@ -7461,9 +7514,15 @@ function abrirPedidoForm(){
     $('pedObjDl').innerHTML = pedOpciones(t.obj).map(o => `<option value="${avisoEsc(o)}">`).join('');
     $('pedDetLbl').textContent = t.id === 'otro' ? 'Tarea' : 'Detalle (opcional)';
     $('pedDet').placeholder = t.id === 'otro' ? 'ej: Revisar pérdida en separador SG 8' : 'ej: avisar a sala de control antes';
-    $('pedAutoNota').textContent = t.id === 'otro' ? 'Esta tarea la marca a mano quien la hace.' : 'Se marca hecho solo cuando alguien cargue el dato en la app.';
+    $('pedDurWrap').style.display = (t.id === 'abrir' || t.id === 'cerrar') ? '' : 'none';
+    $('pedDurLbl').textContent = t.id === 'cerrar' ? '¿Por cuántas horas? (opcional, después se reabre)' : '¿Por cuántas horas? (opcional, después se cierra)';
+    $('pedDur').placeholder = t.id === 'cerrar' ? 'ej: 4  (vacío = queda cerrado)' : 'ej: 2  (vacío = queda abierto)';
+    const durN = parseFloat(($('pedDur').value || '').replace(',', '.')) || 0;
+    $('pedAutoNota').textContent = t.id === 'otro' ? 'Esta tarea la marca a mano quien la hace.'
+      : ((t.id === 'abrir' || t.id === 'cerrar') && durN ? 'Queda “en curso” cuando se ' + (t.id === 'abrir' ? 'abra' : 'cierre') + ', y se marca hecho cuando se cargue el ' + (t.id === 'abrir' ? 'cierre' : 'la reapertura') + '.' : 'Se marca hecho solo cuando alguien cargue el dato en la app.');
   }
   card.querySelectorAll('#pedTipos .aviso-chip').forEach(b => b.addEventListener('click', () => { tipo = b.dataset.t; $('pedObj').value = ''; pintar(); }));
+  $('pedDur').addEventListener('input', pintar);
   card.querySelectorAll('[data-p]').forEach(b => b.addEventListener('click', () => { prio = b.dataset.p; card.querySelectorAll('[data-p]').forEach(x => x.classList.toggle('active', x === b)); }));
   pintar();
   $('pedGuardar').addEventListener('click', () => {
@@ -7483,10 +7542,13 @@ function abrirPedidoForm(){
       const op = pedOpciones('tanque').find(o => o.toLowerCase() === objetivo.toLowerCase() || o.toLowerCase().startsWith(partes[0].toLowerCase() + ' ·'));
       if(!op) msg = 'Elegí el tanque de la lista.'; else { objetivo = op.split('·')[0].trim(); grupo = op.split('·')[1].trim(); }
     }
+    const durTxt = (t.id === 'abrir' || t.id === 'cerrar') ? ($('pedDur').value || '').trim().replace(',', '.') : '';
+    const duracionHs = durTxt ? parseFloat(durTxt) : 0;
+    if(!msg && durTxt && !(duracionHs > 0 && duracionHs <= 72)) msg = 'Las horas tienen que ser un número (ej: 2 o 1,5).';
     if(msg){ err.textContent = msg; err.style.display = ''; return; }
     if(!puedeModificar()) return;
     if(!firestoreOk){ alert('No hay conexion con el guardado compartido. Revisa tu internet e intenta de nuevo.'); return; }
-    const datos = { tipo, objetivo: t.obj ? objetivo : '', grupo, detalle, hora: $('pedHora').value, prioridad: prio, estado: 'pendiente',
+    const datos = { tipo, objetivo: t.obj ? objetivo : '', grupo, detalle, duracionHs, hora: $('pedHora').value, prioridad: prio, estado: 'pendiente',
       creadoPor: operadorName || 'Sin nombre', creadoTs: Date.now(), fecha: compIsoHoy() };
     const ref = db.collection('pedidos').doc();
     ref.set(datos).catch(e => alert('No se pudo guardar (' + e.message + ').'));
@@ -7501,7 +7563,9 @@ function pedCopiarResumen(){
   const hoy = new Date().toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' });
   let t = `PEDIDOS ${hoy} — ${hechos.length} de ${l.length} hechos\n`;
   hechos.forEach(p => { t += `✅ ${pedTitulo(p)} — ${p.hechoPor || ''} ${pedHoraTs(p.hechoTs)}${p.evidencia ? ' · ' + p.evidencia : ''}${p.nota ? ' · ' + p.nota : ''}\n`; });
-  pend.forEach(p => { t += `⏳ ${pedTitulo(p)}${p.prioridad === 'urgente' ? ' (URGENTE)' : ''} — pendiente\n`; });
+  pend.forEach(p => { t += p.paso1Ts
+    ? `⏱ ${pedTitulo(p)} — en curso: ${p.paso1Ev || ''}${p.finEsperado ? ', ' + (p.tipo === 'abrir' ? 'cerrar' : 'reabrir') + ' a las ' + p.finEsperado : ''}\n`
+    : `⏳ ${pedTitulo(p)}${p.prioridad === 'urgente' ? ' (URGENTE)' : ''} — pendiente\n`; });
   nos.forEach(p => { t += `❌ ${pedTitulo(p)} — no se pudo: ${p.nota || ''} (${p.hechoPor || ''})\n`; });
   if(navigator.share && esMovil()){ navigator.share({ title: 'Pedidos del día', text: t }).catch(() => {}); return; }
   if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(() => movToast('Resumen copiado: pegalo en el grupo de WhatsApp.')).catch(() => prompt('Copiá el resumen:', t));
@@ -8084,7 +8148,7 @@ function exigirNombre(){
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202610231230;
+var APP_VERSION = 202610231310;
 var appVersionNueva = 0;
 function appBuscarActualizacion(){
   if(!navigator.onLine || document.getElementById('actualizarApp')) return;
