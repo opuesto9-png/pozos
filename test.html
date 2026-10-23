@@ -1123,6 +1123,21 @@
   .ped-tag.urg{ background:#4A2A22; color:#F2A08F; }
   .ped-tag.auto{ background:#1B2A55; color:#9DB8FF; }
   .ped-tag.curso{ background:#123B34; color:#6FC9B0; }
+  .ped-dias{ display:grid; grid-template-columns: 28px repeat(7, minmax(0,1fr)) 28px; gap:4px; margin-bottom:6px; }
+  .ped-dia{ position:relative; display:flex; flex-direction:column; align-items:center; gap:1px; padding:7px 2px; border-radius:10px; border:1.5px solid var(--line); background: var(--panel); color: var(--text); font: inherit; cursor:pointer; min-width:0; }
+  .ped-dia b{ font-size:.78rem; } .ped-dia span{ font-size:.68rem; color: var(--muted); }
+  .ped-dia.flecha{ font-size:1.2rem; font-weight:800; justify-content:center; padding:0; }
+  .ped-dia.hoy{ border-color:#E8B64A; }
+  .ped-dia.sel{ background:#E8B64A; border-color:#E8B64A; color:#14283A; } .ped-dia.sel span{ color:#14283A; }
+  .ped-dia i{ position:absolute; top:-6px; right:-4px; font-style:normal; font-size:.62rem; font-weight:800; border-radius:8px; padding:0 5px; background:#E05A47; color:#fff; }
+  .ped-dia i.ok{ background:#123B34; color:#6FC9B0; }
+  .ped-dias-acc{ display:flex; gap:10px; align-items:center; justify-content:flex-end; flex-wrap:wrap; margin-bottom:8px; }
+  .ped-hoy-btn{ font: inherit; font-size:.8rem; font-weight:700; background:none; border:1px solid #E8B64A; color:#E8B64A; border-radius:8px; padding:5px 10px; cursor:pointer; }
+  .ped-fecha{ font-size:.78rem; color: var(--muted); display:flex; align-items:center; gap:6px; }
+  .ped-fecha input{ background: var(--bg); border:1px solid var(--line); color: var(--text); border-radius:6px; padding:4px 6px; font: inherit; font-size:.8rem; color-scheme: dark; }
+  .ped-dia-tit{ font-size:1.05rem; font-weight:800; margin: 2px 0 10px; text-transform: none; }
+  .ped-dia-tit::first-letter{ text-transform: uppercase; }
+  .ped-dia-tit small{ font-weight:400; font-size:.75rem; color: var(--muted); }
   .ped-vinc{ font-size:.76rem; color: var(--muted); margin-left:34px; }
   .ped-posible{ margin-left:34px; background:#1B2A55; border:1px solid #3B4F8F; border-radius:8px; padding:8px 10px; font-size:.8rem; color:#DCE5FF; }
   .ped-posible b{ color:#9DB8FF; }
@@ -7247,7 +7262,7 @@ function pedNormPozo(t){ t = String(t || '').trim(); if(/^\d/.test(t)) t = 'Ce-'
 
 // busca en lo cargado algo que cumpla el pedido (despues de que se creo)
 function pedBuscarCumplimiento(p){
-  const c = p.creadoTs || 0;
+  const c = Math.max(p.creadoTs || 0, pedInicioDia(pedFechaDe(p)));
   const desp = (r) => pedTs(r) > c;
   if((p.tipo === 'abrir' || p.tipo === 'cerrar') && pedDuracion(p)){
     // "abrir por 2 h": 1) se abre -> queda EN CURSO con la hora en que hay que cerrarlo; 2) se cierra -> HECHO
@@ -7348,7 +7363,7 @@ function pedBuscarOtro(p){
   const vincs = pedVinculos(p.detalle);
   if(!vincs.length) return null;
   const claves = pedPalabras(p.detalle);
-  const desde = Math.max(p.creadoTs || 0, p.ignorarHasta || 0);
+  const desde = Math.max(p.creadoTs || 0, p.ignorarHasta || 0, pedInicioDia(pedFechaDe(p)));
   let posible = null;
   for(const v of vincs){
     for(const e of pedEventosDe(v, desde)){
@@ -7364,7 +7379,8 @@ function pedProgramarAuto(){ clearTimeout(pedAutoTimer); pedAutoTimer = setTimeo
 function pedAutoCompletar(){
   if(!firestoreOk || !PEDIDOS.length || (typeof habBloqueado === 'function' && habBloqueado())) return;
   let cambioPosible = false;
-  PEDIDOS.filter(p => p.estado === 'pendiente').forEach(p => {
+  const hoyIso = pedHoy();
+  PEDIDOS.filter(p => p.estado === 'pendiente' && pedFechaDe(p) <= hoyIso).forEach(p => {
     const m = p.tipo === 'otro' ? pedBuscarOtro(p) : pedBuscarCumplimiento(p);
     const antes = p._posible ? p._posible.ts : 0;
     p._posible = (m && m.posible) ? m : null;
@@ -7384,14 +7400,31 @@ function pedAutoCompletar(){
   if(cambioPosible && document.getElementById('pedMain') && document.getElementById('pedMain').style.display !== 'none') renderPedidos();
 }
 
-function pedDelDia(){
-  const desde = inicioDiaOperativo(new Date()).getTime();
-  return PEDIDOS.filter(p => p.estado === 'pendiente' || (p.hechoTs || p.creadoTs || 0) >= desde || (p.creadoTs || 0) >= desde);
+// ---- dias: cada pedido es de un dia (dia operativo, arranca 06:00). La compu ve y planifica cualquier dia;
+// los celulares/tablets ven solo HOY (mas los atrasados de dias anteriores que siguen pendientes).
+function pedIso(d){ return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function pedHoy(){ return pedIso(inicioDiaOperativo(new Date())); }
+function pedFechaDe(p){ return p.fecha || (p.creadoTs ? pedIso(inicioDiaOperativo(new Date(p.creadoTs))) : pedHoy()); }
+function pedSumarDias(iso, n){ const [y, m, d] = iso.split('-').map(Number); return pedIso(new Date(y, m - 1, d + n, 12)); }
+function pedInicioDia(iso){ const [y, m, d] = iso.split('-').map(Number); return new Date(y, m - 1, d, 6, 0, 0, 0).getTime(); }
+var PED_DIAS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+function pedNombreDia(iso, largo){
+  const [y, m, d] = iso.split('-').map(Number); const dt = new Date(y, m - 1, d, 12);
+  const hoy = pedHoy();
+  const rel = iso === hoy ? 'Hoy' : (iso === pedSumarDias(hoy, 1) ? 'Mañana' : (iso === pedSumarDias(hoy, -1) ? 'Ayer' : ''));
+  if(largo) return (rel ? rel + ', ' : '') + ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'][dt.getDay()] + ' ' + d + '/' + String(m).padStart(2, '0');
+  return { dia: rel || PED_DIAS[dt.getDay()], num: d + '/' + m };
 }
+function pedPuedeVerDias(){ return !esMovil(); }
+var pedDiaSel = '';
+function pedDeFecha(iso){ return PEDIDOS.filter(p => pedFechaDe(p) === iso); }
+function pedAtrasados(){ const hoy = pedHoy(); return PEDIDOS.filter(p => p.estado === 'pendiente' && pedFechaDe(p) < hoy); }
+// para "lo que se ve hoy" (inicio, celulares): lo de hoy + atrasados
+function pedDelDia(){ return pedDeFecha(pedHoy()).concat(pedAtrasados()); }
 function pedActualizarInicio(){
   const cnt = document.getElementById('iniPedCnt');
   if(!cnt) return;
-  const pend = PEDIDOS.filter(p => p.estado === 'pendiente');
+  const pend = pedDelDia().filter(p => p.estado === 'pendiente');
   const urg = pend.some(p => p.prioridad === 'urgente');
   const hechosHoy = pedDelDia().filter(p => p.estado === 'hecho').length;
   if(pend.length){ cnt.textContent = pend.length + (pend.length === 1 ? ' pendiente' : ' pendientes'); cnt.className = 'ped-cnt' + (urg ? ' urg' : ''); cnt.style.display = ''; }
@@ -7407,7 +7440,7 @@ function iniciarPedidosSync(){
     if(pedCargaInicial && typeof snap.docChanges === 'function'){
       snap.docChanges().forEach(ch => {
         const d = ch.doc.data();
-        if(ch.type === 'added' && !(ch.doc.metadata && ch.doc.metadata.hasPendingWrites) && d.estado === 'pendiente' && d.creadoPor !== operadorName){
+        if(ch.type === 'added' && !(ch.doc.metadata && ch.doc.metadata.hasPendingWrites) && d.estado === 'pendiente' && d.creadoPor !== operadorName && pedFechaDe(d) <= pedHoy()){
           if(typeof movToast === 'function') movToast('Pedido nuevo' + (d.prioridad === 'urgente' ? ' URGENTE' : '') + ': ' + pedTitulo(d) + (d.creadoPor ? ' (' + d.creadoPor + ')' : ''));
           if(typeof movDing === 'function') movDing();
         }
@@ -7428,19 +7461,29 @@ function iniciarPedidosSync(){
 function renderPedidos(){
   const main = document.getElementById('pedMain');
   if(!main) return;
-  const lista = pedDelDia();
+  const hoy = pedHoy();
+  const verDias = pedPuedeVerDias();
+  if(!verDias || !pedDiaSel) pedDiaSel = hoy;
+  const esHoy = pedDiaSel === hoy;
+  const atras = esHoy ? pedAtrasados() : [];
+  const lista = pedDeFecha(pedDiaSel);
   const pend = lista.filter(p => p.estado === 'pendiente').sort((a, b) => ((b.prioridad === 'urgente') - (a.prioridad === 'urgente')) || ((a.hora || '99') .localeCompare(b.hora || '99')) || (a.creadoTs - b.creadoTs));
   const hechos = lista.filter(p => p.estado === 'hecho').sort((a, b) => (b.hechoTs || 0) - (a.hechoTs || 0));
   const nos = lista.filter(p => p.estado === 'no').sort((a, b) => (b.hechoTs || 0) - (a.hechoTs || 0));
   const total = lista.length;
   main.innerHTML = `<div class="plano-note">Los pedidos del supervisor, en vez del grupo de WhatsApp. Cuando alguien carga en la app lo que se pidió (cierra el pozo, mide el tanque, carga la lectura), el pedido se marca <b>hecho solo</b>. Las “otras tareas” se marcan a mano.</div>
+    ${verDias ? pedBarraDias() : ''}
+    <div class="ped-dia-tit">${avisoEsc(pedNombreDia(pedDiaSel, true))}${!verDias ? ' <small>(en el celular se ven solo los pedidos de hoy)</small>' : ''}</div>
     <div class="ped-top">
-      <button type="button" class="ped-nuevo-btn" id="pedNuevoBtn">+ Nuevo pedido</button>
+      <button type="button" class="ped-nuevo-btn" id="pedNuevoBtn">+ Nuevo pedido${verDias && !esHoy ? ' para el ' + avisoEsc(pedNombreDia(pedDiaSel).num) : ''}</button>
       <button type="button" class="ped-copiar-btn" id="pedCopiarBtn">Copiar resumen para WhatsApp</button>
     </div>
-    <p class="ped-resumen">${total ? `Hoy: <b>${hechos.length} de ${total}</b> hechos${pend.length ? ' · ' + pend.length + ' pendiente' + (pend.length === 1 ? '' : 's') : ''}${nos.length ? ' · ' + nos.length + ' no se pudo' : ''}` : 'Todavía no hay pedidos hoy.'}</p>
+    <p class="ped-resumen">${total ? `${esHoy ? 'Hoy' : 'Ese día'}: <b>${hechos.length} de ${total}</b> hechos${pend.length ? ' · ' + pend.length + ' pendiente' + (pend.length === 1 ? '' : 's') : ''}${nos.length ? ' · ' + nos.length + ' no se pudo' : ''}` : (esHoy ? 'Todavía no hay pedidos para hoy.' : (pedDiaSel > hoy ? 'Todavía no hay pedidos cargados para ese día.' : 'No hubo pedidos ese día.'))}</p>
     <div id="pedLista"></div>`;
   document.getElementById('pedNuevoBtn').addEventListener('click', () => abrirPedidoForm());
+  main.querySelectorAll('[data-dia]').forEach(b => b.addEventListener('click', () => { pedDiaSel = b.dataset.dia; renderPedidos(); }));
+  const selFecha = document.getElementById('pedFechaSel');
+  if(selFecha) selFecha.addEventListener('change', () => { if(selFecha.value){ pedDiaSel = selFecha.value; renderPedidos(); } });
   document.getElementById('pedCopiarBtn').addEventListener('click', pedCopiarResumen);
   const cont = document.getElementById('pedLista');
   const grupo = (titulo, items) => {
@@ -7450,9 +7493,28 @@ function renderPedidos(){
     items.forEach(p => g.appendChild(pedItem(p)));
     cont.appendChild(g);
   };
-  grupo('Pendientes', pend);
+  grupo('Atrasados de días anteriores', atras.sort((a, b) => pedFechaDe(a).localeCompare(pedFechaDe(b))));
+  grupo(pedDiaSel > hoy ? 'Programados' : 'Pendientes', pend);
   grupo('Hechos', hechos);
   grupo('No se pudo', nos);
+}
+
+function pedBarraDias(){
+  const hoy = pedHoy();
+  const dias = [];
+  for(let i = -3; i <= 3; i++) dias.push(pedSumarDias(pedDiaSel, i));
+  const chip = (iso) => {
+    const n = pedNombreDia(iso);
+    const l = pedDeFecha(iso);
+    const pend = l.filter(p => p.estado === 'pendiente').length;
+    return `<button type="button" class="ped-dia${iso === pedDiaSel ? ' sel' : ''}${iso === hoy ? ' hoy' : ''}" data-dia="${iso}"><b>${n.dia}</b><span>${n.num}</span>${l.length ? `<i class="${pend ? 'p' : 'ok'}">${pend ? pend : '✓'}</i>` : ''}</button>`;
+  };
+  return `<div class="ped-dias">
+      <button type="button" class="ped-dia flecha" data-dia="${pedSumarDias(pedDiaSel, -7)}" aria-label="Semana anterior">‹</button>
+      ${dias.map(chip).join('')}
+      <button type="button" class="ped-dia flecha" data-dia="${pedSumarDias(pedDiaSel, 7)}" aria-label="Semana siguiente">›</button>
+    </div>
+    <div class="ped-dias-acc">${pedDiaSel !== hoy ? `<button type="button" class="ped-hoy-btn" data-dia="${hoy}">Volver a hoy</button>` : ''}<label class="ped-fecha">Ir a fecha <input type="date" id="pedFechaSel" value="${pedDiaSel}"></label></div>`;
 }
 
 function pedIrA(p){
@@ -7475,7 +7537,7 @@ function pedItem(p){
   const el = document.createElement('div');
   el.className = 'ped-item' + (p.prioridad === 'urgente' && p.estado === 'pendiente' ? ' urgente' : '') + (p.estado !== 'pendiente' ? ' hecho' : '');
   const ic = p.estado === 'hecho' ? '<span class="ped-ic hecho" aria-label="Hecho">✓</span>' : (p.estado === 'no' ? '<span class="ped-ic no" aria-label="No se pudo">✕</span>' : '<span class="ped-ic pend" aria-label="Pendiente"></span>');
-  const meta = 'Pedido por ' + avisoEsc(p.creadoPor || '—') + ' a las ' + pedHoraTs(p.creadoTs) + (p.tipo !== 'otro' && p.detalle ? ' · ' + avisoEsc(p.detalle) : '');
+  const meta = (pedFechaDe(p) < pedHoy() && p.estado === 'pendiente' ? '<b style="color:#F2A08F">Era para el ' + avisoEsc(pedNombreDia(pedFechaDe(p), true).replace(/^(Ayer|Hoy|Mañana), /, '')) + '</b> · ' : '') + 'Pedido por ' + avisoEsc(p.creadoPor || '—') + ' a las ' + pedHoraTs(p.creadoTs) + (p.tipo !== 'otro' && p.detalle ? ' · ' + avisoEsc(p.detalle) : '');
   el.innerHTML = `<div class="ped-l1">${ic}<div class="ped-tit">${avisoEsc(pedTitulo(p))}<small>${meta}</small></div>
       ${p.prioridad === 'urgente' ? '<span class="ped-tag urg">URGENTE</span>' : ''}${p.estado === 'pendiente' && p.paso1Ts ? '<span class="ped-tag curso">EN CURSO</span>' : ''}${p.auto && p.estado === 'hecho' ? '<span class="ped-tag auto">AUTOMÁTICO</span>' : ''}</div>
     ${p.estado === 'pendiente' && p.paso1Ts ? `<div class="ped-ev">${avisoEsc(p.paso1Ev || '')} por ${avisoEsc(p.paso1Por || '—')}${p.finEsperado ? ' · <b>' + (p.tipo === 'abrir' ? 'cerrar' : 'reabrir') + ' a las ' + avisoEsc(p.finEsperado) + '</b>' : ''}</div>${pedVencido(p) ? `<div class="ped-ev no">Ya pasó la hora: falta ${p.tipo === 'abrir' ? 'cerrarlo' : 'reabrirlo'} y cargarlo en la app.</div>` : ''}` : ''}
@@ -7580,6 +7642,7 @@ function abrirPedidoForm(){
     </div>
     <div class="time-label" style="margin-top:8px" id="pedDetLbl">Detalle (opcional)</div>
     <input type="text" class="edit-input" id="pedDet" placeholder="ej: avisar a sala de control antes">
+    ${pedPuedeVerDias() ? `<div class="time-label" style="margin-top:8px">Día</div><input type="date" class="edit-input" id="pedFecha" value="${pedDiaSel || pedHoy()}" min="${pedHoy()}">` : ''}
     <div class="aib-fields" style="margin-top:8px">
       <div class="aib-field"><div class="time-label">Hora (opcional)</div><input type="time" class="edit-input time-input" id="pedHora"></div>
       <div class="aib-field"><div class="time-label">Prioridad</div>
@@ -7633,23 +7696,26 @@ function abrirPedidoForm(){
     }
     const durTxt = (t.id === 'abrir' || t.id === 'cerrar') ? ($('pedDur').value || '').trim().replace(',', '.') : '';
     const duracionHs = durTxt ? parseFloat(durTxt) : 0;
+    if(!msg && $('pedFecha') && $('pedFecha').value && $('pedFecha').value < pedHoy()) msg = 'No se pueden cargar pedidos para días que ya pasaron.';
     if(!msg && durTxt && !(duracionHs > 0 && duracionHs <= 72)) msg = 'Las horas tienen que ser un número (ej: 2 o 1,5).';
     if(msg){ err.textContent = msg; err.style.display = ''; return; }
     if(!puedeModificar()) return;
     if(!firestoreOk){ alert('No hay conexion con el guardado compartido. Revisa tu internet e intenta de nuevo.'); return; }
     const datos = { tipo, objetivo: t.obj ? objetivo : '', grupo, detalle, duracionHs, hora: $('pedHora').value, prioridad: prio, estado: 'pendiente',
-      creadoPor: operadorName || 'Sin nombre', creadoTs: Date.now(), fecha: compIsoHoy() };
+      creadoPor: operadorName || 'Sin nombre', creadoTs: Date.now(), fecha: ($('pedFecha') && $('pedFecha').value) || pedHoy() };
     const ref = db.collection('pedidos').doc();
     ref.set(datos).catch(e => alert('No se pudo guardar (' + e.message + ').'));
     PEDIDOS = [Object.assign({ id: ref.id }, datos)].concat(PEDIDOS.filter(x => x.id !== ref.id));
+    if(pedPuedeVerDias()) pedDiaSel = datos.fecha;
     closeCard(); renderPedidos(); pedActualizarInicio();
   });
 }
 
 function pedCopiarResumen(){
-  const l = pedDelDia();
+  const dia = (pedPuedeVerDias() && pedDiaSel) ? pedDiaSel : pedHoy();
+  const l = dia === pedHoy() ? pedDelDia() : pedDeFecha(dia);
   const hechos = l.filter(p => p.estado === 'hecho'), pend = l.filter(p => p.estado === 'pendiente'), nos = l.filter(p => p.estado === 'no');
-  const hoy = new Date().toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' });
+  const hoy = dia.slice(8, 10) + '/' + dia.slice(5, 7);
   let t = `PEDIDOS ${hoy} — ${hechos.length} de ${l.length} hechos\n`;
   hechos.forEach(p => { t += `✅ ${pedTitulo(p)} — ${p.hechoPor || ''} ${pedHoraTs(p.hechoTs)}${p.evidencia ? ' · ' + p.evidencia : ''}${p.nota ? ' · ' + p.nota : ''}\n`; });
   pend.forEach(p => { t += p.paso1Ts
@@ -8237,7 +8303,7 @@ function exigirNombre(){
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202610231340;
+var APP_VERSION = 202610231400;
 var appVersionNueva = 0;
 function appBuscarActualizacion(){
   if(!navigator.onLine || document.getElementById('actualizarApp')) return;
