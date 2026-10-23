@@ -7473,14 +7473,15 @@ function renderPedidos(){
   const total = lista.length;
   main.innerHTML = `<div class="plano-note">Los pedidos del supervisor, en vez del grupo de WhatsApp. Cuando alguien carga en la app lo que se pidió (cierra el pozo, mide el tanque, carga la lectura), el pedido se marca <b>hecho solo</b>. Las “otras tareas” se marcan a mano.</div>
     ${verDias ? pedBarraDias() : ''}
-    <div class="ped-dia-tit">${avisoEsc(pedNombreDia(pedDiaSel, true))}${!verDias ? ' <small>(en el celular se ven solo los pedidos de hoy)</small>' : ''}</div>
+    <div class="ped-dia-tit">${avisoEsc(pedNombreDia(pedDiaSel, true))}${!verDias ? ' <small>(los pedidos los carga el supervisor desde la compu; cuando hagas uno, marcalo hecho)</small>' : ''}</div>
     <div class="ped-top">
-      <button type="button" class="ped-nuevo-btn" id="pedNuevoBtn">+ Nuevo pedido${verDias && !esHoy ? ' para el ' + avisoEsc(pedNombreDia(pedDiaSel).num) : ''}</button>
+      ${verDias ? `<button type="button" class="ped-nuevo-btn" id="pedNuevoBtn">+ Nuevo pedido${!esHoy ? ' para el ' + avisoEsc(pedNombreDia(pedDiaSel).num) : ''}</button>` : ''}
       <button type="button" class="ped-copiar-btn" id="pedCopiarBtn">Copiar resumen para WhatsApp</button>
     </div>
     <p class="ped-resumen">${total ? `${esHoy ? 'Hoy' : 'Ese día'}: <b>${hechos.length} de ${total}</b> hechos${pend.length ? ' · ' + pend.length + ' pendiente' + (pend.length === 1 ? '' : 's') : ''}${nos.length ? ' · ' + nos.length + ' no se pudo' : ''}` : (esHoy ? 'Todavía no hay pedidos para hoy.' : (pedDiaSel > hoy ? 'Todavía no hay pedidos cargados para ese día.' : 'No hubo pedidos ese día.'))}</p>
     <div id="pedLista"></div>`;
-  document.getElementById('pedNuevoBtn').addEventListener('click', () => abrirPedidoForm());
+  const nuevoBtn = document.getElementById('pedNuevoBtn');
+  if(nuevoBtn) nuevoBtn.addEventListener('click', () => abrirPedidoForm());
   main.querySelectorAll('[data-dia]').forEach(b => b.addEventListener('click', () => { pedDiaSel = b.dataset.dia; renderPedidos(); }));
   const selFecha = document.getElementById('pedFechaSel');
   if(selFecha) selFecha.addEventListener('change', () => { if(selFecha.value){ pedDiaSel = selFecha.value; renderPedidos(); } });
@@ -7567,7 +7568,7 @@ function pedItem(p){
     if(p.tipo !== 'otro') btn('Ir a cargarlo', 'ir', () => pedIrA(p));
     btn(p.tipo === 'otro' ? 'Marcar hecho' : 'Hecho (a mano)', 'si', () => pedMarcar(p, 'hecho'));
     btn('No se pudo', '', () => pedMarcar(p, 'no'));
-    btn('Anular', '', () => pedAnular(p));
+    if(pedPuedeVerDias()) btn('Anular', '', () => pedAnular(p));
   } else {
     btn('Volver a pendiente', '', () => pedReabrir(p));
   }
@@ -8303,7 +8304,7 @@ function exigirNombre(){
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202610231400;
+var APP_VERSION = 202610231440;
 var appVersionNueva = 0;
 function appBuscarActualizacion(){
   if(!navigator.onLine || document.getElementById('actualizarApp')) return;
