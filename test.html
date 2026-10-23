@@ -1095,6 +1095,42 @@
   .mov-filtros .aviso-chip{ white-space:nowrap; flex:0 0 auto; }
   .mov-filtros .aviso-chip.sel{ background:#1C7293; border-color:#1C7293; color:#fff; }
   .mov-cnt{ font-size:.72rem; opacity:.8; margin-left:2px; }
+
+  /* ---------- Pedidos del dia ---------- */
+  .ini-tile.ped{ grid-column: 1 / -1; flex-direction:row; align-items:center; gap:12px; min-height:0; border-color:#E8B64A; background: color-mix(in srgb, #E8B64A 12%, var(--panel)); }
+  .ini-tile.ped svg{ stroke:#E8B64A; }
+  .ini-tile.ped .tx{ display:flex; flex-direction:column; gap:2px; flex:1; }
+  .ped-cnt{ background:#E8B64A; color:#14283A; font-weight:800; font-size:.85rem; border-radius:12px; padding:3px 10px; white-space:nowrap; }
+  .ped-cnt.urg{ background:#E05A47; color:#fff; }
+  .ped-cnt.ok{ background:#123B34; color:#6FC9B0; }
+  .ped-top{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
+  .ped-top button{ flex:1 1 160px; }
+  .ped-nuevo-btn{ padding:12px; border-radius:10px; font: inherit; font-weight:800; font-size:.95rem; cursor:pointer; background:#E8B64A; color:#14283A; border:0; }
+  .ped-copiar-btn{ padding:12px; border-radius:10px; font: inherit; font-weight:700; font-size:.88rem; cursor:pointer; background:none; color: var(--text); border:1.5px solid var(--line); }
+  .ped-resumen{ font-size:.85rem; color: var(--muted); margin: 0 0 8px; }
+  .ped-grupo{ font-size:.74rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color: var(--muted); margin:14px 0 6px; }
+  .ped-item{ background: var(--panel); border:1px solid var(--line); border-radius:10px; padding:11px 12px; margin-bottom:8px; display:flex; flex-direction:column; gap:6px; }
+  .ped-item.urgente{ border-left:4px solid #E05A47; }
+  .ped-item.hecho{ opacity:.92; }
+  .ped-l1{ display:flex; gap:8px; align-items:flex-start; }
+  .ped-ic{ flex:0 0 26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:.9rem; }
+  .ped-ic.pend{ border:2px solid var(--line); color: var(--muted); }
+  .ped-ic.hecho{ background:#123B34; color:#6FC9B0; }
+  .ped-ic.no{ background:#4A2A22; color:#F2A08F; }
+  .ped-tit{ flex:1; font-weight:700; font-size:.95rem; line-height:1.3; }
+  .ped-tit small{ display:block; font-weight:400; color: var(--muted); font-size:.78rem; margin-top:2px; }
+  .ped-tag{ font-size:.66rem; font-weight:800; border-radius:6px; padding:2px 7px; white-space:nowrap; }
+  .ped-tag.urg{ background:#4A2A22; color:#F2A08F; }
+  .ped-tag.auto{ background:#1B2A55; color:#9DB8FF; }
+  .ped-ev{ font-size:.8rem; color:#6FC9B0; margin-left:34px; }
+  .ped-ev.no{ color:#F2A08F; }
+  .ped-acc{ display:flex; gap:6px; margin-left:34px; flex-wrap:wrap; }
+  .ped-acc button{ font: inherit; font-size:.78rem; font-weight:700; padding:7px 11px; border-radius:8px; cursor:pointer; background:none; border:1px solid var(--line); color: var(--text); }
+  .ped-acc .si{ border-color:#6FC9B0; color:#6FC9B0; }
+  .ped-acc .ir{ border-color:#7FC4DE; color:#7FC4DE; }
+  .ped-tipos{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+  .ped-tipos .aviso-chip.sel{ background:#E8B64A; border-color:#E8B64A; color:#14283A; }
+  .ped-form-nota{ font-size:.78rem; color: var(--muted); margin:6px 0 0; }
   /* ---------- aviso de version nueva ---------- */
   #actualizarApp{ position:fixed; inset:0; z-index:9500; background:rgba(4,14,22,.9); display:flex; align-items:center; justify-content:center; padding:18px; box-sizing:border-box; }
   #actualizarApp .ua-card{ width:100%; max-width:420px; background: var(--panel); border:2px solid #6FC9B0; border-radius:16px; padding:24px 20px; box-sizing:border-box; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.5); }
@@ -1241,6 +1277,7 @@
     <button class="tab-btn" id="tabCiclaje">Ciclaje</button>
     <button class="tab-btn" id="tabComp">Compresión BP</button>
     <button class="tab-btn" id="tabMov">Últimos movimientos</button>
+    <button class="tab-btn" id="tabPed">Pedidos del día</button>
     <button class="tab-btn" id="tabAib">AIB</button>
     <button class="tab-btn" id="tabTanques">Baterias</button>
     <button class="tab-btn" id="tabPias">Pías 2</button>
@@ -1266,6 +1303,9 @@
 
 
 <section id="inicio" aria-label="Inicio">
+  <div class="ini-grid">
+    <button type="button" class="ini-tile ped" data-tab="tabPed"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4h6v3H9z"/><path d="M8 5H6v16h12V5h-2"/><path d="M9 12l2 2 4-4"/><path d="M9 17h6"/></svg><span class="tx"><span class="t">Pedidos del día</span><span class="s" id="iniPedSub">Lo que pidió el supervisor, se tacha solo al cargarlo</span></span><span class="ped-cnt" id="iniPedCnt" style="display:none;"></span></button>
+  </div>
   <div class="ini-grupo">GAS</div>
   <div class="ini-grid">
     <button type="button" class="ini-tile gas" data-tab="tabLista"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c2 3 5 5 5 9a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-5 1-8z"/></svg><span class="t">Pozos de gas</span><span class="s">Lista por USPA</span><span class="ini-nuevo" style="display:none;"></span></button>
@@ -1293,6 +1333,7 @@
 <main id="ciclajeMain" style="display:none;"></main>
 <main id="compMain" style="display:none;"></main>
 <main id="movMain" style="display:none;"></main>
+<main id="pedMain" style="display:none;"></main>
 <main id="aibMain" style="display:none;"></main>
 <main id="tanquesMain" style="display:none;"></main>
 <main id="piasMain" style="display:none;"></main>
@@ -2328,6 +2369,7 @@ function movRefrescarSiAbierta(){
 }
 function updatePendCount(){
   movRefrescarSiAbierta();
+  if(typeof pedProgramarAuto === 'function') pedProgramarAuto();
   const badge = document.getElementById('pendCount');
   if(badge){
     const n = pendientesDeReporte().length + pendientesDeReporteAib().length + pendientesDeReporteNotas().length + pendientesDeVelas().length;
@@ -2395,7 +2437,7 @@ var MOV_AV_TITULO = 'Centenario Interactivo';
 var MOV_AV_TABS = {
   pozos_overrides: 'tabLista', pozos_velas: 'tabLista', uspa_notas: 'tabLista', aib_pozos: 'tabAib',
   baterias_tanques: 'tabTanques', baterias_bombeo_log: 'tabTanques', equipos_notas: 'tabTanques',
-  pias2_tanques: 'tabPias', pias2_equipos: 'tabPias', pias2_camiones: 'tabPias', ptc_descargas: 'tabPtc', avisos_mtto: 'tabAvisos', compresores_lecturas: 'tabComp'
+  pias2_tanques: 'tabPias', pias2_equipos: 'tabPias', pias2_camiones: 'tabPias', ptc_descargas: 'tabPtc', avisos_mtto: 'tabAvisos', compresores_lecturas: 'tabComp', pedidos: 'tabPed'
 };
 
 function movAvisosActivo(){ return !esMovil(); }
@@ -2440,6 +2482,7 @@ function movTexto(col, id, d){
     case 'pias2_equipos': return (d.nombre || id) + ' · Pías 2';
     case 'pias2_camiones': return 'Camión de agua' + (d.remito ? ' (remito ' + d.remito + ')' : '') + ' · Pías 2';
     case 'ptc_descargas': return (d.tipo === 'carga' ? 'Carga PTC Cargadero' : 'Descarga PTC Isla ' + (d.isla || '?')) + (d.remito ? ' (remito ' + d.remito + ')' : '');
+    case 'pedidos': return 'Pedido: ' + (d.titulo || '');
     case 'compresores_lecturas': return 'Compresor ' + (d.unidad || '') + (d.estado === 'parado' ? ' (parado)' : '');
     case 'avisos_mtto': return 'Aviso de mtto: ' + (d.equipo || d.pozo || '') + (d.criticidad ? ' (' + d.criticidad + ')' : '');
   }
@@ -3502,6 +3545,7 @@ function startSync(){
   }, (err) => { console.error('Firestore sync error (ptc_descargas)', err); });
 
   iniciarCompSync();
+  iniciarPedidosSync();
 }
 
 // carga inicial de pozos de petroleo (solo corre una vez, la primera vez que la coleccion esta vacia)
@@ -6237,8 +6281,8 @@ function abrirPestanaAvisos(){
 }
 
 // ---------------- Manejo de pestañas (helper generico) ----------------
-const TAB_IDS = ['tabLista','tabPlano','tabRed','tabCiclaje','tabComp','tabMov','tabAib','tabTanques','tabPias','tabPtc','tabAvisos'];
-const MAIN_IDS = ['main','planoMain','redMain','ciclajeMain','compMain','movMain','aibMain','tanquesMain','piasMain','ptcMain','avisosMain'];
+const TAB_IDS = ['tabLista','tabPlano','tabRed','tabCiclaje','tabComp','tabMov','tabPed','tabAib','tabTanques','tabPias','tabPtc','tabAvisos'];
+const MAIN_IDS = ['main','planoMain','redMain','ciclajeMain','compMain','movMain','pedMain','aibMain','tanquesMain','piasMain','ptcMain','avisosMain'];
 function switchTab(activeTabId, activeMainId){
   if(window.__seccionListo && seccionActual !== activeTabId) entrarSeccion(activeTabId);
   movMarcarVistos(activeTabId);
@@ -7153,6 +7197,322 @@ document.getElementById('tabPtc').addEventListener('click', () => {
 });
 
 
+// ---------------- Pedidos del dia ----------------
+// El supervisor carga cada pedido en la app (en vez del grupo de WhatsApp). Cuando un operador carga en la app
+// el dato que corresponde (cierra el pozo, mide el tanque, carga la lectura del compresor...), el pedido se marca
+// HECHO solo, con quien lo hizo, la hora y lo que cargo. Los pedidos de "otra tarea" se marcan a mano.
+var PEDIDOS = [];
+var pedCargaInicial = false;
+var PED_TIPOS = [
+  { id: 'abrir', label: 'Abrir pozo', obj: 'pozo', verbo: 'Abrir' },
+  { id: 'cerrar', label: 'Cerrar pozo', obj: 'pozo', verbo: 'Cerrar' },
+  { id: 'velas', label: 'Lanzar velas', obj: 'pozo', verbo: 'Lanzar velas en' },
+  { id: 'aib', label: 'Control AIB', obj: 'aib', verbo: 'Controlar AIB' },
+  { id: 'tanque', label: 'Medir tanque', obj: 'tanque', verbo: 'Medir' },
+  { id: 'bombeo', label: 'Bombeo a PTC', obj: 'bateria', verbo: 'Bombear a PTC desde' },
+  { id: 'compresor', label: 'Lectura compresor', obj: 'compresor', verbo: 'Lectura del' },
+  { id: 'otro', label: 'Otra tarea', obj: '', verbo: '' }
+];
+function pedTipo(id){ return PED_TIPOS.find(t => t.id === id) || PED_TIPOS[PED_TIPOS.length - 1]; }
+function pedTitulo(p){
+  if(p.tipo === 'otro') return p.detalle || 'Tarea';
+  const t = pedTipo(p.tipo);
+  let obj = p.objetivo || '';
+  if(p.tipo === 'tanque' && p.grupo) obj += ' (' + p.grupo + ')';
+  return t.verbo + ' ' + obj + (p.hora ? ' a las ' + p.hora : '');
+}
+function pedHoraTs(ts){ return ts ? new Date(ts).toTimeString().slice(0, 5) : ''; }
+function pedTs(r){ return r && r._updatedAtDate ? r._updatedAtDate.getTime() : (r && r.clientTs) || 0; }
+function pedNormPozo(t){ t = String(t || '').trim(); if(/^\d/.test(t)) t = 'Ce-' + t; return t.replace(/^ce-?/i, 'Ce-'); }
+
+// busca en lo cargado algo que cumpla el pedido (despues de que se creo)
+function pedBuscarCumplimiento(p){
+  const c = p.creadoTs || 0;
+  const desp = (r) => pedTs(r) > c;
+  if(p.tipo === 'abrir' || p.tipo === 'cerrar'){
+    const r = POZOS.find(x => x.pozo === p.objetivo);
+    const campo = p.tipo === 'abrir' ? 'horaApertura' : 'horaCierre';
+    if(r && desp(r) && r[campo] && (r.updatedFields || []).includes(campo)){
+      const ev = p.tipo === 'abrir'
+        ? 'Abierto ' + r.horaApertura + (r.presion && r.presion !== 's/d' ? ' · ' + r.presion : '')
+        : 'Cerrado ' + r.horaCierre + (r.presionCierre ? ' · ' + r.presionCierre + ' kg/cm²' : '');
+      return { por: r.operador, ts: pedTs(r), ev };
+    }
+  } else if(p.tipo === 'velas'){
+    const v = VELAS.filter(x => x.pozo === p.objetivo && desp(x)).sort((a, b) => pedTs(a) - pedTs(b))[0];
+    if(v) return { por: v.operador, ts: pedTs(v), ev: fraseVela(v.tipo, v.numero) };
+  } else if(p.tipo === 'aib'){
+    const r = AIB_POZOS.find(x => x.pozo === p.objetivo);
+    if(r && desp(r)) return { por: r.operador, ts: pedTs(r), ev: buildAibNovedad(r) };
+  } else if(p.tipo === 'tanque'){
+    const lista = p.grupo === 'Pias 2' ? PIAS2_TANQUES_DATA : TANQUES_DATA;
+    const r = lista.find(x => x.nombre === p.objetivo && (!p.grupo || p.grupo === 'Pias 2' || x.bateria === p.grupo));
+    if(r && desp(r)) return { por: r.operador, ts: pedTs(r), ev: 'Nivel total ' + (r.nivelTotal || '?') + ' cm · interfaz ' + (r.nivelInterfaz || '?') + ' cm' };
+  } else if(p.tipo === 'bombeo'){
+    const b = BOMBEO_LOG.filter(x => x.bateria === p.objetivo && desp(x)).sort((a, b2) => pedTs(a) - pedTs(b2))[0];
+    if(b) return { por: b.operador, ts: pedTs(b), ev: (b.bombasEnServicio || []).length ? (b.bombasEnServicio.join(' y ') + ' · ' + bombeoFmt(b.volumenM3 || 0, 2) + ' m³') : 'Sin bombas en servicio' };
+  } else if(p.tipo === 'compresor'){
+    const l = COMP_LECT.filter(x => x.unidad === p.objetivo && desp(x)).sort((a, b) => pedTs(a) - pedTs(b))[0];
+    if(l) return { por: l.operador, ts: pedTs(l), ev: compNovedad(l) };
+  }
+  return null;
+}
+var pedAutoTimer = null;
+function pedProgramarAuto(){ clearTimeout(pedAutoTimer); pedAutoTimer = setTimeout(pedAutoCompletar, 800); }
+function pedAutoCompletar(){
+  if(!firestoreOk || !PEDIDOS.length || (typeof habBloqueado === 'function' && habBloqueado())) return;
+  PEDIDOS.filter(p => p.estado === 'pendiente' && p.tipo !== 'otro').forEach(p => {
+    const m = pedBuscarCumplimiento(p);
+    if(!m) return;
+    p.estado = 'hecho';
+    const datos = { estado: 'hecho', auto: true, hechoPor: m.por || 'Sin nombre', hechoTs: m.ts || Date.now(), evidencia: m.ev || '' };
+    Object.assign(p, datos);
+    db.collection('pedidos').doc(p.id).update(datos).catch(() => {});
+  });
+}
+
+function pedDelDia(){
+  const desde = inicioDiaOperativo(new Date()).getTime();
+  return PEDIDOS.filter(p => p.estado === 'pendiente' || (p.hechoTs || p.creadoTs || 0) >= desde || (p.creadoTs || 0) >= desde);
+}
+function pedActualizarInicio(){
+  const cnt = document.getElementById('iniPedCnt');
+  if(!cnt) return;
+  const pend = PEDIDOS.filter(p => p.estado === 'pendiente');
+  const urg = pend.some(p => p.prioridad === 'urgente');
+  const hechosHoy = pedDelDia().filter(p => p.estado === 'hecho').length;
+  if(pend.length){ cnt.textContent = pend.length + (pend.length === 1 ? ' pendiente' : ' pendientes'); cnt.className = 'ped-cnt' + (urg ? ' urg' : ''); cnt.style.display = ''; }
+  else if(hechosHoy){ cnt.textContent = 'Todo hecho'; cnt.className = 'ped-cnt ok'; cnt.style.display = ''; }
+  else cnt.style.display = 'none';
+}
+
+function iniciarPedidosSync(){
+  if(!firestoreOk) return;
+  db.collection('pedidos').orderBy('creadoTs', 'desc').limit(300).onSnapshot((snap) => {
+    detectarMovimientos(snap, 'pedidos', true);
+    // aviso en el celular cuando llega un pedido nuevo (no en la primera carga ni si lo cargo este mismo)
+    if(pedCargaInicial && typeof snap.docChanges === 'function'){
+      snap.docChanges().forEach(ch => {
+        const d = ch.doc.data();
+        if(ch.type === 'added' && !(ch.doc.metadata && ch.doc.metadata.hasPendingWrites) && d.estado === 'pendiente' && d.creadoPor !== operadorName){
+          if(typeof movToast === 'function') movToast('Pedido nuevo' + (d.prioridad === 'urgente' ? ' URGENTE' : '') + ': ' + pedTitulo(d) + (d.creadoPor ? ' (' + d.creadoPor + ')' : ''));
+          if(typeof movDing === 'function') movDing();
+        }
+      });
+    }
+    pedCargaInicial = true;
+    PEDIDOS = [];
+    snap.forEach(doc => {
+      const d = doc.data();
+      PEDIDOS.push(Object.assign({ id: doc.id }, d, { _updatedAtDate: d.creadoTs ? new Date(d.creadoTs) : null }));
+    });
+    pedActualizarInicio();
+    pedProgramarAuto();
+    if(document.getElementById('pedMain').style.display !== 'none') renderPedidos();
+  }, (err) => { console.error('Firestore sync error (pedidos)', err); });
+}
+
+function renderPedidos(){
+  const main = document.getElementById('pedMain');
+  if(!main) return;
+  const lista = pedDelDia();
+  const pend = lista.filter(p => p.estado === 'pendiente').sort((a, b) => ((b.prioridad === 'urgente') - (a.prioridad === 'urgente')) || ((a.hora || '99') .localeCompare(b.hora || '99')) || (a.creadoTs - b.creadoTs));
+  const hechos = lista.filter(p => p.estado === 'hecho').sort((a, b) => (b.hechoTs || 0) - (a.hechoTs || 0));
+  const nos = lista.filter(p => p.estado === 'no').sort((a, b) => (b.hechoTs || 0) - (a.hechoTs || 0));
+  const total = lista.length;
+  main.innerHTML = `<div class="plano-note">Los pedidos del supervisor, en vez del grupo de WhatsApp. Cuando alguien carga en la app lo que se pidió (cierra el pozo, mide el tanque, carga la lectura), el pedido se marca <b>hecho solo</b>. Las “otras tareas” se marcan a mano.</div>
+    <div class="ped-top">
+      <button type="button" class="ped-nuevo-btn" id="pedNuevoBtn">+ Nuevo pedido</button>
+      <button type="button" class="ped-copiar-btn" id="pedCopiarBtn">Copiar resumen para WhatsApp</button>
+    </div>
+    <p class="ped-resumen">${total ? `Hoy: <b>${hechos.length} de ${total}</b> hechos${pend.length ? ' · ' + pend.length + ' pendiente' + (pend.length === 1 ? '' : 's') : ''}${nos.length ? ' · ' + nos.length + ' no se pudo' : ''}` : 'Todavía no hay pedidos hoy.'}</p>
+    <div id="pedLista"></div>`;
+  document.getElementById('pedNuevoBtn').addEventListener('click', () => abrirPedidoForm());
+  document.getElementById('pedCopiarBtn').addEventListener('click', pedCopiarResumen);
+  const cont = document.getElementById('pedLista');
+  const grupo = (titulo, items) => {
+    if(!items.length) return;
+    const g = document.createElement('div');
+    g.innerHTML = `<div class="ped-grupo">${titulo} (${items.length})</div>`;
+    items.forEach(p => g.appendChild(pedItem(p)));
+    cont.appendChild(g);
+  };
+  grupo('Pendientes', pend);
+  grupo('Hechos', hechos);
+  grupo('No se pudo', nos);
+}
+
+function pedIrA(p){
+  if(p.tipo === 'abrir' || p.tipo === 'cerrar' || p.tipo === 'velas'){
+    const r = POZOS.find(x => x.pozo === p.objetivo);
+    if(r){ document.getElementById('tabLista').click(); openCard(r, r.bateria || 'Sin bateria'); }
+  } else if(p.tipo === 'aib') document.getElementById('tabAib').click();
+  else if(p.tipo === 'tanque'){ if(p.grupo === 'Pias 2') document.getElementById('tabPias').click(); else { bateriasAbiertas.add(p.grupo); document.getElementById('tabTanques').click(); } }
+  else if(p.tipo === 'bombeo'){ bateriasAbiertas.add(p.objetivo); document.getElementById('tabTanques').click(); }
+  else if(p.tipo === 'compresor') document.getElementById('tabComp').click();
+}
+
+function pedItem(p){
+  const el = document.createElement('div');
+  el.className = 'ped-item' + (p.prioridad === 'urgente' && p.estado === 'pendiente' ? ' urgente' : '') + (p.estado !== 'pendiente' ? ' hecho' : '');
+  const ic = p.estado === 'hecho' ? '<span class="ped-ic hecho" aria-label="Hecho">✓</span>' : (p.estado === 'no' ? '<span class="ped-ic no" aria-label="No se pudo">✕</span>' : '<span class="ped-ic pend" aria-label="Pendiente"></span>');
+  const meta = 'Pedido por ' + avisoEsc(p.creadoPor || '—') + ' a las ' + pedHoraTs(p.creadoTs) + (p.tipo !== 'otro' && p.detalle ? ' · ' + avisoEsc(p.detalle) : '');
+  el.innerHTML = `<div class="ped-l1">${ic}<div class="ped-tit">${avisoEsc(pedTitulo(p))}<small>${meta}</small></div>
+      ${p.prioridad === 'urgente' ? '<span class="ped-tag urg">URGENTE</span>' : ''}${p.auto && p.estado === 'hecho' ? '<span class="ped-tag auto">AUTOMÁTICO</span>' : ''}</div>
+    ${p.estado === 'hecho' ? `<div class="ped-ev">Hecho por ${avisoEsc(p.hechoPor || '—')} a las ${pedHoraTs(p.hechoTs)}${p.evidencia ? ' · ' + avisoEsc(p.evidencia) : ''}${p.nota ? ' · ' + avisoEsc(p.nota) : ''}</div>` : ''}
+    ${p.estado === 'no' ? `<div class="ped-ev no">No se pudo (${avisoEsc(p.hechoPor || '—')}, ${pedHoraTs(p.hechoTs)}): ${avisoEsc(p.nota || 'sin motivo')}</div>` : ''}
+    <div class="ped-acc"></div>`;
+  const acc = el.querySelector('.ped-acc');
+  const btn = (txt, cls, fn) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = txt; if(cls) b.className = cls; b.addEventListener('click', fn); acc.appendChild(b); };
+  if(p.estado === 'pendiente'){
+    if(p.tipo !== 'otro') btn('Ir a cargarlo', 'ir', () => pedIrA(p));
+    btn(p.tipo === 'otro' ? 'Marcar hecho' : 'Hecho (a mano)', 'si', () => pedMarcar(p, 'hecho'));
+    btn('No se pudo', '', () => pedMarcar(p, 'no'));
+    btn('Anular', '', () => pedAnular(p));
+  } else {
+    btn('Volver a pendiente', '', () => pedReabrir(p));
+  }
+  return el;
+}
+
+function pedMarcar(p, estado){
+  let nota = '';
+  if(estado === 'no'){
+    nota = (window.prompt('¿Por qué no se pudo? (ej: sin acceso, falta repuesto)', '') || '').trim();
+    if(!nota){ alert('Escribí el motivo para marcarlo como “no se pudo”.'); return; }
+  } else if(p.tipo === 'otro'){
+    nota = (window.prompt('Nota (opcional): qué se hizo', '') || '').trim();
+  }
+  if(!puedeModificar()) return;
+  const datos = { estado, auto: false, hechoPor: operadorName || 'Sin nombre', hechoTs: Date.now(), nota, evidencia: '' };
+  Object.assign(p, datos);
+  db.collection('pedidos').doc(p.id).update(datos).catch(e => alert('No se pudo guardar (' + e.message + ').'));
+  renderPedidos(); pedActualizarInicio();
+}
+function pedReabrir(p){
+  if(!confirm('¿Volver “' + pedTitulo(p) + '” a pendiente?')) return;
+  if(!puedeModificar()) return;
+  // al reabrir, cuenta solo lo que se cargue desde ahora
+  const datos = { estado: 'pendiente', auto: false, hechoPor: '', hechoTs: 0, nota: '', evidencia: '', creadoTs: Date.now() };
+  Object.assign(p, datos);
+  db.collection('pedidos').doc(p.id).update(datos).catch(e => alert('No se pudo guardar (' + e.message + ').'));
+  renderPedidos(); pedActualizarInicio();
+}
+function pedAnular(p){
+  if(!confirm('¿Anular el pedido “' + pedTitulo(p) + '”? Se borra de la lista.')) return;
+  if(!puedeModificar()) return;
+  db.collection('pedidos').doc(p.id).delete().catch(e => alert('No se pudo (' + e.message + ').'));
+  PEDIDOS = PEDIDOS.filter(x => x.id !== p.id);
+  renderPedidos(); pedActualizarInicio();
+}
+
+function pedOpciones(obj){
+  if(obj === 'pozo') return POZOS.map(p => p.pozo);
+  if(obj === 'aib') return AIB_POZOS.map(p => p.pozo);
+  if(obj === 'compresor') return compUnidades().map(c => c.unidad + (c.pozo ? ' · ' + c.pozo : ''));
+  if(obj === 'bateria') return Object.keys(BOMBEO_PTC);
+  if(obj === 'tanque'){
+    const l = [];
+    Object.keys(TANQUES_BATERIAS).forEach(b => TANQUES_BATERIAS[b].forEach(t => l.push(t + ' · ' + b)));
+    PIAS2_TANQUES_NOMBRES.forEach(t => l.push(t + ' · Pias 2'));
+    return l;
+  }
+  return [];
+}
+
+function abrirPedidoForm(){
+  let tipo = 'cerrar', prio = 'normal';
+  window._currentCardRec = null;
+  const card = document.getElementById('card');
+  card.innerHTML = `
+    <div class="card-head">
+      <div><h2>Nuevo pedido</h2><span class="bat-pill" style="background:#B9861C">Pedidos del día</span></div>
+      <button class="close-btn" id="closeBtn">&times;</button>
+    </div>
+    <div class="time-label">¿Qué hay que hacer?</div>
+    <div class="ped-tipos" id="pedTipos">${PED_TIPOS.map(t => `<button type="button" class="aviso-chip" data-t="${t.id}">${t.label}</button>`).join('')}</div>
+    <div id="pedObjWrap">
+      <div class="time-label" id="pedObjLbl">Pozo</div>
+      <input type="text" class="edit-input" id="pedObj" list="pedObjDl" autocomplete="off">
+      <datalist id="pedObjDl"></datalist>
+    </div>
+    <div class="time-label" style="margin-top:8px" id="pedDetLbl">Detalle (opcional)</div>
+    <input type="text" class="edit-input" id="pedDet" placeholder="ej: avisar a sala de control antes">
+    <div class="aib-fields" style="margin-top:8px">
+      <div class="aib-field"><div class="time-label">Hora (opcional)</div><input type="time" class="edit-input time-input" id="pedHora"></div>
+      <div class="aib-field"><div class="time-label">Prioridad</div>
+        <div class="estado-toggle" style="margin:0"><button type="button" class="estado-btn abierto active" data-p="normal">NORMAL</button><button type="button" class="estado-btn cerrado" data-p="urgente">URGENTE</button></div></div>
+    </div>
+    <p class="ped-form-nota" id="pedAutoNota"></p>
+    <div class="aviso-error" id="pedErr" style="display:none;"></div>
+    <div class="edit-actions"><button class="save-btn" id="pedGuardar">Cargar pedido</button><button class="cancel-btn" id="pedCancel">Cancelar</button></div>`;
+  card.scrollTop = 0;
+  document.getElementById('overlay').classList.add('show');
+  if(!modalHistoryPushed){ history.pushState({ pozosModal: true }, ''); modalHistoryPushed = true; }
+  const $ = (id) => document.getElementById(id);
+  $('closeBtn').addEventListener('click', closeCard);
+  $('pedCancel').addEventListener('click', closeCard);
+  const LBL = { pozo: 'Pozo (ej: 1126)', aib: 'Pozo AIB', tanque: 'Tanque', bateria: 'Batería', compresor: 'Compresor' };
+  function pintar(){
+    const t = pedTipo(tipo);
+    card.querySelectorAll('#pedTipos .aviso-chip').forEach(b => b.classList.toggle('sel', b.dataset.t === tipo));
+    $('pedObjWrap').style.display = t.obj ? '' : 'none';
+    $('pedObjLbl').textContent = LBL[t.obj] || '';
+    $('pedObjDl').innerHTML = pedOpciones(t.obj).map(o => `<option value="${avisoEsc(o)}">`).join('');
+    $('pedDetLbl').textContent = t.id === 'otro' ? 'Tarea' : 'Detalle (opcional)';
+    $('pedDet').placeholder = t.id === 'otro' ? 'ej: Revisar pérdida en separador SG 8' : 'ej: avisar a sala de control antes';
+    $('pedAutoNota').textContent = t.id === 'otro' ? 'Esta tarea la marca a mano quien la hace.' : 'Se marca hecho solo cuando alguien cargue el dato en la app.';
+  }
+  card.querySelectorAll('#pedTipos .aviso-chip').forEach(b => b.addEventListener('click', () => { tipo = b.dataset.t; $('pedObj').value = ''; pintar(); }));
+  card.querySelectorAll('[data-p]').forEach(b => b.addEventListener('click', () => { prio = b.dataset.p; card.querySelectorAll('[data-p]').forEach(x => x.classList.toggle('active', x === b)); }));
+  pintar();
+  $('pedGuardar').addEventListener('click', () => {
+    const t = pedTipo(tipo);
+    const err = $('pedErr');
+    let objetivo = $('pedObj').value.trim(), grupo = '';
+    const detalle = $('pedDet').value.trim();
+    let msg = '';
+    if(t.id === 'otro'){ if(!detalle) msg = 'Escribí la tarea.'; }
+    else if(!objetivo) msg = 'Falta indicar ' + (LBL[t.obj] || 'el equipo').toLowerCase().replace(/ \(.*/, '') + '.';
+    if(!msg && t.obj === 'pozo'){ objetivo = pedNormPozo(objetivo); if(!POZOS.some(p => p.pozo === objetivo)) msg = 'No encontré el pozo ' + objetivo + ' en la lista.'; }
+    if(!msg && t.obj === 'aib'){ objetivo = pedNormPozo(objetivo); if(!AIB_POZOS.some(p => p.pozo === objetivo)) msg = 'No encontré el AIB ' + objetivo + '.'; }
+    if(!msg && t.obj === 'compresor'){ objetivo = compNormU(objetivo.split('·')[0]); if(!compUnidades().some(c => c.unidad === objetivo)) msg = 'No encontré el compresor ' + objetivo + '.'; }
+    if(!msg && t.obj === 'bateria'){ const b = Object.keys(BOMBEO_PTC).find(x => x.toLowerCase() === objetivo.toLowerCase()); if(!b) msg = 'Elegí la batería de la lista.'; else objetivo = b; }
+    if(!msg && t.obj === 'tanque'){
+      const partes = objetivo.split('·').map(x => x.trim());
+      const op = pedOpciones('tanque').find(o => o.toLowerCase() === objetivo.toLowerCase() || o.toLowerCase().startsWith(partes[0].toLowerCase() + ' ·'));
+      if(!op) msg = 'Elegí el tanque de la lista.'; else { objetivo = op.split('·')[0].trim(); grupo = op.split('·')[1].trim(); }
+    }
+    if(msg){ err.textContent = msg; err.style.display = ''; return; }
+    if(!puedeModificar()) return;
+    if(!firestoreOk){ alert('No hay conexion con el guardado compartido. Revisa tu internet e intenta de nuevo.'); return; }
+    const datos = { tipo, objetivo: t.obj ? objetivo : '', grupo, detalle, hora: $('pedHora').value, prioridad: prio, estado: 'pendiente',
+      creadoPor: operadorName || 'Sin nombre', creadoTs: Date.now(), fecha: compIsoHoy() };
+    const ref = db.collection('pedidos').doc();
+    ref.set(datos).catch(e => alert('No se pudo guardar (' + e.message + ').'));
+    PEDIDOS = [Object.assign({ id: ref.id }, datos)].concat(PEDIDOS.filter(x => x.id !== ref.id));
+    closeCard(); renderPedidos(); pedActualizarInicio();
+  });
+}
+
+function pedCopiarResumen(){
+  const l = pedDelDia();
+  const hechos = l.filter(p => p.estado === 'hecho'), pend = l.filter(p => p.estado === 'pendiente'), nos = l.filter(p => p.estado === 'no');
+  const hoy = new Date().toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' });
+  let t = `PEDIDOS ${hoy} — ${hechos.length} de ${l.length} hechos\n`;
+  hechos.forEach(p => { t += `✅ ${pedTitulo(p)} — ${p.hechoPor || ''} ${pedHoraTs(p.hechoTs)}${p.evidencia ? ' · ' + p.evidencia : ''}${p.nota ? ' · ' + p.nota : ''}\n`; });
+  pend.forEach(p => { t += `⏳ ${pedTitulo(p)}${p.prioridad === 'urgente' ? ' (URGENTE)' : ''} — pendiente\n`; });
+  nos.forEach(p => { t += `❌ ${pedTitulo(p)} — no se pudo: ${p.nota || ''} (${p.hechoPor || ''})\n`; });
+  if(navigator.share && esMovil()){ navigator.share({ title: 'Pedidos del día', text: t }).catch(() => {}); return; }
+  if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(() => movToast('Resumen copiado: pegalo en el grupo de WhatsApp.')).catch(() => prompt('Copiá el resumen:', t));
+  else prompt('Copiá el resumen:', t);
+}
+
+document.getElementById('tabPed').addEventListener('click', () => {
+  switchTab('tabPed', 'pedMain');
+  renderPedidos();
+});
+
 // ---------------- Compresion BP: compresores Hoerbiger asignados a pozos ----------------
 // 'compresores_bp': un documento por unidad (U-xxx) con el pozo y la USPA asignados (los cambios de asignacion).
 // 'compresores_lecturas': cada lectura (PB, succion, descarga, caudal, RPM o unidad parada). Cada lectura
@@ -7569,7 +7929,7 @@ renderPlano();
 // "‹ Inicio" o el boton Atras del celular vuelven. Dentro de Gas y de Petroleo quedan las
 // pestañas hermanas para pasar de una a otra sin volver al inicio.
 const SECCION_TITULO = { tabLista: 'Pozos de gas', tabPlano: 'Plano (colectoras)', tabRed: 'Red', tabCiclaje: 'Ciclaje', tabComp: 'Compresión BP',
-  tabMov: 'Últimos movimientos', tabAib: 'AIB', tabTanques: 'Baterías', tabPias: 'Pías 2', tabPtc: 'PTC', tabAvisos: 'Avisos' };
+  tabMov: 'Últimos movimientos', tabPed: 'Pedidos del día', tabAib: 'AIB', tabTanques: 'Baterías', tabPias: 'Pías 2', tabPtc: 'PTC', tabAvisos: 'Avisos' };
 const SECCION_GRUPO = { tabLista: 'gas', tabPlano: 'gas', tabRed: 'gas', tabCiclaje: 'gas', tabComp: 'gas', tabAib: 'oil', tabTanques: 'oil' };
 const SECCION_CON_BUSQUEDA = ['tabLista', 'tabPlano', 'tabRed', 'tabAvisos'];
 var seccionActual = null;
@@ -7608,6 +7968,7 @@ function inicioActualizar(){
   document.querySelectorAll('#inicio .ini-tile').forEach(t => {
     const n = nuevos.filter(x => x.tab === t.dataset.tab).length;
     const badge = t.querySelector('.ini-nuevo');
+    if(!badge) return;
     badge.textContent = n === 1 ? '1 nuevo' : n + ' nuevos';
     badge.style.display = n ? '' : 'none';
   });
@@ -7723,7 +8084,7 @@ function exigirNombre(){
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202610210250;
+var APP_VERSION = 202610231230;
 var appVersionNueva = 0;
 function appBuscarActualizacion(){
   if(!navigator.onLine || document.getElementById('actualizarApp')) return;
