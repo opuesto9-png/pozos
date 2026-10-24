@@ -295,6 +295,15 @@
     z-index: 20;
   }
   .overlay.show{ display:flex; }
+  #salirSinGuardar{ display:none; position:fixed; inset:0; z-index:3000; background: rgba(4,14,22,.72); align-items:center; justify-content:center; padding:20px; }
+  #salirSinGuardar.show{ display:flex; }
+  #salirSinGuardar .ssg-card{ width:100%; max-width:380px; background: var(--panel); border:2px solid #E8B64A; border-radius:16px; padding:20px; box-sizing:border-box; display:flex; flex-direction:column; gap:10px; box-shadow:0 20px 60px rgba(0,0,0,.5); }
+  #salirSinGuardar .ssg-tit{ font-size:1.15rem; font-weight:700; }
+  #salirSinGuardar .ssg-txt{ font-size:0.92rem; color: var(--muted); line-height:1.4; }
+  #salirSinGuardar .ssg-btns{ display:flex; flex-direction:column; gap:8px; margin-top:6px; }
+  #salirSinGuardar button{ min-height:46px; border-radius:10px; font-size:0.98rem; font-weight:600; cursor:pointer; }
+  #salirSinGuardar .ssg-seguir{ background:#1C7293; border:1px solid #1C7293; color:#fff; }
+  #salirSinGuardar .ssg-salir{ background:transparent; border:1px solid #c0524a; color:#f0b0a8; }
   .card{
     background: var(--panel);
     width: 100%;
@@ -4469,7 +4478,41 @@ function renderCardEdit(rec, bat){
   });
 }
 
+// ---- Datos sin guardar: si se toca afuera, Esc o Atras con algo escrito en la ficha, se pregunta antes ----
+// "Sucio" = el usuario escribio o eligio algo en la ficha abierta. Se limpia cuando la ficha se vuelve a
+// dibujar entera (abrir otra, o despues de guardar) y al cerrarla.
+var cardSucio = false;
+(function(){
+  const card = document.getElementById('card');
+  const marcar = (e) => { if(e.isTrusted && e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) && e.target.type !== 'search') cardSucio = true; };
+  card.addEventListener('input', marcar);
+  card.addEventListener('change', marcar);
+  new MutationObserver(() => { cardSucio = false; }).observe(card, { childList: true });
+})();
+function cardConfirmarSalir(alSalir, alQuedarse){
+  let d = document.getElementById('salirSinGuardar');
+  if(!d){
+    d = document.createElement('div');
+    d.id = 'salirSinGuardar';
+    d.innerHTML = `<div class="ssg-card" role="alertdialog" aria-modal="true" aria-labelledby="ssgTit">
+      <div class="ssg-tit" id="ssgTit">¿Salir sin guardar?</div>
+      <div class="ssg-txt">Cargaste datos en esta ficha que todavía no se guardaron. Si salís ahora, se pierden.</div>
+      <div class="ssg-btns"><button type="button" id="ssgSeguir" class="ssg-seguir">Seguir cargando</button><button type="button" id="ssgSalir" class="ssg-salir">Salir sin guardar</button></div></div>`;
+    document.body.appendChild(d);
+  }
+  d.classList.add('show');
+  const fin = (fn) => { d.classList.remove('show'); if(fn) fn(); };
+  document.getElementById('ssgSeguir').onclick = () => fin(alQuedarse);
+  document.getElementById('ssgSalir').onclick = () => fin(alSalir);
+  setTimeout(() => { const b = document.getElementById('ssgSeguir'); if(b) b.focus(); }, 50);
+}
+function closeCardSeguro(){
+  if(!cardSucio || !document.getElementById('overlay').classList.contains('show')){ closeCard(); return; }
+  cardConfirmarSalir(() => { cardSucio = false; closeCard(); });
+}
+
 function closeCard(){
+  cardSucio = false;
   document.getElementById('overlay').classList.remove('show');
   if(modalHistoryPushed){
     modalHistoryPushed = false;
@@ -4479,7 +4522,14 @@ function closeCard(){
 window.addEventListener('popstate', () => {
   // se dispara tanto si el usuario toca "atras" en el celular como si lo llamamos nosotros arriba
   if(modalHistoryPushed){
+    if(cardSucio && document.getElementById('overlay').classList.contains('show')){
+      // Atras con datos sin guardar: volvemos a poner el estado de la ficha y preguntamos
+      try { history.pushState({ pozosModal: true }, ''); } catch(e) {}
+      cardConfirmarSalir(() => { cardSucio = false; closeCard(); });
+      return;
+    }
     modalHistoryPushed = false;
+    cardSucio = false;
     document.getElementById('overlay').classList.remove('show');
   }
 });
@@ -4492,10 +4542,13 @@ const FIELD_LABELS = {
 
 
 document.getElementById('overlay').addEventListener('click', (e) => {
-  if(e.target.id === 'overlay') closeCard();
+  if(e.target.id === 'overlay') closeCardSeguro();
 });
 document.addEventListener('keydown', (e) => {
-  if(e.key === 'Escape') closeCard();
+  if(e.key !== 'Escape') return;
+  const d = document.getElementById('salirSinGuardar');
+  if(d && d.classList.contains('show')){ d.classList.remove('show'); return; } // Esc en el cartel = seguir cargando
+  closeCardSeguro();
 });
 document.getElementById('searchBox').addEventListener('input', (e) => {
   render(e.target.value);
@@ -9119,7 +9172,7 @@ document.getElementById('navVolverBtn').addEventListener('click', () => {
 window.addEventListener('popstate', () => {
   // Atras del celular: si ya no estamos parados en el estado de la seccion, volvemos al Inicio
   // (si lo que se cerro fue una ficha, el estado de la seccion sigue y no pasa nada)
-  if(seccionActual && !(history.state && history.state.pozosSeccion)) irInicio();
+  if(seccionActual && !(history.state && (history.state.pozosSeccion || history.state.pozosModal))) irInicio();
 });
 // buscar desde el Inicio lleva a la lista de pozos de gas con el filtro puesto
 document.getElementById('searchBox').addEventListener('input', (e) => {
@@ -9167,7 +9220,7 @@ function exigirNombre(){
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202610240630;
+var APP_VERSION = 202610241100;
 var appVersionNueva = 0;
 function appBuscarActualizacion(){
   if(!navigator.onLine || document.getElementById('actualizarApp')) return;
