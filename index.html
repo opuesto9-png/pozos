@@ -1142,6 +1142,44 @@
   /* ---------- Pedidos del dia ---------- */
   .ini-tile.ped{ grid-column: 1 / -1; flex-direction:row; align-items:center; gap:12px; min-height:0; border-color:#E8B64A; background: color-mix(in srgb, #E8B64A 12%, var(--panel)); }
   .ini-tile.ped svg{ stroke:#E8B64A; }
+  .ini-tile.parte{ grid-column: 1 / -1; flex-direction:row; align-items:center; gap:12px; min-height:0; border-color:#6FC9B0; background: color-mix(in srgb, #6FC9B0 10%, var(--panel)); }
+  .ini-tile.parte svg{ stroke:#6FC9B0; }
+  .ini-tile.parte .tx{ display:flex; flex-direction:column; gap:2px; flex:1; }
+  .pv-ini-dot{ width:10px; height:10px; border-radius:5px; background:#6FC9B0; box-shadow:0 0 0 0 rgba(111,201,176,.6); animation: pvPulso 2s infinite; }
+  @keyframes pvPulso{ 0%{ box-shadow:0 0 0 0 rgba(111,201,176,.6);} 70%{ box-shadow:0 0 0 8px rgba(111,201,176,0);} 100%{ box-shadow:0 0 0 0 rgba(111,201,176,0);} }
+  main#parteMain{ max-width: 1180px; }
+  .pv-wrap{ display:flex; flex-direction:column; gap:14px; padding: 4px 0 30px; }
+  .pv-top{ display:flex; flex-direction:column; gap:6px; background: var(--panel); border:1px solid var(--line); border-radius:10px; padding:12px 14px; }
+  .pv-tit{ display:flex; flex-wrap:wrap; gap:10px; align-items:baseline; }
+  .pv-live{ font-weight:700; color:#6FC9B0; }
+  .pv-live.off{ color:#e08a80; }
+  .pv-dia{ font-size:0.85rem; color: var(--muted); }
+  .pv-res{ font-size:0.9rem; }
+  .pv-res b{ font-size:1.05rem; }
+  .pv-pend{ background: color-mix(in srgb, #E8B64A 10%, var(--panel)); border:1px solid #8a6d2e; border-radius:10px; padding:10px 14px; display:flex; flex-direction:column; gap:8px; }
+  .pv-pend-t{ font-weight:700; color:#F0C46A; }
+  .pv-pend-t span{ background:#8a6d2e; color:#fff; border-radius:9px; padding:0 7px; font-size:0.8rem; margin-left:4px; }
+  .pv-pend-l{ display:flex; flex-wrap:wrap; gap:6px; }
+  .pv-chip{ font-size:0.82rem; padding:4px 9px; border-radius:8px; background: var(--bg); border:1px solid var(--line); }
+  .pv-chip em{ font-style:normal; color: var(--muted); margin-right:3px; }
+  .pv-chip.atr{ border-color:#c0524a; color:#f0b0a8; }
+  .pv-hoja{ background: var(--panel); border:1px solid var(--line); border-radius:10px; padding:10px 12px; display:flex; flex-direction:column; gap:8px; }
+  .pv-hh{ display:flex; justify-content:space-between; align-items:center; gap:10px; }
+  .pv-ht{ font-weight:700; font-size:1.05rem; }
+  .pv-hs{ font-size:0.8rem; color: var(--muted); }
+  .pv-copiar{ font-size:0.8rem; padding:6px 12px; border-radius:8px; border:1px solid var(--line); background: var(--bg); color: var(--text); cursor:pointer; }
+  .pv-vacio{ font-size:0.85rem; color: var(--muted); padding:4px 2px; }
+  .pv-tabla-box{ overflow-x:auto; }
+  .pv-tabla{ width:100%; border-collapse:collapse; font-size:0.84rem; }
+  .pv-tabla th{ text-align:left; font-size:0.72rem; text-transform:uppercase; letter-spacing:.5px; color: var(--muted); padding:6px 8px; border-bottom:1px solid var(--line); white-space:nowrap; }
+  .pv-tabla td{ padding:6px 8px; border-bottom:1px solid var(--line); vertical-align:top; white-space:nowrap; }
+  .pv-tabla td.nov{ white-space:normal; min-width:220px; width:100%; }
+  .pv-tabla td.est{ font-size:0.72rem; color:#F0C46A; }
+  .pv-tabla tr.env td{ color: var(--muted); }
+  .pv-tabla tr.env td.est{ color: var(--muted); }
+  .pv-tabla tr.nueva td{ animation: pvNueva 4s ease-out; }
+  @keyframes pvNueva{ 0%{ background: rgba(111,201,176,.35);} 100%{ background: transparent;} }
+  .pv-pie{ font-size:0.78rem; color: var(--muted); }
   .ini-tile.ped .tx{ display:flex; flex-direction:column; gap:2px; flex:1; }
   .ped-cnt{ background:#E8B64A; color:#14283A; font-weight:800; font-size:.85rem; border-radius:12px; padding:3px 10px; white-space:nowrap; }
   .ped-cnt.urg{ background:#E05A47; color:#fff; }
@@ -1362,6 +1400,7 @@
     <button class="tab-btn" id="tabComp">Compresión BP</button>
     <button class="tab-btn" id="tabMov">Últimos movimientos</button>
     <button class="tab-btn" id="tabPed">Pedidos del día</button>
+    <button class="tab-btn" id="tabParte">Parte en vivo</button>
     <button class="tab-btn" id="tabAib">AIB</button>
     <button class="tab-btn" id="tabTanques">Baterias</button>
     <button class="tab-btn" id="tabPias">Pías 2</button>
@@ -1389,6 +1428,7 @@
 <section id="inicio" aria-label="Inicio">
   <div class="ini-grid">
     <button type="button" class="ini-tile ped" data-tab="tabPed"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4h6v3H9z"/><path d="M8 5H6v16h12V5h-2"/><path d="M9 12l2 2 4-4"/><path d="M9 17h6"/></svg><span class="tx"><span class="t" id="iniPedTit">Pedidos del día</span><span class="s" id="iniPedSub">Lo que pidió el supervisor, se tacha solo al cargarlo</span></span><span class="ped-cnt" id="iniPedCnt" style="display:none;"></span></button>
+    <button type="button" class="ini-tile parte" data-tab="tabParte" id="iniParteTile"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4"/><path d="M9 12h7M9 16h7M9 8h3"/></svg><span class="tx"><span class="t">Parte en vivo</span><span class="s" id="iniParteSub">El parte del día armándose solo, a medida que se carga</span></span><span class="pv-ini-dot" aria-hidden="true"></span></button>
   </div>
   <div class="ini-grupo">GAS</div>
   <div class="ini-grid">
@@ -1418,6 +1458,7 @@
 <main id="compMain" style="display:none;"></main>
 <main id="movMain" style="display:none;"></main>
 <main id="pedMain" style="display:none;"></main>
+<main id="parteMain" style="display:none;"></main>
 <main id="aibMain" style="display:none;"></main>
 <main id="tanquesMain" style="display:none;"></main>
 <main id="piasMain" style="display:none;"></main>
@@ -2430,7 +2471,10 @@ function inicioDiaOperativo(fecha){
 // corte real para "que es nuevo": el ultimo parte REALMENTE enviado. Si nunca se mando ninguno,
 // cuenta todo. Asi, si un dia no se llega a mandar el parte, los movimientos de ese dia NO se pierden:
 // siguen apareciendo como pendientes hasta que efectivamente se manden, sin importar que haya cambiado el dia.
+// Parte en vivo: mientras arma la pantalla mueve el corte al inicio del dia (ver renderParteVivo)
+var parteCorteVivo = null;
 function corteDePendientes(){
+  if(parteCorteVivo) return parteCorteVivo.gas;
   return ultimoReporteLocalTs || new Date(0);
 }
 
@@ -2465,6 +2509,7 @@ function movRefrescarSiAbierta(){
 }
 function updatePendCount(){
   movRefrescarSiAbierta();
+  if(typeof parteRefrescarSiAbierto === 'function') parteRefrescarSiAbierto();
   if(typeof pedProgramarAuto === 'function') pedProgramarAuto();
   if(typeof cicProgramarAuto === 'function') cicProgramarAuto();
   const badge = document.getElementById('pendCount');
@@ -4728,9 +4773,11 @@ function pendientesDeReporteAib(){
 
 // ---------------- Dia operativo de Baterias y Agua/Pias 2: 9am a 9am (independiente del de gas/oil) ----------------
 function corteDePendientesBaterias(){
+  if(parteCorteVivo) return parteCorteVivo.bat;
   return ultimoReporteBateriasTs || new Date(0);
 }
 function corteDePendientesAgua(){
+  if(parteCorteVivo) return parteCorteVivo.agua;
   return ultimoReporteAguaTs || new Date(0);
 }
 function habilitado9am(){
@@ -4784,23 +4831,10 @@ function pendientesNotaAguaPias2(){
     .sort((a,b) => a._updatedAtDate - b._updatedAtDate);
 }
 
-function exportReporteBaterias(forzarTodos){
-  if(typeof ExcelJS === 'undefined'){
-    alert('No se pudo generar el Excel (falta conexion a internet para cargar la libreria).');
-    return;
-  }
+function parteBateriasFilas(forzarTodos){
   const base = forzarTodos ? TANQUES_DATA.filter(t => t.nivelTotal || t.nivelInterfaz) : pendientesBaterias();
   const notasBase = forzarTodos ? EQUIPOS_NOTAS.filter(n => n.grupo !== 'Pias 2' && n.grupo !== 'PTC' && n.texto) : pendientesNotasBaterias();
   const bombeoBase = forzarTodos ? (BOMBEO_LOG || []).slice() : pendientesBombeoBaterias();
-  if(base.length === 0 && notasBase.length === 0 && bombeoBase.length === 0){
-    if(!forzarTodos){
-      const quiere = confirm('No hay mediciones, bombeos ni novedades de Baterias nuevas desde el ultimo reporte enviado.\n\n¿Generar igual el reporte con TODO lo cargado?');
-      if(quiere) exportReporteBaterias(true);
-      return;
-    }
-    alert('No hay ninguna medicion, bombeo ni novedad de Bateria cargada todavia.');
-    return;
-  }
   const fechaDe = d => d ? String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear() : '';
   const horaDe = d => d ? d.toTimeString().slice(0,5) : '';
   // cada fila lleva su momento (para ordenar) y despues se lo sacamos
@@ -4825,6 +4859,24 @@ function exportReporteBaterias(forzarTodos){
     'Se bombea stock de oil: ' + bombeoFmt(Number(b.volumenM3) || 0, 2) + ' m³'
   ]));
   filasTs.sort((a,b) => a[0] - b[0]);
+  return { base, notasBase, bombeoBase, filasTs };
+}
+
+function exportReporteBaterias(forzarTodos){
+  if(typeof ExcelJS === 'undefined'){
+    alert('No se pudo generar el Excel (falta conexion a internet para cargar la libreria).');
+    return;
+  }
+  const { base, notasBase, bombeoBase, filasTs } = parteBateriasFilas(forzarTodos);
+  if(base.length === 0 && notasBase.length === 0 && bombeoBase.length === 0){
+    if(!forzarTodos){
+      const quiere = confirm('No hay mediciones, bombeos ni novedades de Baterias nuevas desde el ultimo reporte enviado.\n\n¿Generar igual el reporte con TODO lo cargado?');
+      if(quiere) exportReporteBaterias(true);
+      return;
+    }
+    alert('No hay ninguna medicion, bombeo ni novedad de Bateria cargada todavia.');
+    return;
+  }
   const filas = filasTs.map(f => f.slice(1));
   const wb = new ExcelJS.Workbook();
   agregarHojaTabla(wb, 'OIL', ['FECHA','HORA','INSTALACION','EQUIPO','NOVEDAD'], filas, [12,9,14,18,50]);
@@ -4835,16 +4887,44 @@ function exportReporteBaterias(forzarTodos){
   marcarReporteBateriasEnviado();
 }
 
-function exportReporteAgua(forzarTodos){
-  if(typeof ExcelJS === 'undefined'){
-    alert('No se pudo generar el Excel (falta conexion a internet para cargar la libreria).');
-    return;
-  }
+function parteAguaFilas(forzarTodos){
   const tanquesBase = forzarTodos ? PIAS2_TANQUES_DATA.filter(t => t.nivelTotal || t.nivelInterfaz) : pendientesAguaTanques();
   const equiposBase = forzarTodos ? PIAS2_EQUIPOS_DATA.filter(t => t.estado || t.nota) : pendientesAguaEquipos();
   const camionesBase = forzarTodos ? PIAS2_CAMIONES_DATA : pendientesAguaCamiones();
   const notasBase = forzarTodos ? EQUIPOS_NOTAS.filter(n => n.grupo === 'Pias 2' && n.texto) : pendientesNotaAguaPias2();
 
+  const filasOil = [];
+  const conTs = (fila, d) => { fila._ts = d ? d.getTime() : 0; return fila; };
+  tanquesBase.forEach(t => filasOil.push(conTs([
+    t._updatedAtDate ? t._updatedAtDate.toTimeString().slice(0,5) : '',
+    'Pias 2', t.nombre || '',
+    `Medicion: Nivel Total ${t.nivelTotal || '?'}cm / Nivel Interfaz ${t.nivelInterfaz || '?'}cm`
+  ], t._updatedAtDate)));
+  equiposBase.forEach(e => filasOil.push(conTs([
+    e._updatedAtDate ? e._updatedAtDate.toTimeString().slice(0,5) : '',
+    'Pias 2', e.nombre || '',
+    e.estado === 'Falla' ? `En falla${e.nota ? ': ' + e.nota : ''}` : `Operativa${e.nota ? ' - ' + e.nota : ''}`
+  ], e._updatedAtDate)));
+  notasBase.forEach(n => filasOil.push(conTs([
+    n.hora || (n._updatedAtDate ? n._updatedAtDate.toTimeString().slice(0,5) : ''),
+    'Pias 2', n.equipo || 'General', n.texto || ''
+  ], n._updatedAtDate)));
+  filasOil.sort((a,b) => (a[0]||'').localeCompare(b[0]||''));
+
+  const filasCamiones = camionesBase.map(c => [
+    c.fecha || '', c.horaEntrada || '', c.horaSalida || '', c.yacProcedencia || '', c.remito || '',
+    c.volumen || '', c.nivelTotal || '', c.nivelCorteAgua || '', c.chofer || '', c.transporte || '',
+    c.operador || '', c.tanqueDestino || ''
+  ]);
+  return { tanquesBase, equiposBase, camionesBase, notasBase, filasOil, filasCamiones };
+}
+
+function exportReporteAgua(forzarTodos){
+  if(typeof ExcelJS === 'undefined'){
+    alert('No se pudo generar el Excel (falta conexion a internet para cargar la libreria).');
+    return;
+  }
+  const { tanquesBase, equiposBase, camionesBase, notasBase, filasOil, filasCamiones } = parteAguaFilas(forzarTodos);
   if(tanquesBase.length === 0 && equiposBase.length === 0 && camionesBase.length === 0 && notasBase.length === 0){
     if(!forzarTodos){
       const quiere = confirm('No hay novedades de Agua/Pias 2 nuevas desde el ultimo reporte enviado.\n\n¿Generar igual el reporte con TODO lo cargado?');
@@ -4855,28 +4935,6 @@ function exportReporteAgua(forzarTodos){
     return;
   }
 
-  const filasOil = [];
-  tanquesBase.forEach(t => filasOil.push([
-    t._updatedAtDate ? t._updatedAtDate.toTimeString().slice(0,5) : '',
-    'Pias 2', t.nombre || '',
-    `Medicion: Nivel Total ${t.nivelTotal || '?'}cm / Nivel Interfaz ${t.nivelInterfaz || '?'}cm`
-  ]));
-  equiposBase.forEach(e => filasOil.push([
-    e._updatedAtDate ? e._updatedAtDate.toTimeString().slice(0,5) : '',
-    'Pias 2', e.nombre || '',
-    e.estado === 'Falla' ? `En falla${e.nota ? ': ' + e.nota : ''}` : `Operativa${e.nota ? ' - ' + e.nota : ''}`
-  ]));
-  notasBase.forEach(n => filasOil.push([
-    n.hora || (n._updatedAtDate ? n._updatedAtDate.toTimeString().slice(0,5) : ''),
-    'Pias 2', n.equipo || 'General', n.texto || ''
-  ]));
-  filasOil.sort((a,b) => (a[0]||'').localeCompare(b[0]||''));
-
-  const filasCamiones = camionesBase.map(c => [
-    c.fecha || '', c.horaEntrada || '', c.horaSalida || '', c.yacProcedencia || '', c.remito || '',
-    c.volumen || '', c.nivelTotal || '', c.nivelCorteAgua || '', c.chofer || '', c.transporte || '',
-    c.operador || '', c.tanqueDestino || ''
-  ]);
 
   const wb = new ExcelJS.Workbook();
   if(filasOil.length){
@@ -5028,13 +5086,8 @@ function calcularHsHastaCorte(rec){
   return null;
 }
 
-function exportParteDeCampo(forzarTodos){
-  // LANZAMIENTO DE VELAS (agua/gas/oil): ya NO se agrupan desde la coleccion VELAS filtrada por el
-  // corte del ultimo parte enviado (eso se perdia si se mandaba un parte con el pozo TODAVIA cerrado:
-  // el corte avanzaba y la vela desaparecia antes de que el pozo llegara a reabrir). Ahora la vela
-  // vive pegada al pozo mismo (velaEnAperturaTxt, ya combinada, cargada por saveEdit en el momento
-  // exacto en que el pozo pasa a Abierto) o pendiente sin combinar (velaPendienteAgua/Gas/Oil/Hora,
-  // mientras sigue cerrado), asi que sobrevive sin importar cuantos partes se manden mientras tanto.
+// filas del parte de campo (GAS con novedades/velas y OIL): las usa el Excel y el Parte en vivo
+function parteCampoFilas(forzarTodos){
   const pozosConVelaUsada = new Set();
 
   // GAS: solo pozos con hora de apertura/cierre modificados DESPUES del ultimo parte enviado
@@ -5084,6 +5137,7 @@ function exportParteDeCampo(forzarTodos){
         instalacion: bateriaToInstalacion(rec.bateria),
         pozo: rec.pozo,
         novedad: buildNovedad(rec, velaTxt),
+        _ts: rec._updatedAtDate ? rec._updatedAtDate.getTime() : 0,
         horasPerdida,
         horasProduccion
       };
@@ -5097,6 +5151,7 @@ function exportParteDeCampo(forzarTodos){
       instalacion: rec.bateria || '',
       pozo: rec.pozo,
       novedad: buildAibNovedad(rec),
+      _ts: rec._updatedAtDate ? rec._updatedAtDate.getTime() : 0,
       horasPerdida: null,
       horasProduccion: null
     }));
@@ -5109,6 +5164,7 @@ function exportParteDeCampo(forzarTodos){
       instalacion: bateriaToInstalacion(n.bateria),
       pozo: n.equipo && n.equipo.trim() ? n.equipo.trim() : 'General',
       novedad: n.texto,
+      _ts: n._updatedAtDate ? n._updatedAtDate.getTime() : 0,
       horasPerdida: null,
       horasProduccion: null
     }));
@@ -5129,12 +5185,24 @@ function exportParteDeCampo(forzarTodos){
         instalacion: bateriaToInstalacion(p.bateria),
         pozo: p.pozo,
         novedad: fraseVelasPozo(cantidades, hora),
+        _ts: p._updatedAtDate ? p._updatedAtDate.getTime() : 0,
         horasPerdida: null,
         horasProduccion: null
       };
     });
 
   const filasGasConNotas = [...filasGas, ...filasNotas, ...filasVelasSueltas];
+  return { filasGasConNotas, filasOil, gasBase, oilBase, notasBase, velaSueltaBase };
+}
+
+function exportParteDeCampo(forzarTodos){
+  // LANZAMIENTO DE VELAS (agua/gas/oil): ya NO se agrupan desde la coleccion VELAS filtrada por el
+  // corte del ultimo parte enviado (eso se perdia si se mandaba un parte con el pozo TODAVIA cerrado:
+  // el corte avanzaba y la vela desaparecia antes de que el pozo llegara a reabrir). Ahora la vela
+  // vive pegada al pozo mismo (velaEnAperturaTxt, ya combinada, cargada por saveEdit en el momento
+  // exacto en que el pozo pasa a Abierto) o pendiente sin combinar (velaPendienteAgua/Gas/Oil/Hora,
+  // mientras sigue cerrado), asi que sobrevive sin importar cuantos partes se manden mientras tanto.
+  const { filasGasConNotas, filasOil, gasBase, oilBase, notasBase, velaSueltaBase } = parteCampoFilas(forzarTodos);
 
   if(filasGasConNotas.length === 0 && filasOil.length === 0){
     if(!forzarTodos){
@@ -6618,8 +6686,8 @@ function abrirPestanaAvisos(){
 }
 
 // ---------------- Manejo de pestañas (helper generico) ----------------
-const TAB_IDS = ['tabLista','tabPlano','tabRed','tabCiclaje','tabComp','tabMov','tabPed','tabAib','tabTanques','tabPias','tabPtc','tabAvisos'];
-const MAIN_IDS = ['main','planoMain','redMain','ciclajeMain','compMain','movMain','pedMain','aibMain','tanquesMain','piasMain','ptcMain','avisosMain'];
+const TAB_IDS = ['tabLista','tabPlano','tabRed','tabCiclaje','tabComp','tabMov','tabPed','tabParte','tabAib','tabTanques','tabPias','tabPtc','tabAvisos'];
+const MAIN_IDS = ['main','planoMain','redMain','ciclajeMain','compMain','movMain','pedMain','parteMain','aibMain','tanquesMain','piasMain','ptcMain','avisosMain'];
 function switchTab(activeTabId, activeMainId){
   if(window.__seccionListo && seccionActual !== activeTabId) entrarSeccion(activeTabId);
   movMarcarVistos(activeTabId);
@@ -8383,6 +8451,150 @@ document.getElementById('tabPed').addEventListener('click', () => {
   renderPedidos();
 });
 
+// ---------------- Parte en vivo: el parte del dia armado en pantalla, se completa solo ----------------
+// Usa EXACTAMENTE las mismas funciones que arman el Excel (parteCampoFilas, parteBateriasFilas,
+// parteAguaFilas y las lecturas de compresion), pero con el corte movido al inicio del dia operativo
+// (gas/oil y compresion: 06:00; Baterias y Agua: 09:00) en vez del ultimo parte enviado. Asi muestra
+// todo lo del dia, se vaya mandando o no, y se redibuja cada vez que cambia un dato (updatePendCount).
+// No escribe nada en la base: solo lee lo que ya esta en memoria.
+var parteVivoVistos = null;   // claves de filas ya mostradas (para resaltar las nuevas)
+var parteVivoTimer = null;
+var parteVivoReloj = null;
+function parteInicio9(ahora){
+  const d = new Date(ahora || Date.now());
+  if(d.getHours() < 9) d.setDate(d.getDate() - 1);
+  d.setHours(9, 0, 0, 0);
+  return d;
+}
+function parteMs(d){ return d ? (d.getTime ? d.getTime() : (+d || 0)) : 0; }
+function parteEsc(t){ return String(t == null ? '' : t).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch])); }
+function parteHoraTs(ms){ if(!ms) return ''; const d = new Date(ms); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
+function parteFechaCorta(d){ const dias = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb']; return dias[d.getDay()] + ' ' + String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0'); }
+
+function parteVivoDatos(){
+  const ahora = new Date();
+  const ini6 = inicioDiaOperativo(ahora), ini9 = parteInicio9(ahora);
+  const out = { ini6, ini9, hojas: [] };
+  parteCorteVivo = { gas: new Date(ini6.getTime() - 1), bat: new Date(ini9.getTime() - 1), agua: new Date(ini9.getTime() - 1) };
+  try {
+    const c = parteCampoFilas(false);
+    const envGas = parteMs(ultimoReporteTs);
+    out.hojas.push({ id: 'gas', titulo: 'GAS', sub: 'Parte de campo', desde: ini6,
+      cols: ['Hora', 'Instalación', 'Pozo', 'Novedad', 'Hs cierre', 'Hs prod.'],
+      filas: c.filasGasConNotas.map(f => ({ ts: f._ts || 0, enviado: !!(envGas && f._ts && f._ts <= envGas),
+        celdas: [f.hora, f.instalacion, f.pozo, f.novedad, f.horasPerdida == null ? '' : String(f.horasPerdida).replace('.', ','), f.horasProduccion == null ? '' : String(f.horasProduccion).replace('.', ',')] })) });
+    out.hojas.push({ id: 'oil', titulo: 'OIL', sub: 'Parte de campo (AIB)', desde: ini6,
+      cols: ['Hora', 'Instalación', 'Pozo', 'Novedad'],
+      filas: c.filasOil.map(f => ({ ts: f._ts || 0, enviado: !!(envGas && f._ts && f._ts <= envGas), celdas: [f.hora, f.instalacion, f.pozo, f.novedad] })) });
+    const b = parteBateriasFilas(false);
+    const envBat = parteMs(ultimoReporteBateriasTs);
+    out.hojas.push({ id: 'bat', titulo: 'Baterías', sub: 'Tanques, bombeo y novedades', desde: ini9,
+      cols: ['Hora', 'Instalación', 'Equipo', 'Novedad'],
+      filas: b.filasTs.map(f => ({ ts: f[0], enviado: !!(envBat && f[0] && f[0] <= envBat), celdas: [f[2], f[3], f[4], f[5]] })) });
+    const a = parteAguaFilas(false);
+    const envAgua = parteMs(ultimoReporteAguaTs);
+    out.hojas.push({ id: 'agua', titulo: 'Agua · Pías 2', sub: a.filasCamiones.length ? (a.filasCamiones.length + ' camión' + (a.filasCamiones.length === 1 ? '' : 'es') + ' de agua cargado' + (a.filasCamiones.length === 1 ? '' : 's')) : 'Tanques, equipos y novedades', desde: ini9,
+      cols: ['Hora', 'Instalación', 'Equipo', 'Novedad'],
+      filas: a.filasOil.map(f => ({ ts: f._ts || 0, enviado: !!(envAgua && f._ts && f._ts <= envAgua), celdas: [f[0], f[1], f[2], f[3]] })) });
+  } finally {
+    parteCorteVivo = null;
+  }
+  const envComp = parteMs(ultimoReporteCompTs);
+  const comp = (COMP_LECT || []).filter(l => l._updatedAtDate && l._updatedAtDate >= ini6).slice().sort(compOrdenReporte);
+  out.hojas.push({ id: 'comp', titulo: 'Compresión BP', sub: 'Lecturas de compresores', desde: ini6,
+    cols: ['Hora', 'Instalación', 'Unidad', 'Novedad'],
+    filas: comp.map(l => { const ts = parteMs(l._updatedAtDate); return { ts, enviado: !!(envComp && ts <= envComp), celdas: [l.hora || parteHoraTs(ts), bateriaToInstalacion(l.uspa), l.unidad, compNovedad(l)] }; }) });
+  return out;
+}
+
+function parteVivoPendientes(){
+  const items = [];
+  try {
+    const hoy = cicHoy();
+    if(cicHayPlan(hoy)){
+      const minutos = (Date.now() - cicInicioDia(hoy)) / 60e3;
+      [...new Set(cicPlanDe(hoy).map(p => p.pozo))].forEach(pz => {
+        cicEstadoPlan(hoy, pz).filter(i => !i.hecho && !i.extra).forEach(i => {
+          items.push({ tipo: 'Ciclaje', txt: pz + ' · ' + (i.tipo === 'abrir' ? 'abrir' : 'cerrar') + ' ' + (i.hora || ''), atrasado: i.orden < minutos, orden: i.orden });
+        });
+      });
+    }
+  } catch(e) {}
+  try {
+    const hoyP = pedHoy();
+    (PEDIDOS || []).filter(p => p.estado === 'pendiente' && p.fecha && p.fecha <= hoyP).forEach(p => {
+      items.push({ tipo: 'Pedido', txt: pedTitulo(p) + (p.estado === 'pendiente' && p.paso1Ts ? ' (en curso)' : ''), atrasado: p.fecha < hoyP, orden: -1 });
+    });
+  } catch(e) {}
+  items.sort((x, y) => (y.atrasado - x.atrasado) || (x.orden - y.orden));
+  return items;
+}
+
+function renderParteVivo(){
+  const main = document.getElementById('parteMain');
+  if(!main) return;
+  const d = parteVivoDatos();
+  const pend = parteVivoPendientes();
+  const primera = parteVivoVistos === null;
+  const vistos = new Set();
+  const ahora = Date.now();
+  const total = d.hojas.reduce((n, h) => n + h.filas.length, 0);
+  const sinEnviar = d.hojas.reduce((n, h) => n + h.filas.filter(f => !f.enviado).length, 0);
+  let html = `<div class="pv-wrap">
+    <div class="pv-top">
+      <div class="pv-tit"><span class="pv-live${firestoreOk ? '' : ' off'}">${firestoreOk ? '● En vivo' : '● Sin conexión'}</span>
+        <span class="pv-dia">Día operativo ${parteFechaCorta(d.ini6)} · Gas, Oil y Compresión desde las 06:00 · Baterías y Agua desde las 09:00</span></div>
+      <div class="pv-res"><b>${total}</b> novedades del día · <b>${sinEnviar}</b> sin enviar todavía · actualizado ${parteHoraTs(ahora)}</div>
+    </div>`;
+  if(pend.length){
+    html += `<div class="pv-pend"><div class="pv-pend-t">Falta hacer en el día <span>${pend.length}</span></div><div class="pv-pend-l">` +
+      pend.map(i => `<span class="pv-chip${i.atrasado ? ' atr' : ''}"><em>${i.tipo}</em> ${parteEsc(i.txt)}${i.atrasado ? ' · atrasado' : ''}</span>`).join('') + `</div></div>`;
+  }
+  d.hojas.forEach(h => {
+    html += `<section class="pv-hoja" data-hoja="${h.id}">
+      <div class="pv-hh"><div><span class="pv-ht">${h.titulo}</span> <span class="pv-hs">${parteEsc(h.sub)} · ${h.filas.length} fila${h.filas.length === 1 ? '' : 's'}</span></div>
+        ${h.filas.length ? `<button type="button" class="pv-copiar" data-hoja="${h.id}">Copiar</button>` : ''}</div>`;
+    if(!h.filas.length){
+      html += `<div class="pv-vacio">Todavía no hay nada cargado hoy.</div></section>`;
+      return;
+    }
+    html += `<div class="pv-tabla-box"><table class="pv-tabla"><thead><tr>${h.cols.map(c => `<th>${c}</th>`).join('')}<th></th></tr></thead><tbody>`;
+    h.filas.forEach(f => {
+      const k = h.id + '|' + f.celdas.join('|');
+      vistos.add(k);
+      const nueva = !primera && !parteVivoVistos.has(k);
+      html += `<tr class="${f.enviado ? 'env' : ''}${nueva ? ' nueva' : ''}">${f.celdas.map((c, i) => `<td${i === 3 ? ' class="nov"' : ''}>${parteEsc(c)}</td>`).join('')}<td class="est">${f.enviado ? 'enviado' : 'sin enviar'}</td></tr>`;
+    });
+    html += `</tbody></table></div></section>`;
+  });
+  html += `<div class="pv-pie">Es el mismo contenido que sale en los Excel. Para mandarlos, se siguen enviando desde "Enviar partes y reportes" en la compu principal. PTC no está acá porque su reporte es el acumulado del mes.</div></div>`;
+  const y = window.scrollY;
+  main.innerHTML = html;
+  window.scrollTo(0, y);
+  parteVivoVistos = vistos;
+  main.querySelectorAll('.pv-copiar').forEach(b => b.addEventListener('click', () => {
+    const h = d.hojas.find(x => x.id === b.dataset.hoja);
+    if(!h) return;
+    let t = `${h.titulo.toUpperCase()} - ${parteFechaCorta(d.ini6)}\n` + h.filas.map(f => f.celdas.filter(c => c !== '').join(' | ')).join('\n');
+    const ok = () => { b.textContent = 'Copiado ✓'; setTimeout(() => { b.textContent = 'Copiar'; }, 1800); };
+    if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(ok, () => prompt('Copiá el texto:', t));
+    else prompt('Copiá el texto:', t);
+  }));
+}
+function parteRefrescarSiAbierto(){
+  const m = document.getElementById('parteMain');
+  if(!m || m.style.display === 'none') return;
+  clearTimeout(parteVivoTimer);
+  parteVivoTimer = setTimeout(renderParteVivo, 400);
+}
+function abrirParteVivo(){
+  switchTab('tabParte', 'parteMain');
+  parteVivoVistos = null;
+  renderParteVivo();
+  if(!parteVivoReloj) parteVivoReloj = setInterval(parteRefrescarSiAbierto, 60e3); // "atrasado" y la hora se mueven solos
+}
+document.getElementById('tabParte').addEventListener('click', abrirParteVivo);
+
 // ---------------- Compresion BP: compresores Hoerbiger asignados a pozos ----------------
 // 'compresores_bp': un documento por unidad (U-xxx) con el pozo y la USPA asignados (los cambios de asignacion).
 // 'compresores_lecturas': cada lectura (PB, succion, descarga, caudal, RPM o unidad parada). Cada lectura
@@ -8799,9 +9011,10 @@ renderPlano();
 // "‹ Inicio" o el boton Atras del celular vuelven. Dentro de Gas y de Petroleo quedan las
 // pestañas hermanas para pasar de una a otra sin volver al inicio.
 const SECCION_TITULO = { tabLista: 'Pozos de gas', tabPlano: 'Plano (colectoras)', tabRed: 'Red', tabCiclaje: 'Ciclaje del día', tabComp: 'Compresión BP',
-  tabMov: 'Últimos movimientos', tabPed: 'Pedidos del día', tabAib: 'AIB', tabTanques: 'Baterías', tabPias: 'Pías 2', tabPtc: 'PTC', tabAvisos: 'Avisos' };
+  tabMov: 'Últimos movimientos', tabPed: 'Pedidos del día', tabParte: 'Parte en vivo', tabAib: 'AIB', tabTanques: 'Baterías', tabPias: 'Pías 2', tabPtc: 'PTC', tabAvisos: 'Avisos' };
 const SECCION_GRUPO = { tabLista: 'gas', tabPlano: 'gas', tabRed: 'gas', tabCiclaje: 'gas', tabComp: 'gas', tabAib: 'oil', tabTanques: 'oil' };
 const SECCION_CON_BUSQUEDA = ['tabLista', 'tabPlano', 'tabRed', 'tabAvisos'];
+(function(){ const t = document.getElementById('iniParteTile'); if(t && esMovil()) t.style.display = 'none'; })();
 var seccionActual = null;
 
 function entrarSeccion(tabId){
@@ -8954,7 +9167,7 @@ function exigirNombre(){
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202610231750;
+var APP_VERSION = 202610240630;
 var appVersionNueva = 0;
 function appBuscarActualizacion(){
   if(!navigator.onLine || document.getElementById('actualizarApp')) return;
