@@ -7385,9 +7385,13 @@ function cicEstadoPlan(fecha, pozo){
   items.sort((x, y) => x.orden - y.orden);
   const ini = cicInicioDia(fecha), fin = ini + 86400e3;
   CICLO_EV.filter(e => e.pozo === pozo && e.ts >= ini && e.ts < fin).sort((x, y) => x.ts - y.ts).forEach(e => {
-    const eo = (e.ts - ini) / 60e3;
-    // la hora es de referencia: toma la proxima pendiente de ese tipo (sin adelantarse mas de 3 h)
-    let it = items.find(i => !i.hecho && i.tipo === e.tipo && i.orden <= eo + 180) || items.find(i => !i.hecho && i.tipo === e.tipo);
+    // hora real de la maniobra (la que cargo el operador); si no viniera, la hora en que se guardo
+    const eo = /^\d{1,2}:\d{2}/.test(e.hora || '') ? cicOrden(e.hora) : (e.ts - ini) / 60e3;
+    const eTurno = eo < (TURNO_DIA_FIN - TURNO_DIA_INI) * 60 ? 'dia' : 'noche';
+    // la hora es de referencia: toma la proxima pendiente de ese tipo DEL MISMO TURNO (o a menos de 1,5 h,
+    // por si se adelanta/atrasa en el cambio de turno). Una apertura del turno dia no tacha una del turno noche.
+    const cand = items.filter(i => !i.hecho && i.tipo === e.tipo && (i.turno === eTurno || Math.abs(i.orden - eo) <= 90));
+    let it = cand.find(i => i.orden <= eo + 180) || cand[0];
     if(it) it.hecho = e;
     else items.push({ tipo: e.tipo, hora: e.hora, hecho: e, extra: true, orden: eo, turno: eo < (TURNO_DIA_FIN - TURNO_DIA_INI) * 60 ? 'dia' : 'noche' });
   });
@@ -10046,7 +10050,7 @@ function exigirNombre(){
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202610251310;
+var APP_VERSION = 202610251335;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
