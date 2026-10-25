@@ -1189,6 +1189,8 @@
   .pv-tit{ display:flex; flex-wrap:wrap; gap:10px; align-items:baseline; }
   .pv-live{ font-weight:700; color:#6FC9B0; }
   .pv-live.off{ color:#e08a80; }
+  .pv-live.pasado{ color:#F0C46A; }
+  .pv-dias{ margin-top:6px; }
   .pv-dia{ font-size:0.85rem; color: var(--muted); }
   .pv-res{ font-size:0.9rem; }
   .pv-res b{ font-size:1.05rem; }
@@ -9064,13 +9066,25 @@ function parteEsc(t){ return String(t == null ? '' : t).replace(/[&<>"]/g, ch =>
 function parteHoraTs(ms){ if(!ms) return ''; const d = new Date(ms); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
 function parteFechaCorta(d){ const dias = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb']; return dias[d.getDay()] + ' ' + String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0'); }
 
-function parteVivoDatos(){
-  const ahora = new Date();
-  const ini6 = inicioDiaOperativo(ahora), ini9 = parteInicio9(ahora);
-  const out = { ini6, ini9, hojas: [] };
+// dia elegido en la barra (fecha del dia operativo, aaaa-mm-dd). Gas, Oil y Compresion: de las 06:00 de ese
+// dia a las 06:00 del siguiente. Baterias y Agua: de las 09:00 a las 09:00 (igual que cada reporte).
+var parteDiaSel = null;
+function parteVentanaDe(iso){
+  const [y, m, d] = iso.split('-').map(Number);
+  const ini6 = new Date(y, m - 1, d, 6, 0, 0, 0), ini9 = new Date(y, m - 1, d, 9, 0, 0, 0);
+  return { ini6, fin6: new Date(ini6.getTime() + 86400e3), ini9, fin9: new Date(ini9.getTime() + 86400e3) };
+}
+function parteVivoDatos(iso){
+  iso = iso || pedHoy();
+  const v = parteVentanaDe(iso);
+  const ini6 = v.ini6, ini9 = v.ini9;
+  const en6 = (ts) => ts && ts >= v.ini6.getTime() && ts < v.fin6.getTime();
+  const en9 = (ts) => ts && ts >= v.ini9.getTime() && ts < v.fin9.getTime();
+  const out = { ini6, ini9, iso, hojas: [] };
   parteCorteVivo = { gas: new Date(ini6.getTime() - 1), bat: new Date(ini9.getTime() - 1), agua: new Date(ini9.getTime() - 1) };
   try {
-    const c = parteCampoFilas(false);
+    const c0 = parteCampoFilas(false);
+    const c = { filasGasConNotas: c0.filasGasConNotas.filter(f => en6(f._ts)), filasOil: c0.filasOil.filter(f => en6(f._ts)) };
     const envGas = parteMs(ultimoReporteTs);
     out.hojas.push({ id: 'gas', titulo: 'GAS', sub: 'Parte de campo', desde: ini6,
       cols: ['Hora', 'Instalación', 'Pozo', 'Novedad', 'Hs cierre', 'Hs prod.'],
@@ -9079,12 +9093,14 @@ function parteVivoDatos(){
     out.hojas.push({ id: 'oil', titulo: 'OIL', sub: 'Parte de campo (AIB)', desde: ini6,
       cols: ['Hora', 'Instalación', 'Pozo', 'Novedad'],
       filas: c.filasOil.map(f => ({ ts: f._ts || 0, enviado: !!(envGas && f._ts && f._ts <= envGas), celdas: [f.hora, f.instalacion, f.pozo, f.novedad] })) });
-    const b = parteBateriasFilas(false);
+    const b0 = parteBateriasFilas(false);
+    const b = { filasTs: b0.filasTs.filter(f => en9(f[0])) };
     const envBat = parteMs(ultimoReporteBateriasTs);
     out.hojas.push({ id: 'bat', titulo: 'Baterías', sub: 'Tanques, bombeo y novedades', desde: ini9,
       cols: ['Hora', 'Instalación', 'Equipo', 'Novedad'],
       filas: b.filasTs.map(f => ({ ts: f[0], enviado: !!(envBat && f[0] && f[0] <= envBat), celdas: [f[2], f[3], f[4], f[5]] })) });
-    const a = parteAguaFilas(false);
+    const a0 = parteAguaFilas(false);
+    const a = { filasOil: a0.filasOil.filter(f => en9(f._ts)), filasCamiones: (a0.camionesBase || []).filter(c => en9(parteMs(c._updatedAtDate))) };
     const envAgua = parteMs(ultimoReporteAguaTs);
     out.hojas.push({ id: 'agua', titulo: 'Agua · Pías 2', sub: a.filasCamiones.length ? (a.filasCamiones.length + ' camión' + (a.filasCamiones.length === 1 ? '' : 'es') + ' de agua cargado' + (a.filasCamiones.length === 1 ? '' : 's')) : 'Tanques, equipos y novedades', desde: ini9,
       cols: ['Hora', 'Instalación', 'Equipo', 'Novedad'],
@@ -9093,7 +9109,7 @@ function parteVivoDatos(){
     parteCorteVivo = null;
   }
   const envComp = parteMs(ultimoReporteCompTs);
-  const comp = (COMP_LECT || []).filter(l => l._updatedAtDate && l._updatedAtDate >= ini6).slice().sort(compOrdenReporte);
+  const comp = (COMP_LECT || []).filter(l => en6(parteMs(l._updatedAtDate))).slice().sort(compOrdenReporte);
   out.hojas.push({ id: 'comp', titulo: 'Compresión BP', sub: 'Lecturas de compresores', desde: ini6,
     cols: ['Hora', 'Instalación', 'Unidad', 'Novedad'],
     filas: comp.map(l => { const ts = parteMs(l._updatedAtDate); return { ts, enviado: !!(envComp && ts <= envComp), celdas: [l.hora || parteHoraTs(ts), bateriaToInstalacion(l.uspa), l.unidad, compNovedad(l)] }; }) });
@@ -9126,8 +9142,18 @@ function parteVivoPendientes(){
 function renderParteVivo(){
   const main = document.getElementById('parteMain');
   if(!main) return;
-  const d = parteVivoDatos();
-  const pend = parteVivoPendientes();
+  const hoyIso = pedHoy();
+  if(!parteDiaSel || parteDiaSel > hoyIso) parteDiaSel = hoyIso;
+  const esHoy = parteDiaSel === hoyIso;
+  const d = parteVivoDatos(parteDiaSel);
+  const pend = esHoy ? parteVivoPendientes() : [];
+  const dias = [];
+  for(let i = -6; i <= 0; i++) dias.push(pedSumarDias(hoyIso, i));
+  const barra = `<div class="ped-dias pv-dias">${dias.map(iso => {
+      const n = pedNombreDia(iso);
+      const cant = iso === parteDiaSel ? null : parteVivoDatos(iso).hojas.reduce((k, h) => k + h.filas.length, 0);
+      return `<button type="button" class="ped-dia${iso === parteDiaSel ? ' sel' : ''}${iso === hoyIso ? ' hoy' : ''}" data-pdia="${iso}"><b>${n.dia}</b><span>${n.num}</span>${cant ? `<i class="ok">${cant}</i>` : ''}</button>`;
+    }).join('')}</div>`;
   const primera = parteVivoVistos === null;
   const vistos = new Set();
   const ahora = Date.now();
@@ -9135,9 +9161,11 @@ function renderParteVivo(){
   const sinEnviar = d.hojas.reduce((n, h) => n + h.filas.filter(f => !f.enviado).length, 0);
   let html = `<div class="pv-wrap">
     <div class="pv-top">
-      <div class="pv-tit"><span class="pv-live${firestoreOk ? '' : ' off'}">${firestoreOk ? '● En vivo' : '● Sin conexión'}</span>
-        <span class="pv-dia">Día operativo ${parteFechaCorta(d.ini6)} · Gas, Oil y Compresión desde las 06:00 · Baterías y Agua desde las 09:00</span></div>
-      <div class="pv-res"><b>${total}</b> novedades del día · <b>${sinEnviar}</b> sin enviar todavía · actualizado ${parteHoraTs(ahora)}</div>
+      <div class="pv-tit">${esHoy ? `<span class="pv-live${firestoreOk ? '' : ' off'}">${firestoreOk ? '● En vivo' : '● Sin conexión'}</span>` : '<span class="pv-live pasado">Día anterior</span>'}
+        <span class="pv-dia">${parteFechaCorta(d.ini6)} · Gas, Oil y Compresión: ${parteFechaCorta(d.ini6)} 06:00 a ${parteFechaCorta(new Date(d.ini6.getTime() + 86400e3))} 06:00 · Baterías y Agua: ${parteFechaCorta(d.ini9)} 09:00 a ${parteFechaCorta(new Date(d.ini9.getTime() + 86400e3))} 09:00</span></div>
+      <div class="pv-res"><b>${total}</b> novedades de ese día · <b>${sinEnviar}</b> sin enviar${esHoy ? ' todavía · actualizado ' + parteHoraTs(ahora) : ''}</div>
+      ${esHoy ? '' : '<div class="pv-dia">Los pozos se ven con su último movimiento: si un pozo se volvió a mover después, su línea aparece en el día de ese último movimiento.</div>'}
+      ${barra}
     </div>`;
   if(pend.length){
     html += `<div class="pv-pend"><div class="pv-pend-t">Falta hacer en el día <span>${pend.length}</span></div><div class="pv-pend-l">` +
@@ -9148,7 +9176,7 @@ function renderParteVivo(){
       <div class="pv-hh"><div><span class="pv-ht">${h.titulo}</span> <span class="pv-hs">${parteEsc(h.sub)} · ${h.filas.length} fila${h.filas.length === 1 ? '' : 's'}</span></div>
         ${h.filas.length ? `<button type="button" class="pv-copiar" data-hoja="${h.id}">Copiar</button>` : ''}</div>`;
     if(!h.filas.length){
-      html += `<div class="pv-vacio">Todavía no hay nada cargado hoy.</div></section>`;
+      html += `<div class="pv-vacio">${esHoy ? 'Todavía no hay nada cargado hoy.' : 'Nada cargado ese día.'}</div></section>`;
       return;
     }
     html += `<div class="pv-tabla-box"><table class="pv-tabla"><thead><tr>${h.cols.map(c => `<th>${c}</th>`).join('')}<th></th></tr></thead><tbody>`;
@@ -9165,6 +9193,7 @@ function renderParteVivo(){
   main.innerHTML = html;
   window.scrollTo(0, y);
   parteVivoVistos = vistos;
+  main.querySelectorAll('[data-pdia]').forEach(b => b.addEventListener('click', () => { parteDiaSel = b.dataset.pdia; parteVivoVistos = null; renderParteVivo(); }));
   main.querySelectorAll('.pv-copiar').forEach(b => b.addEventListener('click', () => {
     const h = d.hojas.find(x => x.id === b.dataset.hoja);
     if(!h) return;
@@ -9183,6 +9212,7 @@ function parteRefrescarSiAbierto(){
 function abrirParteVivo(){
   switchTab('tabParte', 'parteMain');
   parteVivoVistos = null;
+  parteDiaSel = pedHoy();
   renderParteVivo();
   if(!parteVivoReloj) parteVivoReloj = setInterval(parteRefrescarSiAbierto, 60e3); // "atrasado" y la hora se mueven solos
 }
@@ -9762,7 +9792,7 @@ function exigirNombre(){
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202610251100;
+var APP_VERSION = 202610251130;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
