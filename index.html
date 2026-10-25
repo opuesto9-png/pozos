@@ -1218,6 +1218,35 @@
   .pv-tabla tr.nueva td{ animation: pvNueva 4s ease-out; }
   @keyframes pvNueva{ 0%{ background: rgba(111,201,176,.35);} 100%{ background: transparent;} }
   .pv-pie{ font-size:0.78rem; color: var(--muted); }
+  .td-wrap{ display:flex; flex-direction:column; gap:12px; padding:4px 0 30px; }
+  main#tendMain{ max-width: 1180px; }
+  .td-filtros{ display:flex; flex-wrap:wrap; gap:10px; }
+  .td-grupo{ display:flex; flex-wrap:wrap; gap:6px; }
+  .td-chip{ min-height:36px; padding:0 14px; border-radius:18px; border:1px solid var(--line); background:transparent; color:#C5D3DE; font-size:.86rem; cursor:pointer; }
+  .td-chip.sel{ border-color:#6FC9B0; background:#123B34; color: var(--text); font-weight:600; }
+  .td-nota{ margin:0; font-size:.8rem; color: var(--muted); }
+  .td-grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap:12px; }
+  .td-card{ display:flex; flex-direction:column; gap:6px; text-align:left; background: var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px 14px; color: var(--text); font: inherit; cursor:pointer; }
+  .td-card.abierta{ border-color:#3a86d9; grid-column: 1 / -1; }
+  .td-top{ display:flex; justify-content:space-between; gap:8px; align-items:baseline; }
+  .td-top b{ font-size:.95rem; }
+  .td-top em{ font-style:normal; font-size:.75rem; color:#9FB3C3; }
+  .td-val{ display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; }
+  .td-num{ font-size:1.9rem; font-weight:700; line-height:1; }
+  .td-uni{ font-size:.82rem; color:#9FB3C3; }
+  .td-delta{ margin-left:auto; font-size:.78rem; font-weight:600; padding:2px 8px; border-radius:8px; background: var(--bg); color:#C5D3DE; }
+  .td-spark{ width:100%; height:80px; display:block; }
+  .td-base{ stroke: var(--line); stroke-width:1; }
+  .td-area{ fill:#3a86d9; fill-opacity:.14; }
+  .td-linea{ fill:none; stroke:#3a86d9; stroke-width:2; stroke-linejoin:round; stroke-linecap:round; vector-effect: non-scaling-stroke; }
+  .td-base{ vector-effect: non-scaling-stroke; }
+  .td-punto{ fill:#3a86d9; stroke: var(--panel); stroke-width:2; }
+  .td-rango{ font-size:.74rem; color:#9FB3C3; }
+  .td-lista{ display:flex; flex-direction:column; gap:2px; margin-top:6px; border-top:1px solid var(--line); padding-top:6px; }
+  .td-lista span{ display:grid; grid-template-columns: 110px 80px 1fr; gap:8px; font-size:.82rem; }
+  .td-lista i{ font-style:normal; color:#9FB3C3; }
+  .td-vacio{ font-size:.86rem; color: var(--muted); padding:8px 0; }
+
   .ini-tile.ped .tx{ display:flex; flex-direction:column; gap:2px; flex:1; }
   .ped-cnt{ background:#E8B64A; color:#14283A; font-weight:800; font-size:.85rem; border-radius:12px; padding:3px 10px; white-space:nowrap; }
   .ped-cnt.urg{ background:#E05A47; color:#fff; }
@@ -1439,6 +1468,7 @@
     <button class="tab-btn" id="tabMov">Últimos movimientos</button>
     <button class="tab-btn" id="tabPed">Pedidos del día</button>
     <button class="tab-btn" id="tabParte">Parte en vivo</button>
+    <button class="tab-btn" id="tabTend">Tendencia</button>
     <button class="tab-btn" id="tabAib">AIB</button>
     <button class="tab-btn" id="tabTanques">Baterias</button>
     <button class="tab-btn" id="tabPias">Pías 2</button>
@@ -1485,6 +1515,7 @@
     <button type="button" class="ini-tile otro" data-tab="tabPtc"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 7h11v9H2zM13 10h4l3 3v3h-7"/><circle cx="6" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg><span class="t">PTC</span><span class="s">Descargas por isla</span><span class="ini-nuevo" style="display:none;"></span></button>
   </div>
   <div class="ini-fila">
+    <button type="button" class="ini-btn" data-tab="tabTend" id="iniTendBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l5-5 4 3 7-8"/><path d="M15 7h4v4"/></svg>Tendencia</button>
     <button type="button" class="ini-btn" data-tab="tabMov"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Movimientos <span class="ini-badge" id="iniMovBadge" style="display:none;"></span></button>
     <button type="button" class="ini-btn" data-tab="tabAvisos" id="iniAvisosBtn" style="display:none;"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/></svg>Avisos <span class="ini-badge" id="iniAvisosBadge" style="display:none;"></span></button>
   </div>
@@ -1499,6 +1530,7 @@
 <main id="movMain" style="display:none;"></main>
 <main id="pedMain" style="display:none;"></main>
 <main id="parteMain" style="display:none;"></main>
+<main id="tendMain" style="display:none;"></main>
 <main id="aibMain" style="display:none;"></main>
 <main id="tanquesMain" style="display:none;"></main>
 <main id="piasMain" style="display:none;"></main>
@@ -1837,7 +1869,7 @@ var SYNC_RESYNC_DIAS = 7;
 var SYNC_MARGEN_MS = 3 * 60e3;
 var SYNC_NOMBRES = ['pozos_overrides', 'uspa_notas', 'equipos_notas', 'aib_pozos', 'pozos_velas', 'baterias_tanques', 'baterias_bombeo',
   'baterias_bombeo_log', 'pias2_tanques', 'pias2_equipos', 'pias2_camiones', 'ptc_descargas', 'avisos_mtto', 'ciclaje_eventos', 'ciclaje_plan',
-  'pedidos', 'compresores_bp', 'compresores_lecturas'];
+  'pedidos', 'compresores_bp', 'compresores_lecturas', 'historial_mediciones', 'tendencia_diaria'];
 var SYNC_COLS = {};
 var SYNC_STATS = { servidor: 0, consultas: 0, modo: '' };
 var syncModoP = null;
@@ -2699,6 +2731,7 @@ function saveAibPozo(pozoKey, newFields){
   db.collection('aib_pozos').doc(pozoKey).set(toSave, { merge: true }).catch((err) => {
     alert('No se pudo guardar el cambio (' + err.message + '). Revisa tu conexion.');
   });
+  if(newFields.bp || newFields.pl) histRegistrar('aib', newFields.bateria, pozoKey, { bp: newFields.bp, pl: newFields.pl });
 }
 function deleteAibPozo(pozoKey){
   if(!firestoreOk) return;
@@ -4751,6 +4784,10 @@ function renderCardEdit(rec, bat){
     Object.assign(rec, newFields);
     rec._edited = true;
     saveEdit(rec.pozo, newFields, changedKeys);
+    { const hv = {};
+      if(changedKeys.includes('presion') && newFields.presion !== 's/d') hv.presion = newFields.presion;
+      if(changedKeys.includes('estado')) hv.abierto = newFields.estado === 'Abierto' ? 1 : 0;
+      histRegistrar('pozo', rec.bateria, rec.pozo, hv); }
     // registramos esta apertura en el historico (solo cuando REALMENTE se cargo una apertura nueva)
     if(aperturaCambio && hA){
       registrarAperturaHistorial(rec, hA);
@@ -7182,8 +7219,8 @@ function abrirPestanaAvisos(){
 }
 
 // ---------------- Manejo de pestañas (helper generico) ----------------
-const TAB_IDS = ['tabLista','tabPlano','tabRed','tabCiclaje','tabComp','tabMov','tabPed','tabParte','tabAib','tabTanques','tabPias','tabPtc','tabAvisos'];
-const MAIN_IDS = ['main','planoMain','redMain','ciclajeMain','compMain','movMain','pedMain','parteMain','aibMain','tanquesMain','piasMain','ptcMain','avisosMain'];
+const TAB_IDS = ['tabLista','tabPlano','tabRed','tabCiclaje','tabComp','tabMov','tabPed','tabParte','tabTend','tabAib','tabTanques','tabPias','tabPtc','tabAvisos'];
+const MAIN_IDS = ['main','planoMain','redMain','ciclajeMain','compMain','movMain','pedMain','parteMain','tendMain','aibMain','tanquesMain','piasMain','ptcMain','avisosMain'];
 function switchTab(activeTabId, activeMainId){
   if(window.__seccionListo && seccionActual !== activeTabId) entrarSeccion(activeTabId);
   movMarcarVistos(activeTabId);
@@ -8195,6 +8232,7 @@ function crearBotonGrupo(etiqueta, filtro){
           nombre: x.nombre, bateria: x.bateria, nivelTotal: x.nt, nivelInterfaz: x.ni, horaMedicion: grHora(x.ts),
           updatedAt: firebase.firestore.FieldValue.serverTimestamp(), operador: operadorName || 'Sin nombre'
         }, { merge: true }).catch(err => alert('No se pudo guardar ' + x.nombre + ' (' + err.message + ').'));
+        histRegistrar('tanque', x.bateria, x.nombre, { nivelTotal: x.nt, nivelInterfaz: x.ni }, x.ts);
       } else {
         db.collection('pias2_equipos').doc(x.nombre).set({
           nombre: x.nombre, tipo: x.eqTipo, estado: x.estado, nota: x.nota || '', horaMedicion: grHora(x.ts),
@@ -9218,6 +9256,183 @@ function abrirParteVivo(){
 }
 document.getElementById('tabParte').addEventListener('click', abrirParteVivo);
 
+// ---------------- Tendencia: como vienen los equipos (tablero de tarjetas con curva) ----------------
+// Historial: cada medicion que se guarda (tanques, presion de pozos, AIB, compresores) deja ademas un
+// renglon en 'historial_mediciones' { tipo, grupo, equipo, vals:{...numeros}, ts, por }. Antes la app
+// guardaba solo el ultimo valor; con esto se arma la curva. 'tendencia_diaria/{fecha}' guarda la
+// cantidad de pozos abiertos por USPA (foto cada pocas horas). Ambas colecciones se leen con la
+// sincronizacion por cambios y recien cuando alguien abre la solapa (no suman lecturas si nadie la usa).
+var HIST = [];
+var TEND_DIA = {};
+var tendSyncIniciado = false;
+var tendDias = 7;
+var tendSector = 'todo';
+var tendAbierta = null;
+function histNum(v){
+  if(v === null || v === undefined) return null;
+  if(typeof v === 'number') return isFinite(v) ? v : null;
+  const t = String(v).toLowerCase();
+  const m = t.replace(',', '.').match(/-?\d+(\.\d+)?/);
+  if(!m) return null;
+  let n = parseFloat(m[0]);
+  if(/psi/.test(t)) n = n / 14.2233;
+  return isFinite(n) ? Math.round(n * 100) / 100 : null;
+}
+function histRegistrar(tipo, grupo, equipo, vals, ts){
+  if(!firestoreOk) return;
+  const limpio = {};
+  Object.keys(vals || {}).forEach(k => { const n = histNum(vals[k]); if(n !== null) limpio[k] = n; });
+  if(!Object.keys(limpio).length) return;
+  const d = { tipo, grupo: grupo || '', equipo, vals: limpio, ts: ts || Date.now(), por: operadorName || 'Sin nombre' };
+  db.collection('historial_mediciones').doc().set(d).catch(() => {});
+  HIST = HIST.concat([Object.assign({ id: 'local-' + Date.now() + Math.random() }, d)]);
+}
+// foto de pozos abiertos por USPA (cada equipo como mucho una vez cada 3 h)
+function tendFotoAbiertos(){
+  if(!firestoreOk || (HAB && (HAB.estado === 'no' || HAB.estado === 'pausado'))) return;
+  let ult = 0; try { ult = parseInt(localStorage.getItem('tend_foto_ts') || '0', 10) || 0; } catch(e) {}
+  if(Date.now() - ult < 3 * 3600e3) return;
+  const c = {};
+  POZOS.forEach(p => { const b = p.bateria || 'Sin bateria'; if(!/^USPA/.test(b)) return; c[b] = c[b] || { ab: 0, tot: 0 }; c[b].tot++; if(p.estado === 'Abierto') c[b].ab++; });
+  if(!Object.keys(c).length) return;
+  try { localStorage.setItem('tend_foto_ts', String(Date.now())); } catch(e) {}
+  db.collection('tendencia_diaria').doc(pedHoy()).set({ fecha: pedHoy(), uspas: c, ts: Date.now() }, { merge: true }).catch(() => {});
+}
+setTimeout(() => { try { tendFotoAbiertos(); } catch(e) {} }, 60e3);
+setInterval(() => { try { tendFotoAbiertos(); } catch(e) {} }, 30 * 60e3);
+
+function iniciarTendenciaSync(){
+  if(tendSyncIniciado || !firestoreOk) return;
+  tendSyncIniciado = true;
+  syncVivo('historial_mediciones', { campo: 'ts', tipo: 'num', desde: () => Date.now() - 31 * 86400e3, limite: 8000 }, (snap) => {
+    const l = [];
+    snap.forEach(d => l.push(Object.assign({ id: d.id }, d.data())));
+    const locales = HIST.filter(h => String(h.id).startsWith('local-') && Date.now() - h.ts < 60e3 && !l.some(x => x.equipo === h.equipo && x.ts === h.ts));
+    HIST = l.concat(locales);
+    tendRefrescarSiAbierta();
+  }, (e) => console.error('historial', e));
+  syncVivo('tendencia_diaria', { campo: 'fecha', tipo: 'iso', desde: () => ventanaDesdeIso(31) }, (snap) => {
+    TEND_DIA = {};
+    snap.forEach(d => { const x = d.data(); if(x && x.fecha) TEND_DIA[x.fecha] = x; });
+    tendRefrescarSiAbierta();
+  }, (e) => console.error('tendencia_diaria', e));
+}
+var tendTimer = null;
+function tendRefrescarSiAbierta(){
+  const m = document.getElementById('tendMain');
+  if(!m || m.style.display === 'none') return;
+  clearTimeout(tendTimer);
+  tendTimer = setTimeout(renderTendencia, 400);
+}
+
+// arma las series del periodo: [{ id, sector, nombre, que, unidad, puntos:[{ts,v,por}], extra }]
+function tendSeries(){
+  const desde = Date.now() - tendDias * 86400e3;
+  const out = {};
+  const add = (id, base, ts, v, por) => {
+    if(v === null || v === undefined || ts < desde) return;
+    if(!out[id]) out[id] = Object.assign({ id, puntos: [] }, base);
+    out[id].puntos.push({ ts, v, por: por || '' });
+  };
+  HIST.forEach(h => {
+    const v = h.vals || {};
+    if(h.tipo === 'tanque') add('tk|' + h.equipo, { sector: h.grupo === 'Pias 2' ? 'pias' : 'baterias', nombre: h.equipo, que: 'nivel total', unidad: 'cm', grupo: h.grupo }, h.ts, v.nivelTotal, h.por);
+    else if(h.tipo === 'pozo') add('pz|' + h.equipo, { sector: 'gas', nombre: h.equipo, que: 'presión', unidad: 'kg/cm²', grupo: h.grupo }, h.ts, v.presion, h.por);
+    else if(h.tipo === 'aib') add('aib|' + h.equipo, { sector: 'aib', nombre: 'AIB ' + h.equipo, que: 'BP', unidad: 'kg/cm²', grupo: h.grupo }, h.ts, v.bp, h.por);
+    else if(h.tipo === 'compresor'){
+      add('cs|' + h.equipo, { sector: 'compresion', nombre: 'Compresor ' + h.equipo, que: 'succión', unidad: 'psi', grupo: h.grupo }, h.ts, v.succion, h.por);
+      add('cp|' + h.equipo, { sector: 'compresion', nombre: 'Compresor ' + h.equipo, que: 'PB', unidad: 'kg/cm²', grupo: h.grupo }, h.ts, v.pb, h.por);
+    }
+  });
+  // lecturas de compresores que ya estaban cargadas antes del historial (ultimos dias)
+  (COMP_LECT || []).forEach(l => {
+    const ts = l.clientTs || (l._updatedAtDate ? l._updatedAtDate.getTime() : 0);
+    if(!ts || HIST.some(h => h.tipo === 'compresor' && h.equipo === l.unidad && Math.abs(h.ts - ts) < 60e3)) return;
+    add('cs|' + l.unidad, { sector: 'compresion', nombre: 'Compresor ' + l.unidad, que: 'succión', unidad: 'psi', grupo: l.uspa }, ts, histNum(l.succion), l.operador);
+    add('cp|' + l.unidad, { sector: 'compresion', nombre: 'Compresor ' + l.unidad, que: 'PB', unidad: 'kg/cm²', grupo: l.uspa }, ts, histNum(l.pb), l.operador);
+  });
+  // bombeo a PTC: m3 por dia y bateria
+  (BOMBEO_LOG || []).forEach(b => {
+    const ts = b.clientTs || (b._updatedAtDate ? b._updatedAtDate.getTime() : 0);
+    if(!ts || ts < desde) return;
+    const id = 'bo|' + b.bateria, dia = pedIso(inicioDiaOperativo(new Date(ts)));
+    if(!out[id]) out[id] = { id, sector: 'baterias', nombre: b.bateria, que: 'm³ bombeados por día', unidad: 'm³', puntos: [], porDia: {} };
+    out[id].porDia[dia] = (out[id].porDia[dia] || 0) + (Number(b.volumenM3) || 0);
+  });
+  Object.values(out).forEach(s => { if(s.porDia){ s.puntos = Object.keys(s.porDia).sort().map(d => ({ ts: new Date(d + 'T12:00:00').getTime(), v: Math.round(s.porDia[d] * 100) / 100, por: '' })); } });
+  // pozos abiertos por USPA (fotos diarias + el valor de ahora)
+  const hoy = pedHoy();
+  const ahora = {};
+  POZOS.forEach(p => { const b = p.bateria || ''; if(!/^USPA/.test(b)) return; ahora[b] = ahora[b] || { ab: 0, tot: 0 }; ahora[b].tot++; if(p.estado === 'Abierto') ahora[b].ab++; });
+  Object.keys(ahora).sort().forEach(u => {
+    const id = 'us|' + u;
+    const pts = Object.keys(TEND_DIA).filter(f => f !== hoy && new Date(f + 'T12:00:00').getTime() >= desde).sort()
+      .map(f => ({ ts: new Date(f + 'T12:00:00').getTime(), v: (TEND_DIA[f].uspas && TEND_DIA[f].uspas[u]) ? TEND_DIA[f].uspas[u].ab : null, por: '' })).filter(p => p.v !== null);
+    pts.push({ ts: Date.now(), v: ahora[u].ab, por: 'ahora' });
+    out[id] = { id, sector: 'gas', nombre: u.replace('USPA', 'USPA '), que: 'pozos abiertos', unidad: 'de ' + ahora[u].tot, puntos: pts };
+  });
+  return Object.values(out).map(s => { s.puntos.sort((a, b) => a.ts - b.ts); return s; });
+}
+
+function tendSpark(puntos, ancho, alto){
+  const vals = puntos.map(p => p.v);
+  const min = Math.min.apply(null, vals), max = Math.max.apply(null, vals), r = (max - min) || 1;
+  const t0 = puntos[0].ts, t1 = puntos[puntos.length - 1].ts, rt = (t1 - t0) || 1;
+  const pts = puntos.map(p => [puntos.length === 1 ? ancho : (p.ts - t0) / rt * ancho, alto - 6 - (p.v - min) / r * (alto - 16)]);
+  const linea = 'M' + pts.map(q => q[0].toFixed(1) + ',' + q[1].toFixed(1)).join(' L');
+  const u = pts[pts.length - 1];
+  return { linea, area: linea + ` L${ancho},${alto} L${pts[0][0].toFixed(1)},${alto} Z`, ux: u[0].toFixed(1), uy: u[1].toFixed(1), min, max };
+}
+function tendFmt(n){ return String(Math.round(n * 10) / 10).replace('.', ','); }
+function tendFechaHora(ts){ const d = new Date(ts); return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
+
+function renderTendencia(){
+  const main = document.getElementById('tendMain');
+  if(!main) return;
+  iniciarTendenciaSync();
+  const SECT = [['todo', 'Todo'], ['gas', 'Gas'], ['aib', 'AIB'], ['baterias', 'Baterías'], ['pias', 'Pías 2'], ['compresion', 'Compresión']];
+  let series = tendSeries().filter(s => tendSector === 'todo' || s.sector === tendSector);
+  // primero lo que mas cambio (en proporcion); las que tienen un solo dato, al final
+  const cambio = (s) => { if(s.puntos.length < 2) return -1; const a = s.puntos[0].v, b = s.puntos[s.puntos.length - 1].v; return Math.abs(b - a) / (Math.abs(a) || 1); };
+  series.sort((x, y) => cambio(y) - cambio(x) || x.nombre.localeCompare(y.nombre, undefined, { numeric: true }));
+  const conHistoria = series.filter(s => s.puntos.length >= 2);
+  const periodoTxt = tendDias === 1 ? '24 h' : tendDias + ' días';
+  let html = `<div class="td-wrap">
+    <div class="td-filtros">
+      <div class="td-grupo">${[[1, '24 h'], [7, '7 días'], [30, '30 días']].map(([d, t]) => `<button type="button" class="td-chip${tendDias === d ? ' sel' : ''}" data-tdias="${d}">${t}</button>`).join('')}</div>
+      <div class="td-grupo">${SECT.map(([k, t]) => `<button type="button" class="td-chip${tendSector === k ? ' sel' : ''}" data-tsec="${k}">${t}</button>`).join('')}</div>
+    </div>
+    <p class="td-nota">${conHistoria.length ? 'Primero lo que más cambió en ' + periodoTxt + '. Tocá una tarjeta para ver los valores.' : 'El historial se empieza a juntar desde esta versión: cada medición que se guarde suma un punto. En unos días las curvas se llenan.'}</p>
+    <div class="td-grid">`;
+  if(!series.length) html += `<div class="td-vacio">Todavía no hay datos de este sector en ${periodoTxt}.</div>`;
+  series.forEach(s => {
+    const ult = s.puntos[s.puntos.length - 1], pri = s.puntos[0];
+    const d = ult.v - pri.v;
+    const sp = s.puntos.length >= 2 ? tendSpark(s.puntos, 300, 80) : null;
+    const abierta = tendAbierta === s.id;
+    html += `<button type="button" class="td-card${abierta ? ' abierta' : ''}" data-tid="${parteEsc(s.id)}" aria-expanded="${abierta}">
+      <span class="td-top"><b>${parteEsc(s.nombre)}</b><em>${parteEsc(s.que)}</em></span>
+      <span class="td-val"><span class="td-num">${tendFmt(ult.v)}</span><span class="td-uni">${parteEsc(s.unidad)}</span>
+        ${s.puntos.length >= 2 ? `<span class="td-delta">${d > 0 ? '▲' : (d < 0 ? '▼' : '=')} ${tendFmt(Math.abs(d))} en ${periodoTxt}</span>` : '<span class="td-delta">1 dato</span>'}</span>
+      ${sp ? `<svg viewBox="0 0 300 80" preserveAspectRatio="none" class="td-spark" role="img" aria-label="${parteEsc(s.nombre + ', ' + s.que + ': de ' + tendFmt(pri.v) + ' a ' + tendFmt(ult.v))}"><line x1="0" y1="79" x2="300" y2="79" class="td-base"></line><path d="${sp.area}" class="td-area"></path><path d="${sp.linea}" class="td-linea"></path></svg>
+        <span class="td-rango">mín ${tendFmt(sp.min)} · máx ${tendFmt(sp.max)} · ${s.puntos.length} datos</span>` : '<span class="td-rango">Falta historia para la curva</span>'}
+      ${abierta ? `<span class="td-lista">${s.puntos.slice().reverse().slice(0, 12).map(p => `<span><i>${s.porDia ? tendFechaHora(p.ts).slice(0, 5) : tendFechaHora(p.ts)}</i><b>${tendFmt(p.v)}</b><i>${parteEsc(p.por)}</i></span>`).join('')}</span>` : ''}
+    </button>`;
+  });
+  html += `</div></div>`;
+  const y = window.scrollY;
+  main.innerHTML = html;
+  window.scrollTo(0, y);
+  main.querySelectorAll('[data-tdias]').forEach(b => b.addEventListener('click', () => { tendDias = parseInt(b.dataset.tdias, 10); renderTendencia(); }));
+  main.querySelectorAll('[data-tsec]').forEach(b => b.addEventListener('click', () => { tendSector = b.dataset.tsec; renderTendencia(); }));
+  main.querySelectorAll('[data-tid]').forEach(b => b.addEventListener('click', () => { tendAbierta = tendAbierta === b.dataset.tid ? null : b.dataset.tid; renderTendencia(); }));
+}
+document.getElementById('tabTend').addEventListener('click', () => {
+  switchTab('tabTend', 'tendMain');
+  renderTendencia();
+});
+
+
 // ---------------- Compresion BP: compresores Hoerbiger asignados a pozos ----------------
 // 'compresores_bp': un documento por unidad (U-xxx) con el pozo y la USPA asignados (los cambios de asignacion).
 // 'compresores_lecturas': cada lectura (PB, succion, descarga, caudal, RPM o unidad parada). Cada lectura
@@ -9432,6 +9647,10 @@ function abrirCompForm(c, rec){
     if(!editando){ datos.clientTs = Date.now(); datos.fecha = compIsoHoy(); }
     const op = editando ? ref.set(datos, { merge: true }) : ref.set(datos);
     op.catch((e) => alert('No se pudo guardar (' + e.message + '). Revisa tu conexion.'));
+    if(!editando && datos.estado !== 'parado'){
+      const succ = histNum(datos.succion);
+      histRegistrar('compresor', c.uspa, c.unidad, { pb: datos.pb, succion: succ === null ? null : (/kg/i.test(datos.succionUnidad || '') ? Math.round(succ * 14.2233 * 10) / 10 : succ), descarga: datos.descarga, caudal: datos.caudal, rpm: datos.rpm }, datos.clientTs);
+    }
     const local = Object.assign({ id: ref.id }, rec || {}, datos, { _updatedAtDate: new Date(), _local: true });
     COMP_LECT = COMP_LECT.filter(l => l.id !== ref.id).concat([local]);
     closeCard();
@@ -9634,10 +9853,10 @@ renderPlano();
 // "‹ Inicio" o el boton Atras del celular vuelven. Dentro de Gas y de Petroleo quedan las
 // pestañas hermanas para pasar de una a otra sin volver al inicio.
 const SECCION_TITULO = { tabLista: 'Pozos de gas', tabPlano: 'Plano (colectoras)', tabRed: 'Red', tabCiclaje: 'Ciclaje del día', tabComp: 'Compresión BP',
-  tabMov: 'Últimos movimientos', tabPed: 'Pedidos del día', tabParte: 'Parte en vivo', tabAib: 'AIB', tabTanques: 'Baterías', tabPias: 'Pías 2', tabPtc: 'PTC', tabAvisos: 'Avisos' };
+  tabMov: 'Últimos movimientos', tabPed: 'Pedidos del día', tabParte: 'Parte en vivo', tabTend: 'Tendencia', tabAib: 'AIB', tabTanques: 'Baterías', tabPias: 'Pías 2', tabPtc: 'PTC', tabAvisos: 'Avisos' };
 const SECCION_GRUPO = { tabLista: 'gas', tabPlano: 'gas', tabRed: 'gas', tabCiclaje: 'gas', tabComp: 'gas', tabAib: 'oil', tabTanques: 'oil' };
 const SECCION_CON_BUSQUEDA = ['tabLista', 'tabPlano', 'tabRed', 'tabAvisos'];
-(function(){ const t = document.getElementById('iniParteTile'); if(t && esMovil()) t.style.display = 'none'; })();
+(function(){ const t = document.getElementById('iniParteTile'); if(t && esMovil()) t.style.display = 'none'; const td = document.getElementById('iniTendBtn'); if(td && esMovil()) td.style.display = 'none'; })();
 var seccionActual = null;
 
 function entrarSeccion(tabId){
@@ -9792,7 +10011,7 @@ function exigirNombre(){
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202610251130;
+var APP_VERSION = 202610251215;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
