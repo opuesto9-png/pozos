@@ -3929,6 +3929,7 @@ function startSync(){
         _updatedAtDate: (data.updatedAt && data.updatedAt.toDate) ? data.updatedAt.toDate() : (data.clientTs ? new Date(data.clientTs) : null)
       }));
     });
+    BOMBEO_LOG = bombeoSinRepetidos(BOMBEO_LOG);
     updatePendCount();
   }, (err) => { console.error('Firestore sync error (baterias_bombeo_log)', err); });
 
@@ -8367,6 +8368,23 @@ function actualizarBombeoUltimo(){
   document.querySelectorAll('.bombeo-ultima').forEach(el => { el.textContent = bombeoTextoUltimo(el.dataset.bat); });
 }
 
+// Un mismo bombeo guardado varias veces seguidas (doble/triple toque en "Guardar bombeo") se cuenta una sola vez:
+// misma bateria, misma altura y mismas bombas, a menos de 10 min del anterior.
+function bombeoMismoRegistro(a, b){
+  if(!a || !b || a.bateria !== b.bateria) return false;
+  const ta = a.clientTs || (a._updatedAtDate ? a._updatedAtDate.getTime() : 0);
+  const tb = b.clientTs || (b._updatedAtDate ? b._updatedAtDate.getTime() : 0);
+  return Math.abs(ta - tb) < 10 * 60e3 && String(a.alturaCm) === String(b.alturaCm)
+    && (a.bombasEnServicio || []).slice().sort().join('|') === (b.bombasEnServicio || []).slice().sort().join('|');
+}
+function bombeoSinRepetidos(lista){
+  const ts = (x) => x.clientTs || (x._updatedAtDate ? x._updatedAtDate.getTime() : 0);
+  const orden = (lista || []).slice().sort((a, b) => ts(a) - ts(b));
+  const quedan = [];
+  orden.forEach(x => { if(!quedan.some(q => bombeoMismoRegistro(q, x))) quedan.push(x); });
+  return quedan.sort((a, b) => ts(b) - ts(a));
+}
+
 function crearBloqueBombeo(bat){
   const cfg = BOMBEO_PTC[bat];
   const box = document.createElement('div');
@@ -8453,6 +8471,16 @@ function crearBloqueBombeo(bat){
       alert('No se pudo guardar el bombeo (' + err.message + '). Revisa tu conexion.');
     });
     // si hay bombas en servicio, queda registrado como bombeo para el reporte de Baterias
+    const repetido = bombas.length && (BOMBEO_LOG || []).find(x => bombeoMismoRegistro(x, datos));
+    const btnG = box.querySelector('.bombeo-save');
+    if(repetido){
+      // doble toque: ya quedo guardado, no se registra otra vez (si no, se suma dos veces)
+      btnG.textContent = '✓ Ya estaba guardado';
+      setTimeout(() => { btnG.textContent = 'Guardar bombeo'; }, 2500);
+      return;
+    }
+    btnG.disabled = true; btnG.textContent = '✓ Guardado';
+    setTimeout(() => { btnG.disabled = false; btnG.textContent = 'Guardar bombeo'; }, 2500);
     if(bombas.length){
       const reg = Object.assign({}, datos);
       db.collection('baterias_bombeo_log').add(reg).catch(() => {});
@@ -10050,7 +10078,7 @@ function exigirNombre(){
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202610251335;
+var APP_VERSION = 202610251500;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
