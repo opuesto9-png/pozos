@@ -1784,6 +1784,230 @@ const firebaseConfig = {
   messagingSenderId: "1016276574997",
   appId: "1:1016276574997:web:a5769cb155c9647888ff1c"
 };
+// ---------------- Sincronizacion por cambios (ahorro de lecturas) ----------------
+// Firestore cobra cada documento que manda el servidor. Si un equipo abre la app despues de mas de media
+// hora, una consulta en vivo comun vuelve a bajar TODA la lista. Para no pagar eso en cada apertura:
+//  1) la foto de arranque sale de la copia local que Firestore ya guarda en el equipo (no se cobra);
+//  2) al servidor solo se le piden los documentos cambiados desde la ultima vez (campo _mod, hora del
+//     servidor que se agrega solo en cada guardado);
+//  3) borrar = dejar una "lapida" (_borrado), asi los demas equipos se enteran por el mismo camino;
+//  4) cada SYNC_RESYNC_DIAS (o si la copia local falta o esta incompleta) se baja todo de nuevo.
+// Mientras quede algun equipo con una version vieja de la app (que guarda sin _mod), se trabaja como
+// antes (lista completa en vivo) para no perder sus cambios. Los callbacks de cada coleccion reciben
+// "fotos" con la misma forma que las de Firestore (forEach, size, docChanges, metadata).
+var SYNC_VERSION_MIN = 202610242030; // primera version que guarda con _mod
+var SYNC_RESYNC_DIAS = 7;
+var SYNC_MARGEN_MS = 3 * 60e3;
+var SYNC_NOMBRES = ['pozos_overrides', 'uspa_notas', 'equipos_notas', 'aib_pozos', 'pozos_velas', 'baterias_tanques', 'baterias_bombeo',
+  'baterias_bombeo_log', 'pias2_tanques', 'pias2_equipos', 'pias2_camiones', 'ptc_descargas', 'avisos_mtto', 'ciclaje_eventos', 'ciclaje_plan',
+  'pedidos', 'compresores_bp', 'compresores_lecturas'];
+var SYNC_COLS = {};
+var SYNC_STATS = { servidor: 0, consultas: 0, modo: '' };
+var syncModoP = null;
+
+function syncMetaLeer(){ try { return JSON.parse(localStorage.getItem('sync_meta_v1') || '{}') || {}; } catch(e){ return {}; } }
+function syncMetaPoner(nombre, cambios){
+  const m = syncMetaLeer();
+  m[nombre] = Object.assign({}, m[nombre] || {}, cambios);
+  try { localStorage.setItem('sync_meta_v1', JSON.stringify(m)); } catch(e) {}
+}
+function syncValor(v){
+  if(v == null) return null;
+  if(typeof v === 'number' || typeof v === 'string') return v;
+  if(typeof v.toMillis === 'function') return v.toMillis();
+  if(v instanceof Date) return v.getTime();
+  return null;
+}
+function syncModMs(d){ const v = d && d._mod; return v && typeof v.toMillis === 'function' ? v.toMillis() : 0; }
+
+// ---- 1) cada guardado en estas colecciones lleva _mod (hora del servidor); borrar deja una lapida ----
+function syncInstalarEscrituras(){
+  if(!firestoreOk || window.__syncEscrituras) return;
+  const dref = db.collection('__sync').doc('__x');
+  const DP = Object.getPrototypeOf(dref), CP = Object.getPrototypeOf(db.collection('__sync'));
+  if(!DP || DP === Object.prototype || !CP || CP === Object.prototype) return; // (entornos de prueba simplificados)
+  window.__syncEscrituras = true;
+  const esSync = ref => !!(ref && ref.parent && SYNC_NOMBRES.indexOf(ref.parent.id) !== -1 && !(ref.parent.parent));
+  const TS = () => firebase.firestore.FieldValue.serverTimestamp();
+  const set0 = DP.set, upd0 = DP.update, del0 = DP.delete, add0 = CP.add;
+  DP.set = function(data, opts){
+    if(!esSync(this) || !data || typeof data !== 'object') return set0.apply(this, arguments);
+    const d = Object.assign({}, data, { _mod: TS() });
+    if(opts && (opts.merge || opts.mergeFields)) d._borrado = firebase.firestore.FieldValue.delete();
+    else delete d._borrado;
+    const p = set0.call(this, d, opts);
+    syncTrasEscribir(this);
+    return p;
+  };
+  DP.update = function(a){
+    if(!esSync(this)) return upd0.apply(this, arguments);
+    let p;
+    if(a && typeof a === 'object' && !(a instanceof firebase.firestore.FieldPath)) p = upd0.call(this, Object.assign({}, a, { _mod: TS(), _borrado: firebase.firestore.FieldValue.delete() }));
+    else p = upd0.apply(this, Array.prototype.slice.call(arguments).concat(['_mod', TS(), '_borrado', firebase.firestore.FieldValue.delete()]));
+    syncTrasEscribir(this);
+    return p;
+  };
+  DP.delete = function(){
+    if(!esSync(this)) return del0.apply(this, arguments);
+    const p = set0.call(this, { _borrado: true, _mod: TS() });
+    syncTrasEscribir(this);
+    return p;
+  };
+  CP.add = function(data){
+    if(SYNC_NOMBRES.indexOf(this.id) === -1 || this.parent) return add0.apply(this, arguments);
+    const ref = this.doc();
+    return ref.set(data).then(() => ref);
+  };
+}
+// el guardado propio se ve al instante: lo leemos de la copia local (gratis) y lo aplicamos
+function syncTrasEscribir(ref){
+  const c = SYNC_COLS[ref.parent.id];
+  if(!c) return;
+  ref.get({ source: 'cache' }).then(d => { c.aplicar(d, d.exists === false ? 'removed' : 'modified'); c.emitir(); }).catch(() => {});
+}
+
+// ---- 2) modo de trabajo: por cambios solo si la copia local anda y no quedan equipos con la app vieja ----
+function syncModo(){
+  if(syncModoP) return syncModoP;
+  const persist = window.__persistP || Promise.resolve(false);
+  syncModoP = persist.then(ok => {
+    if(!ok){ SYNC_STATS.modo = 'completo (sin copia local)'; return 'completo'; }
+    let todos = false;
+    try { todos = localStorage.getItem('sync_todos_nuevos') === '1'; } catch(e) {}
+    if(todos){ SYNC_STATS.modo = 'por cambios'; return 'delta'; }
+    // presencia: cada equipo anota con que version de la app anda (ver: APP_VERSION). Uno activo en las
+    // ultimas 12 h sin ese dato (o con una version anterior a esta forma de guardar) = app vieja.
+    return db.collection('presencia').get({ source: 'server' }).then(snap => {
+      SYNC_STATS.servidor += Math.max(1, snap.size);
+      let viejos = 0;
+      snap.forEach(d => { const p = d.data() || {}; if(d.id !== HAB.uid && p.ts && Date.now() - p.ts < 12 * 3600e3 && !(p.ver >= SYNC_VERSION_MIN)) viejos++; });
+      if(viejos){ SYNC_STATS.modo = 'completo (' + viejos + ' equipo' + (viejos === 1 ? '' : 's') + ' con la app vieja)'; return 'completo'; }
+      try { localStorage.setItem('sync_todos_nuevos', '1'); } catch(e) {}
+      SYNC_STATS.modo = 'por cambios';
+      return 'delta';
+    }).catch(() => { SYNC_STATS.modo = 'completo (sin conexión al arrancar)'; return 'completo'; });
+  });
+  return syncModoP;
+}
+
+// ---- 3) la coleccion en vivo ----
+// cfg: { campo, tipo: 'num'|'ts'|'iso', desde: () => valor minimo (num/iso; para 'ts' en ms), limite, metadatos }
+function syncVivo(nombre, cfg, onSnap, onErr){
+  cfg = cfg || {};
+  const col = db.collection(nombre);
+  const mapa = new Map();      // id -> { data, pend, firma }
+  let emitidos = new Map();    // id -> firma
+  let fromCache = true, primera = true, unsub = null, maxMod = 0;
+  const desdeVal = () => cfg.desde ? cfg.desde() : null;
+  const entra = (data, est) => {
+    if(!cfg.campo) return true;
+    const v = cfg.tipo === 'ts' ? est : syncValor(data[cfg.campo]);
+    if(v == null) return false;
+    const min = desdeVal();
+    return min == null || v >= min;
+  };
+  const consultaCompleta = () => {
+    let q = col;
+    if(cfg.campo){
+      const min = desdeVal();
+      if(min != null) q = q.where(cfg.campo, '>=', cfg.tipo === 'ts' ? new Date(min) : min);
+      q = q.orderBy(cfg.campo, 'desc');
+    }
+    if(cfg.limite) q = q.limit(cfg.limite);
+    return q;
+  };
+  function aplicar(doc, tipo){
+    if(tipo === 'removed' || doc.exists === false){ mapa.delete(doc.id); return; }
+    const data = doc.data();
+    if(!data || data._borrado === true){ mapa.delete(doc.id); return; }
+    const pend = !!(doc.metadata && doc.metadata.hasPendingWrites);
+    let est = null;
+    if(cfg.campo && cfg.tipo === 'ts'){ try { est = syncValor(doc.data({ serverTimestamps: 'estimate' })[cfg.campo]); } catch(e) { est = syncValor(data[cfg.campo]); } }
+    let firma;
+    try { firma = JSON.stringify(data) + (pend ? '#p' : ''); } catch(e) { firma = String(Math.random()); }
+    mapa.set(doc.id, { data, pend, est, firma });
+    if(!pend){ const m = syncModMs(data); if(m > maxMod) maxMod = m; }
+  }
+  function visibles(){
+    let l = [...mapa.entries()].filter(([id, r]) => entra(r.data, r.est));
+    if(cfg.campo){
+      const k = ([id, r]) => cfg.tipo === 'ts' ? (r.est || 0) : syncValor(r.data[cfg.campo]);
+      l.sort((a, b) => { const x = k(a), y = k(b); return x < y ? 1 : (x > y ? -1 : 0); });
+    } else l.sort((a, b) => a[0] < b[0] ? -1 : (a[0] > b[0] ? 1 : 0));
+    if(cfg.limite) l = l.slice(0, cfg.limite);
+    return l;
+  }
+  function emitir(){
+    const l = visibles();
+    const nuevos = new Map();
+    const mk = (id, r) => ({ id, exists: true, data: () => Object.assign({}, r.data), get: k => r.data[k], metadata: { hasPendingWrites: r.pend, fromCache } });
+    const docs = [], cambios = [];
+    l.forEach(([id, r], i) => {
+      const d = mk(id, r);
+      docs.push(d);
+      nuevos.set(id, r.firma);
+      if(!emitidos.has(id)) cambios.push({ type: 'added', doc: d, newIndex: i, oldIndex: -1 });
+      else if(emitidos.get(id) !== r.firma) cambios.push({ type: 'modified', doc: d, newIndex: i });
+    });
+    emitidos.forEach((f, id) => { if(!nuevos.has(id)) cambios.push({ type: 'removed', doc: { id, exists: false, data: () => undefined, metadata: { hasPendingWrites: false, fromCache } } }); });
+    if(!primera && !cambios.length) return;
+    primera = false;
+    emitidos = nuevos;
+    const snap = { docs, size: docs.length, empty: !docs.length, forEach: fn => docs.forEach(fn), docChanges: () => cambios,
+      metadata: { fromCache, hasPendingWrites: docs.some(d => d.metadata.hasPendingWrites) } };
+    try { onSnap(snap); } catch(e) { console.error('sync ' + nombre, e); }
+    syncMetaPoner(nombre, { n: docs.length });
+  }
+  const yo = { aplicar, emitir, nombre };
+  SYNC_COLS[nombre] = yo;
+  const errorDe = (e) => { console.error('Firestore sync error (' + nombre + ')', e); if(onErr) onErr(e); };
+
+  function modoCompleto(){
+    unsub = consultaCompleta().onSnapshot({ includeMetadataChanges: true }, snap => {
+      fromCache = snap.metadata.fromCache;
+      snap.docChanges({ includeMetadataChanges: true }).forEach(ch => {
+        if(!ch.doc.metadata.fromCache && !ch.doc.metadata.hasPendingWrites && ch.type !== 'removed') SYNC_STATS.servidor++;
+        aplicar(ch.doc, ch.type);
+      });
+      emitir();
+      if(!snap.metadata.fromCache) syncMetaPoner(nombre, { mod: maxMod || (syncMetaLeer()[nombre] || {}).mod || (Date.now() - 10 * 60e3), full: Date.now() });
+    }, errorDe);
+  }
+  function escucharCambios(desdeMs){
+    const desde = firebase.firestore.Timestamp.fromMillis(Math.max(0, desdeMs - SYNC_MARGEN_MS));
+    SYNC_STATS.consultas++;
+    let primeraServ = true;
+    unsub = col.where('_mod', '>', desde).onSnapshot({ includeMetadataChanges: true }, snap => {
+      fromCache = snap.metadata.fromCache;
+      const ch = snap.docChanges({ includeMetadataChanges: true });
+      ch.forEach(c => {
+        if(!c.doc.metadata.fromCache && !c.doc.metadata.hasPendingWrites && c.type !== 'removed') SYNC_STATS.servidor++;
+        aplicar(c.doc, c.type);
+      });
+      if(primeraServ && !snap.metadata.fromCache){ primeraServ = false; if(!ch.length) SYNC_STATS.servidor++; } // consulta sin resultados: Firestore cobra 1
+      emitir();
+      if(!snap.metadata.fromCache && maxMod) syncMetaPoner(nombre, { mod: maxMod });
+    }, errorDe);
+  }
+
+  syncModo().then(modo => {
+    if(modo !== 'delta'){ modoCompleto(); return; }
+    const meta = syncMetaLeer()[nombre] || {};
+    const vencida = !meta.full || Date.now() - meta.full > SYNC_RESYNC_DIAS * 86400e3 || !meta.mod;
+    if(vencida){ modoCompleto(); return; }
+    return col.get({ source: 'cache' }).then(snap => {
+      snap.forEach(d => aplicar(d, 'added'));
+      const n = visibles().length;
+      if(meta.n >= 4 && n < meta.n * 0.5){ mapa.clear(); maxMod = 0; modoCompleto(); return; } // la copia local se borro o quedo incompleta
+      fromCache = true;
+      emitir();
+      escucharCambios(Math.max(meta.mod || 0, maxMod));
+    });
+  }).catch(e => { console.error('sync ' + nombre, e); if(!unsub){ mapa.clear(); modoCompleto(); } });
+
+  return () => { if(unsub) unsub(); delete SYNC_COLS[nombre]; };
+}
+
 let db = null;
 let firestoreOk = false;
 var authFb = null; // identificacion anonima del dispositivo (ver "Habilitacion de dispositivos")
@@ -1793,8 +2017,9 @@ try{
     // auth antes que firestore: asi la base espera a saber quien es el dispositivo antes de conectarse
     try{ authFb = (typeof firebase.auth === 'function') ? firebase.auth() : null; }catch(e){ authFb = null; }
     db = firebase.firestore();
-    try{ db.enablePersistence({ synchronizeTabs: true }).catch(() => {}); }catch(e){}
+    try{ window.__persistP = db.enablePersistence({ synchronizeTabs: true }).then(() => true, () => false); }catch(e){ window.__persistP = Promise.resolve(false); }
     firestoreOk = true;
+    try{ syncInstalarEscrituras(); }catch(e){ console.error('sync escrituras', e); }
   }
 }catch(e){ firestoreOk = false; }
 
@@ -1871,7 +2096,7 @@ function habLatido(forzar){
   if(!forzar && (document.hidden || Date.now() - habUltimoLatido < 90e3)) return;
   habUltimoLatido = Date.now();
   db.collection('presencia').doc(HAB.uid).set({
-    operador: operadorName || '', ts: Date.now(), app: HAB_APP, tipo: habTipoDispositivo(), nombre: HAB.nombre || '', cerrada: false
+    operador: operadorName || '', ts: Date.now(), app: HAB_APP, tipo: habTipoDispositivo(), nombre: HAB.nombre || '', cerrada: false, ver: APP_VERSION
   }, { merge: true }).catch(() => {});
 }
 // latido cada 2 min con la app a la vista; "en linea" dura 5 min sin latido. Asi, aunque el aviso de
@@ -2860,17 +3085,25 @@ function ptcNombreMes(mes){
 function ptcDescargasDelMes(mes){
   const vivas = PTC_DATA.filter(d => d.mes === mes);
   const masVieja = PTC_DATA.length ? PTC_DATA.reduce((m, d) => (d.fecha && d.fecha < m ? d.fecha : m), '9999') : '9999';
-  const completo = PTC_DATA.length < PTC_LIMITE_VIVO || masVieja.slice(0, 7) < mes;
+  const completo = (PTC_DATA.length < PTC_LIMITE_VIVO && ventanaDesdeIso(VENTANA_DIAS.ptc) <= mes + '-01') || masVieja.slice(0, 7) < mes;
   if(completo) return Promise.resolve(vivas);
   if(PTC_MES_CACHE[mes]) return Promise.resolve(PTC_MES_CACHE[mes]);
   if(!firestoreOk) return Promise.resolve(vivas);
   return db.collection('ptc_descargas').where('mes', '==', mes).get().then(snap => {
     const lista = [];
-    snap.forEach(doc => lista.push(Object.assign({ id: doc.id }, doc.data())));
+    snap.forEach(doc => { const d = doc.data(); if(d && d._borrado !== true) lista.push(Object.assign({ id: doc.id }, d)); });
     PTC_MES_CACHE[mes] = lista;
     return lista;
   }).catch(() => vivas);
 }
+// ---- Ventanas de tiempo para ahorrar lecturas ----
+// Cada vez que un equipo abre la app despues de un rato, Firestore vuelve a leer TODO lo que entra en cada
+// consulta en vivo (y cada documento leido cuenta para la cuota diaria). Las colecciones que crecen todos
+// los dias (eventos, lecturas, pedidos, camiones, PTC, velas) se piden solo de los ultimos dias que la app
+// usa de verdad, asi el costo de abrir la app no sube a medida que se acumula historial.
+var VENTANA_DIAS = { ciclajeEventos: 7, ciclajePlan: 7, pedidos: 15, compLect: 4, bombeoLog: 10, camiones: 10, ptc: 10, velas: 20 };
+function ventanaDesdeMs(dias){ return Date.now() - dias * 86400e3; }
+function ventanaDesdeIso(dias){ const d = new Date(ventanaDesdeMs(dias)); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
 var PTC_LIMITE_VIVO = 800;
 
 // ultima descarga cargada en una isla (para arrastrar los totalizadores al formulario nuevo)
@@ -3433,7 +3666,7 @@ function startSync(){
     return;
   }
   iniciarAvisosSync();
-  db.collection('pozos_overrides').onSnapshot((snapshot) => {
+  syncVivo('pozos_overrides', {}, (snapshot) => {
     lastOverridesCount = snapshot.size;
     detectarMovimientos(snapshot, 'pozos_overrides');
     // pozos limpiados desde otro dispositivo (se borro su documento): volvemos al dato original del listado
@@ -3500,7 +3733,7 @@ function startSync(){
   });
 
   // novedades generales por USPA (con hora), en su propia coleccion, compartidas entre dispositivos
-  db.collection('uspa_notas').onSnapshot((snapshot) => {
+  syncVivo('uspa_notas', {}, (snapshot) => {
     detectarMovimientos(snapshot, 'uspa_notas');
     USPA_NOTAS = [];
     snapshot.forEach((doc) => {
@@ -3524,7 +3757,7 @@ function startSync(){
   });
 
   // novedades generales de Baterias (1/2/5) y Pias 2, mismo esquema que las de USPA
-  db.collection('equipos_notas').onSnapshot((snapshot) => {
+  syncVivo('equipos_notas', {}, (snapshot) => {
     detectarMovimientos(snapshot, 'equipos_notas');
     EQUIPOS_NOTAS = [];
     snapshot.forEach((doc) => {
@@ -3543,7 +3776,7 @@ function startSync(){
   });
 
   // pozos de petroleo (AIB) - coleccion propia, totalmente separada de los pozos de gas
-  db.collection('aib_pozos').onSnapshot((snapshot) => {
+  syncVivo('aib_pozos', {}, (snapshot) => {
     detectarMovimientos(snapshot, 'aib_pozos');
     AIB_POZOS = [];
     snapshot.forEach((doc) => {
@@ -3567,7 +3800,7 @@ function startSync(){
   });
 
   // lanzamientos de velas (agua/gas/oil) por pozo - coleccion propia, historial de eventos
-  db.collection('pozos_velas').onSnapshot((snapshot) => {
+  syncVivo('pozos_velas', { campo: 'updatedAt', tipo: 'ts', desde: () => ventanaDesdeMs(VENTANA_DIAS.velas) }, (snapshot) => {
     detectarMovimientos(snapshot, 'pozos_velas');
     VELAS = [];
     snapshot.forEach((doc) => {
@@ -3598,7 +3831,7 @@ function startSync(){
   });
 
   // mediciones de tanques de Bateria 1/2/5
-  db.collection('baterias_tanques').onSnapshot((snapshot) => {
+  syncVivo('baterias_tanques', {}, (snapshot) => {
     detectarMovimientos(snapshot, 'baterias_tanques');
     TANQUES_DATA = [];
     snapshot.forEach((doc) => {
@@ -3612,7 +3845,7 @@ function startSync(){
   }, (err) => { console.error('Firestore sync error (baterias_tanques)', err); });
 
   // bombeo a PTC por bateria (bombas en servicio + petroleo para bombear)
-  db.collection('baterias_bombeo').onSnapshot((snapshot) => {
+  syncVivo('baterias_bombeo', {}, (snapshot) => {
     BOMBEO_DATA = [];
     snapshot.forEach((doc) => {
       const data = doc.data();
@@ -3625,7 +3858,7 @@ function startSync(){
   }, (err) => { console.error('Firestore sync error (baterias_bombeo)', err); });
 
   // historial de bombeos (cada vez que se guarda con alguna bomba en servicio): va al reporte de Baterias
-  db.collection('baterias_bombeo_log').orderBy('clientTs', 'desc').limit(300).onSnapshot((snapshot) => {
+  syncVivo('baterias_bombeo_log', { campo: 'clientTs', tipo: 'num', desde: () => ventanaDesdeMs(VENTANA_DIAS.bombeoLog), limite: 300 }, (snapshot) => {
     detectarMovimientos(snapshot, 'baterias_bombeo_log', true);
     BOMBEO_LOG = [];
     snapshot.forEach((doc) => {
@@ -3638,7 +3871,7 @@ function startSync(){
   }, (err) => { console.error('Firestore sync error (baterias_bombeo_log)', err); });
 
   // mediciones de tanques de Pias 2
-  db.collection('pias2_tanques').onSnapshot((snapshot) => {
+  syncVivo('pias2_tanques', {}, (snapshot) => {
     detectarMovimientos(snapshot, 'pias2_tanques');
     PIAS2_TANQUES_DATA = [];
     snapshot.forEach((doc) => {
@@ -3652,7 +3885,7 @@ function startSync(){
   }, (err) => { console.error('Firestore sync error (pias2_tanques)', err); });
 
   // bombas y compresores de Pias 2 (estado + novedad)
-  db.collection('pias2_equipos').onSnapshot((snapshot) => {
+  syncVivo('pias2_equipos', {}, (snapshot) => {
     detectarMovimientos(snapshot, 'pias2_equipos');
     PIAS2_EQUIPOS_DATA = [];
     snapshot.forEach((doc) => {
@@ -3667,7 +3900,7 @@ function startSync(){
 
   // descargas de camiones de agua en Pias 2 (solo los ultimos 200, ordenados por fecha, para no
   // leer la coleccion entera cada vez que crezca con los años)
-  db.collection('pias2_camiones').orderBy('updatedAt', 'desc').limit(200).onSnapshot((snapshot) => {
+  syncVivo('pias2_camiones', { campo: 'updatedAt', tipo: 'ts', desde: () => ventanaDesdeMs(VENTANA_DIAS.camiones), limite: 200 }, (snapshot) => {
     detectarMovimientos(snapshot, 'pias2_camiones', true);
     PIAS2_CAMIONES_DATA = [];
     snapshot.forEach((doc) => {
@@ -3682,7 +3915,7 @@ function startSync(){
   }, (err) => { console.error('Firestore sync error (pias2_camiones)', err); });
 
   // descargas de camiones en PTC (islas A/B/C): las ultimas, en vivo; los meses viejos se piden aparte
-  db.collection('ptc_descargas').orderBy('clientTs', 'desc').limit(PTC_LIMITE_VIVO).onSnapshot((snapshot) => {
+  syncVivo('ptc_descargas', { campo: 'clientTs', tipo: 'num', desde: () => ventanaDesdeMs(VENTANA_DIAS.ptc), limite: PTC_LIMITE_VIVO }, (snapshot) => {
     detectarMovimientos(snapshot, 'ptc_descargas', true);
     PTC_DATA = [];
     snapshot.forEach((doc) => {
@@ -6406,8 +6639,7 @@ function avisosVisible(){
 function iniciarAvisosSync(){
   if(avisosSyncIniciado || !firestoreOk) return;
   avisosSyncIniciado = true;
-  db.collection('avisos_mtto').orderBy('clientTs', 'desc').limit(500)
-    .onSnapshot({ includeMetadataChanges: true }, (snap) => {
+  syncVivo('avisos_mtto', { campo: 'clientTs', tipo: 'num', limite: 500 }, (snap) => {
       detectarMovimientos(snap, 'avisos_mtto', true);
       const lista = [];
       snap.forEach(doc => {
@@ -6945,7 +7177,7 @@ function cicAnotar(){
 }
 function iniciarCiclajeSync(){
   if(!firestoreOk) return;
-  db.collection('ciclaje_eventos').orderBy('ts', 'desc').limit(600).onSnapshot(snap => {
+  syncVivo('ciclaje_eventos', { campo: 'ts', tipo: 'num', desde: () => ventanaDesdeMs(VENTANA_DIAS.ciclajeEventos), limite: 600 }, snap => {
     const locales = CICLO_EV.filter(e => e._local);
     CICLO_EV = [];
     snap.forEach(d => CICLO_EV.push(Object.assign({ id: d.id }, d.data())));
@@ -6953,7 +7185,7 @@ function iniciarCiclajeSync(){
     cicActualizarInicio();
     if(document.getElementById('ciclajeMain').style.display !== 'none') renderCiclaje();
   }, err => console.error('Firestore sync error (ciclaje_eventos)', err));
-  db.collection('ciclaje_plan').orderBy('fecha', 'desc').limit(500).onSnapshot(snap => {
+  syncVivo('ciclaje_plan', { campo: 'fecha', tipo: 'iso', desde: () => ventanaDesdeIso(VENTANA_DIAS.ciclajePlan), limite: 500 }, snap => {
     CIC_PLAN = [];
     snap.forEach(d => CIC_PLAN.push(Object.assign({ id: d.id }, d.data())));
     cicActualizarInicio();
@@ -8205,7 +8437,7 @@ function pedActualizarInicio(){
 
 function iniciarPedidosSync(){
   if(!firestoreOk) return;
-  db.collection('pedidos').orderBy('creadoTs', 'desc').limit(300).onSnapshot((snap) => {
+  syncVivo('pedidos', { campo: 'creadoTs', tipo: 'num', desde: () => ventanaDesdeMs(VENTANA_DIAS.pedidos), limite: 300 }, (snap) => {
     detectarMovimientos(snap, 'pedidos', true);
     // aviso en el celular cuando llega un pedido nuevo (no en la primera carga ni si lo cargo este mismo)
     if(pedCargaInicial && typeof snap.docChanges === 'function'){
@@ -8710,12 +8942,12 @@ function compIsoHoy(){ const d = new Date(); return d.getFullYear() + '-' + Stri
 
 function iniciarCompSync(){
   if(!firestoreOk) return;
-  db.collection('compresores_bp').onSnapshot((snapshot) => {
+  syncVivo('compresores_bp', {}, (snapshot) => {
     COMP_CFG = {};
     snapshot.forEach(doc => { COMP_CFG[doc.id] = doc.data(); });
     if(document.getElementById('compMain').style.display !== 'none') renderComp();
   }, (err) => { console.error('Firestore sync error (compresores_bp)', err); });
-  db.collection('compresores_lecturas').orderBy('clientTs', 'desc').limit(COMP_LIMITE).onSnapshot((snapshot) => {
+  syncVivo('compresores_lecturas', { campo: 'clientTs', tipo: 'num', desde: () => ventanaDesdeMs(VENTANA_DIAS.compLect), limite: COMP_LIMITE }, (snapshot) => {
     detectarMovimientos(snapshot, 'compresores_lecturas', true);
     COMP_LECT = [];
     snapshot.forEach((doc) => {
@@ -9220,7 +9452,7 @@ function exigirNombre(){
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202610241100;
+var APP_VERSION = 202610242030;
 var appVersionNueva = 0;
 function appBuscarActualizacion(){
   if(!navigator.onLine || document.getElementById('actualizarApp')) return;
