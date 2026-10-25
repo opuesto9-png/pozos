@@ -8606,7 +8606,17 @@ function renderPias(){
       alert('Cargá al menos la hora inicial y el volumen.');
       return;
     }
+    const btnC = document.getElementById('camionSaveBtn');
+    const yaEsta = (PIAS2_CAMIONES_DATA || []).some(c => (c.fecha || '') === (datos.fecha || todayStr()) && c.horaEntrada === datos.horaEntrada
+      && String(c.volumen) === String(datos.volumen) && (c.remito || '') === datos.remito);
+    if(yaEsta){
+      btnC.textContent = '✓ Ya estaba guardada';
+      setTimeout(() => { btnC.textContent = 'Guardar descarga'; }, 2500);
+      return;
+    }
     guardarCamionAgua(datos);
+    btnC.textContent = '✓ Guardada';
+    setTimeout(() => { btnC.textContent = 'Guardar descarga'; }, 2500);
   });
 
   const lista = document.getElementById('camionLista');
@@ -10073,12 +10083,26 @@ function exigirNombre(){
   setTimeout(() => inp.focus(), 50);
 }
 
+// ---------------- Anti doble toque en botones de guardar/enviar ----------------
+// Si se toca el MISMO boton de guardar o enviar otra vez antes de 2,5 s, el segundo toque no hace nada
+// (evita registros repetidos cuando parece que "no llego" y se vuelve a tocar).
+(function(){
+  const SEL = '.save-btn, .tk-save, .camion-save, .gr-guardar, .export-btn, .operador-save-btn';
+  document.addEventListener('click', (e) => {
+    const b = e.target && e.target.closest ? e.target.closest(SEL) : null;
+    if(!b) return;
+    const ahora = Date.now(), antes = parseInt(b.dataset.ultToque || '0', 10);
+    if(ahora - antes < 2500){ e.stopImmediatePropagation(); e.preventDefault(); return; }
+    b.dataset.ultToque = String(ahora);
+  }, true);
+})();
+
 // ---------------- Aviso de version nueva ----------------
 // Cada index nuevo lleva un numero de version mas alto. La app se fija cada 5 minutos (y cada vez que
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202610251500;
+var APP_VERSION = 202610251515;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
