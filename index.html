@@ -725,6 +725,24 @@
   .tk-field input{ width: 100%; background: var(--bg); border: 1px solid var(--line); color: var(--text); padding: 8px; border-radius: 6px; font-size: 0.85rem; }
   .tk-save{ margin-top: 8px; width: 100%; padding: 8px; background: var(--amber-dim); border: 1px solid var(--amber); color: var(--text); border-radius: 6px; font-size: 0.78rem; font-weight: 600; cursor: pointer; }
   .eq-card{ background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 11px 14px; margin-bottom: 8px; }
+  .aviso-grupo-btn{ display:flex; align-items:center; gap:8px; width:100%; min-height:44px; margin:6px 0 10px; padding:0 12px; border-radius:9px; border:1px solid #E08A3C; background: color-mix(in srgb, #E08A3C 10%, var(--panel)); color:#F0B07A; font-size:.86rem; font-weight:600; cursor:pointer; text-align:left; }
+  .aviso-grupo-btn svg{ width:18px; height:18px; fill:none; stroke:#F0B07A; stroke-width:2; flex-shrink:0; }
+  .aviso-grupo-n{ margin-left:auto; font-size:.72rem; background:#c0524a; color:#fff; border-radius:9px; padding:1px 8px; }
+  .ag-lista{ display:flex; flex-direction:column; gap:4px; margin-top:8px; max-height:50vh; overflow:auto; }
+  .ag-item{ display:flex; align-items:center; gap:10px; min-height:44px; padding:0 10px; border-radius:8px; border:1px solid var(--line); background: var(--bg); cursor:pointer; font-size:.92rem; }
+  .ag-item input{ width:20px; height:20px; flex-shrink:0; }
+  .ag-item:has(input:checked){ border-color:#E08A3C; }
+  .ag-ab{ margin-left:auto; font-style:normal; font-size:.72rem; color:#f0b0a8; }
+  .tk-card.gr-listo, .eq-card.gr-listo{ border-color:#6FC9B0; box-shadow: inset 3px 0 0 #6FC9B0; }
+  .tk-card.gr-falta, .eq-card.gr-falta{ border-color:#E8B64A; box-shadow: inset 3px 0 0 #E8B64A; }
+  .tk-estado{ margin:6px 0 0; font-size:.74rem; color:#6FC9B0; min-height:0; }
+  .gr-falta .tk-estado{ color:#F0C46A; }
+  .gr-barra{ margin: 10px 0 14px; display:flex; flex-direction:column; gap:4px; }
+  .gr-barra.activo{ position: sticky; bottom: 10px; z-index: 5; }
+  .gr-guardar{ width:100%; min-height:50px; border-radius:10px; border:none; background:#1C7293; color:#fff; font-size:1rem; font-weight:700; cursor:pointer; box-shadow:0 6px 18px rgba(0,0,0,.45); }
+  .gr-guardar:disabled{ background: var(--panel); color: var(--muted); border:1px dashed var(--line); box-shadow:none; cursor:default; }
+  .gr-nota{ margin:0; font-size:.74rem; color: var(--muted); text-align:center; background: var(--bg); border-radius:6px; padding:2px 6px; }
+  .gr-badge{ font-size:.7rem; font-weight:700; background:#8a6d2e; color:#fff; border-radius:9px; padding:1px 8px; margin-left:6px; vertical-align:middle; }
   .eq-top{ display: flex; justify-content: space-between; align-items: center; gap: 8px; }
   .eq-nombre{ font-weight: 600; font-size: 0.85rem; margin: 0; }
   .eq-badge{ font-size: 0.68rem; font-weight: 600; padding: 4px 10px; border-radius: 10px; border: none; cursor: pointer; }
@@ -1702,6 +1720,12 @@ function render(filterText){
     label.className = 'bat-label';
     label.innerHTML = `${bat === 'Sin bateria' ? 'Sin USPA' : bat} <span class="count">(${items.length})</span>`;
     section.appendChild(label);
+    if(!f){
+      const todos = POZOS.filter(p => (p.bateria || 'Sin bateria') === bat);
+      section.appendChild(crearBotonAvisoGrupo({ titulo: bat === 'Sin bateria' ? 'Sin USPA' : bat, bateria: bat, color: BAT_COLORS[bat],
+        items: () => todos.slice().sort((a, b) => a.pozo.localeCompare(b.pozo, undefined, { numeric: true })).map(r => ({ origen: 'gas', equipo: r.pozo, bateria: r.bateria || bat, label: r.pozo })),
+        otro: { origen: 'gas', bateria: bat } }));
+    }
 
     const grid = document.createElement('div');
     grid.className = 'grid';
@@ -3151,28 +3175,14 @@ function renderPtc(){
   document.getElementById('ptcNotasCont').appendChild(crearNotasEquipoBox('PTC'));
   // avisos de mantenimiento: uno para la isla/cargadero elegido y otro para cualquier equipo de PTC
   const avisoCont = document.getElementById('ptcAvisoCont');
-  const tarjetaIsla = document.createElement('div');
-  tarjetaIsla.className = 'eq-card ptc-aviso-card';
-  tarjetaIsla.innerHTML = `<p class="eq-nombre">${PTC_NOMBRE_GRUPO[ptcIslaSel]}</p>`;
-  agregarAvisoATarjeta(tarjetaIsla, { origen: 'ptc', equipo: PTC_NOMBRE_GRUPO[ptcIslaSel], bateria: 'PTC', titulo: 'PTC · ' + PTC_NOMBRE_GRUPO[ptcIslaSel] });
-  avisoCont.appendChild(tarjetaIsla);
-  const tarjetaOtro = document.createElement('div');
-  tarjetaOtro.className = 'eq-card ptc-aviso-card';
-  tarjetaOtro.innerHTML = `<p class="eq-nombre">Otro equipo de PTC</p>
-    <input type="text" class="eq-nota ptc-aviso-equipo" placeholder="Nombre del equipo (ej: bomba de transferencia, caudalímetro, tanque…)">
-    <div class="ptc-aviso-otro-slot"></div>
-    <button type="button" class="aviso-mini-btn ptc-aviso-otro">Aviso de mantenimiento</button>`;
-  tarjetaOtro.querySelector('.ptc-aviso-otro').addEventListener('click', () => {
-    const inp = tarjetaOtro.querySelector('.ptc-aviso-equipo');
-    const eq = inp.value.trim();
-    if(!eq){ alert('Escribí el nombre del equipo para el aviso.'); inp.focus(); return; }
-    abrirAvisoEquipo({ origen: 'ptc', equipo: eq, bateria: 'PTC', titulo: 'PTC · ' + eq });
-  });
-  avisoCont.appendChild(tarjetaOtro);
-  // avisos abiertos de otros equipos de PTC (los que no son de una isla ni del cargadero)
-  const otrosAbiertos = avisosAbiertos().filter(a => avisoOrigen(a) === 'ptc' && !Object.values(PTC_NOMBRE_GRUPO).includes(avisoEquipo(a)));
-  if(otrosAbiertos.length){
-    tarjetaOtro.querySelector('.ptc-aviso-otro-slot').innerHTML = `<div class="aviso-en-ficha"><div class="k">Avisos abiertos en PTC</div>${otrosAbiertos.map(a => `<div class="aviso-linea"><span class="crit-pill ${avisoClaseCrit(a.criticidad)}">${avisoEsc(a.criticidad)}</span> <b>${avisoEsc(avisoEquipo(a))}</b> · ${avisoEsc(a.especialidad)}: ${avisoEsc(a.descripcion)}</div>`).join('')}</div>`;
+  avisoCont.appendChild(crearBotonAvisoGrupo({ titulo: 'PTC', bateria: 'PTC', color: '#4c8fb0',
+    items: () => PTC_GRUPOS.map(g => ({ origen: 'ptc', equipo: PTC_NOMBRE_GRUPO[g], bateria: 'PTC' })),
+    otro: { origen: 'ptc', bateria: 'PTC' } }));
+  const ptcAbiertos = avisosAbiertos().filter(a => avisoOrigen(a) === 'ptc');
+  if(ptcAbiertos.length){
+    const box = document.createElement('div');
+    box.innerHTML = `<div class="aviso-en-ficha"><div class="k">Avisos abiertos en PTC</div>${ptcAbiertos.map(a => `<div class="aviso-linea"><span class="crit-pill ${avisoClaseCrit(a.criticidad)}">${avisoEsc(a.criticidad)}</span> <b>${avisoEsc(avisoEquipo(a))}</b> · ${avisoEsc(a.especialidad)}: ${avisoEsc(a.descripcion)}</div>`).join('')}</div>`;
+    avisoCont.appendChild(box);
   }
 
   if(!PTC_GRUPOS.includes(ptcIslaSel)) ptcIslaSel = 'A';
@@ -5233,7 +5243,7 @@ function parteBateriasFilas(forzarTodos){
   // cada fila lleva su momento (para ordenar) y despues se lo sacamos
   const filasTs = base.map(t => [
     t._updatedAtDate ? t._updatedAtDate.getTime() : 0,
-    fechaDe(t._updatedAtDate), horaDe(t._updatedAtDate),
+    fechaDe(t._updatedAtDate), t.horaMedicion || horaDe(t._updatedAtDate),
     t.bateria || '',
     t.nombre || '',
     `Medicion: Nivel Total ${t.nivelTotal || '?'}cm / Nivel Interfaz ${t.nivelInterfaz || '?'}cm`
@@ -5289,12 +5299,12 @@ function parteAguaFilas(forzarTodos){
   const filasOil = [];
   const conTs = (fila, d) => { fila._ts = d ? d.getTime() : 0; return fila; };
   tanquesBase.forEach(t => filasOil.push(conTs([
-    t._updatedAtDate ? t._updatedAtDate.toTimeString().slice(0,5) : '',
+    t.horaMedicion || (t._updatedAtDate ? t._updatedAtDate.toTimeString().slice(0,5) : ''),
     'Pias 2', t.nombre || '',
     `Medicion: Nivel Total ${t.nivelTotal || '?'}cm / Nivel Interfaz ${t.nivelInterfaz || '?'}cm`
   ], t._updatedAtDate)));
   equiposBase.forEach(e => filasOil.push(conTs([
-    e._updatedAtDate ? e._updatedAtDate.toTimeString().slice(0,5) : '',
+    e.horaMedicion || (e._updatedAtDate ? e._updatedAtDate.toTimeString().slice(0,5) : ''),
     'Pias 2', e.nombre || '',
     e.estado === 'Falla' ? `En falla${e.nota ? ': ' + e.nota : ''}` : `Operativa${e.nota ? ' - ' + e.nota : ''}`
   ], e._updatedAtDate)));
@@ -6818,7 +6828,9 @@ function renderAvisoFormGenerico(target, alCancelar, alEnviar){
   const card = document.getElementById('card');
   let crit = '';
   let esp = '';
-  const abiertos = avisosAbiertosDe(target.origen, target.equipo);
+  const destinos = target.multi || [target];
+  const abiertos = target.multi ? [] : avisosAbiertosDe(target.origen, target.equipo);
+  const abiertosMulti = target.multi ? destinos.filter(d => avisosAbiertosDe(d.origen, d.equipo).length) : [];
   const queEs = target.origen === 'gas' || target.origen === 'aib' ? 'Este pozo' : 'Este equipo';
   card.innerHTML = `
     <div class="card-head">
@@ -6830,6 +6842,8 @@ function renderAvisoFormGenerico(target, alCancelar, alEnviar){
     </div>
     <div class="aviso-form">
       <div class="aviso-form-title">Aviso de mantenimiento</div>
+      ${target.multi && destinos.length > 1 ? `<div class="edit-hint">Sale un aviso para cada uno: ${destinos.map(d => '<b>' + avisoEsc(d.label || d.equipo) + '</b>').join(', ')}.</div>` : ''}
+      ${abiertosMulti.length ? `<div class="aviso-ya">Ya tienen aviso abierto: ${abiertosMulti.map(d => '<b>' + avisoEsc(d.label || d.equipo) + '</b>').join(', ')}. Si es el mismo problema no hace falta cargarlo de nuevo.</div>` : ''}
       ${abiertos.length ? `<div class="aviso-ya">${queEs} ya tiene ${abiertos.length === 1 ? 'un aviso abierto' : abiertos.length + ' avisos abiertos'}: ${abiertos.map(a => `<b>${avisoEsc(a.criticidad)}</b> · ${avisoEsc(a.especialidad)}`).join('; ')}. Si es el mismo problema no hace falta cargarlo de nuevo.</div>` : ''}
       <div class="k">Criticidad</div>
       <div class="aviso-chips" id="avisoCrit">
@@ -6889,19 +6903,21 @@ function renderAvisoFormGenerico(target, alCancelar, alEnviar){
       err.style.display = '';
       return;
     }
-    const aviso = {
-      origen: target.origen, equipo: target.equipo,
-      pozo: (target.origen === 'gas' || target.origen === 'aib') ? target.equipo : '',
-      bateria: target.bateria || '', criticidad: crit, especialidad: esp,
-      descripcion: desc.slice(0, 1000), operador: operadorName, clientTs: Date.now(),
-      ts: firebase.firestore.FieldValue.serverTimestamp(), estado: 'abierto'
-    };
-    db.collection('avisos_mtto').add(aviso).catch((e) => {
-      alert('No se pudo enviar el aviso (' + e.message + ').');
+    destinos.forEach((dst, i) => {
+      const aviso = {
+        origen: dst.origen, equipo: dst.equipo,
+        pozo: (dst.origen === 'gas' || dst.origen === 'aib') ? dst.equipo : '',
+        bateria: dst.bateria || target.bateria || '', criticidad: crit, especialidad: esp,
+        descripcion: desc.slice(0, 1000), operador: operadorName, clientTs: Date.now() + i,
+        ts: firebase.firestore.FieldValue.serverTimestamp(), estado: 'abierto'
+      };
+      db.collection('avisos_mtto').add(aviso).catch((e) => {
+        alert('No se pudo enviar el aviso (' + e.message + ').');
+      });
+      // lo sumamos ya a la lista local, asi todo lo muestra al instante
+      // (cuando llega la actualizacion de la base, la lista se reemplaza entera con el dato real)
+      AVISOS = [Object.assign({ id: 'local-' + Date.now() + '-' + i, pendiente: true, resueltoPor: '', resueltoTs: 0 }, aviso)].concat(AVISOS || []);
     });
-    // lo sumamos ya a la lista local, asi todo lo muestra al instante
-    // (cuando llega la actualizacion de la base, la lista se reemplaza entera con el dato real)
-    AVISOS = [Object.assign({ id: 'local-' + Date.now(), pendiente: true, resueltoPor: '', resueltoTs: 0 }, aviso)].concat(AVISOS || []);
     refrescarMarcasAvisos();
     alEnviar();
   });
@@ -6964,18 +6980,88 @@ function agregarAvisoATarjeta(el, target){
   slot.dataset.origen = target.origen;
   slot.dataset.equipo = target.equipo;
   slot.innerHTML = avisosEquipoHtml(target.origen, target.equipo);
+  el.appendChild(slot);
+}
+
+// ---- Aviso de mantenimiento por grupo: un boton por bateria / USPA / Pias 2 / PTC / AIB ----
+// Al tocarlo se abre la lista de equipos de ese grupo para tildar uno o varios; despues se completa una
+// sola vez criticidad, especialidad y que pasa, y se genera un aviso por cada equipo tildado.
+// g = { titulo, bateria, color, items: () => [{ origen, equipo, bateria, label }], otro: { origen, bateria } | null }
+function crearBotonAvisoGrupo(g){
   const btn = document.createElement('button');
   btn.type = 'button';
-  btn.className = 'aviso-mini-btn';
-  btn.textContent = 'Aviso de mantenimiento';
-  btn.addEventListener('click', () => abrirAvisoEquipo(target));
-  el.appendChild(slot);
-  el.appendChild(btn);
+  btn.className = 'aviso-grupo-btn';
+  btn._pintar = () => {
+    const n = g.items().reduce((k, it) => k + avisosAbiertosDe(it.origen, it.equipo).length, 0);
+    btn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l9 16H3z"/><path d="M12 10v4M12 17h.01"/></svg>Aviso de mantenimiento · ' + avisoEsc(g.titulo) + (n ? ' <span class="aviso-grupo-n">' + n + ' abierto' + (n === 1 ? '' : 's') + '</span>' : '');
+  };
+  btn._pintar();
+  btn.addEventListener('click', (e) => { e.stopPropagation(); abrirAvisoGrupo(g); });
+  return btn;
+}
+function abrirAvisoGrupo(g, previos){
+  const overlay = document.getElementById('overlay');
+  overlay.classList.add('show');
+  if(!modalHistoryPushed){ history.pushState({ pozosModal: true }, ''); modalHistoryPushed = true; }
+  const card = document.getElementById('card');
+  const items = g.items();
+  const sel = new Set(previos ? previos.filter(x => !x.libre).map(x => x.origen + '|' + x.equipo) : []);
+  const libreIni = previos ? (previos.find(x => x.libre) || {}).equipo || '' : '';
+  const conBuscar = items.length > 12;
+  card.innerHTML = `
+    <div class="card-head">
+      <div><h2>Aviso de mantenimiento</h2>${g.bateria ? `<span class="bat-pill" style="background:${g.color || '#4c8fb0'}">${avisoEsc(g.titulo)}</span>` : ''}</div>
+      <button class="close-btn" id="closeBtn">&times;</button>
+    </div>
+    <div class="edit-hint">Tildá el o los equipos con problema. Después cargás una sola vez qué pasa y sale un aviso por cada uno.</div>
+    ${conBuscar ? '<input type="text" class="edit-input" id="agBuscar" placeholder="Buscar (ej: 1126)" style="margin:8px 0">' : ''}
+    <div class="ag-lista" id="agLista">${items.map(it => {
+      const k = it.origen + '|' + it.equipo, ab = avisosAbiertosDe(it.origen, it.equipo).length;
+      return `<label class="ag-item" data-txt="${avisoEsc((it.label || it.equipo).toLowerCase())}"><input type="checkbox" data-k="${avisoEsc(k)}" ${sel.has(k) ? 'checked' : ''}><span>${avisoEsc(it.label || it.equipo)}</span>${ab ? `<em class="ag-ab">${ab} abierto${ab === 1 ? '' : 's'}</em>` : ''}</label>`;
+    }).join('')}</div>
+    ${g.otro ? `<div class="k" style="margin-top:10px">Otro equipo (si no está en la lista)</div><input type="text" class="edit-input" id="agOtro" placeholder="ej: bomba de transferencia, caudalímetro…" value="${avisoEsc(libreIni)}">` : ''}
+    <div class="edit-actions"><button class="save-btn" id="agSig" disabled>Siguiente</button><button class="cancel-btn" id="agCancel">Cancelar</button></div>`;
+  card.scrollTop = 0;
+  const $ = (id) => document.getElementById(id);
+  const elegidos = () => {
+    const l = [];
+    card.querySelectorAll('#agLista input:checked').forEach(ch => { const it = items.find(x => x.origen + '|' + x.equipo === ch.dataset.k); if(it) l.push(it); });
+    const o = $('agOtro') && $('agOtro').value.trim();
+    if(o && g.otro) l.push({ origen: g.otro.origen, equipo: o, bateria: g.otro.bateria, label: o, libre: true });
+    return l;
+  };
+  const pintar = () => { const n = elegidos().length; $('agSig').disabled = !n; $('agSig').textContent = n ? 'Siguiente (' + n + ')' : 'Siguiente'; };
+  card.querySelectorAll('#agLista input').forEach(ch => ch.addEventListener('change', pintar));
+  if($('agOtro')) $('agOtro').addEventListener('input', pintar);
+  if($('agBuscar')) $('agBuscar').addEventListener('input', () => {
+    const q = $('agBuscar').value.trim().toLowerCase();
+    card.querySelectorAll('.ag-item').forEach(l => { l.style.display = !q || l.dataset.txt.includes(q) ? '' : 'none'; });
+  });
+  $('closeBtn').addEventListener('click', closeCard);
+  $('agCancel').addEventListener('click', closeCard);
+  $('agSig').addEventListener('click', () => {
+    const l = elegidos();
+    if(!l.length) return;
+    const titulo = l.length === 1 ? (l[0].label || l[0].equipo) : g.titulo + ' · ' + l.length + ' equipos';
+    renderAvisoFormGenerico({ origen: l[0].origen, equipo: l[0].equipo, bateria: l[0].bateria || g.bateria || '', titulo, color: g.color, multi: l },
+      () => abrirAvisoGrupo(g, l),
+      () => {
+        card.innerHTML = `
+          <div class="card-head"><div><h2>${avisoEsc(titulo)}</h2></div><button class="close-btn" id="closeBtn">&times;</button></div>
+          <div class="aviso-enviado">${l.length === 1 ? 'Aviso enviado' : l.length + ' avisos enviados'}. Ya aparece${l.length === 1 ? '' : 'n'} en la pestaña Avisos de la compu.</div>
+          ${l.map(x => `<div class="k" style="margin-top:8px">${avisoEsc(x.label || x.equipo)}</div>${avisosEquipoHtml(x.origen, x.equipo)}`).join('')}
+          <div class="edit-actions"><button class="save-btn" id="avisoListoBtn">Listo</button></div>`;
+        $('closeBtn').addEventListener('click', closeCard);
+        $('avisoListoBtn').addEventListener('click', closeCard);
+      });
+  });
+  pintar();
 }
 function actualizarAvisoSlots(){
   document.querySelectorAll('.aviso-slot').forEach(slot => {
     slot.innerHTML = avisosEquipoHtml(slot.dataset.origen, slot.dataset.equipo);
   });
+  document.querySelectorAll('.aviso-grupo-btn').forEach(btn => { if(btn._pintar) btn._pintar(); });
 }
 
 // ---- pestaña Avisos (solo compu principal) ----
@@ -7901,6 +7987,12 @@ function renderAib(){
   }
 
   const ordenados = [...AIB_POZOS].sort((a,b) => (a.bateria||'').localeCompare(b.bateria||'') || a.pozo.localeCompare(b.pozo, undefined, {numeric:true}));
+  [...new Set(ordenados.map(r => r.bateria || 'Sin bateria'))].forEach(batAib => {
+    aibMain.appendChild(crearBotonAvisoGrupo({ titulo: 'AIB ' + batAib, bateria: batAib, color: '#4c8fb0',
+      items: () => AIB_POZOS.filter(r => (r.bateria || 'Sin bateria') === batAib).sort((a, b) => a.pozo.localeCompare(b.pozo, undefined, { numeric: true }))
+        .map(r => ({ origen: 'aib', equipo: r.pozo, bateria: r.bateria || '', label: r.pozo })),
+      otro: null }));
+  });
 
   const MOTIVOS_PARO = ['Paro ecologico', 'Corte de vastago', 'Sobrecarga', 'Sobrevelocidad'];
 
@@ -8019,71 +8111,148 @@ document.getElementById('tabAib').addEventListener('click', () => {
 });
 
 // ---------------- Tanques (Bateria 1/2/5) y Pias 2 ----------------
+// ---- Guardado por grupo (una sola vez por bateria / Pias 2) ----
+// Cada tanque/equipo que se completa queda como BORRADOR en este equipo (localStorage) hasta tocar
+// "Guardar Bateria X": asi no se pierde si la pantalla se redibuja (llega un dato de otro equipo) o si se
+// cierra la app. Se sigue guardando un documento por tanque/equipo (reportes, pedidos y Parte en vivo
+// no cambian). La hora de cada medicion es la de cuando se escribio (horaMedicion), no la del boton.
+var GR_BORR = (function(){ try { return JSON.parse(localStorage.getItem('grupo_borradores') || '{}') || {}; } catch(e){ return {}; } })();
+(function(){ const lim = Date.now() - 12 * 3600e3; Object.keys(GR_BORR).forEach(k => { if(!GR_BORR[k] || (GR_BORR[k].ts || 0) < lim) delete GR_BORR[k]; }); })();
+function grBorrGuardar(){ try { localStorage.setItem('grupo_borradores', JSON.stringify(GR_BORR)); } catch(e) {} }
+function grHora(ts){ const d = new Date(ts || Date.now()); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
+function grBorrTanque(col, nombre){ return GR_BORR['tk|' + col + '|' + nombre] || null; }
+function grBorrEquipo(nombre){ return GR_BORR['eq|' + nombre] || null; }
+var grRefrescarBotones = function(){};
+
 function crearTarjetaTanque(nombre, bateria, coleccion, datos){
   const rec = datos.find(d => d.nombre === nombre);
   const card = document.createElement('div');
   card.className = 'tk-card';
+  card.dataset.tk = nombre;
   const ultimaTxt = rec && rec._updatedAtDate
     ? `${rec.nivelTotal || '?'} / ${rec.nivelInterfaz || '?'} cm &middot; ${tiempoRelativo(rec._updatedAtDate)}${rec.operador ? ' &middot; ' + rec.operador : ''}`
     : 'sin datos';
+  const key = 'tk|' + coleccion + '|' + nombre;
+  const b = GR_BORR[key] || {};
+  const esc = (v) => String(v || '').replace(/"/g, '&quot;');
   card.innerHTML = `
     <div class="tk-top">
       <p class="tk-nombre">${nombre}</p>
       <p class="tk-ultima">${ultimaTxt}</p>
     </div>
     <div class="tk-fields">
-      <div class="tk-field"><label>Nivel Total (cm)</label><input type="text" inputmode="decimal" class="tk-total" placeholder="${rec && rec.nivelTotal ? 'último: ' + String(rec.nivelTotal).replace(/"/g, '&quot;') : 'ej: 90,23'}" value=""></div>
-      <div class="tk-field"><label>Nivel Interfaz (cm)</label><input type="text" inputmode="decimal" class="tk-interfaz" placeholder="${rec && rec.nivelInterfaz ? 'último: ' + String(rec.nivelInterfaz).replace(/"/g, '&quot;') : 'ej: 30,00'}" value=""></div>
+      <div class="tk-field"><label>Nivel Total (cm)</label><input type="text" inputmode="decimal" class="tk-total" placeholder="${rec && rec.nivelTotal ? 'último: ' + esc(rec.nivelTotal) : 'ej: 90,23'}" value="${esc(b.nt)}"></div>
+      <div class="tk-field"><label>Nivel Interfaz (cm)</label><input type="text" inputmode="decimal" class="tk-interfaz" placeholder="${rec && rec.nivelInterfaz ? 'último: ' + esc(rec.nivelInterfaz) : 'ej: 30,00'}" value="${esc(b.ni)}"></div>
     </div>
-    <button class="tk-save">Guardar medicion</button>
+    <p class="tk-estado"></p>
   `;
-  card.querySelector('.tk-save').addEventListener('click', () => {
-    const nt = card.querySelector('.tk-total').value.trim();
-    const ni = card.querySelector('.tk-interfaz').value.trim();
-    if(!nt || !ni){
-      alert('Cargá Nivel Total y Nivel Interfaz antes de guardar la medición.');
-      (nt ? card.querySelector('.tk-interfaz') : card.querySelector('.tk-total')).focus();
-      return;
-    }
-    if(guardarMedicionTanque(coleccion, nombre, bateria, nt, ni) === false) return;
-    card.querySelector('.tk-total').value = '';
-    card.querySelector('.tk-interfaz').value = '';
-  });
+  const nt = card.querySelector('.tk-total'), ni = card.querySelector('.tk-interfaz');
+  const pintar = () => {
+    const d = GR_BORR[key];
+    const completo = d && d.nt && d.ni, parcial = d && (d.nt || d.ni) && !completo;
+    card.classList.toggle('gr-listo', !!completo);
+    card.classList.toggle('gr-falta', !!parcial);
+    card.querySelector('.tk-estado').textContent = completo ? 'Listo para guardar · medido ' + grHora(d.ts) : (parcial ? 'Falta ' + (d.nt ? 'Nivel Interfaz' : 'Nivel Total') : '');
+  };
+  const cambio = () => {
+    const vt = nt.value.trim(), vi = ni.value.trim();
+    if(!vt && !vi){ delete GR_BORR[key]; }
+    else { const prev = GR_BORR[key]; GR_BORR[key] = { tipo: 'tk', col: coleccion, nombre, bateria, nt: vt, ni: vi, ts: (prev && prev.ts) || Date.now() }; }
+    grBorrGuardar(); pintar(); grRefrescarBotones();
+  };
+  nt.addEventListener('input', cambio); ni.addEventListener('input', cambio);
+  pintar();
   agregarAvisoATarjeta(card, { origen: coleccion === 'pias2_tanques' ? 'pias2' : 'bateria', equipo: nombre, bateria: bateria, titulo: nombre });
   return card;
 }
 
+// boton unico de guardado de un grupo (una bateria, o Pias 2 con tanques + equipos)
+function crearBotonGrupo(etiqueta, filtro){
+  const wrap = document.createElement('div');
+  wrap.className = 'gr-barra';
+  wrap.innerHTML = `<button type="button" class="gr-guardar" disabled>Guardar ${etiqueta}</button><p class="gr-nota"></p>`;
+  const btn = wrap.querySelector('.gr-guardar'), nota = wrap.querySelector('.gr-nota');
+  const items = () => Object.keys(GR_BORR).filter(k => filtro(GR_BORR[k])).map(k => Object.assign({ key: k }, GR_BORR[k]));
+  const listos = (l) => l.filter(x => x.tipo === 'tk' ? (x.nt && x.ni) : (x.estado !== 'Falla' || x.nota));
+  const actualizar = () => {
+    const l = items(), ok = listos(l), faltan = l.length - ok.length;
+    btn.disabled = !ok.length;
+    wrap.classList.toggle('activo', l.length > 0);
+    btn.textContent = 'Guardar ' + etiqueta + (ok.length ? ' (' + ok.length + ')' : '');
+    nota.textContent = faltan ? faltan + ' a medio cargar (no se guarda' + (faltan === 1 ? '' : 'n') + ' hasta completar)' : (ok.length ? '' : 'Completá los tanques medidos y guardá todo junto acá.');
+  };
+  btn.addEventListener('click', () => {
+    const l = items(), ok = listos(l), faltan = l.filter(x => ok.indexOf(x) === -1);
+    if(!ok.length) return;
+    if(faltan.length && !confirm('Hay ' + faltan.length + ' sin completar (' + faltan.map(x => x.nombre).join(', ') + '). Esos quedan cargados acá sin guardar.\n\n¿Guardar ahora los ' + ok.length + ' completos?')) return;
+    if(!puedeModificar()) return;
+    if(!firestoreOk){ alert('No hay conexion con el guardado compartido. Revisa tu internet e intenta de nuevo.'); return; }
+    ok.forEach(x => {
+      if(x.tipo === 'tk'){
+        db.collection(x.col).doc(x.nombre).set({
+          nombre: x.nombre, bateria: x.bateria, nivelTotal: x.nt, nivelInterfaz: x.ni, horaMedicion: grHora(x.ts),
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp(), operador: operadorName || 'Sin nombre'
+        }, { merge: true }).catch(err => alert('No se pudo guardar ' + x.nombre + ' (' + err.message + ').'));
+      } else {
+        db.collection('pias2_equipos').doc(x.nombre).set({
+          nombre: x.nombre, tipo: x.eqTipo, estado: x.estado, nota: x.nota || '', horaMedicion: grHora(x.ts),
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp(), operador: operadorName || 'Sin nombre'
+        }, { merge: true }).catch(err => alert('No se pudo guardar ' + x.nombre + ' (' + err.message + ').'));
+      }
+      delete GR_BORR[x.key];
+    });
+    grBorrGuardar();
+    movToast('Guardado: ' + ok.length + ' de ' + etiqueta + '.');
+    if(document.getElementById('tanquesMain').style.display !== 'none') renderTanques();
+    if(document.getElementById('piasMain').style.display !== 'none') renderPias();
+  });
+  wrap._actualizar = actualizar;
+  actualizar();
+  return wrap;
+}
+function grEnlazarBotones(root){
+  const bs = [...root.querySelectorAll('.gr-barra')];
+  grRefrescarBotones = () => bs.forEach(b => b._actualizar && b._actualizar());
+}
+function grPendientesDe(filtro){ return Object.keys(GR_BORR).filter(k => filtro(GR_BORR[k])).length; }
+
 function crearTarjetaEquipo(nombre, tipo, datos){
   const rec = datos.find(d => d.nombre === nombre);
   const estadoActual = rec ? rec.estado : 'Operativa';
+  const key = 'eq|' + nombre;
+  const b = GR_BORR[key];
   const card = document.createElement('div');
   card.className = 'eq-card';
   card.innerHTML = `
     <div class="eq-top">
       <p class="eq-nombre">${nombre}</p>
-      <button type="button" class="eq-badge ${estadoActual === 'Falla' ? 'falla' : 'op'}">${estadoActual === 'Falla' ? 'EN FALLA' : 'OPERATIVA'}</button>
+      <button type="button" class="eq-badge"></button>
     </div>
     ${rec && rec.nota ? `<div class="aib-ultimo">Última novedad: ${avisoEsc(rec.nota)}</div>` : ''}
-    <textarea class="eq-nota" rows="2" placeholder="Cargar novedad si entra en falla..."></textarea>
-    <button class="eq-save">Guardar</button>
+    <textarea class="eq-nota" rows="2" placeholder="Cargar novedad si entra en falla...">${b && b.nota ? avisoEsc(b.nota) : ''}</textarea>
+    <p class="tk-estado"></p>
   `;
-  const badge = card.querySelector('.eq-badge');
-  let estadoLocal = estadoActual;
-  badge.addEventListener('click', () => {
-    estadoLocal = estadoLocal === 'Falla' ? 'Operativa' : 'Falla';
+  const badge = card.querySelector('.eq-badge'), notaEl = card.querySelector('.eq-nota');
+  let estadoLocal = b ? b.estado : estadoActual;
+  const pintar = () => {
     badge.classList.toggle('falla', estadoLocal === 'Falla');
     badge.classList.toggle('op', estadoLocal !== 'Falla');
     badge.textContent = estadoLocal === 'Falla' ? 'EN FALLA' : 'OPERATIVA';
-  });
-  card.querySelector('.eq-save').addEventListener('click', () => {
-    const nota = card.querySelector('.eq-nota').value.trim();
-    if(estadoLocal === 'Falla' && !nota){
-      alert('Contá qué falla tiene antes de guardar.');
-      card.querySelector('.eq-nota').focus();
-      return;
-    }
-    guardarEquipoPias2(nombre, tipo, estadoLocal, nota);
-  });
+    const d = GR_BORR[key];
+    const falta = d && d.estado === 'Falla' && !d.nota;
+    card.classList.toggle('gr-listo', !!(d && !falta));
+    card.classList.toggle('gr-falta', !!falta);
+    card.querySelector('.tk-estado').textContent = !d ? '' : (falta ? 'Falta contar qué falla tiene' : 'Listo para guardar');
+  };
+  const cambio = () => {
+    const nota = notaEl.value.trim();
+    if(estadoLocal === estadoActual && !nota){ delete GR_BORR[key]; }
+    else { const prev = GR_BORR[key]; GR_BORR[key] = { tipo: 'eq', eqTipo: tipo, nombre, estado: estadoLocal, nota, ts: (prev && prev.ts) || Date.now() }; }
+    grBorrGuardar(); pintar(); grRefrescarBotones();
+  };
+  badge.addEventListener('click', () => { estadoLocal = estadoLocal === 'Falla' ? 'Operativa' : 'Falla'; cambio(); });
+  notaEl.addEventListener('input', cambio);
+  pintar();
   agregarAvisoATarjeta(card, { origen: 'pias2', equipo: nombre, bateria: 'Pias 2', titulo: nombre });
   return card;
 }
@@ -8230,9 +8399,16 @@ function renderTanques(){
     header.innerHTML = `<p>${bat}</p><span class="chev">${abierto ? '&#9662;' : '&#9656;'}</span>`;
     const body = document.createElement('div');
     body.className = 'bat-body' + (abierto ? '' : ' closed');
+    body.appendChild(crearBotonAvisoGrupo({ titulo: bat, bateria: bat, color: '#4c8fb0',
+      items: () => TANQUES_BATERIAS[bat].map(tk => ({ origen: 'bateria', equipo: tk, bateria: bat }))
+        .concat(BOMBEO_PTC[bat] ? BOMBEO_PTC[bat].bombas.map(b => ({ origen: 'bateria', equipo: b, bateria: bat, label: b + ' (bomba a PTC)' })) : []),
+      otro: { origen: 'bateria', bateria: bat } }));
     body.appendChild(crearNotasEquipoBox(bat));
     if(BOMBEO_PTC[bat]) body.appendChild(crearBloqueBombeo(bat));
     TANQUES_BATERIAS[bat].forEach(tk => body.appendChild(crearTarjetaTanque(tk, bat, 'baterias_tanques', TANQUES_DATA)));
+    body.appendChild(crearBotonGrupo(bat, x => x.tipo === 'tk' && x.col === 'baterias_tanques' && x.bateria === bat));
+    const nPend = grPendientesDe(x => x.tipo === 'tk' && x.col === 'baterias_tanques' && x.bateria === bat);
+    if(nPend) header.querySelector('p').insertAdjacentHTML('beforeend', ' <span class="gr-badge">' + nPend + ' sin guardar</span>');
     header.addEventListener('click', () => {
       if(bateriasAbiertas.has(bat)){ bateriasAbiertas.delete(bat); } else { bateriasAbiertas.add(bat); }
       renderTanques();
@@ -8240,6 +8416,7 @@ function renderTanques(){
     cont.appendChild(header);
     cont.appendChild(body);
   });
+  grEnlazarBotones(main);
 }
 
 function renderPias(){
@@ -8253,6 +8430,7 @@ function renderPias(){
     <div id="compresoresCont"></div>
     <p class="seccion-titulo">Bombas Pias 2</p>
     <div id="bombasCont"></div>
+    <div id="piasGuardarCont"></div>
     <div class="camion-box">
       <p class="camion-titulo">Descarga de camiones</p>
       <div class="camion-grid">
@@ -8278,6 +8456,11 @@ function renderPias(){
       <div class="camion-lista" id="camionLista"></div>
     </div>
   `;
+  document.getElementById('piasNotasCont').appendChild(crearBotonAvisoGrupo({ titulo: 'Pías 2', bateria: 'Pias 2', color: '#4c8fb0',
+    items: () => PIAS2_TANQUES_NOMBRES.map(t => ({ origen: 'pias2', equipo: t, bateria: 'Pias 2' }))
+      .concat(COMPRESORES_PIAS2.map(k => ({ origen: 'pias2', equipo: k, bateria: 'Pias 2', label: k + ' (compresor)' })))
+      .concat(BOMBAS_PIAS2.map(b => ({ origen: 'pias2', equipo: b, bateria: 'Pias 2', label: b + ' (bomba)' }))),
+    otro: { origen: 'pias2', bateria: 'Pias 2' } }));
   document.getElementById('piasNotasCont').appendChild(crearNotasEquipoBox('Pias 2'));
   const piasTanquesCont = document.getElementById('piasTanquesCont');
   PIAS2_TANQUES_NOMBRES.forEach(tk => piasTanquesCont.appendChild(crearTarjetaTanque(tk, 'Pias 2', 'pias2_tanques', PIAS2_TANQUES_DATA)));
@@ -8287,6 +8470,8 @@ function renderPias(){
 
   const bombasCont = document.getElementById('bombasCont');
   BOMBAS_PIAS2.forEach(p => bombasCont.appendChild(crearTarjetaEquipo(p, 'bomba', PIAS2_EQUIPOS_DATA)));
+  document.getElementById('piasGuardarCont').appendChild(crearBotonGrupo('Pías 2', x => (x.tipo === 'tk' && x.col === 'pias2_tanques') || x.tipo === 'eq'));
+  grEnlazarBotones(main);
 
   document.getElementById('camionSaveBtn').addEventListener('click', () => {
     // fecha del formulario (aaaa-mm-dd) al mismo formato que el resto de la app (dd/mm/aaaa)
@@ -9577,7 +9762,7 @@ function exigirNombre(){
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202610251000;
+var APP_VERSION = 202610251100;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
