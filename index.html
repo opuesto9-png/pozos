@@ -1433,6 +1433,7 @@
     </div>
     <span id="movAvisoTag" class="mov-av-tag" style="margin-left:auto; display:none;"></span>
     <button type="button" id="dispositivosBtn" class="mov-av-btn" style="display:none;" title="Habilitar celulares y compus, y ver quién tiene acceso">🔒 Dispositivos</button>
+    <button type="button" id="claveTag" class="mov-av-btn" style="display:none;" title="Volver a pedir la clave para guardar en esta compu"></button>
     <span id="primarioTag" class="operador-tag"></span>
   </div>
 </header>
@@ -4864,14 +4865,38 @@ function puedeModificar(sinControlHab){
   if(!(operadorName || '').trim() && typeof exigirNombre === 'function'){ exigirNombre(); if(document.getElementById('nombreObligatorio')) return false; }
   if(!sinControlHab && habBloqueado()){ habAvisarBloqueado(); return false; }
   if(esMovil()) return true;
-  const clave = prompt('Ingresa la clave para guardar cambios desde esta compu:');
+  if(claveVigente()) return true;
+  const clave = prompt('Ingresa la clave para guardar cambios desde esta compu:\n(queda recordada en esta compu por 12 horas o hasta que se cierre la app)');
   if(clave === null) return false; // cancelo
   if(huellaClave(clave.trim()) !== HUELLA_CLAVE_PC){
     alert('Clave incorrecta. No se guardo el cambio.');
     return false;
   }
+  claveRecordar();
   return true;
 }
+
+// ---- la clave de la compu se recuerda durante el turno (12 h) o hasta cerrar la app (sessionStorage) ----
+var CLAVE_DURACION_MS = 12 * 3600e3;
+function claveHasta(){ try { return parseInt(sessionStorage.getItem('clave_ok_hasta') || '0', 10) || 0; } catch(e) { return 0; } }
+function claveVigente(){ return claveHasta() > Date.now(); }
+function claveRecordar(){
+  try { sessionStorage.setItem('clave_ok_hasta', String(Date.now() + CLAVE_DURACION_MS)); } catch(e) {}
+  claveRenderTag();
+}
+function claveBloquear(){
+  try { sessionStorage.removeItem('clave_ok_hasta'); } catch(e) {}
+  claveRenderTag();
+}
+function claveRenderTag(){
+  const t = document.getElementById('claveTag');
+  if(!t) return;
+  if(esMovil() || !claveVigente()){ t.style.display = 'none'; return; }
+  const h = new Date(claveHasta());
+  t.style.display = '';
+  t.textContent = '🔓 Clave activa hasta las ' + String(h.getHours()).padStart(2, '0') + ':' + String(h.getMinutes()).padStart(2, '0') + ' · Bloquear';
+}
+setInterval(claveRenderTag, 60e3);
 
 function renderPrimarioTag(){
   const tag = document.getElementById('primarioTag');
@@ -9404,6 +9429,8 @@ function abrirMenuEnviar(){
 TAB_IDS.forEach(id => document.getElementById(id).addEventListener('click', () => entrarSeccion(id), true));
 document.querySelectorAll('#inicio [data-tab]').forEach(b => b.addEventListener('click', () => document.getElementById(b.dataset.tab).click()));
 document.getElementById('iniEnviarBtn').addEventListener('click', abrirMenuEnviar);
+document.getElementById('claveTag').addEventListener('click', () => { claveBloquear(); movToast('Listo: la próxima vez que se guarde algo en esta compu se va a pedir la clave.'); });
+claveRenderTag();
 document.getElementById('navVolverBtn').addEventListener('click', () => {
   if(history.state && history.state.pozosSeccion) history.back(); else irInicio();
 });
@@ -9458,7 +9485,7 @@ function exigirNombre(){
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202610250815;
+var APP_VERSION = 202610250900;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
