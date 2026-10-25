@@ -1242,6 +1242,11 @@
   .td-base{ vector-effect: non-scaling-stroke; }
   .td-punto{ fill:#3a86d9; stroke: var(--panel); stroke-width:2; }
   .td-rango{ font-size:.74rem; color:#9FB3C3; }
+  .td-hueco{ fill:#9FB3C3; fill-opacity:.05; }
+  .td-punto{ fill:none; stroke:#3a86d9; stroke-width:7; stroke-linecap:round; vector-effect: non-scaling-stroke; }
+  .td-bache{ font-size:.72rem; color:#9FB3C3; font-style:italic; }
+  .td-ult{ font-size:.72rem; color:#9FB3C3; }
+  .td-ult.viejo{ color:#F0B07A; font-weight:600; }
   .td-lista{ display:flex; flex-direction:column; gap:2px; margin-top:6px; border-top:1px solid var(--line); padding-top:6px; }
   .td-lista span{ display:grid; grid-template-columns: 110px 80px 1fr; gap:8px; font-size:.82rem; }
   .td-lista i{ font-style:normal; color:#9FB3C3; }
@@ -9435,6 +9440,7 @@ function tendSeries(){
     const id = 'bo|' + b.bateria, dia = pedIso(inicioDiaOperativo(new Date(ts)));
     if(!out[id]) out[id] = { id, sector: 'baterias', nombre: b.bateria, que: 'm³ bombeados por día', unidad: 'm³', puntos: [], porDia: {} };
     out[id].porDia[dia] = (out[id].porDia[dia] || 0) + (Number(b.volumenM3) || 0);
+    out[id].ultTs = Math.max(out[id].ultTs || 0, ts);
   });
   Object.values(out).forEach(s => { if(s.porDia){ s.puntos = Object.keys(s.porDia).sort().map(d => ({ ts: new Date(d + 'T12:00:00').getTime(), v: Math.round(s.porDia[d] * 100) / 100, por: '' })); } });
   // pozos abiertos por USPA (fotos diarias + el valor de ahora)
@@ -9451,14 +9457,54 @@ function tendSeries(){
   return Object.values(out).map(s => { s.puntos.sort((a, b) => a.ts - b.ts); return s; });
 }
 
+// Mas de 36 h sin ninguna carga = bache (franco, nadie cargo). La curva se corta ahi en vez de
+// unir los dos puntos como si el valor hubiera cambiado parejo, y el hueco se marca en gris.
+var TEND_BACHE_MS = 36 * 3600e3;
+function tendBaches(puntos){
+  const b = [];
+  for(let i = 1; i < puntos.length; i++) if(puntos[i].ts - puntos[i - 1].ts > TEND_BACHE_MS) b.push({ desde: puntos[i - 1].ts, hasta: puntos[i].ts });
+  return b;
+}
 function tendSpark(puntos, ancho, alto){
   const vals = puntos.map(p => p.v);
   const min = Math.min.apply(null, vals), max = Math.max.apply(null, vals), r = (max - min) || 1;
   const t0 = puntos[0].ts, t1 = puntos[puntos.length - 1].ts, rt = (t1 - t0) || 1;
-  const pts = puntos.map(p => [puntos.length === 1 ? ancho : (p.ts - t0) / rt * ancho, alto - 6 - (p.v - min) / r * (alto - 16)]);
-  const linea = 'M' + pts.map(q => q[0].toFixed(1) + ',' + q[1].toFixed(1)).join(' L');
+  const X = (ts) => puntos.length === 1 ? ancho : (ts - t0) / rt * ancho;
+  const pts = puntos.map(p => [X(p.ts), alto - 6 - (p.v - min) / r * (alto - 16)]);
+  // tramos continuos (se corta en cada bache)
+  const tramos = [[0]];
+  for(let i = 1; i < puntos.length; i++){
+    if(puntos[i].ts - puntos[i - 1].ts > TEND_BACHE_MS) tramos.push([i]); else tramos[tramos.length - 1].push(i);
+  }
+  const f = (q) => q[0].toFixed(1) + ',' + q[1].toFixed(1);
+  let linea = '', area = '', sueltos = '';
+  tramos.forEach(t => {
+    const q = t.map(i => pts[i]);
+    if(q.length === 1){ sueltos += `<path d="M${Math.min(ancho - 3, Math.max(3, q[0][0])).toFixed(1)},${q[0][1].toFixed(1)} l0.01,0" class="td-punto"></path>`; return; }
+    const l = 'M' + q.map(f).join(' L');
+    linea += l + ' ';
+    area += l + ` L${q[q.length - 1][0].toFixed(1)},${alto} L${q[0][0].toFixed(1)},${alto} Z `;
+  });
+  const huecos = tendBaches(puntos).map(b => { const x0 = X(b.desde), x1 = X(b.hasta); return `<rect x="${(x0 + 2).toFixed(1)}" y="0" width="${Math.max(0, x1 - x0 - 4).toFixed(1)}" height="${alto}" class="td-hueco"></rect>`; }).join('');
   const u = pts[pts.length - 1];
-  return { linea, area: linea + ` L${ancho},${alto} L${pts[0][0].toFixed(1)},${alto} Z`, ux: u[0].toFixed(1), uy: u[1].toFixed(1), min, max };
+  return { linea: linea.trim() || 'M0,0', area: area.trim(), sueltos, huecos, ux: u[0].toFixed(1), uy: u[1].toFixed(1), min, max };
+}
+// texto del bache con los dias que quedaron SIN carga (no los dias que si tienen dato en los bordes)
+function tendBacheTxt(b){
+  const d0 = new Date(b.desde); d0.setHours(0, 0, 0, 0); d0.setDate(d0.getDate() + 1);
+  const d1 = new Date(b.hasta); d1.setHours(0, 0, 0, 0); d1.setDate(d1.getDate() - 1);
+  if(d1 < d0) return 'entre ' + tendFechaHora(b.desde) + ' y ' + tendFechaHora(b.hasta);
+  if(d1.getTime() === d0.getTime()) return 'el ' + tendFechaCorta(d0.getTime());
+  return 'del ' + tendFechaCorta(d0.getTime()) + ' al ' + tendFechaCorta(d1.getTime());
+}
+function tendFechaCorta(ts){ const d = new Date(ts); return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0'); }
+function tendHace(ts){
+  const m = Math.max(0, Math.round((Date.now() - ts) / 60e3));
+  if(m < 60) return 'hace ' + Math.max(1, m) + ' min';
+  const h = Math.round(m / 60);
+  if(h < 24) return 'hace ' + h + ' h';
+  const d = Math.round(h / 24);
+  return 'hace ' + d + (d === 1 ? ' día' : ' días');
 }
 function tendFmt(n){ return String(Math.round(n * 10) / 10).replace('.', ','); }
 function tendFechaHora(ts){ const d = new Date(ts); return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
@@ -9486,13 +9532,18 @@ function renderTendencia(){
     const ult = s.puntos[s.puntos.length - 1], pri = s.puntos[0];
     const d = ult.v - pri.v;
     const sp = s.puntos.length >= 2 ? tendSpark(s.puntos, 300, 80) : null;
+    const baches = s.puntos.length >= 2 ? tendBaches(s.puntos) : [];
+    const ultTs = ult.por === 'ahora' ? 0 : (s.ultTs || ult.ts);
+    const viejo = ultTs && Date.now() - ultTs > TEND_BACHE_MS;
     const abierta = tendAbierta === s.id;
     html += `<button type="button" class="td-card${abierta ? ' abierta' : ''}" data-tid="${parteEsc(s.id)}" aria-expanded="${abierta}">
       <span class="td-top"><b>${parteEsc(s.nombre)}</b><em>${parteEsc(s.que)}</em></span>
       <span class="td-val"><span class="td-num">${tendFmt(ult.v)}</span><span class="td-uni">${parteEsc(s.unidad)}</span>
         ${s.puntos.length >= 2 ? `<span class="td-delta">${d > 0 ? '▲' : (d < 0 ? '▼' : '=')} ${tendFmt(Math.abs(d))} en ${periodoTxt}</span>` : '<span class="td-delta">1 dato</span>'}</span>
-      ${sp ? `<svg viewBox="0 0 300 80" preserveAspectRatio="none" class="td-spark" role="img" aria-label="${parteEsc(s.nombre + ', ' + s.que + ': de ' + tendFmt(pri.v) + ' a ' + tendFmt(ult.v))}"><line x1="0" y1="79" x2="300" y2="79" class="td-base"></line><path d="${sp.area}" class="td-area"></path><path d="${sp.linea}" class="td-linea"></path></svg>
+      ${sp ? `<svg viewBox="0 0 300 80" preserveAspectRatio="none" class="td-spark" role="img" aria-label="${parteEsc(s.nombre + ', ' + s.que + ': de ' + tendFmt(pri.v) + ' a ' + tendFmt(ult.v) + (baches.length ? ', con ' + baches.length + ' período(s) sin datos' : ''))}">${sp.huecos}<line x1="0" y1="79" x2="300" y2="79" class="td-base"></line>${sp.area ? `<path d="${sp.area}" class="td-area"></path>` : ''}<path d="${sp.linea}" class="td-linea"></path>${sp.sueltos}</svg>
         <span class="td-rango">mín ${tendFmt(sp.min)} · máx ${tendFmt(sp.max)} · ${s.puntos.length} datos</span>` : '<span class="td-rango">Falta historia para la curva</span>'}
+      ${baches.length ? `<span class="td-bache">Sin datos ${baches.slice(-2).map(tendBacheTxt).join(' y ')}${baches.length > 2 ? ' (y ' + (baches.length - 2) + ' más)' : ''}</span>` : ''}
+      ${ultTs ? `<span class="td-ult${viejo ? ' viejo' : ''}">Último dato: ${tendHace(ultTs)}${viejo ? ' · sin cargas recientes' : ''}</span>` : ''}
       ${abierta ? `<span class="td-lista">${s.puntos.slice().reverse().slice(0, 12).map(p => `<span><i>${s.porDia ? tendFechaHora(p.ts).slice(0, 5) : tendFechaHora(p.ts)}</i><b>${tendFmt(p.v)}</b><i>${parteEsc(p.por)}</i></span>`).join('')}</span>` : ''}
     </button>`;
   });
@@ -10102,7 +10153,7 @@ function exigirNombre(){
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202610251515;
+var APP_VERSION = 202610251545;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
