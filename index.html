@@ -378,6 +378,11 @@
   }
   .field .v.empty{ color: var(--muted); font-style: italic; }
   .field.optim .v{ color: var(--opt); font-weight: 600; }
+  .vela-pend{ display:block; background: color-mix(in srgb, #E8B64A 14%, var(--panel)); border:1px solid #8a6d2e; border-radius:10px; padding:10px 12px; margin:8px 0; font-size:.86rem; line-height:1.4; }
+  .vela-pend b{ color:#F0C46A; }
+  .vela-quitar{ display:block; margin-top:8px; min-height:40px; padding:0 12px; border-radius:8px; border:1px solid #c0524a; background:transparent; color:#f0b0a8; font-size:.85rem; font-weight:600; cursor:pointer; }
+  .vela-incl{ display:flex; gap:8px; align-items:flex-start; cursor:pointer; }
+  .vela-incl input{ width:20px; height:20px; margin-top:1px; flex-shrink:0; }
   .field.presion .v{ font-family: 'Consolas','SF Mono',monospace; font-size:1.15rem; }
 
   .tabs{
@@ -4250,6 +4255,7 @@ function renderCardView(rec, bat){
       <div class="v ${!hInfo.text ? 'empty' : ''}">${hInfo.text || 'Sin dato'}</div>
     </div>
     ${avisosDePozoHtml(rec)}
+    ${(() => { const vp = velaPendienteDe(rec); return vp ? `<div class="vela-pend"><b>Vela pendiente:</b> ${vp.txt} · ${vp.cuando}. Sale en el parte junto con la próxima apertura.<button type="button" class="vela-quitar" id="velaQuitarBtn">Quitar vela pendiente</button></div>` : ''; })()}
     ${field('Presion', presionMostrada, 'presion')}
     ${field('Colectora', rec.colectora)}
     ${field('Ciclo', rec.ciclo)}
@@ -4259,7 +4265,7 @@ function renderCardView(rec, bat){
       <div class="v">${rec.horasTotalNum.toString().replace('.',',')} hs &middot; ${rec.horasTotalTipo === 'cerrado' ? 'PERDIDA' : 'PRODUCCION'}</div>
     </div>` : ''}
     ${field('Tablero', rec.tablero)}
-    ${field('Optimizador', rec.optim, 'optim')}
+    ${field('Optimizador', pozoTieneOptim(rec) ? rec.optim + (pozoOptimAuto(rec) ? ' — funcionando en AUTOMÁTICO' : ' — funcionando en MANUAL') : '', 'optim')}
     ${field('Ultima visita', rec.fecha)}
     ${field('Notas / accesorios', rec.notas)}
     <button class="edit-btn" id="editBtn">Editar datos / horario</button>
@@ -4274,6 +4280,8 @@ function renderCardView(rec, bat){
   document.getElementById('histBtn').addEventListener('click', () => verHistoricoPozo(rec));
   const clearBtn = document.getElementById('clearBtn');
   if(clearBtn) clearBtn.addEventListener('click', () => clearPozoData(rec, bat));
+  const vq = document.getElementById('velaQuitarBtn');
+  if(vq) vq.addEventListener('click', () => quitarVelaPendiente(rec, bat));
 }
 
 function parseCiclo(cicloText){
@@ -4430,6 +4438,8 @@ function renderCardEdit(rec, bat){
           <input type="number" inputmode="numeric" min="0" step="1" class="edit-input" id="velaNumOil" placeholder="cantidad">
         </div>
       </div>
+      ${pozoOptimAuto(rec) ? '<div class="edit-hint" style="margin-top:6px">Pozo con optimizador en automático: la vela sale en el parte en el momento, como novedad propia.</div>' : ''}
+      ${(() => { const vp = velaPendienteDe(rec); return vp ? `<label class="vela-pend vela-incl"><input type="checkbox" id="velaInclPend" ${vp.reciente ? 'checked' : ''}> Incluir la vela pendiente (<b>${vp.txt}</b>, ${vp.cuando}) cuando se cargue la apertura</label>` : ''; })()}
       ${ultimasVelasHtml}
     </div>
     <div class="field">
@@ -4455,6 +4465,8 @@ function renderCardEdit(rec, bat){
     </div>
     ${inputField('Tablero', 'tablero', rec.tablero)}
     ${inputField('Optimizador', 'optim', rec.optim)}
+    ${pozoTieneOptim(rec) ? `<div class="field"><div class="k">Optimizador funcionando en</div>
+      <select class="edit-input" id="optimModoSel"><option value="auto" ${pozoOptimAuto(rec) ? 'selected' : ''}>Automático (abre y cierra solo)</option><option value="manual" ${pozoOptimAuto(rec) ? '' : 'selected'}>Manual (no responde, sin batería, etc.)</option></select></div>` : ''}
     ${inputField('Ultima visita', 'fecha', rec.fecha)}
     ${textareaField('Notas / accesorios', 'notas', rec.notas)}
     <div class="edit-actions">
@@ -4529,14 +4541,26 @@ function renderCardEdit(rec, bat){
     // Asi, si se manda un parte con el pozo TODAVIA cerrado (solo la vela), la cantidad/hora quedan
     // guardadas en el pozo mismo y sobreviven hasta que de verdad se reabra, sin importar cuantos
     // partes se manden mientras tanto.
+    // modo del optimizador elegido en este guardado (o el que ya tenia)
+    const optimSel = document.getElementById('optimModoSel');
+    if(optimSel && optimSel.value !== (pozoOptimAuto(rec) ? 'auto' : 'manual') || (optimSel && rec.optimModo)) newFields.optimModo = optimSel.value;
+    const optimAuto = optimSel ? optimSel.value === 'auto' : pozoOptimAuto(rec);
+    // vela pendiente vieja: el operador elige si va con esta apertura (casilla; marcada si es de las ultimas 24 h)
+    const inclPend = document.getElementById('velaInclPend');
+    const incluirPendiente = inclPend ? inclPend.checked : true;
+    const velaNuevas = { Agua: 0, Gas: 0, Oil: 0 };
+    velasACargar.forEach(v => { velaNuevas[v.tipo] += parseFloat(v.numero) || 0; });
     const velaPendienteAcum = {
       Agua: parseFloat(rec.velaPendienteAgua) || 0,
       Gas: parseFloat(rec.velaPendienteGas) || 0,
       Oil: parseFloat(rec.velaPendienteOil) || 0
     };
-    velasACargar.forEach(v => {
-      velaPendienteAcum[v.tipo] += parseFloat(v.numero) || 0;
-    });
+    // en automatico la vela nueva NO se acumula como pendiente (sale ya, ver mas abajo)
+    if(!optimAuto){
+      velasACargar.forEach(v => {
+        velaPendienteAcum[v.tipo] += parseFloat(v.numero) || 0;
+      });
+    }
     const hayVelaPendienteAcum = velaPendienteAcum.Agua || velaPendienteAcum.Gas || velaPendienteAcum.Oil;
 
     const aperturaCambio = hA !== horaAperturaOriginal;
@@ -4668,16 +4692,30 @@ function renderCardEdit(rec, bat){
     // sin tocar el horario), la vela se queda pendiente, sumada a la que ya hubiera.
     const seAbreAhora = newFields.estado === 'Abierto' && rec.estado !== 'Abierto';
     if(seAbreAhora){
-      newFields.velaEnAperturaTxt = hayVelaPendienteAcum ? fraseVelasPozo(velaPendienteAcum, velaPendienteHoraAcum) : '';
+      // reapertura: va la vela de este guardado + la pendiente (solo si se dejo marcada la casilla)
+      const comb = { Agua: velaNuevas.Agua, Gas: velaNuevas.Gas, Oil: velaNuevas.Oil };
+      if(incluirPendiente){
+        comb.Agua += parseFloat(rec.velaPendienteAgua) || 0;
+        comb.Gas += parseFloat(rec.velaPendienteGas) || 0;
+        comb.Oil += parseFloat(rec.velaPendienteOil) || 0;
+      }
+      newFields.velaEnAperturaTxt = (comb.Agua || comb.Gas || comb.Oil) ? fraseVelasPozo(comb, velaPendienteHoraAcum) : '';
       newFields.velaPendienteAgua = 0;
       newFields.velaPendienteGas = 0;
       newFields.velaPendienteOil = 0;
       newFields.velaPendienteHora = '';
+      newFields.velaPendienteTs = 0;
+    } else if(velasACargar.length && optimAuto){
+      // optimizador en automatico: la vela sale en el parte ahora mismo, como novedad propia
+      newFields.velaSueltaTxt = fraseVelasPozo(velaNuevas, velaPendienteHoraAcum);
+      newFields.velaSueltaHora = velaPendienteHoraAcum;
+      newFields.velaSueltaTs = Date.now();
     } else if(velasACargar.length){
       newFields.velaPendienteAgua = velaPendienteAcum.Agua;
       newFields.velaPendienteGas = velaPendienteAcum.Gas;
       newFields.velaPendienteOil = velaPendienteAcum.Oil;
       newFields.velaPendienteHora = velaPendienteHoraAcum;
+      newFields.velaPendienteTs = Date.now();
     }
 
     // correccion manual (si se cargo): pisa el calculo automatico de arriba
@@ -4987,6 +5025,44 @@ function fraseVela(tipo, cantidad){
 // arma "Se lanzan velas a las 16 hs: X generadoras en gas + Y surfactantes en agua + Z velas de
 // condensado." a partir de un objeto { Gas: cant, Agua: cant, Oil: cant } y la hora del lanzamiento
 // (opcional); '' si no hay ninguna cantidad cargada
+
+// ---- Velas y optimizadores ----
+// Pozo con optimizador en AUTOMATICO: abre/cierra solo y nadie carga esa maniobra en la app, asi que una
+// vela no puede quedar "pendiente de la reapertura" (se quedaria colgada y se pegaria dias despues a otra
+// apertura). En esos pozos la vela sale en el parte en el momento, como renglon propio (velaSueltaTxt).
+// El modo sale del texto del optimizador ("(Auto 6)", "Pompa", "MNA" = automatico; "Manual", "F/S",
+// "de baja" = manual) y el operador lo corrige en la ficha cuando el optimizador queda en manual
+// (sin bateria, no responde): optimModo = 'auto' | 'manual'.
+function pozoTieneOptim(rec){ return !!(rec && rec.optim && rec.optim.trim()); }
+function pozoOptimAutoTexto(rec){
+  if(!pozoTieneOptim(rec)) return false;
+  return !/manual|f\/s|baja|tachad/i.test(rec.optim);
+}
+function pozoOptimAuto(rec){
+  if(rec && rec.optimModo === 'auto') return true;
+  if(rec && rec.optimModo === 'manual') return false;
+  return pozoOptimAutoTexto(rec);
+}
+function velaPendienteDe(rec){
+  const c = { Agua: parseFloat(rec.velaPendienteAgua) || 0, Gas: parseFloat(rec.velaPendienteGas) || 0, Oil: parseFloat(rec.velaPendienteOil) || 0 };
+  if(!(c.Agua || c.Gas || c.Oil)) return null;
+  const ts = parseInt(rec.velaPendienteTs, 10) || 0;
+  const frases = ['Gas', 'Agua', 'Oil'].filter(t => c[t]).map(t => fraseVela(t, c[t]));
+  let cuando = 'fecha desconocida';
+  if(ts){ const d = new Date(ts); cuando = 'cargada el ' + String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + ' a las ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
+  return { cant: c, txt: frases.join(' + '), ts, cuando, reciente: !!(ts && Date.now() - ts < 24 * 3600e3) };
+}
+function quitarVelaPendiente(rec, bat){
+  const vp = velaPendienteDe(rec);
+  if(!vp) return;
+  if(!confirm('¿Quitar la vela pendiente de ' + rec.pozo + ' (' + vp.txt + ', ' + vp.cuando + ')? Ya no va a salir en el parte.')) return;
+  if(!puedeModificar()) return;
+  const f = { velaPendienteAgua: 0, velaPendienteGas: 0, velaPendienteOil: 0, velaPendienteHora: '', velaPendienteTs: 0 };
+  Object.assign(rec, f); rec._edited = true;
+  saveEdit(rec.pozo, f, Object.keys(f));
+  renderCardView(rec, bat);
+}
+
 function fraseVelasPozo(cantidades, hora){
   // la hora de lanzamiento ya no se informa en la novedad (a pedido de Maxi): el parametro "hora"
   // se sigue recibiendo (se usa para otros calculos internos) pero no se imprime en el texto.
@@ -5441,6 +5517,8 @@ function parteCampoFilas(forzarTodos){
       let velaTxt = '';
       if(uf.includes('velaEnAperturaTxt') && rec.velaEnAperturaTxt){
         velaTxt = rec.velaEnAperturaTxt;
+      } else if(uf.includes('velaSueltaTs') && rec.velaSueltaTxt){
+        velaTxt = rec.velaSueltaTxt;
       } else if(['velaPendienteAgua','velaPendienteGas','velaPendienteOil'].some(k => uf.includes(k))){
         velaTxt = fraseVelasPozo({
           Agua: parseFloat(rec.velaPendienteAgua)||0,
@@ -5508,8 +5586,22 @@ function parteCampoFilas(forzarTodos){
       };
     });
 
-  const filasGasConNotas = [...filasGas, ...filasNotas, ...filasVelasSueltas];
-  return { filasGasConNotas, filasOil, gasBase, oilBase, notasBase, velaSueltaBase };
+  // velas de pozos con optimizador en automatico: salen en el momento (si no fueron ya en la fila de una maniobra)
+  const velaAutoBase = POZOS
+    .filter(p => p.velaSueltaTxt && p.velaSueltaTs && !pozosConVelaUsada.has(p.pozo))
+    .filter(p => forzarTodos ? true : (p._updatedAtDate && p._updatedAtDate > corte && p.updatedFields && p.updatedFields.includes('velaSueltaTs')));
+  const filasVelasAuto = velaAutoBase.map(p => ({
+    hora: p.velaSueltaHora || '',
+    instalacion: bateriaToInstalacion(p.bateria),
+    pozo: p.pozo,
+    novedad: p.velaSueltaTxt,
+    _ts: p._updatedAtDate ? p._updatedAtDate.getTime() : 0,
+    horasPerdida: null,
+    horasProduccion: null
+  }));
+  velaAutoBase.forEach(p => pozosConVelaUsada.add(p.pozo));
+  const filasGasConNotas = [...filasGas, ...filasNotas, ...filasVelasSueltas, ...filasVelasAuto];
+  return { filasGasConNotas, filasOil, gasBase, oilBase, notasBase, velaSueltaBase: velaSueltaBase.concat(velaAutoBase) };
 }
 
 function exportParteDeCampo(forzarTodos){
@@ -9485,7 +9577,7 @@ function exigirNombre(){
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202610250900;
+var APP_VERSION = 202610251000;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
