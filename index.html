@@ -1316,6 +1316,11 @@
   .cic-it.hecho .cic-tx b{ color:#6FC9B0; }
   .cic-mano{ font: inherit; font-size:.72rem; font-weight:700; padding:5px 8px; border-radius:7px; cursor:pointer; background:none; border:1px solid var(--line); color: var(--muted); white-space:nowrap; }
   .cic-vacio{ font-size:.8rem; color: var(--muted); }
+  .cic-sacados{ margin-top:10px; border:1px dashed var(--line); border-radius:10px; padding:8px 12px; }
+  .cic-sacados summary{ cursor:pointer; font-size:.85rem; font-weight:700; color:var(--muted, #9FB3C3); }
+  .cic-sac-row{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding:6px 0; border-top:1px solid var(--line); }
+  .cic-sac-row:first-of-type{ border-top:none; }
+  .cic-sac-row small{ opacity:.7; }
   .cic-edit{ font: inherit; font-size:.75rem; font-weight:700; padding:6px 10px; border-radius:7px; cursor:pointer; background:none; border:1px solid #7FC4DE; color:#7FC4DE; white-space:nowrap; }
   .cic-card.sug{ opacity:.9; border-style:dashed; }
   .cic-it em.no{ color:#F2A08F; }
@@ -7580,16 +7585,43 @@ function renderCiclaje(){
       sug.forEach(({ r, l }) => {
         const c = document.createElement('div');
         c.className = 'cic-card sug';
-        c.innerHTML = `<div class="cic-head"><button type="button" class="cic-pozo">${avisoEsc(r.pozo)} <small>${avisoEsc(r.horario ? 'horario fijo' : 'ciclo ' + (r.ciclo || ''))}</small></button>${enCompu ? '<button type="button" class="cic-edit">Agregar al día</button>' : ''}</div>
+        c.innerHTML = `<div class="cic-head"><button type="button" class="cic-pozo">${avisoEsc(r.pozo)} <small>${avisoEsc(r.horario ? 'horario fijo' : 'ciclo ' + (r.ciclo || ''))}</small></button>${enCompu ? '<button type="button" class="cic-edit">Agregar al día</button><button type="button" class="cr-remove cic-sacar" title="Sacar de los sugeridos">&times;</button>' : ''}</div>
           <div class="cic-ref">${l.map(m => (m.tipo === 'abrir' ? 'Abrir ' : 'Cerrar ') + m.hora).join(' · ')}</div>`;
         c.querySelector('.cic-pozo').addEventListener('click', () => openCard(r, r.bateria || 'Sin bateria'));
         const add = c.querySelector('.cic-edit');
         if(add) add.addEventListener('click', () => cicAbrirForm({ pozo: r.pozo, maniobras: l }));
+        const sacar = c.querySelector('.cic-sacar');
+        if(sacar) sacar.addEventListener('click', () => cicMarcarSugerido(r, false));
         g.appendChild(c);
       });
       cuerpo.appendChild(g);
     }
   }
+
+  // pozos sacados a mano de los sugeridos: lista plegada para poder volver a ponerlos
+  if(enCompu && fecha >= hoy){
+    const sacados = POZOS.filter(r => r.enCiclaje === false && cicSugerencia(r, fecha).length);
+    if(sacados.length){
+      const det = document.createElement('details');
+      det.className = 'cic-sacados';
+      det.innerHTML = `<summary>Sacados de los sugeridos (${sacados.length})</summary>` +
+        sacados.map((r, i) => `<div class="cic-sac-row"><span>${avisoEsc(r.pozo)} <small>${avisoEsc(r.horario ? 'horario fijo' : 'ciclo ' + (r.ciclo || ''))}</small></span><button type="button" class="ped-copiar-btn" data-sac="${i}">Volver a sugerir</button></div>`).join('');
+      det.querySelectorAll('[data-sac]').forEach(b => b.addEventListener('click', () => cicMarcarSugerido(sacados[parseInt(b.dataset.sac, 10)], true)));
+      cuerpo.appendChild(det);
+    }
+  }
+}
+
+// Sacar (o volver a poner) un pozo de los sugeridos del ciclaje. No toca su horario ni su ciclo:
+// solo deja de proponerse cada día. Si después se lo agrega a mano a un día, vuelve a quedar sugerido.
+function cicMarcarSugerido(r, si){
+  if(!si && !confirm('¿Sacar ' + r.pozo + ' de los sugeridos?\n\nNo se borra su horario ni su ciclo; solo deja de aparecer como sugerido. Lo podés volver a poner desde "Sacados de los sugeridos".')) return;
+  if(!puedeModificar()) return;
+  if(!firestoreOk){ alert('No hay conexion con el guardado compartido. Revisa tu internet e intenta de nuevo.'); return; }
+  r.enCiclaje = si;
+  r._edited = true;
+  saveEdit(r.pozo, { enCiclaje: si });
+  renderCiclaje();
 }
 
 function cicCopiarDia(desde, hasta){
@@ -7679,6 +7711,9 @@ function cicAbrirForm(opt){
     if(doc && doc.id !== id){ db.collection('ciclaje_plan').doc(doc.id).delete().catch(() => {}); CIC_PLAN = CIC_PLAN.filter(x => x.id !== doc.id); }
     db.collection('ciclaje_plan').doc(id).set(datos).catch(e => alert('No se pudo guardar (' + e.message + ').'));
     CIC_PLAN = CIC_PLAN.filter(x => x.id !== id).concat([Object.assign({ id }, datos)]);
+    // si estaba sacado de los sugeridos y lo cargan a mano, vuelve a quedar en ciclaje
+    const recP = POZOS.find(p => p.pozo === pozo);
+    if(recP && recP.enCiclaje === false){ recP.enCiclaje = true; recP._edited = true; saveEdit(pozo, { enCiclaje: true }); }
     closeCard(); renderCiclaje(); cicActualizarInicio();
   });
 }
@@ -10011,7 +10046,7 @@ function exigirNombre(){
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202610251215;
+var APP_VERSION = 202610251310;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
