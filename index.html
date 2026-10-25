@@ -89,6 +89,10 @@
   .hab-item small{ display:block; color: var(--muted); font-size: .7rem; margin-top: 2px; }
   .hab-item em{ color: #e8c14d; font-style: normal; font-size: .72rem; }
   .hab-op{ display:block; margin-top:3px; font-size:.78rem; }
+  .hab-ver{ display:block; margin-top:2px; font-size:.74rem; }
+  .hab-ver.ok{ color:#6FC9B0; }
+  .hab-ver.vieja{ color:#F0B07A; }
+  .ini-version{ text-align:center; font-size:.74rem; color: var(--muted); margin-top:18px; }
   .hab-linea{ display:inline-block; font-size:.68rem; font-weight:700; padding:1px 7px; border-radius:8px; margin-left:4px; }
   .hab-linea.on{ background:#123B34; color:#6FC9B0; }
   .hab-linea.off{ background: var(--bg); color: var(--muted); }
@@ -1459,6 +1463,7 @@
     <button type="button" class="ini-btn" data-tab="tabAvisos" id="iniAvisosBtn" style="display:none;"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/></svg>Avisos <span class="ini-badge" id="iniAvisosBadge" style="display:none;"></span></button>
   </div>
   <button type="button" class="ini-enviar" id="iniEnviarBtn" style="display:none;"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg>Enviar partes y reportes <span class="ini-badge" id="iniEnviarBadge" style="display:none;"></span></button>
+  <div class="ini-version" id="iniVersion"></div>
 </section>
 <main id="main" style="display:none;"></main>
 <main id="planoMain"></main>
@@ -2410,6 +2415,7 @@ function habCargarListas(){
     devEl.innerHTML = `<div class="hab-resumen">${l.length} habilitado${l.length === 1 ? '' : 's'} · <b style="color:#6FC9B0">${nOn} en línea ahora</b></div>` + l.map(d => `<div class="hab-item">
         <span><b>${avisoEsc(d.nombre || 'Sin nombre')}</b> · ${avisoEsc(d.tipo || '')}${d.admin ? ' <em>(admin)</em>' : ''}${d.id === HAB.uid ? ' <em>(esta compu)</em>' : ''}${d.pausado ? ' <em class="hab-pausa">EN PAUSA</em>' : ''}
           ${enLinea(d) ? '<span class="hab-linea on">● en línea</span>' : ''}
+          ${habVersionTxt(d)}
           <span class="hab-op">${d._p && d._p.operador ? 'Lo usa: <b>' + avisoEsc(d._p.operador) + '</b>' : '<span style="color:var(--muted)">Todavía no se sabe quién lo usa (aparece cuando abra la app actualizada)</span>'}</span>
           <small>código ${avisoEsc(d.codigo || '—')} · habilitado ${habFecha(d.creadoTs)} · ${enLinea(d) ? 'activo ahora (señal ' + haceMin(d._p.ts) + ')' : 'visto por última vez ' + habFecha(visto(d))}${d.pausado && d.pausadoTs ? ' · en pausa desde ' + habFecha(d.pausadoTs) : ''}</small></span>
         ${d.id === HAB.uid ? '' : `<span class="hab-acc"><button type="button" class="hab-mini" data-pausar="${avisoEsc(d.id)}" data-nombre="${avisoEsc(d.nombre || '')}" data-pausado="${d.pausado ? '1' : ''}">${d.pausado ? 'Reactivar' : 'Pausar'}</button><button type="button" class="hab-mini rojo" data-quitar="${avisoEsc(d.id)}" data-nombre="${avisoEsc(d.nombre || '')}">Quitar</button></span>`}
@@ -9452,7 +9458,21 @@ function exigirNombre(){
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202610242030;
+var APP_VERSION = 202610250815;
+// ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
+function appVersionFecha(v){
+  const t = String(v || '');
+  if(t.length !== 12) return '';
+  return t.slice(6, 8) + '/' + t.slice(4, 6) + '/' + t.slice(0, 4) + ' ' + t.slice(8, 10) + ':' + t.slice(10, 12);
+}
+function habVersionTxt(d){
+  const v = d._p && d._p.ver;
+  if(!d._p) return '';
+  if(v && v >= APP_VERSION) return '<span class="hab-ver ok">✓ Última versión (' + appVersionFecha(v) + ')</span>';
+  if(v) return '<span class="hab-ver vieja">⚠ Versión vieja (' + appVersionFecha(v) + ') · se actualiza sola al abrir la app</span>';
+  return '<span class="hab-ver vieja">⚠ Versión vieja (anterior al ' + appVersionFecha(SYNC_VERSION_MIN).slice(0, 10) + ') · se actualiza sola al abrir la app</span>';
+}
+(function(){ const e = document.getElementById('iniVersion'); if(e) e.textContent = 'Centenario Interactivo · versión del ' + appVersionFecha(APP_VERSION); })();
 var appVersionNueva = 0;
 function appBuscarActualizacion(){
   if(!navigator.onLine || document.getElementById('actualizarApp')) return;
