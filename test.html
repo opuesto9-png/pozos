@@ -1242,6 +1242,11 @@
   .td-base{ vector-effect: non-scaling-stroke; }
   .td-punto{ fill:#3a86d9; stroke: var(--panel); stroke-width:2; }
   .td-rango{ font-size:.74rem; color:#9FB3C3; }
+  .td-hueco{ fill:#9FB3C3; fill-opacity:.05; }
+  .td-punto{ fill:none; stroke:#3a86d9; stroke-width:7; stroke-linecap:round; vector-effect: non-scaling-stroke; }
+  .td-bache{ font-size:.72rem; color:#9FB3C3; font-style:italic; }
+  .td-ult{ font-size:.72rem; color:#9FB3C3; }
+  .td-ult.viejo{ color:#F0B07A; font-weight:600; }
   .td-lista{ display:flex; flex-direction:column; gap:2px; margin-top:6px; border-top:1px solid var(--line); padding-top:6px; }
   .td-lista span{ display:grid; grid-template-columns: 110px 80px 1fr; gap:8px; font-size:.82rem; }
   .td-lista i{ font-style:normal; color:#9FB3C3; }
@@ -1741,7 +1746,7 @@ function render(filterText){
   const filtered = f ? POZOS.filter(p => p.pozo.toLowerCase().includes(f)) : POZOS;
 
   if(filtered.length === 0){
-    main.innerHTML += '<div class="empty-msg">No hay pozos que coincidan con esa busqueda.</div>';
+    main.insertAdjacentHTML('beforeend', '<div class="empty-msg">No hay pozos que coincidan con esa busqueda.</div>');
     return;
   }
 
@@ -2621,21 +2626,24 @@ function guardarNotaUspa(bat, hora, equipo, texto){
     alert('Escribi la novedad antes de guardar.');
     return;
   }
-  db.collection('uspa_notas').doc(bat).set({
+  // cada novedad es su propio registro: dos novedades de la misma USPA antes del parte salen las dos
+  db.collection('uspa_notas').add({
     bateria: bat,
     hora: hora || '',
     equipo: equipo || '',
     texto: texto.trim(),
+    clientTs: Date.now(),
     updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
     updatedFields: ['hora','equipo','texto'],
     operador: operadorName || 'Sin nombre'
-  }, { merge: true }).catch((err) => {
+  }).catch((err) => {
     alert('No se pudo guardar la nota (' + err.message + '). Revisa tu conexion.');
   });
 }
 
+function notaFechaMs(n){ return n._updatedAtDate ? n._updatedAtDate.getTime() : (n.clientTs || 0); }
 function notaUspaDe(bat){
-  return USPA_NOTAS.find(n => n.bateria === bat) || null;
+  return USPA_NOTAS.filter(n => n.bateria === bat).sort((a, b) => notaFechaMs(b) - notaFechaMs(a))[0] || null;
 }
 
 // ---------------- Novedades generales de Baterias (1/2/5) y Pias 2: mismo esquema que USPA ----------------
@@ -2651,21 +2659,22 @@ function guardarNotaEquipo(grupo, hora, equipo, texto){
     alert('Escribi la novedad antes de guardar.');
     return;
   }
-  db.collection('equipos_notas').doc(grupo).set({
+  db.collection('equipos_notas').add({
     grupo,
     hora: hora || '',
     equipo: equipo || '',
     texto: texto.trim(),
+    clientTs: Date.now(),
     updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
     updatedFields: ['hora','equipo','texto'],
     operador: operadorName || 'Sin nombre'
-  }, { merge: true }).catch((err) => {
+  }).catch((err) => {
     alert('No se pudo guardar la nota (' + err.message + '). Revisa tu conexion.');
   });
 }
 
 function notaEquipoDe(grupo){
-  return EQUIPOS_NOTAS.find(n => n.grupo === grupo) || null;
+  return EQUIPOS_NOTAS.filter(n => n.grupo === grupo).sort((a, b) => notaFechaMs(b) - notaFechaMs(a))[0] || null;
 }
 
 function crearNotasEquipoBox(grupo){
@@ -2755,17 +2764,25 @@ function downloadFile(blob, fileName){
   alert('Se descargo el archivo "' + fileName + '". Buscalo en tus Descargas y compartilo desde ahi (WhatsApp, mail, etc.).');
 }
 
+// devuelve una promesa: true si el archivo se compartio o se descargo, false si se cancelo sin guardarlo.
+// Los reportes se marcan como ENVIADOS solo si llego a algun lado (si se cancela "Compartir", lo pendiente
+// sigue pendiente para el proximo).
 function downloadOrShareBlob(blob, fileName, title){
   const file = new File([blob], fileName, { type: blob.type });
   if(navigator.canShare && navigator.canShare({ files: [file] })){
-    navigator.share({ title: title, files: [file] }).catch((err) => {
-      // si el usuario cancelo el share, no hacemos nada; si fue otro error, ofrecemos descargar
-      if(err && err.name === 'AbortError') return;
+    return navigator.share({ title: title, files: [file] }).then(() => true, (err) => {
+      if(err && err.name === 'AbortError'){
+        if(confirm('No se compartió "' + fileName + '".\n\n¿Descargarlo en este equipo? (Si elegís Cancelar, lo cargado sigue pendiente para el próximo envío.)')){
+          downloadFile(blob, fileName); return true;
+        }
+        return false;
+      }
       downloadFile(blob, fileName);
+      return true;
     });
-    return;
   }
   downloadFile(blob, fileName);
+  return Promise.resolve(true);
 }
 
 // inicio del "dia operativo" vigente: 6:00 am de hoy, o de ayer si todavia no son las 6:00
@@ -3163,13 +3180,21 @@ function ptcDescargasDelMes(mes){
   const masVieja = PTC_DATA.length ? PTC_DATA.reduce((m, d) => (d.fecha && d.fecha < m ? d.fecha : m), '9999') : '9999';
   const completo = (PTC_DATA.length < PTC_LIMITE_VIVO && ventanaDesdeIso(VENTANA_DIAS.ptc) <= mes + '-01') || masVieja.slice(0, 7) < mes;
   if(completo) return Promise.resolve(vivas);
-  if(PTC_MES_CACHE[mes]) return Promise.resolve(PTC_MES_CACHE[mes]);
+  // lo pedido a la base se junta con lo que llega en vivo (descargas cargadas despues en otros equipos,
+  // ediciones y borrados): lo que esta dentro de la ventana en vivo manda
+  const juntar = (lista) => {
+    const desdeVivo = ventanaDesdeMs(VENTANA_DIAS.ptc);
+    const ids = new Set(vivas.map(d => d.id));
+    const viejas = lista.filter(d => !ids.has(d.id) && !((d.clientTs || 0) >= desdeVivo));
+    return viejas.concat(vivas);
+  };
+  if(PTC_MES_CACHE[mes]) return Promise.resolve(juntar(PTC_MES_CACHE[mes]));
   if(!firestoreOk) return Promise.resolve(vivas);
   return db.collection('ptc_descargas').where('mes', '==', mes).get().then(snap => {
     const lista = [];
     snap.forEach(doc => { const d = doc.data(); if(d && d._borrado !== true) lista.push(Object.assign({ id: doc.id }, d)); });
     PTC_MES_CACHE[mes] = lista;
-    return lista;
+    return juntar(lista);
   }).catch(() => vivas);
 }
 // ---- Ventanas de tiempo para ahorrar lecturas ----
@@ -3177,7 +3202,7 @@ function ptcDescargasDelMes(mes){
 // consulta en vivo (y cada documento leido cuenta para la cuota diaria). Las colecciones que crecen todos
 // los dias (eventos, lecturas, pedidos, camiones, PTC, velas) se piden solo de los ultimos dias que la app
 // usa de verdad, asi el costo de abrir la app no sube a medida que se acumula historial.
-var VENTANA_DIAS = { ciclajeEventos: 7, ciclajePlan: 7, pedidos: 15, compLect: 4, bombeoLog: 10, camiones: 10, ptc: 10, velas: 20 };
+var VENTANA_DIAS = { ciclajeEventos: 7, ciclajePlan: 7, pedidos: 15, compLect: 4, bombeoLog: 10, camiones: 10, ptc: 10, velas: 20, notas: 20 };
 function ventanaDesdeMs(dias){ return Date.now() - dias * 86400e3; }
 function ventanaDesdeIso(dias){ const d = new Date(ventanaDesdeMs(dias)); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
 var PTC_LIMITE_VIVO = 800;
@@ -3711,8 +3736,7 @@ function exportReportePtc(){
     const wb = ptcArmarLibro(lista, false);
     return wb.xlsx.writeBuffer().then(buffer => {
       const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      downloadOrShareBlob(blob, `Reporte_PTC_${todayStr().replace(/\//g, '-')}.xlsx`, 'Reporte de PTC');
-      marcarReportePtcEnviado();
+      return downloadOrShareBlob(blob, `Reporte_PTC_${todayStr().replace(/\//g, '-')}.xlsx`, 'Reporte de PTC').then(ok => { if(ok) marcarReportePtcEnviado(); });
     });
   }).catch((e) => alert('No se pudo generar el reporte de PTC (' + (e && e.message) + ').'));
 }
@@ -3795,13 +3819,13 @@ function startSync(){
   });
 
   // novedades generales por USPA (con hora), en su propia coleccion, compartidas entre dispositivos
-  syncVivo('uspa_notas', {}, (snapshot) => {
+  syncVivo('uspa_notas', { campo: 'updatedAt', tipo: 'ts', desde: () => ventanaDesdeMs(VENTANA_DIAS.notas) }, (snapshot) => {
     detectarMovimientos(snapshot, 'uspa_notas');
     USPA_NOTAS = [];
     snapshot.forEach((doc) => {
       const data = doc.data();
-      USPA_NOTAS.push(Object.assign({}, data, {
-        _updatedAtDate: (data.updatedAt && data.updatedAt.toDate) ? data.updatedAt.toDate() : null
+      USPA_NOTAS.push(Object.assign({ id: doc.id }, data, {
+        _updatedAtDate: (data.updatedAt && data.updatedAt.toDate) ? data.updatedAt.toDate() : (data.clientTs ? new Date(data.clientTs) : null)
       }));
     });
     if(document.getElementById('planoMain').style.display !== 'none'){
@@ -3819,13 +3843,13 @@ function startSync(){
   });
 
   // novedades generales de Baterias (1/2/5) y Pias 2, mismo esquema que las de USPA
-  syncVivo('equipos_notas', {}, (snapshot) => {
+  syncVivo('equipos_notas', { campo: 'updatedAt', tipo: 'ts', desde: () => ventanaDesdeMs(VENTANA_DIAS.notas) }, (snapshot) => {
     detectarMovimientos(snapshot, 'equipos_notas');
     EQUIPOS_NOTAS = [];
     snapshot.forEach((doc) => {
       const data = doc.data();
-      EQUIPOS_NOTAS.push(Object.assign({}, data, {
-        _updatedAtDate: (data.updatedAt && data.updatedAt.toDate) ? data.updatedAt.toDate() : null
+      EQUIPOS_NOTAS.push(Object.assign({ id: doc.id }, data, {
+        _updatedAtDate: (data.updatedAt && data.updatedAt.toDate) ? data.updatedAt.toDate() : (data.clientTs ? new Date(data.clientTs) : null)
       }));
     });
     if(document.getElementById('tanquesMain').style.display !== 'none'){ renderTanques(); }
@@ -3929,6 +3953,7 @@ function startSync(){
         _updatedAtDate: (data.updatedAt && data.updatedAt.toDate) ? data.updatedAt.toDate() : (data.clientTs ? new Date(data.clientTs) : null)
       }));
     });
+    BOMBEO_LOG = bombeoSinRepetidos(BOMBEO_LOG);
     updatePendCount();
   }, (err) => { console.error('Firestore sync error (baterias_bombeo_log)', err); });
 
@@ -4402,6 +4427,10 @@ function renderCardEdit(rec, bat){
   // guardamos el valor ORIGINAL con el que abrimos el formulario, para comparar al guardar
   // y asi saber si realmente tocaste el horario o si estabas editando otra cosa
   const horaAperturaOriginal = horaAperturaVal;
+  // presion de apertura en la unidad elegida (la base la guarda siempre en kg/cm2)
+  const presionPrefill = (rec.presion === 's/d' || !rec.presion) ? '' : (pressureUnit === 'psi'
+    ? convertPresionText(String(rec.presion), 'psi').replace(/\s*psi$/i, '')
+    : String(rec.presion));
   const horaCierreOriginal = horaCierreVal;
 
   // ultimas velas lanzadas a este pozo (solo para mostrar como referencia, no se editan aca)
@@ -4430,7 +4459,7 @@ function renderCardEdit(rec, bat){
           </div>
           <div class="time-label" style="margin-top:8px;">Presion apertura (${pressureUnit === 'psi' ? 'psi' : 'kg/cm2'})</div>
           <div class="input-with-clear">
-            <input type="text" inputmode="decimal" class="edit-input" data-key="presion" value="${(rec.presion === 's/d' || !rec.presion ? '' : rec.presion).toString().replace(/"/g,'&quot;')}">
+            <input type="text" inputmode="decimal" class="edit-input" data-key="presion" value="${presionPrefill.replace(/"/g,'&quot;')}">
             <button type="button" class="field-clear-btn" data-clear-target="presion" title="Borrar presion de apertura">&times;</button>
           </div>
         </div>
@@ -4560,6 +4589,8 @@ function renderCardEdit(rec, bat){
     const newFields = {};
     inputs.forEach(inp => { newFields[inp.dataset.key] = inp.value; });
     if(newFields.presion === '') newFields.presion = 's/d';
+    else if(newFields.presion === presionPrefill) newFields.presion = rec.presion; // no se toco: queda como estaba
+    else if(pressureUnit === 'psi') newFields.presion = aibPresionToKg(newFields.presion); // se cargo en psi: pasa a kg/cm2
     if(newFields.bateria !== undefined){
       newFields.bateria = newFields.bateria.trim() ? normalizarBateria(newFields.bateria) : 'Sin bateria';
     }
@@ -5280,7 +5311,7 @@ function pendientesNotaAguaPias2(){
 
 function parteBateriasFilas(forzarTodos){
   const base = forzarTodos ? TANQUES_DATA.filter(t => t.nivelTotal || t.nivelInterfaz) : pendientesBaterias();
-  const notasBase = forzarTodos ? EQUIPOS_NOTAS.filter(n => n.grupo !== 'Pias 2' && n.grupo !== 'PTC' && n.texto) : pendientesNotasBaterias();
+  const notasBase = forzarTodos ? EQUIPOS_NOTAS.filter(n => n.grupo !== 'Pias 2' && n.grupo !== 'PTC' && n.texto && notaFechaMs(n) > Date.now() - 864e5) : pendientesNotasBaterias();
   const bombeoBase = forzarTodos ? (BOMBEO_LOG || []).slice() : pendientesBombeoBaterias();
   const fechaDe = d => d ? String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear() : '';
   const horaDe = d => d ? d.toTimeString().slice(0,5) : '';
@@ -5329,16 +5360,15 @@ function exportReporteBaterias(forzarTodos){
   agregarHojaTabla(wb, 'OIL', ['FECHA','HORA','INSTALACION','EQUIPO','NOVEDAD'], filas, [12,9,14,18,50]);
   wb.xlsx.writeBuffer().then(buffer => {
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    downloadOrShareBlob(blob, `Reporte_Baterias_${todayStr().replace(/\//g,'-')}.xlsx`, 'Reporte de Baterias');
-  });
-  marcarReporteBateriasEnviado();
+    return downloadOrShareBlob(blob, `Reporte_Baterias_${todayStr().replace(/\//g,'-')}.xlsx`, 'Reporte de Baterias');
+  }).then(ok => { if(ok) marcarReporteBateriasEnviado(); }).catch(e => alert('No se pudo generar el reporte de Baterias (' + (e && e.message) + ').'));
 }
 
 function parteAguaFilas(forzarTodos){
   const tanquesBase = forzarTodos ? PIAS2_TANQUES_DATA.filter(t => t.nivelTotal || t.nivelInterfaz) : pendientesAguaTanques();
   const equiposBase = forzarTodos ? PIAS2_EQUIPOS_DATA.filter(t => t.estado || t.nota) : pendientesAguaEquipos();
   const camionesBase = forzarTodos ? PIAS2_CAMIONES_DATA : pendientesAguaCamiones();
-  const notasBase = forzarTodos ? EQUIPOS_NOTAS.filter(n => n.grupo === 'Pias 2' && n.texto) : pendientesNotaAguaPias2();
+  const notasBase = forzarTodos ? EQUIPOS_NOTAS.filter(n => n.grupo === 'Pias 2' && n.texto && notaFechaMs(n) > Date.now() - 864e5) : pendientesNotaAguaPias2();
 
   const filasOil = [];
   const conTs = (fila, d) => { fila._ts = d ? d.getTime() : 0; return fila; };
@@ -5392,9 +5422,8 @@ function exportReporteAgua(forzarTodos){
   }
   wb.xlsx.writeBuffer().then(buffer => {
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    downloadOrShareBlob(blob, `Reporte_Agua_Pias2_${todayStr().replace(/\//g,'-')}.xlsx`, 'Reporte de Agua Pias 2');
-  });
-  marcarReporteAguaEnviado();
+    return downloadOrShareBlob(blob, `Reporte_Agua_Pias2_${todayStr().replace(/\//g,'-')}.xlsx`, 'Reporte de Agua Pias 2');
+  }).then(ok => { if(ok) marcarReporteAguaEnviado(); }).catch(e => alert('No se pudo generar el reporte de Agua (' + (e && e.message) + ').'));
 }
 
 // ---------------- Respaldo completo a Excel (foto de todo, no solo lo pendiente) ----------------
@@ -5606,7 +5635,7 @@ function parteCampoFilas(forzarTodos){
     }));
 
   // NOVEDADES GENERALES de USPA (sin pozo especifico), modificadas desde el ultimo parte (o todas, si se fuerza)
-  const notasBase = forzarTodos ? USPA_NOTAS.filter(n => n.texto).sort((a,b) => (a._updatedAtDate||0) - (b._updatedAtDate||0)) : pendientesDeReporteNotas();
+  const notasBase = forzarTodos ? USPA_NOTAS.filter(n => n.texto && notaFechaMs(n) > Date.now() - 864e5).sort((a,b) => (a._updatedAtDate||0) - (b._updatedAtDate||0)) : pendientesDeReporteNotas();
   const filasNotas = notasBase
     .map(n => ({
       hora: n.hora || '',
@@ -5721,9 +5750,11 @@ function exportParteDeCampo(forzarTodos){
   const fileName = `Parte_de_campo_${fechaOperativaParte.toISOString().slice(0,10)}.xlsx`;
   wb.xlsx.writeBuffer().then(buffer => {
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    downloadOrShareBlob(blob, fileName, 'Parte de campo');
-    miAccionParteEnCurso = true;
-    marcarReporteEnviado();
+    return downloadOrShareBlob(blob, fileName, 'Parte de campo').then(ok => {
+      if(!ok) return;
+      miAccionParteEnCurso = true;
+      marcarReporteEnviado();
+    });
   }).catch((err) => {
     alert('No se pudo generar el Excel (' + (err && err.message ? err.message : 'error desconocido') + '). Probá de nuevo con conexion a internet.');
   });
@@ -6816,22 +6847,40 @@ function avisosVisible(){
 function iniciarAvisosSync(){
   if(avisosSyncIniciado || !firestoreOk) return;
   avisosSyncIniciado = true;
+  const armar = (doc) => {
+    const d = doc.data();
+    return {
+      id: doc.id, origen: d.origen || 'gas', equipo: d.equipo || d.pozo || '', pozo: d.pozo || '', bateria: d.bateria || '',
+      criticidad: d.criticidad || 'Media', especialidad: d.especialidad || 'Otros', descripcion: d.descripcion || '',
+      operador: d.operador || 'Sin nombre', clientTs: d.clientTs || 0, estado: d.estado || 'abierto',
+      resueltoPor: d.resueltoPor || '', resueltoTs: d.resueltoTs || 0, pendiente: !!(doc.metadata && doc.metadata.hasPendingWrites)
+    };
+  };
+  // la lista en vivo trae los 500 mas recientes (abiertos y resueltos). Los ABIERTOS mas viejos que eso
+  // se traen aparte, asi un aviso que sigue sin resolver nunca desaparece de la lista con el tiempo.
+  let recientes = [], abiertosViejos = [];
+  const juntar = () => {
+    const ids = new Set(recientes.map(a => a.id));
+    AVISOS = recientes.concat(abiertosViejos.filter(a => !ids.has(a.id)));
+    refrescarMarcasAvisos();
+    if(avisosVisible()) renderAvisos();
+  };
   syncVivo('avisos_mtto', { campo: 'clientTs', tipo: 'num', limite: 500 }, (snap) => {
       detectarMovimientos(snap, 'avisos_mtto', true);
       const lista = [];
-      snap.forEach(doc => {
-        const d = doc.data();
-        lista.push({
-          id: doc.id, origen: d.origen || 'gas', equipo: d.equipo || d.pozo || '', pozo: d.pozo || '', bateria: d.bateria || '',
-          criticidad: d.criticidad || 'Media', especialidad: d.especialidad || 'Otros', descripcion: d.descripcion || '',
-          operador: d.operador || 'Sin nombre', clientTs: d.clientTs || 0, estado: d.estado || 'abierto',
-          resueltoPor: d.resueltoPor || '', resueltoTs: d.resueltoTs || 0, pendiente: doc.metadata.hasPendingWrites
-        });
-      });
-      AVISOS = lista;
+      snap.forEach(doc => lista.push(armar(doc)));
+      recientes = lista;
       avisosError = '';
-      refrescarMarcasAvisos();
-      if(avisosVisible()) renderAvisos();
+      // si la lista llego al tope, puede haber abiertos mas viejos: se piden una vez (son pocos)
+      if(lista.length >= 500 && !abiertosViejos._pedidos){
+        abiertosViejos._pedidos = true;
+        const masViejo = Math.min.apply(null, lista.map(a => a.clientTs || 0));
+        db.collection('avisos_mtto').where('estado', '==', 'abierto').get().then(s => {
+          const l = []; s.forEach(doc => { const d = doc.data(); if(d && d._borrado !== true && (d.clientTs || 0) < masViejo) l.push(armar(doc)); });
+          abiertosViejos = l; abiertosViejos._pedidos = true; juntar();
+        }).catch(() => { abiertosViejos._pedidos = false; });
+      }
+      juntar();
     }, (err) => {
       avisosError = 'No se pudieron leer los avisos (' + err.message + '). Si dice "permission", hay que habilitar la coleccion avisos_mtto en las reglas de Firestore.';
       if(avisosVisible()) renderAvisos();
@@ -7385,9 +7434,13 @@ function cicEstadoPlan(fecha, pozo){
   items.sort((x, y) => x.orden - y.orden);
   const ini = cicInicioDia(fecha), fin = ini + 86400e3;
   CICLO_EV.filter(e => e.pozo === pozo && e.ts >= ini && e.ts < fin).sort((x, y) => x.ts - y.ts).forEach(e => {
-    const eo = (e.ts - ini) / 60e3;
-    // la hora es de referencia: toma la proxima pendiente de ese tipo (sin adelantarse mas de 3 h)
-    let it = items.find(i => !i.hecho && i.tipo === e.tipo && i.orden <= eo + 180) || items.find(i => !i.hecho && i.tipo === e.tipo);
+    // hora real de la maniobra (la que cargo el operador); si no viniera, la hora en que se guardo
+    const eo = /^\d{1,2}:\d{2}/.test(e.hora || '') ? cicOrden(e.hora) : (e.ts - ini) / 60e3;
+    const eTurno = eo < (TURNO_DIA_FIN - TURNO_DIA_INI) * 60 ? 'dia' : 'noche';
+    // la hora es de referencia: toma la proxima pendiente de ese tipo DEL MISMO TURNO (o a menos de 1,5 h,
+    // por si se adelanta/atrasa en el cambio de turno). Una apertura del turno dia no tacha una del turno noche.
+    const cand = items.filter(i => !i.hecho && i.tipo === e.tipo && (i.turno === eTurno || Math.abs(i.orden - eo) <= 90));
+    let it = cand.find(i => i.orden <= eo + 180) || cand[0];
     if(it) it.hecho = e;
     else items.push({ tipo: e.tipo, hora: e.hora, hecho: e, extra: true, orden: eo, turno: eo < (TURNO_DIA_FIN - TURNO_DIA_INI) * 60 ? 'dia' : 'noche' });
   });
@@ -8363,6 +8416,23 @@ function actualizarBombeoUltimo(){
   document.querySelectorAll('.bombeo-ultima').forEach(el => { el.textContent = bombeoTextoUltimo(el.dataset.bat); });
 }
 
+// Un mismo bombeo guardado varias veces seguidas (doble/triple toque en "Guardar bombeo") se cuenta una sola vez:
+// misma bateria, misma altura y mismas bombas, a menos de 10 min del anterior.
+function bombeoMismoRegistro(a, b){
+  if(!a || !b || a.bateria !== b.bateria) return false;
+  const ta = a.clientTs || (a._updatedAtDate ? a._updatedAtDate.getTime() : 0);
+  const tb = b.clientTs || (b._updatedAtDate ? b._updatedAtDate.getTime() : 0);
+  return Math.abs(ta - tb) < 10 * 60e3 && String(a.alturaCm) === String(b.alturaCm)
+    && (a.bombasEnServicio || []).slice().sort().join('|') === (b.bombasEnServicio || []).slice().sort().join('|');
+}
+function bombeoSinRepetidos(lista){
+  const ts = (x) => x.clientTs || (x._updatedAtDate ? x._updatedAtDate.getTime() : 0);
+  const orden = (lista || []).slice().sort((a, b) => ts(a) - ts(b));
+  const quedan = [];
+  orden.forEach(x => { if(!quedan.some(q => bombeoMismoRegistro(q, x))) quedan.push(x); });
+  return quedan.sort((a, b) => ts(b) - ts(a));
+}
+
 function crearBloqueBombeo(bat){
   const cfg = BOMBEO_PTC[bat];
   const box = document.createElement('div');
@@ -8449,6 +8519,16 @@ function crearBloqueBombeo(bat){
       alert('No se pudo guardar el bombeo (' + err.message + '). Revisa tu conexion.');
     });
     // si hay bombas en servicio, queda registrado como bombeo para el reporte de Baterias
+    const repetido = bombas.length && (BOMBEO_LOG || []).find(x => bombeoMismoRegistro(x, datos));
+    const btnG = box.querySelector('.bombeo-save');
+    if(repetido){
+      // doble toque: ya quedo guardado, no se registra otra vez (si no, se suma dos veces)
+      btnG.textContent = '✓ Ya estaba guardado';
+      setTimeout(() => { btnG.textContent = 'Guardar bombeo'; }, 2500);
+      return;
+    }
+    btnG.disabled = true; btnG.textContent = '✓ Guardado';
+    setTimeout(() => { btnG.disabled = false; btnG.textContent = 'Guardar bombeo'; }, 2500);
     if(bombas.length){
       const reg = Object.assign({}, datos);
       db.collection('baterias_bombeo_log').add(reg).catch(() => {});
@@ -8574,7 +8654,17 @@ function renderPias(){
       alert('Cargá al menos la hora inicial y el volumen.');
       return;
     }
+    const btnC = document.getElementById('camionSaveBtn');
+    const yaEsta = (PIAS2_CAMIONES_DATA || []).some(c => (c.fecha || '') === (datos.fecha || todayStr()) && c.horaEntrada === datos.horaEntrada
+      && String(c.volumen) === String(datos.volumen) && (c.remito || '') === datos.remito);
+    if(yaEsta){
+      btnC.textContent = '✓ Ya estaba guardada';
+      setTimeout(() => { btnC.textContent = 'Guardar descarga'; }, 2500);
+      return;
+    }
     guardarCamionAgua(datos);
+    btnC.textContent = '✓ Guardada';
+    setTimeout(() => { btnC.textContent = 'Guardar descarga'; }, 2500);
   });
 
   const lista = document.getElementById('camionLista');
@@ -9393,6 +9483,7 @@ function tendSeries(){
     const id = 'bo|' + b.bateria, dia = pedIso(inicioDiaOperativo(new Date(ts)));
     if(!out[id]) out[id] = { id, sector: 'baterias', nombre: b.bateria, que: 'm³ bombeados por día', unidad: 'm³', puntos: [], porDia: {} };
     out[id].porDia[dia] = (out[id].porDia[dia] || 0) + (Number(b.volumenM3) || 0);
+    out[id].ultTs = Math.max(out[id].ultTs || 0, ts);
   });
   Object.values(out).forEach(s => { if(s.porDia){ s.puntos = Object.keys(s.porDia).sort().map(d => ({ ts: new Date(d + 'T12:00:00').getTime(), v: Math.round(s.porDia[d] * 100) / 100, por: '' })); } });
   // pozos abiertos por USPA (fotos diarias + el valor de ahora)
@@ -9409,14 +9500,54 @@ function tendSeries(){
   return Object.values(out).map(s => { s.puntos.sort((a, b) => a.ts - b.ts); return s; });
 }
 
+// Mas de 36 h sin ninguna carga = bache (franco, nadie cargo). La curva se corta ahi en vez de
+// unir los dos puntos como si el valor hubiera cambiado parejo, y el hueco se marca en gris.
+var TEND_BACHE_MS = 36 * 3600e3;
+function tendBaches(puntos){
+  const b = [];
+  for(let i = 1; i < puntos.length; i++) if(puntos[i].ts - puntos[i - 1].ts > TEND_BACHE_MS) b.push({ desde: puntos[i - 1].ts, hasta: puntos[i].ts });
+  return b;
+}
 function tendSpark(puntos, ancho, alto){
   const vals = puntos.map(p => p.v);
   const min = Math.min.apply(null, vals), max = Math.max.apply(null, vals), r = (max - min) || 1;
   const t0 = puntos[0].ts, t1 = puntos[puntos.length - 1].ts, rt = (t1 - t0) || 1;
-  const pts = puntos.map(p => [puntos.length === 1 ? ancho : (p.ts - t0) / rt * ancho, alto - 6 - (p.v - min) / r * (alto - 16)]);
-  const linea = 'M' + pts.map(q => q[0].toFixed(1) + ',' + q[1].toFixed(1)).join(' L');
+  const X = (ts) => puntos.length === 1 ? ancho : (ts - t0) / rt * ancho;
+  const pts = puntos.map(p => [X(p.ts), alto - 6 - (p.v - min) / r * (alto - 16)]);
+  // tramos continuos (se corta en cada bache)
+  const tramos = [[0]];
+  for(let i = 1; i < puntos.length; i++){
+    if(puntos[i].ts - puntos[i - 1].ts > TEND_BACHE_MS) tramos.push([i]); else tramos[tramos.length - 1].push(i);
+  }
+  const f = (q) => q[0].toFixed(1) + ',' + q[1].toFixed(1);
+  let linea = '', area = '', sueltos = '';
+  tramos.forEach(t => {
+    const q = t.map(i => pts[i]);
+    if(q.length === 1){ sueltos += `<path d="M${Math.min(ancho - 3, Math.max(3, q[0][0])).toFixed(1)},${q[0][1].toFixed(1)} l0.01,0" class="td-punto"></path>`; return; }
+    const l = 'M' + q.map(f).join(' L');
+    linea += l + ' ';
+    area += l + ` L${q[q.length - 1][0].toFixed(1)},${alto} L${q[0][0].toFixed(1)},${alto} Z `;
+  });
+  const huecos = tendBaches(puntos).map(b => { const x0 = X(b.desde), x1 = X(b.hasta); return `<rect x="${(x0 + 2).toFixed(1)}" y="0" width="${Math.max(0, x1 - x0 - 4).toFixed(1)}" height="${alto}" class="td-hueco"></rect>`; }).join('');
   const u = pts[pts.length - 1];
-  return { linea, area: linea + ` L${ancho},${alto} L${pts[0][0].toFixed(1)},${alto} Z`, ux: u[0].toFixed(1), uy: u[1].toFixed(1), min, max };
+  return { linea: linea.trim() || 'M0,0', area: area.trim(), sueltos, huecos, ux: u[0].toFixed(1), uy: u[1].toFixed(1), min, max };
+}
+// texto del bache con los dias que quedaron SIN carga (no los dias que si tienen dato en los bordes)
+function tendBacheTxt(b){
+  const d0 = new Date(b.desde); d0.setHours(0, 0, 0, 0); d0.setDate(d0.getDate() + 1);
+  const d1 = new Date(b.hasta); d1.setHours(0, 0, 0, 0); d1.setDate(d1.getDate() - 1);
+  if(d1 < d0) return 'entre ' + tendFechaHora(b.desde) + ' y ' + tendFechaHora(b.hasta);
+  if(d1.getTime() === d0.getTime()) return 'el ' + tendFechaCorta(d0.getTime());
+  return 'del ' + tendFechaCorta(d0.getTime()) + ' al ' + tendFechaCorta(d1.getTime());
+}
+function tendFechaCorta(ts){ const d = new Date(ts); return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0'); }
+function tendHace(ts){
+  const m = Math.max(0, Math.round((Date.now() - ts) / 60e3));
+  if(m < 60) return 'hace ' + Math.max(1, m) + ' min';
+  const h = Math.round(m / 60);
+  if(h < 24) return 'hace ' + h + ' h';
+  const d = Math.round(h / 24);
+  return 'hace ' + d + (d === 1 ? ' día' : ' días');
 }
 function tendFmt(n){ return String(Math.round(n * 10) / 10).replace('.', ','); }
 function tendFechaHora(ts){ const d = new Date(ts); return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
@@ -9444,13 +9575,18 @@ function renderTendencia(){
     const ult = s.puntos[s.puntos.length - 1], pri = s.puntos[0];
     const d = ult.v - pri.v;
     const sp = s.puntos.length >= 2 ? tendSpark(s.puntos, 300, 80) : null;
+    const baches = s.puntos.length >= 2 ? tendBaches(s.puntos) : [];
+    const ultTs = ult.por === 'ahora' ? 0 : (s.ultTs || ult.ts);
+    const viejo = ultTs && Date.now() - ultTs > TEND_BACHE_MS;
     const abierta = tendAbierta === s.id;
     html += `<button type="button" class="td-card${abierta ? ' abierta' : ''}" data-tid="${parteEsc(s.id)}" aria-expanded="${abierta}">
       <span class="td-top"><b>${parteEsc(s.nombre)}</b><em>${parteEsc(s.que)}</em></span>
       <span class="td-val"><span class="td-num">${tendFmt(ult.v)}</span><span class="td-uni">${parteEsc(s.unidad)}</span>
         ${s.puntos.length >= 2 ? `<span class="td-delta">${d > 0 ? '▲' : (d < 0 ? '▼' : '=')} ${tendFmt(Math.abs(d))} en ${periodoTxt}</span>` : '<span class="td-delta">1 dato</span>'}</span>
-      ${sp ? `<svg viewBox="0 0 300 80" preserveAspectRatio="none" class="td-spark" role="img" aria-label="${parteEsc(s.nombre + ', ' + s.que + ': de ' + tendFmt(pri.v) + ' a ' + tendFmt(ult.v))}"><line x1="0" y1="79" x2="300" y2="79" class="td-base"></line><path d="${sp.area}" class="td-area"></path><path d="${sp.linea}" class="td-linea"></path></svg>
+      ${sp ? `<svg viewBox="0 0 300 80" preserveAspectRatio="none" class="td-spark" role="img" aria-label="${parteEsc(s.nombre + ', ' + s.que + ': de ' + tendFmt(pri.v) + ' a ' + tendFmt(ult.v) + (baches.length ? ', con ' + baches.length + ' período(s) sin datos' : ''))}">${sp.huecos}<line x1="0" y1="79" x2="300" y2="79" class="td-base"></line>${sp.area ? `<path d="${sp.area}" class="td-area"></path>` : ''}<path d="${sp.linea}" class="td-linea"></path>${sp.sueltos}</svg>
         <span class="td-rango">mín ${tendFmt(sp.min)} · máx ${tendFmt(sp.max)} · ${s.puntos.length} datos</span>` : '<span class="td-rango">Falta historia para la curva</span>'}
+      ${baches.length ? `<span class="td-bache">Sin datos ${baches.slice(-2).map(tendBacheTxt).join(' y ')}${baches.length > 2 ? ' (y ' + (baches.length - 2) + ' más)' : ''}</span>` : ''}
+      ${ultTs ? `<span class="td-ult${viejo ? ' viejo' : ''}">Último dato: ${tendHace(ultTs)}${viejo ? ' · sin cargas recientes' : ''}</span>` : ''}
       ${abierta ? `<span class="td-lista">${s.puntos.slice().reverse().slice(0, 12).map(p => `<span><i>${s.porDia ? tendFechaHora(p.ts).slice(0, 5) : tendFechaHora(p.ts)}</i><b>${tendFmt(p.v)}</b><i>${parteEsc(p.por)}</i></span>`).join('')}</span>` : ''}
     </button>`;
   });
@@ -9816,8 +9952,7 @@ function exportReporteComp(forzarHoy){
   const wb = compArmarLibro(lista);
   wb.xlsx.writeBuffer().then(buffer => {
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    downloadOrShareBlob(blob, `Reporte_Compresion_${todayStr().replace(/\//g, '-')}.xlsx`, 'Reporte de Compresión');
-    marcarReporteCompEnviado();
+    return downloadOrShareBlob(blob, `Reporte_Compresion_${todayStr().replace(/\//g, '-')}.xlsx`, 'Reporte de Compresión').then(ok => { if(ok) marcarReporteCompEnviado(); });
   }).catch((e) => alert('No se pudo generar el reporte de Compresión (' + (e && e.message) + ').'));
 }
 function compFechaCorta(iso){
@@ -10041,12 +10176,26 @@ function exigirNombre(){
   setTimeout(() => inp.focus(), 50);
 }
 
+// ---------------- Anti doble toque en botones de guardar/enviar ----------------
+// Si se toca el MISMO boton de guardar o enviar otra vez antes de 2,5 s, el segundo toque no hace nada
+// (evita registros repetidos cuando parece que "no llego" y se vuelve a tocar).
+(function(){
+  const SEL = '.save-btn, .tk-save, .camion-save, .gr-guardar, .export-btn, .operador-save-btn';
+  document.addEventListener('click', (e) => {
+    const b = e.target && e.target.closest ? e.target.closest(SEL) : null;
+    if(!b) return;
+    const ahora = Date.now(), antes = parseInt(b.dataset.ultToque || '0', 10);
+    if(ahora - antes < 2500){ e.stopImmediatePropagation(); e.preventDefault(); return; }
+    b.dataset.ultToque = String(ahora);
+  }, true);
+})();
+
 // ---------------- Aviso de version nueva ----------------
 // Cada index nuevo lleva un numero de version mas alto. La app se fija cada 5 minutos (y cada vez que
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202610251310;
+var APP_VERSION = 202610272300;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
