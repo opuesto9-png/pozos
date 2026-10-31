@@ -1486,6 +1486,8 @@
   .wa-edit label{ font-size:.72rem; color:var(--muted); display:flex; gap:6px; align-items:center; }
   .wa-edit input{ background:var(--bg); border:1px solid var(--line); color:var(--text); border-radius:5px; padding:4px 6px; font:inherit; font-size:.82rem; width:124px; }
   .wa-corr{ background:none; border:0; padding:0; color:#E8B64A; text-decoration:underline; font:inherit; cursor:pointer; font-weight:600; }
+  .wa-sincab{ border:1px solid #7a5f22; background:rgba(232,182,74,.08); color:var(--text); border-radius:8px; padding:10px 12px; font-size:.84rem; }
+  .wa-sincab ol{ margin:6px 0 6px 18px; padding:0; }
   .wa-corr.suave{ color:#8fc3df; font-weight:400; }
   .wa-cf{ margin-top:6px; padding:10px; border:1px solid #7a5f22; border-radius:8px; background:var(--bg); display:flex; flex-wrap:wrap; gap:10px 14px; align-items:flex-end; }
   .wa-cf label{ font-size:.72rem; color:var(--muted); display:flex; flex-direction:column; gap:3px; }
@@ -11243,19 +11245,33 @@ function waPasoPegar(){
     <textarea id="waTxt" class="wa-txt" placeholder="[20:15, 30/10/2026] Nombre: Ce-1214, quedó abierto (16.5 kg/cm2)."></textarea>
     <div class="wa-pie"><button type="button" class="wa-ver" id="waAprBtn">Lo que aprendió la app (${WA_APRENDIDO.length})</button></div>
     <div id="waApr" class="wa-apr"></div>
+    <div id="waSinCab" class="wa-sincab" role="alert" style="display:none;"></div>
     <div class="wa-pie"><span class="wa-ayuda">WhatsApp copia solo lo que tiene cargado en pantalla: si es mucho, pegá en varias tandas (subí un poco, copiá, pegá debajo). Lo repetido se saca solo.</span><button type="button" class="save-btn" id="waLeer">Leer mensajes</button></div>
   </div>`;
   document.getElementById('waX').addEventListener('click', waCerrar);
   document.getElementById('waAprBtn').addEventListener('click', waListaAprendido);
-  document.getElementById('waLeer').addEventListener('click', () => {
+  const leer = (forzar) => {
     const raw = document.getElementById('waTxt').value;
     if(!raw.trim()) return;
+    const msgs = waSeparar(raw);
+    // copiado sin "[hora, fecha] Nombre:" (seleccionando el texto con el mouse): no se sabe la hora de cada mensaje
+    if(!forzar && msgs.length && msgs.every(m => m.sinCabecera)){
+      const av = document.getElementById('waSinCab');
+      av.innerHTML = `<b>Este texto vino sin la hora ni el nombre de cada mensaje</b>, así que no puedo saber a qué hora fue cada maniobra.
+        <ol><li>En WhatsApp, hacé clic derecho sobre el primer mensaje → <b>Seleccionar</b> (o pasá el mouse y tocá la flechita ˅ → Seleccionar).</li>
+        <li>Tildá los mensajes que quieras (podés tildar muchos seguidos).</li><li>Apretá <b>Ctrl+C</b> y pegalo acá de nuevo.</li></ol>
+        Así cada mensaje viene como <i>[18:21, 30/10/2026] Nombre: …</i>. <button type="button" class="wa-ver" id="waForzar">Leer igual, con la hora de ahora</button>`;
+      av.style.display = '';
+      document.getElementById('waForzar').addEventListener('click', () => leer(true));
+      return;
+    }
     WA.raw = raw;
-    WA.msgs = waSeparar(raw);
+    WA.msgs = msgs;
     WA.items = waAnalizar(WA.msgs);
     WA.reglas = {};
     waPasoConfirmar();
-  });
+  };
+  document.getElementById('waLeer').addEventListener('click', () => leer(false));
   setTimeout(() => { const t = document.getElementById('waTxt'); if(t) t.focus(); }, 50);
 }
 function waEstadoMsg(i){
@@ -11353,7 +11369,7 @@ function waPasoConfirmar(){
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202610310040;
+var APP_VERSION = 202610310050;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
