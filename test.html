@@ -10442,7 +10442,9 @@ function waPozos(texto){
   while((m = re.exec(texto))){
     const num = m[2];
     const ini = m.index, fin = m.index + m[0].length;
-    const antes = texto.slice(Math.max(0, ini - 12), ini).toLowerCase();
+    const antes = texto.slice(Math.max(0, ini - 16), ini).toLowerCase();
+    // "colector del 1136", "isla del 1027", "linea del 1140": es la instalacion con nombre de pozo, no una maniobra del pozo
+    if(/(colector|colectora|col\.?|isla|linea|línea|línea|manifold|ducto)\s*(?:del?\s*)?(?:ce\s*-?\s*)?$/i.test(antes)) continue;
     const despues = texto.slice(fin, fin + 12).toLowerCase();
     if(!m[1]){
       if(/[a-z]$/i.test(antes)) continue;
@@ -10651,6 +10653,8 @@ function waAnalizar(msgs, opt){
       const dm = n.match(/\b(?:cerrar|abrir)\w*\s+(\d+(?:[.,]\d+)?)\s*(?:hs?|horas?)\b/);
       if(dur === null && dm) dur = waNum(dm[1]);
       let objetivos = pozos.filter(p => p.gas).map(p => p.pozo);
+      pozos.filter(p => p.desconocido && p.prefijo).forEach(p => add(m, { cat: 'no', est: 'no', pozo: p.pozo, titulo: 'Pedido · ' + p.pozo, detalle: txt.replace(/\s+/g, ' ').trim().slice(0, 100),
+        nota: p.pozo + ' no está en la lista de pozos de gas de la app: el pedido para ese pozo no se carga.' }));
       if(!objetivos.length && tipo !== 'otro' && ultimoPozoDe[m.autor] && m.ts - ultimoPozoDe[m.autor].ts < 10 * 60e3) objetivos = [ultimoPozoDe[m.autor].pozo];
       const det = txt.replace(/\s+/g, ' ').trim().slice(0, 200);
       if(!objetivos.length){
@@ -10659,7 +10663,7 @@ function waAnalizar(msgs, opt){
         const pedTipoFinal = cond && tipo !== 'velas' ? 'otro' : tipo;
         const tit = (tipo === 'velas' ? 'Lanzar velas en ' : (tipo === 'abrir' ? 'Abrir ' : (tipo === 'cerrar' ? 'Cerrar ' : 'Tarea en '))) + pz + (dur && tipo !== 'velas' ? ' por ' + waFmt(dur) + ' h' : '');
         add(m, { cat: 'pedidos', est: (cond || pedTipoFinal === 'otro') ? 'rev' : 'ok', pozo: pz, titulo: tit, detalle: cond ? 'pedido con condición' : 'pedido', pedido: { tipo: pedTipoFinal, objetivo: pedTipoFinal === 'otro' ? '' : pz, detalle: det, duracionHs: (pedTipoFinal === 'abrir' || pedTipoFinal === 'cerrar') && dur && dur <= 72 ? dur : 0 },
-          nota: cond ? 'Depende de una presión o un caudal: se carga como tarea y se marca hecha a mano.' : 'Va a Pedidos y se tacha solo cuando se cargue.' });
+          nota: cond ? 'Es un pedido con condición (“cuando…”, “hasta que…”): se carga como tarea y se marca hecha a mano.' : 'Va a Pedidos y se tacha solo cuando se cargue.' });
       });
       objetivos.forEach(pz => { ultimoPozoDe[m.autor] = { pozo: pz, ts: m.ts }; });
       return;
@@ -10736,6 +10740,30 @@ function waAnalizar(msgs, opt){
     // con numeros pero sin entender, o charla
     if(/\d/.test(txt) && !/\?\s*$/.test(txt.trim()) && txt.replace(/\s+/g, '').length > 3) add(m, { cat: 'no', est: 'no', titulo: 'Sin entender', detalle: txt.replace(/\s+/g, ' ').trim().slice(0, 120), nota: 'No reconozco qué dato es: cargalo a mano si hace falta.' });
   });
+  // estado del pozo antes de cada maniobra: abrir un pozo que ya figuraba abierto (o cerrar uno cerrado) quiere
+  // decir que falta una maniobra en el medio (mensaje no pegado, cargada en otro lado o mal escrita)
+  if(!opt.sinDup){
+    const est = {};
+    items.filter(it => it.cat === 'maniobras').sort((a, b) => a.ts - b.ts).forEach(it => {
+      const rec = POZOS.find(p => p.pozo === it.pozo);
+      if(!rec) return;
+      if(!est[it.pozo]){
+        const ev = MANIOBRAS.filter(e => e.pozo === it.pozo && e.ts < it.ts - 20 * 60e3).sort((a, b) => b.ts - a.ts)[0];
+        if(ev) est[it.pozo] = { estado: ev.tipo === 'abrir' ? 'Abierto' : 'Cerrado', desde: ev.hora, dia: ev.ts };
+        else if(waUltimoTs(rec) && waUltimoTs(rec) < it.ts - 20 * 60e3) est[it.pozo] = { estado: rec.estado || '', desde: rec.estado === 'Cerrado' ? rec.horaCierre : rec.horaApertura, dia: waUltimoTs(rec) };
+        else est[it.pozo] = { estado: '' };
+      }
+      const st = est[it.pozo];
+      const repite = (it.tipo === 'abrir' && st.estado === 'Abierto') || (it.tipo === 'cerrar' && st.estado === 'Cerrado');
+      if(repite){
+        const cuando = st.desde ? ' desde las ' + st.desde + (st.dia && new Date(st.dia).toDateString() !== new Date(it.ts).toDateString() ? ' del ' + tendFechaCorta(st.dia) : '') : '';
+        it.est = 'rev';
+        it.nota = (it.nota ? it.nota + ' ' : '') + 'Figuraba ' + (it.tipo === 'abrir' ? 'abierto' : 'cerrado') + cuando + ': falta ' + (it.tipo === 'abrir' ? 'el cierre' : 'la apertura') +
+          ' en el medio. Si está en el grupo, pegalo también (puede ser después); si no, se carga sin horas de ' + (it.tipo === 'abrir' ? 'cierre' : 'apertura') + '.';
+      }
+      est[it.pozo] = { estado: it.tipo === 'abrir' ? 'Abierto' : 'Cerrado', desde: it.hora, dia: it.ts };
+    });
+  }
   // ya cargados (no se duplican)
   if(!opt.sinDup) items.forEach(it => {
     if(it.cat === 'maniobras' && MANIOBRAS.some(e => e.pozo === it.pozo && e.tipo === it.tipo && Math.abs(e.ts - it.ts) <= 20 * 60e3)) { it.est = 'dup'; it.nota = 'Ya estaba cargada (desde la ficha o un pegado anterior): no se repite.'; }
@@ -10758,12 +10786,33 @@ function waMarcarHechos(lista){
 }
 
 // 3) guardar lo confirmado, en orden de hora (asi un pozo que cerro y reabrio queda bien)
+// ultima maniobra conocida del pozo: por su fecha-hora, o (cargas viejas sin fecha) por la hora escrita y cuando se guardo
+function waUltimoTs(rec){
+  let ultimo = Math.max(maniobraTsValido(rec.tsApertura, rec.horaApertura) ? rec.tsApertura : 0, maniobraTsValido(rec.tsCierre, rec.horaCierre) ? rec.tsCierre : 0);
+  if(!ultimo && rec._updatedAtDate){ const h = rec.estado === 'Cerrado' ? rec.horaCierre : rec.horaApertura; ultimo = h ? (horaATs(h, rec._updatedAtDate.getTime()) || 0) : 0; }
+  return ultimo;
+}
+// se cargo una maniobra VIEJA (por ejemplo un cierre que faltaba en un pegado anterior): la maniobra que
+// viene despues se recalcula (sus horas y su rango salen de esta), en el registro y, si es la actual, en el pozo
+function waRecalcularSiguiente(rec, it, f, por){
+  const sig = MANIOBRAS.filter(e => e.pozo === rec.pozo && e.ts > it.ts).sort((a, b) => a.ts - b.ts)[0];
+  if(!sig || sig.tipo === it.tipo || !sig.id) return;
+  const g = { horasTotalNum: Math.round((sig.ts - it.ts) / 36e5 * 10) / 10, horasTotalTipo: sig.tipo === 'abrir' ? 'cerrado' : 'abierto',
+    horasRangoDesde: hhmmDeTs(it.ts), horasRangoHasta: hhmmDeTs(sig.ts), horasRangoConfirmado: true };
+  if(sig.tipo === 'abrir'){ g.veniaDeCerradoConfirmado = true; g.presionCierre = f.presionCierre || ''; }
+  else { g.horaApertura = it.hora; if(f.presion) g.presion = f.presion; }
+  db.collection('pozos_maniobras').doc(sig.id).set(g, { merge: true }).catch(e => console.error('maniobra', e));
+  Object.assign(sig, g);
+  const esActual = (sig.tipo === 'abrir' ? rec.tsApertura : rec.tsCierre) === sig.ts;
+  if(esActual){
+    Object.assign(rec, g); rec._edited = true;
+    saveEdit(rec.pozo, Object.assign({}, g, { operador: por }), Object.keys(g));
+  }
+}
 function waAplicarManiobra(it){
   const rec = POZOS.find(p => p.pozo === it.pozo);
   if(!rec) return false;
-  // ultima maniobra conocida del pozo: por su fecha-hora, o (cargas viejas sin fecha) por la hora escrita y cuando se guardo
-  let ultimo = Math.max(maniobraTsValido(rec.tsApertura, rec.horaApertura) ? rec.tsApertura : 0, maniobraTsValido(rec.tsCierre, rec.horaCierre) ? rec.tsCierre : 0);
-  if(!ultimo && rec._updatedAtDate){ const h = rec.estado === 'Cerrado' ? rec.horaCierre : rec.horaApertura; ultimo = h ? (horaATs(h, rec._updatedAtDate.getTime()) || 0) : 0; }
+  const ultimo = waUltimoTs(rec);
   const prevMan = MANIOBRAS.filter(e => e.pozo === rec.pozo && e.ts < it.ts).sort((a, b) => b.ts - a.ts)[0];
   const esLaUltima = it.ts >= ultimo && !MANIOBRAS.some(e => e.pozo === rec.pozo && e.ts > it.ts);
   // estado ANTES de esta maniobra
@@ -10775,7 +10824,10 @@ function waAplicarManiobra(it){
   if(it.tipo === 'abrir'){
     f.estado = 'Abierto'; f.horaApertura = it.hora; f.tsApertura = it.ts; f.horaCierre = ''; f.horarioNota = it.notaHorario || '';
     if(it.presion !== null && it.presion !== undefined) f.presion = waFmt(it.presion);
-    if(prev.estado !== 'Abierto'){
+    if(prev.estado === 'Abierto'){
+      // ya figuraba abierto (falta el cierre en lo cargado): no se arrastran las horas de la apertura anterior
+      Object.assign(f, { horasTotalNum: null, horasTotalTipo: '', horasRangoDesde: '', horasRangoHasta: '', horasRangoConfirmado: false, veniaDeCerradoConfirmado: false });
+    } else {
       if(prev.tsC && it.ts > prev.tsC){ f.horasTotalNum = r1((it.ts - prev.tsC) / 36e5); f.horasRangoDesde = hhmmDeTs(prev.tsC); f.horasRangoConfirmado = true; }
       else { f.horasTotalNum = calcDuracionDecimal(prev.hC || '06:00', it.hora); f.horasRangoDesde = prev.hC || '06:00'; f.horasRangoConfirmado = !!prev.hC; }
       f.horasTotalTipo = 'cerrado'; f.horasRangoHasta = it.hora; f.veniaDeCerradoConfirmado = prev.estado === 'Cerrado';
@@ -10786,9 +10838,13 @@ function waAplicarManiobra(it){
       }
     }
   } else {
-    f.estado = 'Cerrado'; f.horaCierre = it.hora; f.tsCierre = it.ts; f.horaApertura = prev.hA || rec.horaApertura || ''; f.horarioNota = it.notaHorario || '';
+    f.estado = 'Cerrado'; f.horaCierre = it.hora; f.tsCierre = it.ts; f.horaApertura = prev.estado === 'Cerrado' ? '' : (prev.hA || (esLaUltima ? rec.horaApertura || '' : ''));
+    if(!esLaUltima) f.presion = prevMan && prevMan.presion ? prevMan.presion : 's/d'; f.horarioNota = it.notaHorario || '';
     f.presionCierre = (it.presion !== null && it.presion !== undefined) ? waFmt(it.presion) : '';
-    if(prev.tsA && it.ts > prev.tsA){ f.horasTotalNum = r1((it.ts - prev.tsA) / 36e5); f.horasRangoDesde = hhmmDeTs(prev.tsA); f.horasRangoConfirmado = true; }
+    if(prev.estado === 'Cerrado'){
+      // ya figuraba cerrado (falta la apertura en lo cargado): no se arrastran horas viejas
+      Object.assign(f, { horasTotalNum: null, horasTotalTipo: '', horasRangoDesde: '', horasRangoHasta: '', horasRangoConfirmado: false });
+    } else if(prev.tsA && it.ts > prev.tsA){ f.horasTotalNum = r1((it.ts - prev.tsA) / 36e5); f.horasRangoDesde = hhmmDeTs(prev.tsA); f.horasRangoConfirmado = true; }
     else { f.horasTotalNum = calcDuracionDecimal(prev.hA || '06:00', it.hora); f.horasRangoDesde = prev.hA || '06:00'; f.horasRangoConfirmado = !!prev.hA; }
     f.horasTotalTipo = 'abierto'; f.horasRangoHasta = it.hora;
   }
@@ -10805,6 +10861,7 @@ function waAplicarManiobra(it){
     // maniobra vieja (ya hay una mas nueva cargada): solo queda en el registro y en el parte, sin tocar el estado actual
     const pseudo = Object.assign({}, rec, f);
     maniobraRegistrar(pseudo, { tipo: it.tipo, ts: it.ts, velaTxt: '', origen: 'whatsapp', por: it.por });
+    waRecalcularSiguiente(rec, it, f, it.por);
   }
   const hv = { abierto: it.tipo === 'abrir' ? 1 : 0 };
   if(it.tipo === 'abrir' && f.presion) hv.presion = f.presion;
@@ -11296,7 +11353,7 @@ function waPasoConfirmar(){
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202610302334;
+var APP_VERSION = 202610310040;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
