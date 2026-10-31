@@ -1517,6 +1517,7 @@
   .qc-card h2{ margin:0 0 10px; font-size:1rem; }
   .qc-tit-fila{ display:flex; justify-content:space-between; align-items:baseline; gap:10px; flex-wrap:wrap; }
   .qc-sub{ font-size:.74rem; color:var(--muted); }
+  .qc-prev-parte{ margin-top:10px; font-size:.82rem; background:var(--bg); border:1px dashed var(--line); border-radius:6px; padding:8px 10px; } .qc-prev-parte:empty{ display:none; } .qc-prev-parte span{ color:var(--muted); }
   .qc-sub-tit{ font-size:.7rem; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:14px 0 6px; }
   .qc-form{ display:grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap:10px; }
   .qc-f{ display:flex; flex-direction:column; gap:4px; font-size:.74rem; color:var(--muted); }
@@ -1992,7 +1993,7 @@ var SYNC_RESYNC_DIAS = 7;
 var SYNC_MARGEN_MS = 3 * 60e3;
 var SYNC_NOMBRES = ['pozos_overrides', 'uspa_notas', 'equipos_notas', 'aib_pozos', 'pozos_velas', 'baterias_tanques', 'baterias_bombeo',
   'baterias_bombeo_log', 'pias2_tanques', 'pias2_equipos', 'pias2_camiones', 'ptc_descargas', 'avisos_mtto', 'ciclaje_eventos', 'ciclaje_plan',
-  'pedidos', 'compresores_bp', 'compresores_lecturas', 'historial_mediciones', 'tendencia_diaria', 'pozos_maniobras', 'wa_aprendido'];
+  'pedidos', 'compresores_bp', 'compresores_lecturas', 'historial_mediciones', 'tendencia_diaria', 'pozos_maniobras', 'wa_aprendido', 'scraper_lanzamientos'];
 var SYNC_COLS = {};
 var SYNC_STATS = { servidor: 0, consultas: 0, modo: '' };
 var syncModoP = null;
@@ -2954,7 +2955,7 @@ function updatePendCount(){
   if(typeof cicProgramarAuto === 'function') cicProgramarAuto();
   const badge = document.getElementById('pendCount');
   if(badge){
-    const n = pendientesDeReporte().length + pendientesDeReporteAib().length + pendientesDeReporteNotas().length + pendientesDeVelas().length;
+    const n = pendientesDeReporte().length + pendientesDeReporteAib().length + pendientesDeReporteNotas().length + pendientesDeVelas().length + pendientesScraper().length;
     if(n > 0){ badge.style.display = ''; badge.textContent = n; } else { badge.style.display = 'none'; }
   }
   const badgeBat = document.getElementById('pendCountBaterias');
@@ -3866,6 +3867,7 @@ function startSync(){
   }
   iniciarAvisosSync();
   iniciarManiobrasSync();
+  iniciarScraperSync();
   syncVivo('pozos_overrides', {}, (snapshot) => {
     lastOverridesCount = snapshot.size;
     detectarMovimientos(snapshot, 'pozos_overrides');
@@ -5834,7 +5836,8 @@ function parteCampoFilas(forzarTodos){
     horasProduccion: null
   }));
   velaAutoBase.forEach(p => pozosConVelaUsada.add(p.pozo));
-  const filasGasConNotas = [...filasGas, ...filasNotas, ...filasVelasSueltas, ...filasVelasAuto];
+  const filasScraper = scraperFilasParte(forzarTodos);
+  const filasGasConNotas = [...filasGas, ...filasNotas, ...filasVelasSueltas, ...filasVelasAuto, ...filasScraper];
   return { filasGasConNotas, filasOil, gasBase, oilBase, notasBase, velaSueltaBase: velaSueltaBase.concat(velaAutoBase) };
 }
 
@@ -11585,34 +11588,99 @@ function renderQuimicos(){
 }
 document.getElementById('tabCtrl').addEventListener('click', () => { qcTabActual = 'ctrl'; switchTab('tabCtrl', 'ctrlMain'); renderControles(); });
 document.getElementById('tabQuim').addEventListener('click', () => { qcTabActual = 'quim'; switchTab('tabQuim', 'quimMain'); renderQuimicos(); });
-// ---- Lanzamiento de scraper: salida y llegada (hora y presion), TK 01 antes y despues, y control FPD/APD/OPD ----
+// ---- Lanzamiento de scraper (coleccion 'scraper_lanzamientos'): de donde sale, a donde llega y a que tanque,
+// horas y presiones de salida y llegada, el tanque antes y despues, y control FPD/APD/OPD.
+// Sale como renglon propio en el parte de gas (y en el Parte en vivo), y los numeros quedan en Tendencia.
+var SCRAPER = [];
+var SCR_DESTINOS = [['Bateria 1', 'Batería 1'], ['Bateria 2', 'Batería 2'], ['Bateria 5', 'Batería 5'], ['Pias 2', 'Pías 2'], ['PTG', 'PTG'], ['USPA2', 'USPA 2'], ['USPA3', 'USPA 3'], ['USPA4', 'USPA 4'], ['USPA5', 'USPA 5'], ['otro', 'Otro…']];
+function scrTanquesDe(dest){ return dest === 'Pias 2' ? PIAS2_TANQUES_NOMBRES : (TANQUES_BATERIAS[dest] || []); }
+function scrDestinoTxt(d){ const x = SCR_DESTINOS.find(z => z[0] === d.destino); return d.destino === 'otro' ? (d.destinoOtro || 'otro destino') : (x ? x[1] : (d.destino || '')); }
+function iniciarScraperSync(){
+  syncVivo('scraper_lanzamientos', { campo: 'cargadoTs', tipo: 'num', desde: () => ventanaDesdeMs(35) }, (snap) => {
+    const l = [];
+    snap.forEach(d => l.push(Object.assign({ id: d.id }, d.data())));
+    const locales = SCRAPER.filter(x => x._local && !l.some(y => y.id === x.id) && Date.now() - x.cargadoTs < 60e3);
+    SCRAPER = l.concat(locales);
+    updatePendCount();
+    const q = document.getElementById('scrMain');
+    if(q && q.style.display !== 'none') tendRefrescarSiAbierta();
+  }, (e) => console.error('scraper', e));
+}
 function scrMin(a, b){
   if(!/^\d{2}:\d{2}$/.test(a || '') || !/^\d{2}:\d{2}$/.test(b || '')) return null;
   const m = (t) => parseInt(t.slice(0, 2), 10) * 60 + parseInt(t.slice(3), 10);
   let d = m(b) - m(a); if(d < 0) d += 1440;
   return d;
 }
-function scrDurTxt(min){ if(min === null || min === undefined) return '—'; const h = Math.floor(min / 60), m = min % 60; return h ? h + ' h ' + (m ? m + ' min' : '') : m + ' min'; }
+function scrDurTxt(min){ if(min === null || min === undefined) return '—'; const h = Math.floor(min / 60), m = min % 60; return h ? h + ' h' + (m ? ' ' + m + ' min' : '') : m + ' min'; }
+function scrPres(v){ return convertPresionText(String(v).replace('.', ',') + ' kg/cm2', pressureUnit); }
+function scrNum(v){ return String(Math.round(v * 100) / 100).replace('.', ','); }
+// texto del renglon del parte de gas
+function scrNovedad(d){
+  let t = 'Lanzamiento de scraper' + (d.origen ? ' desde ' + d.origen : '') + ' a ' + scrDestinoTxt(d) + ': salida ' + (d.hsSal || '') + (d.psal !== undefined && d.psal !== null ? ' con ' + scrPres(d.psal) : '');
+  if(d.hsLleg) t += ', llegada ' + d.hsLleg + (d.plleg !== undefined && d.plleg !== null ? ' con ' + scrPres(d.plleg) : '') + (d.minutos !== undefined && d.minutos !== null ? ' (' + scrDurTxt(d.minutos) + ')' : '');
+  t += '.';
+  const tk = (a, b) => (a !== undefined && a !== null ? scrNum(a) : '?') + '/' + (b !== undefined && b !== null ? scrNum(b) : '?');
+  const hayIni = d.tkIniT != null || d.tkIniI != null, hayFin = d.tkFinT != null || d.tkFinI != null;
+  if(d.tanque && (hayIni || hayFin)) t += ' ' + d.tanque.split(' ')[0] + ':' + (hayIni ? ' inicio ' + tk(d.tkIniT, d.tkIniI) : '') + (hayIni && hayFin ? ',' : '') + (hayFin ? ' final ' + tk(d.tkFinT, d.tkFinI) : '') + '.';
+  else if(d.tanque) t += ' Llega a ' + d.tanque.split(' ')[0] + '.';
+  const ctrl = ['fpd', 'apd', 'opd'].filter(k => d[k] !== undefined && d[k] !== null).map(k => k.toUpperCase() + ' ' + scrNum(d[k]));
+  if(ctrl.length) t += ' ' + ctrl.join(' / ') + '.';
+  if(d.nota) t += ' ' + d.nota;
+  return t;
+}
+function pendientesScraper(){
+  const corte = corteDePendientes();
+  return (SCRAPER || []).filter(d => (d.cargadoTs || 0) > corte.getTime()).sort((a, b) => a.ts - b.ts);
+}
+function scraperFilasParte(forzarTodos){
+  const base = forzarTodos ? (SCRAPER || []).filter(d => d.ts > Date.now() - 864e5) : pendientesScraper();
+  return base.map(d => ({
+    hora: d.hsSal + (d.hsLleg ? '-' + d.hsLleg : ''),
+    instalacion: d.destino === 'otro' ? (d.destinoOtro || '') : bateriaToInstalacion(d.destino),
+    pozo: 'Scraper',
+    novedad: scrNovedad(d),
+    _ts: d.ts,
+    horasPerdida: null,
+    horasProduccion: null
+  }));
+}
+function scrBorrar(d){
+  if(!confirm('¿Borrar el lanzamiento de scraper de las ' + d.hsSal + ' (' + qcCuando(d.ts) + ')?')) return;
+  if(!puedeModificar()) return;
+  db.collection('scraper_lanzamientos').doc(d.id).delete().catch(e => alert('No se pudo borrar (' + e.message + ').'));
+  if(d.histId) db.collection('historial_mediciones').doc(d.histId).delete().catch(() => {});
+  SCRAPER = SCRAPER.filter(x => x.id !== d.id);
+  HIST = HIST.filter(x => !(d.histId && (x.docId === d.histId || x.id === d.histId)));
+  updatePendCount();
+  renderScraper();
+}
 function renderScraper(){
   const main = document.getElementById('scrMain');
   if(!main) return;
-  iniciarTendenciaSync();
-  const desde = Date.now() - 31 * 86400e3;
-  const lista = HIST.filter(h => h.tipo === 'scraper' && h.ts >= desde).sort((a, b) => b.ts - a.ts);
+  const lista = SCRAPER.filter(d => d.ts >= Date.now() - 31 * 86400e3).sort((a, b) => b.ts - a.ts);
   const ult = lista[0];
   const dias = ult ? Math.round((new Date().setHours(0, 0, 0, 0) - new Date(ult.ts).setHours(0, 0, 0, 0)) / 86400e3) : null;
-  const tk = (v, a, b) => (v[a] !== undefined || v[b] !== undefined) ? qcFmt(v[a]) + '/' + qcFmt(v[b]) : '—';
+  const tk = (a, b) => (a != null || b != null) ? qcFmt(a) + '/' + qcFmt(b) : '—';
+  const origenes = Array.from(new Set(SCRAPER.map(d => d.origen).filter(Boolean)));
+  const ultDest = ult ? ult.destino : 'Bateria 1';
   main.innerHTML = `<div class="qc-wrap">
     <section class="qc-card">
       <h2>Cargar lanzamiento de scraper</h2>
       <div class="qc-form">
-        <label class="qc-f ancho"><span>Tramo (opcional)</span><input class="edit-input" id="scTramo" list="scTramoList" placeholder="ej: Colector → Batería 1" autocomplete="off"><datalist id="scTramoList">${Array.from(new Set(HIST.filter(h => h.tipo === 'scraper' && h.equipo && h.equipo !== 'Scraper').map(h => h.equipo))).map(t => `<option value="${avisoEsc(t)}">`).join('')}</datalist></label>
+        <label class="qc-f ancho"><span>Sale de (opcional)</span><input class="edit-input" id="scOrigen" list="scOrigList" placeholder="ej: trampa del colector 1136" autocomplete="off"><datalist id="scOrigList">${origenes.map(t => `<option value="${avisoEsc(t)}">`).join('')}</datalist></label>
+        <label class="qc-f"><span>Llega a</span><select class="edit-input" id="scDest">${SCR_DESTINOS.map(([k, t]) => `<option value="${k}" ${k === ultDest ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
+        <label class="qc-f" id="scDestOtroL" style="display:none;"><span>¿Dónde?</span><input class="edit-input" id="scDestOtro"></label>
+        <label class="qc-f"><span>Tanque</span><select class="edit-input" id="scTk"></select></label>
+        <label class="qc-f" id="scTkOtroL" style="display:none;"><span>¿Qué tanque?</span><input class="edit-input" id="scTkOtro" placeholder="ej: TK-01"></label>
+      </div>
+      <div class="qc-form" style="margin-top:10px;">
         <label class="qc-f"><span>Hora de salida</span><input type="time" class="edit-input" id="scHsSal"></label>
-        <label class="qc-f"><span>Hora de llegada</span><input type="time" class="edit-input" id="scHsLleg"></label>
         <label class="qc-f"><span>P salida (kg/cm²)</span><input class="edit-input" id="scPsal" inputmode="decimal"></label>
+        <label class="qc-f"><span>Hora de llegada</span><input type="time" class="edit-input" id="scHsLleg"></label>
         <label class="qc-f"><span>P llegada (kg/cm²)</span><input class="edit-input" id="scPlleg" inputmode="decimal"></label>
       </div>
-      <div class="qc-sub-tit">TK 01 (nivel total / interfaz, cm)</div>
+      <div class="qc-sub-tit" id="scTkTit">Tanque (nivel total / interfaz, cm)</div>
       <div class="qc-form">
         <label class="qc-f"><span>Inicio · total</span><input class="edit-input" id="scTkIT" inputmode="decimal"></label>
         <label class="qc-f"><span>Inicio · interfaz</span><input class="edit-input" id="scTkII" inputmode="decimal"></label>
@@ -11626,59 +11694,86 @@ function renderScraper(){
         <label class="qc-f"><span>OPD</span><input class="edit-input" id="scOpd" inputmode="decimal"></label>
         <label class="qc-f ancho"><span>Nota (opcional)</span><input class="edit-input" id="scNota" placeholder="ej: llegó con mucha parafina"></label>
       </div>
-      <div class="qc-ult" id="scCalc"></div>
+      <div class="qc-prev-parte" id="scPrev"></div>
       <div class="qc-err" id="scErr" role="alert"></div>
       <div class="qc-bot"><button type="button" class="save-btn" id="scGuardar">Guardar lanzamiento</button></div>
     </section>
     <section class="qc-card">
       <div class="qc-tit-fila"><h2>Último lanzamiento</h2><span class="qc-sub">últimos 31 días</span></div>
-      ${ult ? `<div class="qc-chips"><div class="qc-chip${dias >= 7 ? ' parada' : ''}"><b>${avisoEsc(ult.equipo === 'Scraper' ? 'Scraper' : ult.equipo)}</b><span class="qc-grande">${dias === 0 ? 'hoy' : (dias === 1 ? 'ayer' : 'hace ' + dias + ' días')}</span><span>${avisoEsc(ult.hsSal || hhmmDeTs(ult.ts))} → ${avisoEsc(ult.hsLleg || '—')} · ${scrDurTxt(ult.vals.minutos)}</span><small>${avisoEsc(qcCuando(ult.ts))} · ${avisoEsc(ult.por || '')}</small></div></div>` : '<div class="empty-msg">Todavía no hay lanzamientos cargados.</div>'}
+      ${ult ? `<div class="qc-chips"><div class="qc-chip${dias >= 7 ? ' parada' : ''}"><b>${avisoEsc(scrDestinoTxt(ult))}${ult.tanque ? ' · ' + avisoEsc(ult.tanque.split(' ')[0]) : ''}</b><span class="qc-grande">${dias === 0 ? 'hoy' : (dias === 1 ? 'ayer' : 'hace ' + dias + ' días')}</span><span>${avisoEsc(ult.hsSal)} → ${avisoEsc(ult.hsLleg || '—')} · ${scrDurTxt(ult.minutos)}</span><small>${avisoEsc(qcCuando(ult.ts))} · ${avisoEsc(ult.por || '')}</small></div></div>` : '<div class="empty-msg">Todavía no hay lanzamientos cargados.</div>'}
     </section>
     <section class="qc-card">
       <div class="qc-tit-fila"><h2>Lanzamientos</h2><span class="qc-sub">${lista.length} en 31 días</span></div>
-      ${lista.length ? `<div class="qc-tabla-wrap"><table class="qc-tabla"><thead><tr><th>Fecha</th><th>Tramo</th><th>Salida → llegada</th><th>Viaje</th><th>P sal</th><th>P lleg</th><th>TK 01 inicio</th><th>TK 01 final</th><th>FPD</th><th>APD</th><th>OPD</th><th>Cargó</th><th></th></tr></thead><tbody>
-        ${lista.map((h, i) => { const v = h.vals || {}; return `<tr><td>${avisoEsc(qcCuando(h.ts).replace(/ \d{2}:\d{2}$/, ''))}</td><td>${avisoEsc(h.equipo === 'Scraper' ? '—' : h.equipo)}</td><td>${avisoEsc(h.hsSal || hhmmDeTs(h.ts))} → ${avisoEsc(h.hsLleg || '—')}</td><td>${scrDurTxt(v.minutos)}</td><td>${qcFmt(v.psal)}</td><td>${qcFmt(v.plleg)}</td><td>${tk(v, 'tkIniT', 'tkIniI')}</td><td>${tk(v, 'tkFinT', 'tkFinI')}</td><td>${qcFmt(v.fpd)}</td><td>${qcFmt(v.apd)}</td><td>${qcFmt(v.opd)}</td><td>${avisoEsc(h.por || '')}</td><td><button type="button" class="qc-x" data-i="${i}" aria-label="Borrar">&times;</button></td></tr>${h.nota ? `<tr class="qc-nota-fila"><td></td><td colspan="12">${avisoEsc(h.nota)}</td></tr>` : ''}`; }).join('')}
+      ${lista.length ? `<div class="qc-tabla-wrap"><table class="qc-tabla"><thead><tr><th>Fecha</th><th>Llega a</th><th>Tanque</th><th>Salida → llegada</th><th>Viaje</th><th>P sal</th><th>P lleg</th><th>Tanque inicio</th><th>Tanque final</th><th>FPD</th><th>APD</th><th>OPD</th><th>Cargó</th><th></th></tr></thead><tbody>
+        ${lista.map((d, i) => `<tr><td>${avisoEsc(qcCuando(d.ts).replace(/ \d{2}:\d{2}$/, ''))}</td><td>${avisoEsc(scrDestinoTxt(d))}</td><td>${avisoEsc(d.tanque ? d.tanque.split(' ')[0] : '—')}</td><td>${avisoEsc(d.hsSal)} → ${avisoEsc(d.hsLleg || '—')}</td><td>${scrDurTxt(d.minutos)}</td><td>${qcFmt(d.psal)}</td><td>${qcFmt(d.plleg)}</td><td>${tk(d.tkIniT, d.tkIniI)}</td><td>${tk(d.tkFinT, d.tkFinI)}</td><td>${qcFmt(d.fpd)}</td><td>${qcFmt(d.apd)}</td><td>${qcFmt(d.opd)}</td><td>${avisoEsc(d.por || '')}</td><td><button type="button" class="qc-x" data-i="${i}" aria-label="Borrar">&times;</button></td></tr>${d.origen || d.nota ? `<tr class="qc-nota-fila"><td></td><td colspan="13">${avisoEsc([d.origen ? 'Sale de ' + d.origen : '', d.nota || ''].filter(Boolean).join(' · '))}</td></tr>` : ''}`).join('')}
       </tbody></table></div>` : '<div class="empty-msg">Sin lanzamientos.</div>'}
     </section>
   </div>`;
   const $ = (id) => document.getElementById(id);
-  const calc = () => {
-    const min = scrMin($('scHsSal').value, $('scHsLleg').value);
-    const it = qcNum($('scTkIT').value), ft = qcNum($('scTkFT').value), ii = qcNum($('scTkII').value), fi = qcNum($('scTkFI').value);
-    const p = [];
-    if(min !== null) p.push('Viaje: ' + scrDurTxt(min));
-    const ps = qcNum($('scPsal').value), pl = qcNum($('scPlleg').value);
-    if(ps !== null && pl !== null && !isNaN(ps) && !isNaN(pl)) p.push('Diferencia de presión: ' + qcFmt(ps - pl) + ' kg/cm²');
-    if(it !== null && ft !== null && !isNaN(it) && !isNaN(ft)) p.push('TK 01 subió ' + qcFmt(ft - it) + ' cm' + (ii !== null && fi !== null && !isNaN(ii) && !isNaN(fi) ? ' (interfaz ' + qcFmt(fi - ii) + ' cm)' : ''));
-    $('scCalc').textContent = p.join(' · ');
+  const ponerTanques = () => {
+    const dest = $('scDest').value;
+    $('scDestOtroL').style.display = dest === 'otro' ? '' : 'none';
+    const tks = scrTanquesDe(dest);
+    const previo = ult && ult.destino === dest ? ult.tanque : '';
+    $('scTk').innerHTML = (tks.length ? tks.map(t => `<option value="${avisoEsc(t)}" ${t === previo ? 'selected' : ''}>${avisoEsc(t)}</option>`).join('') : '') + `<option value="__otro">${tks.length ? 'Otro…' : 'Escribir el tanque…'}</option><option value="">Sin tanque</option>`;
+    if(!tks.length) $('scTk').value = '__otro';
+    mostrarTk();
   };
-  main.querySelectorAll('.qc-form input').forEach(i => i.addEventListener('input', calc));
-  main.querySelectorAll('.qc-x').forEach(b => b.addEventListener('click', () => qcBorrar(lista[+b.dataset.i])));
+  const tanqueElegido = () => $('scTk').value === '__otro' ? $('scTkOtro').value.trim() : $('scTk').value;
+  const mostrarTk = () => {
+    $('scTkOtroL').style.display = $('scTk').value === '__otro' ? '' : 'none';
+    const t = tanqueElegido();
+    $('scTkTit').textContent = (t ? t.split(' ')[0] : 'Tanque') + ' (nivel total / interfaz, cm)';
+    calc();
+  };
+  const leer = () => {
+    const campos = { psal: 'scPsal', plleg: 'scPlleg', tkIniT: 'scTkIT', tkIniI: 'scTkII', tkFinT: 'scTkFT', tkFinI: 'scTkFI', fpd: 'scFpd', apd: 'scApd', opd: 'scOpd' };
+    const d = { destino: $('scDest').value, destinoOtro: $('scDestOtro').value.trim(), tanque: tanqueElegido(), origen: $('scOrigen').value.trim(), hsSal: $('scHsSal').value, hsLleg: $('scHsLleg').value, nota: $('scNota').value.trim().slice(0, 200) };
+    let malo = false;
+    Object.keys(campos).forEach(k => { const n = qcNum($(campos[k]).value); if(Number.isNaN(n)) malo = true; else if(n !== null) d[k] = n; });
+    const min = scrMin(d.hsSal, d.hsLleg);
+    if(min !== null) d.minutos = min;
+    if(!/^\d{2}:\d{2}$/.test(d.hsLleg)) d.hsLleg = '';
+    return { d, malo };
+  };
+  const calc = () => {
+    const { d, malo } = leer();
+    $('scPrev').innerHTML = !malo && /^\d{2}:\d{2}$/.test(d.hsSal) ? '<span>Así sale en el parte de gas:</span> ' + avisoEsc(scrNovedad(d)) : '';
+  };
+  $('scDest').addEventListener('change', ponerTanques);
+  $('scTk').addEventListener('change', mostrarTk);
+  main.querySelectorAll('.qc-card:first-child input').forEach(i => i.addEventListener('input', calc));
+  ponerTanques();
+  main.querySelectorAll('.qc-x').forEach(b => b.addEventListener('click', () => scrBorrar(lista[+b.dataset.i])));
   $('scGuardar').addEventListener('click', () => {
     const err = $('scErr'); err.textContent = '';
-    const hsSal = $('scHsSal').value, hsLleg = $('scHsLleg').value;
-    const campos = { psal: 'scPsal', plleg: 'scPlleg', tkIniT: 'scTkIT', tkIniI: 'scTkII', tkFinT: 'scTkFT', tkFinI: 'scTkFI', fpd: 'scFpd', apd: 'scApd', opd: 'scOpd' };
-    const vals = {};
-    let malo = false;
-    Object.keys(campos).forEach(k => { const n = qcNum($(campos[k]).value); if(Number.isNaN(n)) malo = true; else if(n !== null) vals[k] = n; });
-    if(!/^\d{2}:\d{2}$/.test(hsSal)){ err.textContent = 'Poné la hora de salida.'; return; }
+    const { d, malo } = leer();
+    if(!/^\d{2}:\d{2}$/.test(d.hsSal)){ err.textContent = 'Poné la hora de salida.'; return; }
     if(malo){ err.textContent = 'Presiones, niveles y controles tienen que ser números (ej: 12,5).'; return; }
-    const min = scrMin(hsSal, hsLleg);
-    if(min !== null) vals.minutos = min;
+    if(d.destino === 'otro' && !d.destinoOtro){ err.textContent = 'Escribí a dónde llega el scraper.'; return; }
+    if($('scTk').value === '__otro' && !d.tanque){ err.textContent = 'Escribí el tanque, o elegí "Sin tanque".'; return; }
     if(!puedeModificar()) return;
     if(!firestoreOk){ alert('No hay conexion con el guardado compartido. Revisa tu internet e intenta de nuevo.'); return; }
-    const tramo = $('scTramo').value.trim() || 'Scraper';
-    const extra = { hsSal, hsLleg: /^\d{2}:\d{2}$/.test(hsLleg) ? hsLleg : '' };
-    const nota = $('scNota').value.trim();
-    if(nota) extra.nota = nota.slice(0, 200);
-    // si no hay ningun numero igual queda registrado el lanzamiento (con la hora de salida)
+    d.ts = horaATs(d.hsSal, Date.now());
+    d.por = operadorName || 'Sin nombre';
+    d.cargadoTs = Date.now();
+    // numeros para Tendencia
+    const vals = {};
+    ['psal', 'plleg', 'minutos', 'tkIniT', 'tkIniI', 'tkFinT', 'tkFinI', 'fpd', 'apd', 'opd'].forEach(k => { if(d[k] !== undefined) vals[k] = d[k]; });
     if(!Object.keys(vals).length) vals.lanzado = 1;
-    histRegistrar('scraper', 'Scraper', tramo, vals, horaATs(hsSal, Date.now()), null, extra);
-    movToast('Lanzamiento de scraper guardado.');
+    histRegistrar('scraper', 'Scraper', scrDestinoTxt(d), vals, d.ts);
+    const h = HIST[HIST.length - 1];
+    if(h && h.tipo === 'scraper') d.histId = h.docId;
+    const ref = db.collection('scraper_lanzamientos').doc();
+    ref.set(Object.assign({}, d, { updatedAt: firebase.firestore.FieldValue.serverTimestamp() })).catch(e => alert('No se pudo guardar (' + e.message + ').'));
+    SCRAPER = SCRAPER.concat([Object.assign({ id: ref.id, _local: true }, d)]);
+    movToast('Lanzamiento de scraper guardado: va en el parte de gas.');
+    updatePendCount();
     renderScraper();
   });
 }
 document.getElementById('tabScr').addEventListener('click', () => { switchTab('tabScr', 'scrMain'); renderScraper(); });
+
 
 
 // ---------------- Anti doble toque en botones de guardar/enviar ----------------
@@ -11700,7 +11795,7 @@ document.getElementById('tabScr').addEventListener('click', () => { switchTab('t
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202610310125;
+var APP_VERSION = 202610310210;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
