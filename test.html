@@ -1436,6 +1436,56 @@
   .env-lista{ display:flex; flex-direction:column; gap:8px; margin-top:6px; }
   .env-lista button{ display:flex; align-items:center; justify-content:space-between; gap:8px; min-height:48px; padding:0 14px;
     background: var(--panel); border:1px solid var(--line); border-radius:12px; color: var(--text); font: inherit; font-size:0.95rem; font-weight:600; cursor:pointer; text-align:left; }
+
+  .ini-wa{ display:flex; align-items:center; justify-content:center; gap:8px; height:46px; width:100%; margin-top:10px; background:var(--panel); color:var(--text); border:1px solid #2f6b45; border-radius:10px; font:inherit; font-weight:600; cursor:pointer; }
+  .ini-wa svg{ width:20px; height:20px; fill:none; stroke:#6FC9B0; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  #waPegar{ position:fixed; inset:0; z-index:9000; background:rgba(4,14,22,.82); display:flex; align-items:flex-start; justify-content:center; padding:24px 16px; overflow:auto; }
+  .wa-caja{ background:var(--panel); border:1px solid var(--line); border-radius:12px; width:100%; max-width:760px; padding:18px; display:flex; flex-direction:column; gap:12px; }
+  .wa-caja.ancha{ max-width:1240px; max-height:calc(100vh - 48px); }
+  .wa-cab{ display:flex; justify-content:space-between; gap:12px; align-items:flex-start; }
+  .wa-cab h2{ margin:0 0 4px; font-size:1.15rem; }
+  .wa-cab p{ margin:0; color:var(--muted); font-size:.85rem; max-width:70ch; }
+  .wa-cab .close-btn{ position:static; }
+  .wa-lbl{ font-size:.7rem; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); }
+  .wa-txt{ width:100%; min-height:300px; background:var(--bg); color:var(--text); border:1px solid var(--line); border-radius:8px; padding:10px; font:13px/1.45 ui-monospace,Consolas,monospace; resize:vertical; }
+  .wa-pie{ display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; }
+  .wa-pie .save-btn, .wa-pie .cancel-btn{ flex:0 0 auto; padding:10px 18px; }
+  .wa-pie .save-btn:disabled{ opacity:.5; cursor:default; }
+  .wa-ayuda{ font-size:.78rem; color:var(--muted); }
+  .wa-resumen{ display:flex; gap:8px; flex-wrap:wrap; }
+  .wa-r{ font-size:.78rem; padding:4px 10px; border-radius:20px; border:1px solid var(--line); }
+  .wa-r.ok{ color:#7fd3a0; border-color:#2f6b45; } .wa-r.rev{ color:#E8B64A; border-color:#7a5f22; } .wa-r.no{ color:#ef8a8a; border-color:#7a3434; } .wa-r.dup{ color:var(--muted); }
+  .wa-cols{ display:grid; grid-template-columns:minmax(0,5fr) minmax(0,7fr); gap:14px; min-height:0; flex:1; }
+  .wa-col-msgs, .wa-col-items{ overflow:auto; min-height:0; display:flex; flex-direction:column; gap:8px; padding-right:4px; }
+  .wa-leyenda{ display:flex; gap:10px; flex-wrap:wrap; font-size:.72rem; color:var(--muted); }
+  .wa-leyenda span{ border-left:4px solid; padding-left:6px; }
+  .wa-msg{ background:var(--bg); border:1px solid var(--line); border-left:4px solid var(--line); border-radius:6px; padding:7px 9px; font-size:.8rem; transition:box-shadow .3s; }
+  .wa-m-ok{ border-left-color:#3fa36b !important; } .wa-m-rev{ border-left-color:#E8B64A !important; } .wa-m-no{ border-left-color:#d65b5b !important; } .wa-m-dup{ border-left-color:#5b6f80 !important; opacity:.75; } .wa-m-chat{ border-left-color:#33495b !important; opacity:.55; }
+  .wa-msg-cab{ display:flex; justify-content:space-between; gap:8px; color:var(--muted); font-size:.72rem; margin-bottom:3px; }
+  .wa-msg-cab b{ font-weight:600; }
+  .wa-msg-txt{ white-space:pre-wrap; word-break:break-word; }
+  .wa-foco{ box-shadow:0 0 0 2px #E8B64A; }
+  .wa-grupo{ border:1px solid var(--line); border-radius:8px; overflow:hidden; flex:0 0 auto; }
+  .wa-grupo-cab{ background:var(--bg); padding:8px 10px; display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:baseline; }
+  .wa-grupo-cab h3{ margin:0; font-size:.9rem; }
+  .wa-grupo-cab span{ font-size:.72rem; color:var(--muted); }
+  .wa-it{ display:flex; gap:10px; padding:8px 10px; border-top:1px solid var(--line); border-left:4px solid transparent; }
+  .wa-it.wa-ok{ border-left-color:#3fa36b; } .wa-it.wa-rev{ border-left-color:#E8B64A; background:rgba(232,182,74,.05); } .wa-it.wa-no{ border-left-color:#d65b5b; } .wa-it.wa-dup{ border-left-color:#5b6f80; opacity:.7; }
+  .wa-chk{ width:18px; height:18px; margin-top:2px; flex:0 0 auto; accent-color:#3fa36b; }
+  .wa-chk-vacio{ width:18px; flex:0 0 auto; }
+  .wa-it-cuerpo{ display:flex; flex-direction:column; gap:3px; min-width:0; flex:1; }
+  .wa-it-top{ display:flex; gap:8px; flex-wrap:wrap; align-items:baseline; }
+  .wa-it-tit{ font-weight:600; font-size:.86rem; cursor:pointer; }
+  .wa-it-det{ font-size:.82rem; }
+  .wa-pill{ margin-left:auto; font-size:.68rem; padding:1px 8px; border-radius:10px; border:1px solid var(--line); color:var(--muted); white-space:nowrap; }
+  .wa-ok .wa-pill{ color:#7fd3a0; } .wa-rev .wa-pill{ color:#E8B64A; } .wa-no .wa-pill{ color:#ef8a8a; }
+  .wa-it-meta{ font-size:.72rem; color:var(--muted); }
+  .wa-ver{ background:none; border:0; padding:0; color:#8fc3df; text-decoration:underline; font:inherit; cursor:pointer; }
+  .wa-it-nota{ font-size:.75rem; color:#c9b787; }
+  .wa-edit{ display:flex; gap:12px; flex-wrap:wrap; margin-top:3px; }
+  .wa-edit label{ font-size:.72rem; color:var(--muted); display:flex; gap:6px; align-items:center; }
+  .wa-edit input{ background:var(--bg); border:1px solid var(--line); color:var(--text); border-radius:5px; padding:4px 6px; font:inherit; font-size:.82rem; width:124px; }
+  @media (max-width: 820px){ .wa-cols{ grid-template-columns:1fr; } .wa-caja.ancha{ max-height:none; } .wa-col-msgs{ max-height:40vh; } }
 </style>
 </head>
 <body>
@@ -1529,6 +1579,7 @@
     <button type="button" class="ini-btn" data-tab="tabMov"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Movimientos <span class="ini-badge" id="iniMovBadge" style="display:none;"></span></button>
     <button type="button" class="ini-btn" data-tab="tabAvisos" id="iniAvisosBtn" style="display:none;"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/></svg>Avisos <span class="ini-badge" id="iniAvisosBadge" style="display:none;"></span></button>
   </div>
+  <button type="button" class="ini-wa" id="iniWaBtn" style="display:none;"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1.3-3.9A8 8 0 1 1 8 19z"/><path d="M9 10h6M9 13h4"/></svg>Pegar de WhatsApp</button>
   <button type="button" class="ini-enviar" id="iniEnviarBtn" style="display:none;"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg>Enviar partes y reportes <span class="ini-badge" id="iniEnviarBadge" style="display:none;"></span></button>
   <div class="ini-version" id="iniVersion"></div>
 </section>
@@ -1879,7 +1930,7 @@ var SYNC_RESYNC_DIAS = 7;
 var SYNC_MARGEN_MS = 3 * 60e3;
 var SYNC_NOMBRES = ['pozos_overrides', 'uspa_notas', 'equipos_notas', 'aib_pozos', 'pozos_velas', 'baterias_tanques', 'baterias_bombeo',
   'baterias_bombeo_log', 'pias2_tanques', 'pias2_equipos', 'pias2_camiones', 'ptc_descargas', 'avisos_mtto', 'ciclaje_eventos', 'ciclaje_plan',
-  'pedidos', 'compresores_bp', 'compresores_lecturas', 'historial_mediciones', 'tendencia_diaria'];
+  'pedidos', 'compresores_bp', 'compresores_lecturas', 'historial_mediciones', 'tendencia_diaria', 'pozos_maniobras'];
 var SYNC_COLS = {};
 var SYNC_STATS = { servidor: 0, consultas: 0, modo: '' };
 var syncModoP = null;
@@ -3752,6 +3803,7 @@ function startSync(){
     return;
   }
   iniciarAvisosSync();
+  iniciarManiobrasSync();
   syncVivo('pozos_overrides', {}, (snapshot) => {
     lastOverridesCount = snapshot.size;
     detectarMovimientos(snapshot, 'pozos_overrides');
@@ -4285,11 +4337,11 @@ function horarioInfo(rec){
   let colorClass = '';
   if(rec.horaCierre){
     colorClass = 'cerrado';
-    const dur = rec.horaApertura ? calcDuracion(rec.horaApertura, rec.horaCierre) : null;
+    const dur = rec.horaApertura ? ((maniobraTsValido(rec.tsApertura, rec.horaApertura) && maniobraTsValido(rec.tsCierre, rec.horaCierre) && rec.tsCierre > rec.tsApertura) ? durTxtMs(rec.tsCierre - rec.tsApertura) : calcDuracion(rec.horaApertura, rec.horaCierre)) : null;
     text = `${rec.horaApertura || '??'} - ${rec.horaCierre}` + (dur ? ` (estuvo abierto ${dur})` : '');
   } else if(rec.horaApertura){
     colorClass = 'abierto';
-    text = `Abrio a las ${rec.horaApertura} (lleva abierto ${calcDuracionDesde(rec.horaApertura)})`;
+    text = `Abrio a las ${rec.horaApertura} (lleva abierto ${maniobraTsValido(rec.tsApertura, rec.horaApertura) ? durTxtMs(Date.now() - rec.tsApertura) : calcDuracionDesde(rec.horaApertura)})`;
   }
   if(rec.horarioNota) text += ` - ${rec.horarioNota}`;
   return { text, colorClass, label: 'Horario de maniobra' };
@@ -4799,6 +4851,12 @@ function renderCardEdit(rec, bat){
       newFields.velaPendienteTs = Date.now();
     }
 
+    // fecha y hora REALES de cada maniobra (no solo HH:MM): asi un ciclo de mas de 24 h se cuenta bien
+    // (antes 08:00 de un dia -> 10:00 del otro daba 2 h en vez de 26 h)
+    const tsMan = maniobraTsFicha(rec, { aperturaCambio, cierreCambio, hA, hC: hcEfectivo, terminaAbierto, horaAperturaOriginal, horaCierreOriginal });
+    Object.assign(newFields, tsMan.campos);
+    if(tsMan.horas !== null && typeof newFields.horasTotalNum === 'number') newFields.horasTotalNum = tsMan.horas;
+
     // correccion manual (si se cargo): pisa el calculo automatico de arriba
     const horasManualVal = document.getElementById('horasManualNum').value.trim();
     const horasManualTipo = document.getElementById('horasManualTipo').value;
@@ -4817,9 +4875,15 @@ function renderCardEdit(rec, bat){
       return String(antes) !== String(despues);
     });
 
+    const recAntes = Object.assign({}, rec);
     Object.assign(rec, newFields);
     rec._edited = true;
     saveEdit(rec.pozo, newFields, changedKeys);
+    // cada maniobra queda registrada aparte (el parte arma un renglon por maniobra, no solo la ultima)
+    if((aperturaCambio || cierreCambio) && (hA || hcEfectivo) && newFields.estado){
+      maniobraRegistrar(rec, { tipo: newFields.estado === 'Abierto' ? 'abrir' : 'cerrar', ts: newFields.estado === 'Abierto' ? rec.tsApertura : rec.tsCierre,
+        velaTxt: (changedKeys.includes('velaEnAperturaTxt') && rec.velaEnAperturaTxt) || '', origen: 'ficha', reemplaza: maniobraCorrigeA(recAntes, newFields, aperturaCambio, cierreCambio) });
+    }
     { const hv = {};
       if(changedKeys.includes('presion') && newFields.presion !== 's/d') hv.presion = newFields.presion;
       if(changedKeys.includes('estado')) hv.abierto = newFields.estado === 'Abierto' ? 1 : 0;
@@ -5554,6 +5618,9 @@ function agregarHojaParte(wb, nombreHoja, tituloHoja, filas, hoy, FONT_NAME, FON
 // hasta las 6am; cierra 21:00 -> 9hs de perdida hasta las 6am.
 function calcularHsHastaCorte(rec){
   const CORTE = '06:00';
+  const hastaCorte = (ts) => { const c = inicioDiaOperativo(new Date(ts)).getTime() + 86400e3; return Math.round((c - ts) / 36e5 * 10) / 10; };
+  if(rec.estado === 'Abierto' && maniobraTsValido(rec.tsApertura, rec.horaApertura)) return { num: hastaCorte(rec.tsApertura), tipo: 'abierto' };
+  if(rec.estado === 'Cerrado' && maniobraTsValido(rec.tsCierre, rec.horaCierre)) return { num: hastaCorte(rec.tsCierre), tipo: 'cerrado' };
   if(rec.estado === 'Abierto' && rec.horaApertura){
     return { num: calcDuracionDecimal(rec.horaApertura, CORTE), tipo: 'abierto' };
   } else if(rec.estado === 'Cerrado' && rec.horaCierre){
@@ -5568,7 +5635,16 @@ function parteCampoFilas(forzarTodos){
 
   // GAS: solo pozos con hora de apertura/cierre modificados DESPUES del ultimo parte enviado
   // (o TODOS los que tengan horario cargado, si el usuario elige forzar)
-  const gasBase = forzarTodos ? POZOS.filter(p => p.horaApertura || p.horaCierre).sort((a,b) => (a._updatedAtDate||0) - (b._updatedAtDate||0)) : pendientesDeReporte();
+  const gasBaseVieja = forzarTodos ? POZOS.filter(p => p.horaApertura || p.horaCierre).sort((a,b) => (a._updatedAtDate||0) - (b._updatedAtDate||0)) : pendientesDeReporte();
+  // un renglon por MANIOBRA (registro pozos_maniobras), no solo el ultimo estado del pozo: si un pozo abrio,
+  // cerro y volvio a abrir en el mismo dia, salen los tres. Los pozos sin maniobras registradas (cargados
+  // desde una version vieja de la app) siguen saliendo como antes, con su ultimo estado.
+  const evs = forzarTodos ? [] : maniobrasPendientes(corteDePendientes());
+  // ultimo registro de maniobra por pozo: si despues hubo un guardado sin registro (desde un celular con la
+  // version anterior de la app), ese guardado tambien sale, para no perderlo mientras conviven versiones
+  const ultEv = {};
+  evs.forEach(e => { ultEv[e.pozo] = Math.max(ultEv[e.pozo] || 0, e.clientTs || 0); });
+  const gasBase = evs.map(e => maniobraComoRec(e)).concat(gasBaseVieja.filter(r => !ultEv[r.pozo] || (r._updatedAtDate && r._updatedAtDate.getTime() > ultEv[r.pozo] + 2 * 60e3)));
   const filasGas = gasBase
     .map(rec => {
       let horasPerdida = null, horasProduccion = null;
@@ -5609,17 +5685,30 @@ function parteCampoFilas(forzarTodos){
           Oil: parseFloat(rec.velaPendienteOil)||0
         }, rec.velaPendienteHora || '');
       }
+      if(rec._ev) velaTxt = rec._ev.velaTxt || '';
       if(velaTxt) pozosConVelaUsada.add(rec.pozo);
       return {
         hora: buildHoraColumna(rec),
         instalacion: bateriaToInstalacion(rec.bateria),
         pozo: rec.pozo,
         novedad: buildNovedad(rec, velaTxt),
-        _ts: rec._updatedAtDate ? rec._updatedAtDate.getTime() : 0,
+        _ts: rec._ev ? rec._ev.ts : (rec._updatedAtDate ? rec._updatedAtDate.getTime() : 0),
+        _medido: rec._ev ? rec._ev.horasMedidas : null,
         horasPerdida,
         horasProduccion
       };
     });
+  // un pozo con varias maniobras en el mismo parte: cada renglon lleva solo sus horas medidas
+  // (el "24 - x" del otro lado solo tiene sentido cuando el pozo tiene un unico renglon)
+  const porPozo = {};
+  filasGas.forEach(f => { porPozo[f.pozo] = (porPozo[f.pozo] || 0) + 1; });
+  filasGas.forEach(f => {
+    if(porPozo[f.pozo] > 1){
+      if(f._medido === 'cerrado') f.horasProduccion = null;
+      else if(f._medido === 'abierto') f.horasPerdida = null;
+    }
+  });
+  if(evs.length) filasGas.sort((a, b) => a._ts - b._ts);
 
   // OIL: pozos de AIB con BP/PL cargados, modificados desde el ultimo parte (o todos, si se fuerza)
   const oilBase = forzarTodos ? AIB_POZOS.filter(p => p.bp || p.pl).sort((a,b) => (a._updatedAtDate||0) - (b._updatedAtDate||0)) : pendientesDeReporteAib();
@@ -9403,12 +9492,12 @@ function histNum(v){
   if(/psi/.test(t)) n = n / 14.2233;
   return isFinite(n) ? Math.round(n * 100) / 100 : null;
 }
-function histRegistrar(tipo, grupo, equipo, vals, ts){
+function histRegistrar(tipo, grupo, equipo, vals, ts, por){
   if(!firestoreOk) return;
   const limpio = {};
   Object.keys(vals || {}).forEach(k => { const n = histNum(vals[k]); if(n !== null) limpio[k] = n; });
   if(!Object.keys(limpio).length) return;
-  const d = { tipo, grupo: grupo || '', equipo, vals: limpio, ts: ts || Date.now(), por: operadorName || 'Sin nombre' };
+  const d = { tipo, grupo: grupo || '', equipo, vals: limpio, ts: ts || Date.now(), por: por || operadorName || 'Sin nombre' };
   db.collection('historial_mediciones').doc().set(d).catch(() => {});
   HIST = HIST.concat([Object.assign({ id: 'local-' + Date.now() + Math.random() }, d)]);
 }
@@ -9467,6 +9556,18 @@ function tendSeries(){
     else if(h.tipo === 'compresor'){
       add('cs|' + h.equipo, { sector: 'compresion', nombre: 'Compresor ' + h.equipo, que: 'succión', unidad: 'psi', grupo: h.grupo }, h.ts, v.succion, h.por);
       add('cp|' + h.equipo, { sector: 'compresion', nombre: 'Compresor ' + h.equipo, que: 'PB', unidad: 'kg/cm²', grupo: h.grupo }, h.ts, v.pb, h.por);
+    }
+    // datos de campo que llegan por WhatsApp
+    else if(h.tipo === 'control'){
+      add('cf|' + h.equipo, { sector: 'quim', nombre: 'Control ' + h.equipo, que: 'FPD', unidad: '', grupo: h.grupo }, h.ts, v.fpd, h.por);
+      add('ca|' + h.equipo, { sector: 'quim', nombre: 'Control ' + h.equipo, que: '% agua', unidad: '%', grupo: h.grupo }, h.ts, v.agua, h.por);
+    }
+    else if(h.tipo === 'acumulado') add('ac|' + h.equipo, { sector: 'quim', nombre: 'Acumulado ' + h.equipo, que: 'm³/día', unidad: 'm³/d', grupo: h.grupo }, h.ts, v.m3d, h.por);
+    else if(h.tipo === 'stock') add('st|' + h.equipo, { sector: 'quim', nombre: 'Químico ' + h.equipo, que: 'stock', unidad: 'lts', grupo: h.grupo }, h.ts, v.lts, h.por);
+    else if(h.tipo === 'scraper') add('sc|' + h.equipo, { sector: 'quim', nombre: 'Scraper', que: 'minutos de viaje', unidad: 'min', grupo: h.grupo }, h.ts, v.minutos, h.por);
+    else if(h.tipo === 'produccion'){
+      add('qo|' + h.equipo, { sector: 'baterias', nombre: h.equipo, que: 'Q oil', unidad: 'm³', grupo: h.grupo }, h.ts, v.qoil, h.por);
+      add('qa|' + h.equipo, { sector: 'baterias', nombre: h.equipo, que: 'Q agua', unidad: 'm³', grupo: h.grupo }, h.ts, v.qagua, h.por);
     }
   });
   // lecturas de compresores que ya estaban cargadas antes del historial (ultimos dias)
@@ -9556,7 +9657,7 @@ function renderTendencia(){
   const main = document.getElementById('tendMain');
   if(!main) return;
   iniciarTendenciaSync();
-  const SECT = [['todo', 'Todo'], ['gas', 'Gas'], ['aib', 'AIB'], ['baterias', 'Baterías'], ['pias', 'Pías 2'], ['compresion', 'Compresión']];
+  const SECT = [['todo', 'Todo'], ['gas', 'Gas'], ['aib', 'AIB'], ['baterias', 'Baterías'], ['pias', 'Pías 2'], ['compresion', 'Compresión'], ['quim', 'Controles y químicos']];
   let series = tendSeries().filter(s => tendSector === 'todo' || s.sector === tendSector);
   // primero lo que mas cambio (en proporcion); las que tienen un solo dato, al final
   const cambio = (s) => { if(s.puntos.length < 2) return -1; const a = s.puntos[0].v, b = s.puntos[s.puntos.length - 1].v; return Math.abs(b - a) / (Math.abs(a) || 1); };
@@ -10081,6 +10182,8 @@ function inicioActualizar(){
   const ids = ['parteBtn', 'reporteBateriasBtn', 'reporteAguaBtn', 'reportePtcBtn', 'reporteCompBtn', 'exportarTodoBtn'];
   const visibles = ids.filter(id => { const e = document.getElementById(id); return e && e.style.display !== 'none'; });
   if(env) env.style.display = visibles.length ? '' : 'none';
+  const waB = document.getElementById('iniWaBtn');
+  if(waB){ waB.style.display = visibles.length ? '' : 'none'; if(!waB._wa){ waB._wa = true; waB.addEventListener('click', waAbrir); } }
   let pend = 0;
   ['pendCount', 'pendCountBaterias', 'pendCountAgua', 'pendCountPtc', 'pendCountComp'].forEach(id => {
     const e = document.getElementById(id);
@@ -10176,6 +10279,687 @@ function exigirNombre(){
   setTimeout(() => inp.focus(), 50);
 }
 
+// ---------------- Registro de maniobras (pozos_maniobras) ----------------
+// Cada apertura o cierre de un pozo de gas queda como un registro propio, con su FECHA y HORA reales y los
+// datos del renglon del parte en ese momento (estado, presion, horas, rango, vela). Asi:
+//  - el parte de campo saca un renglon por maniobra (si un pozo abrio, cerro y reabrio, salen las tres);
+//  - las horas de un ciclo de mas de 24 h se cuentan bien (se resta fecha-hora contra fecha-hora).
+// La id es pozo_tipo_minuto: cargar dos veces la misma maniobra (ficha + WhatsApp) no la duplica.
+var MANIOBRAS = [];
+function hhmmDeTs(ts){ const d = new Date(ts); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
+// "HH:MM" -> fecha-hora: la ultima vez que fue esa hora antes de 'ref' (con 10 min de tolerancia hacia adelante)
+function horaATs(hhmm, ref){
+  const m = String(hhmm || '').match(/^(\d{1,2}):(\d{2})/);
+  if(!m) return null;
+  const r = ref || Date.now();
+  const d = new Date(r); d.setHours(parseInt(m[1], 10), parseInt(m[2], 10), 0, 0);
+  let t = d.getTime();
+  if(t > r + 10 * 60e3) t -= 86400e3;
+  return t;
+}
+function maniobraTsValido(ts, hora){
+  return typeof ts === 'number' && ts > 0 && !!hora && hhmmDeTs(ts) === String(hora).slice(0, 5) && Date.now() - ts < 45 * 86400e3;
+}
+function durTxtMs(ms){
+  const mins = Math.max(0, Math.round(ms / 60e3));
+  const hh = Math.floor(mins / 60), mm = mins % 60;
+  return `${hh}h${mm > 0 ? ' ' + mm + 'm' : ''}`;
+}
+// en la ficha: fecha-hora de lo que se cargo y, si se sabe la fecha-hora de la maniobra anterior, las horas exactas
+function maniobraTsFicha(rec, o){
+  const ahora = Date.now();
+  const campos = {};
+  let tsA = (o.aperturaCambio && o.hA) ? horaATs(o.hA, ahora) : null;
+  let tsC = (o.cierreCambio && o.hC) ? horaATs(o.hC, ahora) : null;
+  if(tsA && tsC){
+    if(o.terminaAbierto === true && tsC > tsA) tsC -= 86400e3;
+    if(o.terminaAbierto === false && tsA > tsC) tsA -= 86400e3;
+  }
+  if(tsA) campos.tsApertura = tsA;
+  if(tsC) campos.tsCierre = tsC;
+  let horas = null;
+  if(tsC && !tsA && maniobraTsValido(rec.tsApertura, o.horaAperturaOriginal) && tsC > rec.tsApertura) horas = (tsC - rec.tsApertura) / 36e5;
+  else if(tsA && !tsC && rec.estado !== 'Abierto' && maniobraTsValido(rec.tsCierre, o.horaCierreOriginal) && tsA > rec.tsCierre) horas = (tsA - rec.tsCierre) / 36e5;
+  return { campos, horas: horas === null ? null : Math.round(horas * 10) / 10 };
+}
+function maniobraId(pozo, tipo, ts){ return String(pozo).replace(/[\/\s]/g, '_') + '_' + tipo + '_' + Math.round(ts / 60e3); }
+// si en la ficha se CORRIGIO la hora de la misma maniobra (no es una nueva), el registro viejo se reemplaza
+function maniobraCorrigeA(antes, nuevos, aperturaCambio, cierreCambio){
+  if(nuevos.estado === 'Abierto' && antes.estado === 'Abierto' && aperturaCambio && !cierreCambio && antes.tsApertura) return maniobraId(antes.pozo, 'abrir', antes.tsApertura);
+  if(nuevos.estado === 'Cerrado' && antes.estado === 'Cerrado' && cierreCambio && !aperturaCambio && antes.tsCierre) return maniobraId(antes.pozo, 'cerrar', antes.tsCierre);
+  return '';
+}
+function maniobraRegistrar(rec, o){
+  if(!firestoreOk || !o.ts) return null;
+  const id = maniobraId(rec.pozo, o.tipo, o.ts);
+  const v = (x, def) => (x === undefined || x === null) ? def : x;
+  const doc = {
+    pozo: rec.pozo, bateria: rec.bateria || 'Sin bateria', tipo: o.tipo, ts: o.ts, hora: hhmmDeTs(o.ts), estado: v(rec.estado, ''),
+    presion: v(rec.presion, 's/d'), presionCierre: v(rec.presionCierre, ''), horaApertura: v(rec.horaApertura, ''), horaCierre: v(rec.horaCierre, ''),
+    horasTotalNum: typeof rec.horasTotalNum === 'number' ? rec.horasTotalNum : null, horasTotalTipo: v(rec.horasTotalTipo, ''),
+    horasRangoDesde: v(rec.horasRangoDesde, ''), horasRangoHasta: v(rec.horasRangoHasta, ''), horasRangoConfirmado: rec.horasRangoConfirmado === true,
+    veniaDeCerradoConfirmado: rec.veniaDeCerradoConfirmado === true, horarioNota: v(rec.horarioNota, ''), velaTxt: o.velaTxt || '',
+    por: o.por || operadorName || 'Sin nombre', origen: o.origen || 'ficha', clientTs: Date.now(),
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+  if(o.reemplaza && o.reemplaza !== id){
+    db.collection('pozos_maniobras').doc(o.reemplaza).delete().catch(() => {});
+    MANIOBRAS = MANIOBRAS.filter(e => e.id !== o.reemplaza);
+  }
+  db.collection('pozos_maniobras').doc(id).set(doc).catch(e => console.error('maniobra', e));
+  MANIOBRAS = MANIOBRAS.filter(e => e.id !== id).concat([Object.assign({ id, _local: true }, doc)]);
+  return id;
+}
+function maniobrasPendientes(corte){
+  const c = corte ? corte.getTime() : 0;
+  return MANIOBRAS.filter(e => (e.clientTs || 0) > c && e.ts).sort((a, b) => a.ts - b.ts);
+}
+function maniobraComoRec(e){
+  return Object.assign({}, e, { updatedFields: [], _updatedAtDate: new Date(e.clientTs || e.ts), _ev: Object.assign({}, e, { horasMedidas: e.horasTotalTipo || '' }) });
+}
+function iniciarManiobrasSync(){
+  syncVivo('pozos_maniobras', { campo: 'clientTs', tipo: 'num', desde: () => ventanaDesdeMs(10) }, (snap) => {
+    const l = [];
+    snap.forEach(d => l.push(Object.assign({ id: d.id }, d.data())));
+    const locales = MANIOBRAS.filter(e => e._local && !l.some(x => x.id === e.id) && Date.now() - (e.clientTs || 0) < 60e3);
+    MANIOBRAS = l.concat(locales);
+    updatePendCount();
+  }, (e) => console.error('pozos_maniobras', e));
+}
+
+// ---------------- Pegar de WhatsApp ----------------
+// El SCADA pega los mensajes del grupo; la app los separa, entiende lo que puede (maniobras, velas, tanques,
+// pedidos, ciclos, novedades y datos de campo) y muestra todo para confirmar. Nada se guarda sin confirmar.
+// Cada dato queda con la hora y el autor DEL MENSAJE (o la hora escrita en el texto), no con los de quien pega.
+var WA = { msgs: [], items: [] };
+function waSinAcentos(t){ return String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); }
+function waNum(s){ if(s === null || s === undefined) return null; const n = parseFloat(String(s).replace(',', '.')); return isNaN(n) ? null : n; }
+function waFmt(n){ return n === null || n === undefined ? '' : String(Math.round(n * 100) / 100).replace('.', ','); }
+var WA_PALABRAS_NUM = { un: 1, una: 1, uno: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5, seis: 6, siete: 7, ocho: 8, nueve: 9, diez: 10, doce: 12, veinticuatro: 24 };
+
+// 1) separar el texto pegado en mensajes (formatos de WhatsApp de escritorio, web, Android e iPhone)
+function waSeparar(raw){
+  const ahora = Date.now();
+  const lineas = String(raw || '').replace(/[‎‏‪-‮]/g, '').replace(/\r/g, '').split('\n');
+  const msgs = [];
+  const mk = (y, mo, d, hh, mi, ap, autor, txt) => {
+    let H = parseInt(hh, 10); const M = parseInt(mi, 10);
+    if(ap){ const a = ap.toLowerCase(); if(a === 'p' && H < 12) H += 12; if(a === 'a' && H === 12) H = 0; }
+    let ts;
+    if(y){ let Y = parseInt(y, 10); if(Y < 100) Y += 2000; ts = new Date(Y, parseInt(mo, 10) - 1, parseInt(d, 10), H, M).getTime(); }
+    else ts = horaATs(String(H).padStart(2, '0') + ':' + String(M).padStart(2, '0'), ahora);
+    msgs.push({ ts, autor: String(autor || '').trim(), texto: txt || '' });
+  };
+  const R = [
+    [/^\[(\d{1,2}):(\d{2})(?::\d{2})?(?:\s*([ap])\.?\s?m\.?)?,\s*(\d{1,2})\/(\d{1,2})\/(\d{2,4})\]\s*([^:]{1,60}?):\s?(.*)$/i, m => mk(m[6], m[5], m[4], m[1], m[2], m[3], m[7], m[8])],
+    [/^\[(\d{1,2})\/(\d{1,2})\/(\d{2,4}),?\s*(\d{1,2}):(\d{2})(?::\d{2})?(?:\s*([ap])\.?\s?m\.?)?\]\s*([^:]{1,60}?):\s?(.*)$/i, m => mk(m[3], m[2], m[1], m[4], m[5], m[6], m[7], m[8])],
+    [/^(\d{1,2})\/(\d{1,2})\/(\d{2,4}),?\s*(\d{1,2}):(\d{2})(?:\s*([ap])\.?\s?m\.?)?\s*-\s*([^:]{1,60}?):\s?(.*)$/i, m => mk(m[3], m[2], m[1], m[4], m[5], m[6], m[7], m[8])],
+    [/^\[(\d{1,2}):(\d{2})\]\s*([^:]{1,60}?):\s?(.*)$/, m => mk(null, null, null, m[1], m[2], null, m[3], m[4])]
+  ];
+  lineas.forEach(l => {
+    for(const [re, fn] of R){ const m = l.match(re); if(m){ fn(m); return; } }
+    if(!msgs.length){ if(!l.trim()) return; msgs.push({ ts: ahora, autor: operadorName || 'Sin nombre', texto: l, sinCabecera: true }); return; }
+    msgs[msgs.length - 1].texto += '\n' + l;
+  });
+  msgs.forEach((m, i) => { m.i = i; m.texto = m.texto.replace(/\s+$/, ''); m.hora = hhmmDeTs(m.ts); });
+  return msgs;
+}
+
+// pozos nombrados en un texto (solo numeros que son pozos de la lista: no confunde con kg, m3, horas, tanques)
+function waPozos(texto){
+  const out = [];
+  const re = /(\bce\.?\s*a?\.?\s*-?\s*)?\b(\d{2,4})\b/gi;
+  let m;
+  while((m = re.exec(texto))){
+    const num = m[2];
+    const ini = m.index, fin = m.index + m[0].length;
+    const antes = texto.slice(Math.max(0, ini - 12), ini).toLowerCase();
+    const despues = texto.slice(fin, fin + 12).toLowerCase();
+    if(!m[1]){
+      if(/(tk|tanque|\bv|col|colector|u|p|isla|uspa|bat\w*|pc|k|sg|nodo|batch|sep)\s*[-.]?\s*$/.test(antes)) continue;
+      if(/^\s*(?:[.,]\d|\/\s*\d|:\s*\d|\s*(?:kg|m3|m³|lt|cm|psi|%|bar|min))/.test(despues)) continue;
+      if(num.length < 4 && /^\s*(?:hs?\b|horas?|am\b|pm\b|x\s*\d)/.test(despues)) continue;
+    } else if(/^\s*(?:[.,]\d\s*(?:kg|cm)|\/\s*\d)/.test(despues)) continue;
+    const pozo = 'Ce-' + num;
+    const gas = POZOS.find(p => p.pozo === pozo);
+    const aib = (AIB_POZOS || []).find(p => p.pozo === pozo);
+    // un "Ce-NNNN" escrito con su prefijo que no esta en la lista igual se marca (para avisar), un numero suelto no
+    if(!gas && !aib && !(m[1] && num.length >= 3)) continue;
+    if(out.some(o => o.pozo === pozo && o.ini === ini)) continue;
+    out.push({ pozo, ini, fin, gas: !!gas, aib: !!aib && !gas, prefijo: !!m[1], desconocido: !gas && !aib });
+  }
+  return out;
+}
+// presiones dentro de un tramo de texto
+function waPresiones(seg){
+  const s = waSinAcentos(seg);
+  const r = { ec: null, bp: null, plain: [], psi: false };
+  let m;
+  const ec = s.match(/(?:#\s*)?(?:e\s*\/\s*c|\bec\b|estatica)\s*:?\s*(\d+(?:[.,]\d+)?)/);
+  if(ec) r.ec = waNum(ec[1]);
+  const bp = s.match(/#?\s*\bbp\s*:?\s*(\d+(?:[.,]\d+)?)/);
+  if(bp) r.bp = waNum(bp[1]);
+  const re = /(\d+(?:[.,]\d+)?)\s*(kg\s*\/?\s*cm2|kg\s*\/?\s*cm²|kgs?|psi)\b/g;
+  while((m = re.exec(s))){ const n = waNum(m[1]); if(m[2] === 'psi'){ r.psi = true; r.plain.push(Math.round(n / 14.2233 * 10) / 10); } else r.plain.push(n); }
+  return r;
+}
+// hora escrita en el texto (no confunde con duraciones "x 8 hs", "por 2 hs")
+function waHoraEnTexto(seg, accion){
+  let s = waSinAcentos(seg).replace(/(?:\bx|\bpor)\s*\d+(?:[.,]\d+)?\s*(?:hs?|horas?)\b/g, ' ');
+  let m = s.match(/(\d{1,2})[:.](\d{2})(?!\d)(?!\s*(?:kg|%|m3|cm|lts?|psi))/);
+  if(m && parseInt(m[1], 10) < 24 && parseInt(m[2], 10) < 60) return String(parseInt(m[1], 10)).padStart(2, '0') + ':' + m[2];
+  m = s.match(/(\d{1,2})\s*(am|pm)\b/);
+  if(m){ let H = parseInt(m[1], 10); if(m[2] === 'pm' && H < 12) H += 12; if(m[2] === 'am' && H === 12) H = 0; return String(H).padStart(2, '0') + ':00'; }
+  m = s.match(/a\s+las\s+(\d{1,2})\s*(?:hs?|horas?)?\b/);
+  if(m && parseInt(m[1], 10) < 24) return String(parseInt(m[1], 10)).padStart(2, '0') + ':00';
+  if(accion){
+    m = s.match(/\b(?:cerr\w*|ab\w*)\s+(\d{1,2})\s*hs?\b/);
+    if(m && parseInt(m[1], 10) < 24) return String(parseInt(m[1], 10)).padStart(2, '0') + ':00';
+  }
+  return '';
+}
+function waDuracion(seg){
+  const m = waSinAcentos(seg).match(/(?:\bx|\bpor)\s*(\d+(?:[.,]\d+)?)\s*(?:hs?|horas?)\b/);
+  return m ? waNum(m[1]) : null;
+}
+var WA_RE_ABIERTO = /\b(abierto|abiertos|abierta|abiertas|ab|abre|abren|abrimos|abrio)\b/;
+var WA_RE_CERRADO = /\b(cerrado|cerrados|cerrada|cerradas|cerr|cerro|cerramos|cierra|cierran)\b/;
+var WA_RE_PEDIDO = /\b(favor|dejar|lanzar|abrir|abrirlo|abrirlos|cerrar|cerrarlo|cerrarlos|controlar|chequear|verificar|respetar)\b/;
+var WA_RE_NOVEDAD = /\b(personal|f\/s|fuera de servicio|en marcha|en servicio|realiza\w*|interv\w*|consign\w*|montaje|mantenimiento|desmont\w*|retir\w*|bacheo|calibre|empaquet\w*|reemplaz\w*|instal\w*|prueba\w*|perdida|transmisor|caudalimetro|valvula)\b/;
+
+// 2) leer cada mensaje y armar los renglones a confirmar
+function waAnalizar(msgs){
+  const items = [];
+  let nid = 0;
+  const add = (m, o) => { const it = Object.assign({ id: 'wa' + (nid++), msg: m.i, por: m.autor, ts: m.ts, est: 'ok' }, o); items.push(it); return it; };
+  const ultimoPozoDe = {};
+  msgs.forEach(m => {
+    const txt = m.texto;
+    const n = waSinAcentos(txt);
+    const pozos = waPozos(txt);
+    const antes = items.length;
+    // fotos y archivos: no se pueden leer
+    if(/(\(imagen\)|<multimedia omitido>|imagen omitida|image omitted|foto omitida|documento omitido|sticker omitido|<adjunto)/.test(n) || (!txt.trim() && m.sinCabecera)){
+      add(m, { cat: 'no', est: 'no', titulo: 'Foto o archivo', detalle: 'una imagen no se puede leer', nota: 'Cargalo a mano, o pedí que lo manden también como texto.' });
+      return;
+    }
+    // scraper
+    if(/scraper|escraper/.test(n) && /(hs de sal|psal|hs de lleg|plleg)/.test(n)){
+      const g = (re) => { const x = n.match(re); return x ? x[1] : ''; };
+      const vals = { hsSal: g(/hs de sal\w*\s*:?\s*(\d{1,2}:\d{2})/), hsLleg: g(/hs de lleg\w*\s*:?\s*(\d{1,2}:\d{2})/), psal: waNum(g(/psal\s*:?\s*(\d+(?:[.,]\d+)?)/)), plleg: waNum(g(/plleg\s*:?\s*(\d+(?:[.,]\d+)?)/)),
+        fpd: waNum(g(/fpd\s*:?\s*(\d+(?:[.,]\d+)?)/)), apd: waNum(g(/apd\s*:?\s*(\d+(?:[.,]\d+)?)/)), opd: waNum(g(/opd\s*:?\s*(\d+(?:[.,]\d+)?)/)) };
+      let min = null;
+      if(vals.hsSal && vals.hsLleg){ const a = horaATs(vals.hsSal, m.ts), b = horaATs(vals.hsLleg, m.ts); if(a && b) min = Math.round((b - a) / 60e3); if(min !== null && min < 0) min += 1440; }
+      add(m, { cat: 'datos', tipo: 'scraper', titulo: 'Lanzamiento de scraper', detalle: [vals.hsSal && ('salida ' + vals.hsSal), vals.hsLleg && ('llegada ' + vals.hsLleg), vals.psal !== null && ('P sal ' + waFmt(vals.psal) + ' kg'), vals.plleg !== null && ('P lleg ' + waFmt(vals.plleg) + ' kg'), min !== null && (min + ' min')].filter(Boolean).join(' · '),
+        nota: 'Dato nuevo: queda en Tendencia (Controles y químicos).', datos: { grupo: 'Scraper', equipo: 'Scraper', vals: { psal: vals.psal, plleg: vals.plleg, minutos: min, fpd: vals.fpd, apd: vals.apd, opd: vals.opd } } });
+      return;
+    }
+    // tanques de baterias / Pias 2 (+ Q oil / Q agua)
+    const lineas = txt.split('\n');
+    const batM = n.match(/\bbat(?:eria)?\.?\s*(1|2|5|iii|ii|i|v)\b/);
+    const batNum = batM ? ({ i: '1', ii: '2', iii: '3', v: '5' }[batM[1]] || batM[1]) : '';
+    const esPias = /\bpias\s*2\b/.test(n) || /^pias\s*2/.test(waSinAcentos(m.autor));
+    const horaMed = (n.match(/(\d{1,2}):(\d{2})\s*hs?\b/) || [])[0];
+    const hMed = horaMed ? horaMed.match(/(\d{1,2}):(\d{2})/) : null;
+    const hMedTxt = hMed ? String(parseInt(hMed[1], 10)).padStart(2, '0') + ':' + hMed[2] : m.hora;
+    const tks = [];
+    let tm;
+    const reTk = /\b(tk|sg)\s*-?\s*(\d{3})\s*:?\s*(\d+(?:[.,]\d+)?)\s*\/\s*(\d+(?:[.,]\d+)?)/gi;
+    while((tm = reTk.exec(txt))){
+      const num = tm[2];
+      let bat = batNum ? 'Bateria ' + batNum : 'Bateria ' + num[0];
+      const lista = TANQUES_BATERIAS[bat] || [];
+      const nombre = lista.find(x => x.toUpperCase().startsWith((tm[1].toUpperCase()) + '-' + num));
+      tks.push({ nombre: nombre || (tm[1].toUpperCase() + '-' + num), conocido: !!nombre, bat, nt: tm[3].replace('.', ','), ni: tm[4].replace('.', ','), col: 'baterias_tanques' });
+    }
+    if(esPias){
+      const reP = /^\s*(101|110|111|120|121)\s*[.:)-]?\s+(\d+(?:[.,]\d+)?)\s*\/\s*(\d+(?:[.,]\d+)?)/gm;
+      while((tm = reP.exec(txt))){
+        const nombre = PIAS2_TANQUES_NOMBRES.find(x => x.startsWith('TK-' + tm[1]));
+        tks.push({ nombre: nombre || ('TK-' + tm[1]), conocido: !!nombre, bat: 'Pias 2', nt: tm[2].replace('.', ','), ni: tm[3].replace('.', ','), col: 'pias2_tanques' });
+      }
+    }
+    if(tks.length){
+      const grupo = tks[0].bat;
+      const tsMed = horaATs(hMedTxt, m.ts);
+      const desconocidos = tks.filter(t => !t.conocido);
+      add(m, { cat: 'tanques', est: desconocidos.length ? 'rev' : 'ok', ts: tsMed, hora: hMedTxt, titulo: (grupo === 'Pias 2' ? 'Pías 2' : grupo.replace('Bateria', 'Batería')) + ' · medido ' + hMedTxt,
+        detalle: tks.map(t => t.nombre.split(' ')[0] + ' ' + t.nt + '/' + t.ni).join(' · '), tanques: tks,
+        nota: desconocidos.length ? 'No reconozco ' + desconocidos.map(t => t.nombre).join(', ') + ' en ' + grupo + ': no se guardan.' : '' });
+      const qo = n.match(/\bq\s*(?:o[il]{2}|oil)?\s*:?\s*(\d+(?:[.,]\d+)?)/), qa = n.match(/\bq\s*agua\s*:?\s*(\d+(?:[.,]\d+)?)/);
+      const qoil = n.match(/\bq\s*oil\s*:?\s*(\d+(?:[.,]\d+)?)/) || (qo && !/q\s*agua/.test(qo[0]) ? qo : null);
+      if(grupo !== 'Pias 2' && (qoil || qa)){
+        add(m, { cat: 'datos', tipo: 'produccion', ts: tsMed, titulo: 'Producción ' + grupo.replace('Bateria', 'Batería'), detalle: [qoil && ('Q oil ' + waFmt(waNum(qoil[1])) + ' m³'), qa && ('Q agua ' + waFmt(waNum(qa[1])) + ' m³')].filter(Boolean).join(' · '),
+          nota: 'Dato nuevo: queda en Tendencia.', datos: { grupo, equipo: grupo, vals: { qoil: qoil ? waNum(qoil[1]) : null, qagua: qa ? waNum(qa[1]) : null } } });
+      }
+    }
+    // controles por separador (FPD / APD / OPD / % agua)
+    if(/\bfpd\b/.test(n) && /\bopd\b/.test(n)){
+      let actual = null;
+      const ctrls = [];
+      lineas.forEach(l => {
+        const ln = waSinAcentos(l).trim();
+        if(!ln) return;
+        const v = ln.match(/^(fpd|apd|opd|%\s*agua|agua\s*%?)\s*:?\s*(\d+(?:[.,]\d+)?)/);
+        if(v){ if(!actual){ actual = { punto: 'Control', vals: {} }; ctrls.push(actual); } const k = v[1].indexOf('agua') >= 0 ? 'agua' : v[1]; actual.vals[k] = waNum(v[2]); return; }
+        if(/\b(tk|q\s*o|q\s*agua|bat|hs)\b|\/\d/.test(ln) || /^\d{1,2}:\d{2}/.test(ln)) { actual = null; return; }
+        if(ln.length <= 30){ actual = { punto: l.trim().replace(/^control\s*/i, '').replace(/\s*[:.]$/, '').replace(/^ce\s*-?\s*/i, 'Ce-'), vals: {} }; ctrls.push(actual); }
+      });
+      ctrls.filter(c => Object.keys(c.vals).length >= 2).forEach(c => {
+        add(m, { cat: 'datos', tipo: 'control', titulo: 'Control ' + c.punto, detalle: ['fpd', 'apd', 'opd'].filter(k => c.vals[k] !== undefined).map(k => k.toUpperCase() + ' ' + waFmt(c.vals[k])).concat(c.vals.agua !== undefined ? ['agua ' + waFmt(c.vals.agua) + ' %'] : []).join(' · '),
+          nota: 'Dato nuevo: queda en Tendencia (Controles y químicos).', datos: { grupo: 'Controles', equipo: c.punto, vals: c.vals } });
+      });
+      if(items.length > antes && !tks.length) return;
+    }
+    // acumulados y stock de quimicos
+    if(/acumulado|stock/.test(n)){
+      const nodos = [];
+      const reN = /\b(v\s*-?\s*\d{3,4}|col\s*\d+)\s*:\s*(\d+(?:[.,]\d+)?)\s*m3/gi;
+      while((tm = reN.exec(txt))) nodos.push({ nodo: tm[1].toUpperCase().replace(/\s+/g, ' ').replace(/^V\s*-?\s*/, 'V ').replace(/^COL\s*/, 'COL '), v: waNum(tm[2]) });
+      const stocks = [];
+      lineas.forEach(l => {
+        const ln = waSinAcentos(l);
+        let s = ln.match(/\bce\s*-?\s*(\d{3,4})\.?\s*(\d+(?:[.,]\d+)?)\s*cm3?\b[^\d]*(\d+(?:[.,]\d+)?)\s*,?\s*\.?\s*lts/);
+        if(s){ stocks.push({ equipo: 'Ce-' + s[1], cm: waNum(s[2]), lts: waNum(s[3]), estado: /parad/.test(ln) ? 'parada' : (/en servicio/.test(ln) ? 'en servicio' : '') }); return; }
+        s = ln.match(/\bce\s*-?\s*(\d{3,4})\.?\s*(\d+(?:[.,]\d+)?)\s*lts/);
+        if(s){ stocks.push({ equipo: 'Ce-' + s[1], cm: null, lts: waNum(s[2]), estado: '' }); return; }
+        s = ln.match(/\buspa\s*(\d)\s*:?\s*(\d+(?:[.,]\d+)?)\s*lts/);
+        if(s) stocks.push({ equipo: 'USPA ' + s[1], cm: null, lts: waNum(s[2]), estado: '' });
+      });
+      if(nodos.length) add(m, { cat: 'datos', tipo: 'acumulado', titulo: 'Acumulados', detalle: nodos.map(x => x.nodo + ' ' + waFmt(x.v) + ' m³/d').join(' · '), nota: 'Dato nuevo: queda en Tendencia.', nodos });
+      if(stocks.length) add(m, { cat: 'datos', tipo: 'stock', titulo: 'Stock de químicos', detalle: stocks.map(x => x.equipo + ' ' + waFmt(x.lts) + ' lts' + (x.estado ? ' (' + x.estado + ')' : '')).join(' · '), nota: 'Dato nuevo: queda en Tendencia.', stocks });
+      if(nodos.length || stocks.length) return;
+    }
+    if(tks.length) return;
+    const imper = WA_RE_PEDIDO.test(n);
+    const hecho = WA_RE_ABIERTO.test(n) || WA_RE_CERRADO.test(n);
+    const esPedido = imper && (!hecho || /\b(favor|dejar)\b/.test(n));
+    // cambios de ciclo / optimizador (horas abierto x horas cerrado)
+    const nw = n.replace(/\b(un|una|uno|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|doce|veinticuatro)\b/g, w => String(WA_PALABRAS_NUM[w]));
+    const hAb = nw.match(/(\d+(?:[.,]\d+)?)\s*(?:hs?|horas?)?\s*(?:de\s*)?(?:\bon\b|\bab\b|abiert\w*|apertur\w*)/) || nw.match(/\bon\s*:?\s*(\d+(?:[.,]\d+)?)/) || nw.match(/abrir\s+por\s+(\d+(?:[.,]\d+)?)/);
+    const hCe = nw.match(/(\d+(?:[.,]\d+)?)\s*(?:hs?|horas?)?\s*(?:de\s*)?(?:\boff\b|cerr\w*|cierre)/) || nw.match(/\boff\s*:?\s*(\d+(?:[.,]\d+)?)/);
+    if(hAb && hCe && /(optimizador|controlador|ciclo|ciclando|\bon\b|\boff\b|\baut|parametro|horas? de apertura|de cierre|hs ab|configur|habilitad)/.test(nw)){
+      const p = pozos[0];
+      const modo = /\baut/.test(n) ? 'auto' : (/manual/.test(n) ? 'manual' : '');
+      const arranca = (n.match(/(?:arranca|comienza|inicia)\s*(abiert\w*|cerr\w*)/) || [])[1];
+      if(p && p.gas){
+        add(m, { cat: 'ciclo', est: 'rev', pozo: p.pozo, titulo: p.pozo + ' · ' + (modo === 'auto' ? 'optimizador en automático' : 'cambio de ciclo'), detalle: waFmt(waNum(hCe[1])) + ' h cerrado × ' + waFmt(waNum(hAb[1])) + ' h abierto' + (arranca ? ' · arranca ' + (/cerr/.test(arranca) ? 'cerrado' : 'abierto') : ''),
+          ciclo: waFmt(waNum(hCe[1])).replace(',', '.') + 'c x ' + waFmt(waNum(hAb[1])).replace(',', '.') + 'a', modo, nota: (esPedido ? 'Lo pidió el supervisor. ' : '') + 'Cambia el ciclo guardado del pozo (antes: ' + ((POZOS.find(x => x.pozo === p.pozo) || {}).ciclo || 'sin ciclo') + '). Confirmá.' });
+        return;
+      }
+    }
+    // velas
+    if(/\bvelas?\b|\blanz/.test(n) && !esPedido){
+      const lista = pozos.filter(p => p.gas || p.aib);
+      lista.forEach((p, k) => {
+        const seg = txt.slice(p.ini, k + 1 < lista.length ? lista[k + 1].ini : txt.length);
+        const s = waSinAcentos(seg);
+        const cant = { Gas: 0, Agua: 0, Oil: 0 };
+        const reV = /(\d+)\s*(?:velas?\s*)?(?:de\s*)?(gas|agua|oil|condensado|generadoras?|surfactantes?)\b/g;
+        let v;
+        while((v = reV.exec(s))){ const t = /gas|generad/.test(v[2]) ? 'Gas' : (/agua|surfact/.test(v[2]) ? 'Agua' : 'Oil'); cant[t] += parseInt(v[1], 10); }
+        if(!(cant.Gas || cant.Agua || cant.Oil)) return;
+        let hora = waHoraEnTexto(seg, false);
+        if(!hora){ const hh = waSinAcentos(seg.slice(p.fin - p.ini)).match(/^[\s,:(-]*(\d{1,2})\s*hs?\b/); if(hh && parseInt(hh[1], 10) < 24) hora = String(parseInt(hh[1], 10)).padStart(2, '0') + ':00'; }
+        if(!hora){ const pre = txt.slice(0, lista[0].ini); hora = waHoraEnTexto(pre, false); }
+        const ts = hora ? horaATs(hora, m.ts) : m.ts;
+        add(m, { cat: 'velas', pozo: p.pozo, ts, hora: hora || m.hora, titulo: p.pozo + ' · ' + (hora || m.hora), detalle: fraseVelasPozo(cant, '').replace(/^Se lanzan velas: /, '').replace(/\.$/, ''), cant,
+          nota: /oil/.test(s) ? '“oil” = condensado.' : '' });
+      });
+      if(items.length > antes) return;
+    }
+    // pedidos del supervisor
+    if(esPedido){
+      let tipo = /lanz|vela/.test(n) ? 'velas' : (/\b(abrir\w*|dejar abiert\w*)\b/.test(n) ? 'abrir' : (/\b(cerrar\w*|dejar cerrad\w*)\b/.test(n) ? 'cerrar' : 'otro'));
+      const cond = /(hasta que|si (no )?supera|luego|cuando)/.test(n);
+      let dur = waDuracion(txt);
+      const dm = n.match(/\b(?:cerrar|abrir)\w*\s+(\d+(?:[.,]\d+)?)\s*(?:hs?|horas?)\b/);
+      if(dur === null && dm) dur = waNum(dm[1]);
+      let objetivos = pozos.filter(p => p.gas).map(p => p.pozo);
+      if(!objetivos.length && tipo !== 'otro' && ultimoPozoDe[m.autor] && m.ts - ultimoPozoDe[m.autor].ts < 10 * 60e3) objetivos = [ultimoPozoDe[m.autor].pozo];
+      const det = txt.replace(/\s+/g, ' ').trim().slice(0, 200);
+      if(!objetivos.length){
+        add(m, { cat: 'pedidos', est: 'rev', tipo: 'otro', titulo: 'Tarea: ' + det.slice(0, 70), detalle: 'otra tarea', pedido: { tipo: 'otro', objetivo: '', detalle: det, duracionHs: 0 }, nota: 'No nombra un pozo: se carga como “Otra tarea”.' });
+      } else objetivos.forEach(pz => {
+        const pedTipoFinal = cond && tipo !== 'velas' ? 'otro' : tipo;
+        const tit = (tipo === 'velas' ? 'Lanzar velas en ' : (tipo === 'abrir' ? 'Abrir ' : (tipo === 'cerrar' ? 'Cerrar ' : 'Tarea en '))) + pz + (dur && tipo !== 'velas' ? ' por ' + waFmt(dur) + ' h' : '');
+        add(m, { cat: 'pedidos', est: cond ? 'rev' : 'ok', pozo: pz, titulo: tit, detalle: cond ? 'pedido con condición' : 'pedido', pedido: { tipo: pedTipoFinal, objetivo: pedTipoFinal === 'otro' ? '' : pz, detalle: det, duracionHs: (pedTipoFinal === 'abrir' || pedTipoFinal === 'cerrar') && dur && dur <= 72 ? dur : 0 },
+          nota: cond ? 'Depende de una presión o un caudal: se carga como tarea y se marca hecha a mano.' : 'Va a Pedidos y se tacha solo cuando se cargue.' });
+      });
+      objetivos.forEach(pz => { ultimoPozoDe[m.autor] = { pozo: pz, ts: m.ts }; });
+      return;
+    }
+    // maniobras de pozos de gas
+    if(hecho && pozos.some(p => p.gas || p.desconocido)){
+      const lista = pozos.filter(p => p.gas || p.desconocido);
+      const familiaMsg = (WA_RE_ABIERTO.test(n) && !WA_RE_CERRADO.test(n)) ? 'abrir' : ((WA_RE_CERRADO.test(n) && !WA_RE_ABIERTO.test(n)) ? 'cerrar' : '');
+      const resp = /respectivamente/.test(n);
+      const respNums = resp ? (waSinAcentos(txt.slice(lista[lista.length - 1].fin)).match(/\d+(?:[.,]\d+)?(?=[^\d]*(?:kg|psi))/g) || []).map(waNum) : [];
+      const respTodos = resp ? ((waSinAcentos(txt.slice(lista[lista.length - 1].fin)).match(/(\d+(?:[.,]\d+)?)\s*(?:y|,)\s*(\d+(?:[.,]\d+)?)\s*(?:kg|psi)/) || []).slice(1).map(waNum)) : [];
+      const presResp = respTodos.length === lista.length ? respTodos : respNums;
+      lista.forEach((p, k) => {
+        const finSeg = k + 1 < lista.length ? lista[k + 1].ini : txt.length;
+        const seg = txt.slice(p.ini, finSeg);
+        const linIni = txt.lastIndexOf('\n', p.ini) + 1;
+        const linFin = txt.indexOf('\n', p.ini) < 0 ? txt.length : txt.indexOf('\n', p.ini);
+        const linea = waSinAcentos(txt.slice(linIni, linFin));
+        if(/venian|venia\b|ya estaba/.test(linea)) return;
+        const sN = waSinAcentos(seg);
+        let tipo = WA_RE_CERRADO.test(sN) && !WA_RE_ABIERTO.test(sN) ? 'cerrar' : (WA_RE_ABIERTO.test(sN) && !WA_RE_CERRADO.test(sN) ? 'abrir' : '');
+        if(!tipo) tipo = WA_RE_CERRADO.test(linea) && !WA_RE_ABIERTO.test(linea) ? 'cerrar' : (WA_RE_ABIERTO.test(linea) && !WA_RE_CERRADO.test(linea) ? 'abrir' : familiaMsg);
+        if(!tipo) return;
+        const pr = waPresiones(seg);
+        let presion = null, rev = '', notaP = '';
+        if(pr.ec !== null){ presion = pr.ec; if(pr.bp !== null) { rev = 'Trae BP ' + waFmt(pr.bp) + ' y E/C ' + waFmt(pr.ec) + ': va E/C como presión; BP queda en la nota.'; notaP = 'BP ' + waFmt(pr.bp) + ' kg'; } }
+        else if(pr.bp !== null){ presion = pr.bp; rev = 'Solo trae BP: ¿va como presión de apertura?'; }
+        else if(pr.plain.length) presion = pr.plain[0];
+        if(presion === null && presResp.length === lista.length) presion = presResp[k];
+        let hora = waHoraEnTexto(seg, true) || waHoraEnTexto(linea, true);
+        const desdeTexto = !!hora;
+        if(!hora && linIni === 0) hora = '';
+        const ts = hora ? horaATs(hora, m.ts) : m.ts;
+        hora = hora || m.hora;
+        const dur = waDuracion(seg) || waDuracion(linea);
+        const notas = [];
+        if(desdeTexto && hora !== m.hora) notas.push('La hora sale del texto (' + hora + '), no de la del mensaje (' + m.hora + ').');
+        if(lista.length > 1) notas.push('Un mensaje con ' + lista.length + ' pozos: un renglón por pozo.');
+        if(/\bcerr\b/.test(sN)) notas.push('“cerr” = cerrado.');
+        if(/\bab\b/.test(sN)) notas.push('“ab” = abierto.');
+        if(pr.psi) notas.push('Venía en psi: pasado a kg/cm².');
+        if(dur) notas.push('Por ' + waFmt(dur) + ' h: queda en la nota del horario.');
+        if(rev) notas.push(rev);
+        if(p.desconocido){
+          add(m, { cat: 'no', est: 'no', pozo: p.pozo, titulo: p.pozo + ' · ' + (tipo === 'abrir' ? 'Abierto' : 'Cerrado'), detalle: (presion !== null ? waFmt(presion) + ' kg/cm² · ' : '') + hora,
+            nota: p.pozo + ' no está en la lista de pozos de gas de la app: agregalo en Pozos y volvé a pegar, o cargalo a mano.' });
+          return;
+        }
+        add(m, { cat: 'maniobras', est: rev ? 'rev' : 'ok', pozo: p.pozo, tipo, ts, hora, presion, notaHorario: [dur ? 'x ' + waFmt(dur) + ' hs' : '', notaP].filter(Boolean).join(' · '),
+          titulo: p.pozo + ' · ' + (tipo === 'abrir' ? 'Abierto' : 'Cerrado'), detalle: presion !== null ? (tipo === 'abrir' ? waFmt(presion) + ' kg/cm²' : 'presión de cierre ' + waFmt(presion) + ' kg/cm²') : '', nota: notas.join(' ') });
+      });
+      if(items.length > antes){
+        if(WA_RE_NOVEDAD.test(n) && txt.length > 50) add(m, { cat: 'novedades', est: 'rev', titulo: 'Novedad · ' + (pozos[0] ? pozos[0].pozo : 'general'), detalle: txt.replace(/\s+/g, ' ').trim().slice(0, 160), texto: txt.replace(/\s+/g, ' ').trim().slice(0, 400), equipo: pozos[0] ? pozos[0].pozo : '', nota: 'El mensaje trae más información: ¿va también como novedad al parte?' });
+        return;
+      }
+    }
+    // novedades
+    const hayDato = pozos.length || /\b(colector|tk|bateria|uspa|pias|ptc|separador|pc\s*\d|isla|set\b)\b/.test(n);
+    if(hayDato && !/\?\s*$/.test(txt.trim()) && (WA_RE_NOVEDAD.test(n) || txt.length > 25)){
+      const p = pozos[0];
+      const colM = txt.match(/colector\s*(\d{3,4})/i);
+      const equipo = p ? p.pozo : (colM ? 'Colector ' + colM[1] : '');
+      const conocido = equipo && !(p && p.desconocido);
+      add(m, { cat: 'novedades', est: conocido ? 'ok' : 'rev', titulo: (equipo || 'Novedad general'), detalle: txt.replace(/\s+/g, ' ').trim().slice(0, 160), texto: txt.replace(/\s+/g, ' ').trim().slice(0, 400), equipo,
+        nota: [/f\/s/.test(n) ? '“f/s” = fuera de servicio.' : '', conocido ? 'Va al parte como novedad.' : (equipo ? equipo + ' no está en la app: va como novedad general.' : 'No nombra un equipo conocido: elegí si va igual.')].filter(Boolean).join(' ') });
+      return;
+    }
+    // con numeros pero sin entender, o charla
+    if(/\d/.test(txt) && !/\?\s*$/.test(txt.trim()) && txt.replace(/\s+/g, '').length > 3) add(m, { cat: 'no', est: 'no', titulo: 'Sin entender', detalle: txt.replace(/\s+/g, ' ').trim().slice(0, 120), nota: 'No reconozco qué dato es: cargalo a mano si hace falta.' });
+  });
+  // ya cargados (no se duplican)
+  items.forEach(it => {
+    if(it.cat === 'maniobras' && MANIOBRAS.some(e => e.pozo === it.pozo && e.tipo === it.tipo && Math.abs(e.ts - it.ts) <= 20 * 60e3)) { it.est = 'dup'; it.nota = 'Ya estaba cargada (desde la ficha o un pegado anterior): no se repite.'; }
+    if(it.cat === 'pedidos' && it.pedido && PEDIDOS.some(p => p.objetivo === it.pedido.objetivo && p.tipo === it.pedido.tipo && Math.abs((p.creadoTs || 0) - it.ts) <= 3 * 60e3)) { it.est = 'dup'; it.nota = 'Este pedido ya está cargado.'; }
+    if(it.cat === 'velas' && VELAS.some(v => v.pozo === it.pozo && v.waTs && Math.abs(v.waTs - it.ts) <= 20 * 60e3)) { it.est = 'dup'; it.nota = 'Estas velas ya estaban cargadas.'; }
+    const hecho = waHechos();
+    if(hecho[waClave(it)]) { it.est = 'dup'; it.nota = 'Ya se guardó en un pegado anterior desde este equipo.'; }
+  });
+  items.forEach(it => { it.chk = it.est === 'ok'; });
+  return items;
+}
+function waClave(it){ return [it.cat, it.tipo || '', it.pozo || '', it.titulo, it.ts].join('|'); }
+function waHechos(){ try { return JSON.parse(localStorage.getItem('wa_hechos') || '{}') || {}; } catch(e){ return {}; } }
+function waMarcarHechos(lista){
+  const h = waHechos();
+  const lim = Date.now() - 15 * 86400e3;
+  Object.keys(h).forEach(k => { if(h[k] < lim) delete h[k]; });
+  lista.forEach(it => { h[waClave(it)] = Date.now(); });
+  try { localStorage.setItem('wa_hechos', JSON.stringify(h)); } catch(e) {}
+}
+
+// 3) guardar lo confirmado, en orden de hora (asi un pozo que cerro y reabrio queda bien)
+function waAplicarManiobra(it){
+  const rec = POZOS.find(p => p.pozo === it.pozo);
+  if(!rec) return false;
+  // ultima maniobra conocida del pozo: por su fecha-hora, o (cargas viejas sin fecha) por la hora escrita y cuando se guardo
+  let ultimo = Math.max(maniobraTsValido(rec.tsApertura, rec.horaApertura) ? rec.tsApertura : 0, maniobraTsValido(rec.tsCierre, rec.horaCierre) ? rec.tsCierre : 0);
+  if(!ultimo && rec._updatedAtDate){ const h = rec.estado === 'Cerrado' ? rec.horaCierre : rec.horaApertura; ultimo = h ? (horaATs(h, rec._updatedAtDate.getTime()) || 0) : 0; }
+  const prevMan = MANIOBRAS.filter(e => e.pozo === rec.pozo && e.ts < it.ts).sort((a, b) => b.ts - a.ts)[0];
+  const esLaUltima = it.ts >= ultimo && !MANIOBRAS.some(e => e.pozo === rec.pozo && e.ts > it.ts);
+  // estado ANTES de esta maniobra
+  const prev = esLaUltima
+    ? { estado: rec.estado || '', tsA: maniobraTsValido(rec.tsApertura, rec.horaApertura) ? rec.tsApertura : null, tsC: maniobraTsValido(rec.tsCierre, rec.horaCierre) ? rec.tsCierre : null, hA: rec.horaApertura || '', hC: rec.horaCierre || '' }
+    : (prevMan ? { estado: prevMan.estado, tsA: prevMan.tipo === 'abrir' ? prevMan.ts : null, tsC: prevMan.tipo === 'cerrar' ? prevMan.ts : null, hA: prevMan.horaApertura || '', hC: prevMan.horaCierre || '' } : { estado: '', tsA: null, tsC: null, hA: '', hC: '' });
+  const f = {};
+  const r1 = (x) => Math.round(x * 10) / 10;
+  if(it.tipo === 'abrir'){
+    f.estado = 'Abierto'; f.horaApertura = it.hora; f.tsApertura = it.ts; f.horaCierre = ''; f.horarioNota = it.notaHorario || '';
+    if(it.presion !== null && it.presion !== undefined) f.presion = waFmt(it.presion);
+    if(prev.estado !== 'Abierto'){
+      if(prev.tsC && it.ts > prev.tsC){ f.horasTotalNum = r1((it.ts - prev.tsC) / 36e5); f.horasRangoDesde = hhmmDeTs(prev.tsC); f.horasRangoConfirmado = true; }
+      else { f.horasTotalNum = calcDuracionDecimal(prev.hC || '06:00', it.hora); f.horasRangoDesde = prev.hC || '06:00'; f.horasRangoConfirmado = !!prev.hC; }
+      f.horasTotalTipo = 'cerrado'; f.horasRangoHasta = it.hora; f.veniaDeCerradoConfirmado = prev.estado === 'Cerrado';
+      const vp = velaPendienteDe(rec);
+      if(esLaUltima){
+        f.velaEnAperturaTxt = vp ? fraseVelasPozo(vp.cant, rec.velaPendienteHora || '') : '';
+        f.velaPendienteAgua = 0; f.velaPendienteGas = 0; f.velaPendienteOil = 0; f.velaPendienteHora = ''; f.velaPendienteTs = 0;
+      }
+    }
+  } else {
+    f.estado = 'Cerrado'; f.horaCierre = it.hora; f.tsCierre = it.ts; f.horaApertura = prev.hA || rec.horaApertura || ''; f.horarioNota = it.notaHorario || '';
+    f.presionCierre = (it.presion !== null && it.presion !== undefined) ? waFmt(it.presion) : '';
+    if(prev.tsA && it.ts > prev.tsA){ f.horasTotalNum = r1((it.ts - prev.tsA) / 36e5); f.horasRangoDesde = hhmmDeTs(prev.tsA); f.horasRangoConfirmado = true; }
+    else { f.horasTotalNum = calcDuracionDecimal(prev.hA || '06:00', it.hora); f.horasRangoDesde = prev.hA || '06:00'; f.horasRangoConfirmado = !!prev.hA; }
+    f.horasTotalTipo = 'abierto'; f.horasRangoHasta = it.hora;
+  }
+  f.horario = `${f.horaApertura || '??'} - ${f.horaCierre || '??'}` + (f.horarioNota ? ` (${f.horarioNota})` : '');
+  if(esLaUltima){
+    const antes = Object.assign({}, rec);
+    const cambios = Object.keys(f).filter(k => String(antes[k] === undefined || antes[k] === null ? '' : antes[k]) !== String(f[k]));
+    if(!cambios.includes(it.tipo === 'abrir' ? 'horaApertura' : 'horaCierre')) cambios.push(it.tipo === 'abrir' ? 'horaApertura' : 'horaCierre');
+    Object.assign(rec, f); rec._edited = true;
+    saveEdit(rec.pozo, Object.assign({}, f, { operador: it.por }), cambios);
+    maniobraRegistrar(rec, { tipo: it.tipo, ts: it.ts, velaTxt: f.velaEnAperturaTxt || '', origen: 'whatsapp', por: it.por });
+    if(it.tipo === 'abrir') registrarAperturaHistorial(rec, it.hora);
+  } else {
+    // maniobra vieja (ya hay una mas nueva cargada): solo queda en el registro y en el parte, sin tocar el estado actual
+    const pseudo = Object.assign({}, rec, f);
+    maniobraRegistrar(pseudo, { tipo: it.tipo, ts: it.ts, velaTxt: '', origen: 'whatsapp', por: it.por });
+  }
+  const hv = { abierto: it.tipo === 'abrir' ? 1 : 0 };
+  if(it.tipo === 'abrir' && f.presion) hv.presion = f.presion;
+  histRegistrar('pozo', rec.bateria, rec.pozo, hv, it.ts, it.por);
+  return true;
+}
+function waAplicarVelas(it){
+  const rec = POZOS.find(p => p.pozo === it.pozo);
+  ['Agua', 'Gas', 'Oil'].forEach(t => { if(it.cant[t]) db.collection('pozos_velas').add({ pozo: it.pozo, bateria: rec ? rec.bateria : '', tipo: t, numero: String(it.cant[t]), fecha: new Date(it.ts).toLocaleDateString('es-AR'), operador: it.por, waTs: it.ts, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }).catch(() => {}); });
+  if(!rec) return true;
+  const f = {};
+  if(pozoOptimAuto(rec)){
+    f.velaSueltaTxt = fraseVelasPozo(it.cant, it.hora); f.velaSueltaHora = it.hora; f.velaSueltaTs = it.ts;
+  } else {
+    f.velaPendienteAgua = (parseFloat(rec.velaPendienteAgua) || 0) + it.cant.Agua;
+    f.velaPendienteGas = (parseFloat(rec.velaPendienteGas) || 0) + it.cant.Gas;
+    f.velaPendienteOil = (parseFloat(rec.velaPendienteOil) || 0) + it.cant.Oil;
+    f.velaPendienteHora = it.hora; f.velaPendienteTs = it.ts;
+  }
+  Object.assign(rec, f); rec._edited = true;
+  saveEdit(rec.pozo, Object.assign({}, f, { operador: it.por }), Object.keys(f));
+  return true;
+}
+function waAplicarTanques(it){
+  it.tanques.filter(t => t.conocido).forEach(t => {
+    const lista = t.col === 'pias2_tanques' ? PIAS2_TANQUES_DATA : TANQUES_DATA;
+    const ya = lista.find(x => x.nombre === t.nombre);
+    const masNuevo = ya && ya._updatedAtDate && ya._updatedAtDate.getTime() > it.ts + 60e3 && ya.horaMedicion !== it.hora;
+    if(!masNuevo){
+      db.collection(t.col).doc(t.nombre).set({ nombre: t.nombre, bateria: t.bat, nivelTotal: t.nt, nivelInterfaz: t.ni, horaMedicion: it.hora,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp(), operador: it.por }, { merge: true }).catch(e => alert('No se pudo guardar ' + t.nombre + ' (' + e.message + ').'));
+    }
+    histRegistrar('tanque', t.bat, t.nombre, { nivelTotal: t.nt, nivelInterfaz: t.ni }, it.ts, it.por);
+  });
+  return true;
+}
+function waAplicarPedido(it){
+  const p = it.pedido;
+  const datos = { tipo: p.tipo, objetivo: p.objetivo || '', grupo: '', detalle: p.detalle || '', duracionHs: p.duracionHs || 0, hora: '', prioridad: 'normal', estado: 'pendiente',
+    creadoPor: it.por, creadoTs: it.ts, fecha: pedIso(inicioDiaOperativo(new Date(it.ts))), origen: 'whatsapp' };
+  const ref = db.collection('pedidos').doc();
+  ref.set(datos).catch(e => console.error('pedido', e));
+  PEDIDOS = [Object.assign({ id: ref.id }, datos)].concat(PEDIDOS);
+  return true;
+}
+function waAplicarCiclo(it){
+  const rec = POZOS.find(p => p.pozo === it.pozo);
+  if(!rec) return false;
+  const f = { ciclo: it.ciclo };
+  if(it.modo && pozoTieneOptim(rec)) f.optimModo = it.modo;
+  Object.assign(rec, f); rec._edited = true;
+  saveEdit(rec.pozo, Object.assign({}, f, { operador: it.por }), Object.keys(f));
+  return true;
+}
+function waAplicarNovedad(it){
+  const rec = it.equipo ? (POZOS.find(p => p.pozo === it.equipo) || (AIB_POZOS || []).find(p => p.pozo === it.equipo)) : null;
+  const hora = hhmmDeTs(it.ts);
+  const base = { hora, equipo: it.equipo || '', texto: it.texto, clientTs: it.ts, updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedFields: ['hora', 'equipo', 'texto'], operador: it.por };
+  if(rec && /^bateria/i.test(rec.bateria || '')) db.collection('equipos_notas').add(Object.assign({ grupo: rec.bateria }, base)).catch(() => {});
+  else db.collection('uspa_notas').add(Object.assign({ bateria: rec ? (rec.bateria || '') : '' }, base)).catch(() => {});
+  return true;
+}
+function waAplicarDatos(it){
+  if(it.tipo === 'acumulado') it.nodos.forEach(x => histRegistrar('acumulado', 'Acumulados', x.nodo, { m3d: x.v }, it.ts, it.por));
+  else if(it.tipo === 'stock') it.stocks.forEach(x => histRegistrar('stock', 'Quimicos', x.equipo, { lts: x.lts, cm: x.cm }, it.ts, it.por));
+  else if(it.datos) histRegistrar(it.tipo, it.datos.grupo, it.datos.equipo, it.datos.vals, it.ts, it.por);
+  return true;
+}
+function waGuardar(){
+  const sel = WA.items.filter(it => it.chk && it.est !== 'no' && it.est !== 'dup');
+  if(!sel.length) return;
+  if(!puedeModificar()) return;
+  if(!firestoreOk){ alert('No hay conexion con el guardado compartido. Revisa tu internet e intenta de nuevo.'); return; }
+  const orden = sel.slice().sort((a, b) => a.ts - b.ts);
+  let ok = 0;
+  orden.forEach(it => {
+    try {
+      const f = { maniobras: waAplicarManiobra, velas: waAplicarVelas, tanques: waAplicarTanques, pedidos: waAplicarPedido, ciclo: waAplicarCiclo, novedades: waAplicarNovedad, datos: waAplicarDatos }[it.cat];
+      if(f && f(it)) ok++;
+    } catch(e){ console.error('pegado', it, e); }
+  });
+  waMarcarHechos(sel);
+  waCerrar();
+  movToast('Guardado desde WhatsApp: ' + ok + ' dato' + (ok === 1 ? '' : 's') + '.');
+  refreshEverything();
+  if(typeof renderPedidos === 'function' && document.getElementById('pedMain').style.display !== 'none') renderPedidos();
+}
+
+// 4) pantalla
+var WA_GRUPOS = [
+  ['maniobras', 'Maniobras de pozos', 'Van a la ficha de cada pozo y al parte de gas (un renglón por maniobra)'],
+  ['velas', 'Velas', 'Van a la ficha del pozo y al parte'],
+  ['tanques', 'Tanques', 'Van a Baterías / Pías 2 y a sus reportes'],
+  ['pedidos', 'Pedidos del supervisor', 'Van a Pedidos y se tachan solos al cumplirse'],
+  ['ciclo', 'Cambios de ciclo u optimizador', 'Van a la ficha del pozo y a Ciclaje'],
+  ['novedades', 'Novedades', 'Van al parte como novedad'],
+  ['datos', 'Datos de campo', 'Controles, acumulados, químicos, scraper y producción: quedan en Tendencia'],
+  ['no', 'Sin entender', 'Cargalos a mano si hace falta']
+];
+var WA_EST = { ok: ['listo', 'wa-ok'], rev: ['revisar', 'wa-rev'], no: ['sin entender', 'wa-no'], dup: ['ya cargado', 'wa-dup'] };
+function waAbrir(){
+  if(document.getElementById('waPegar')) return;
+  iniciarTendenciaSync();
+  const el = document.createElement('div');
+  el.id = 'waPegar';
+  el.setAttribute('role', 'dialog');
+  el.setAttribute('aria-modal', 'true');
+  el.setAttribute('aria-labelledby', 'waTit');
+  document.body.appendChild(el);
+  waPasoPegar();
+}
+function waCerrar(){ const el = document.getElementById('waPegar'); if(el) el.remove(); }
+function waPasoPegar(){
+  const el = document.getElementById('waPegar');
+  el.innerHTML = `<div class="wa-caja">
+    <div class="wa-cab"><div><h2 id="waTit">Pegar de WhatsApp</h2><p>Copiá los mensajes del grupo (seleccioná varios y Ctrl+C) y pegalos acá. La app separa cada dato y te muestra qué entendió. Nada se guarda hasta que confirmes.</p></div><button type="button" class="close-btn" id="waX" aria-label="Cerrar">&times;</button></div>
+    <label for="waTxt" class="wa-lbl">Mensajes</label>
+    <textarea id="waTxt" class="wa-txt" placeholder="[20:15, 30/10/2026] Juan: Ce-1214, quedó abierto (16.5 kg/cm2)."></textarea>
+    <div class="wa-pie"><span class="wa-ayuda">Sirve el formato que copia WhatsApp: con hora y nombre de quien escribió.</span><button type="button" class="save-btn" id="waLeer">Leer mensajes</button></div>
+  </div>`;
+  document.getElementById('waX').addEventListener('click', waCerrar);
+  document.getElementById('waLeer').addEventListener('click', () => {
+    const raw = document.getElementById('waTxt').value;
+    if(!raw.trim()) return;
+    WA.raw = raw;
+    WA.msgs = waSeparar(raw);
+    WA.items = waAnalizar(WA.msgs);
+    waPasoConfirmar();
+  });
+  setTimeout(() => { const t = document.getElementById('waTxt'); if(t) t.focus(); }, 50);
+}
+function waEstadoMsg(i){
+  const its = WA.items.filter(it => it.msg === i);
+  if(!its.length) return 'chat';
+  if(its.some(it => it.est === 'no')) return 'no';
+  if(its.some(it => it.est === 'rev')) return 'rev';
+  if(its.every(it => it.est === 'dup')) return 'dup';
+  return 'ok';
+}
+function waPasoConfirmar(){
+  const el = document.getElementById('waPegar');
+  const cuenta = (e) => WA.items.filter(it => it.est === e).length;
+  const msgsHtml = WA.msgs.map(m => {
+    const e = waEstadoMsg(m.i);
+    const lbl = { ok: 'entendido', rev: 'revisar', no: 'sin entender', dup: 'ya cargado', chat: 'se ignora' }[e];
+    return `<div class="wa-msg wa-m-${e}" id="waMsg${m.i}"><div class="wa-msg-cab"><span>${avisoEsc(new Date(m.ts).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' }))} ${avisoEsc(m.hora)} · ${avisoEsc(m.autor)}</span><b>${lbl}</b></div><div class="wa-msg-txt">${avisoEsc(m.texto)}</div></div>`;
+  }).join('');
+  const grupos = WA_GRUPOS.map(([cat, tit, dest]) => {
+    const its = WA.items.filter(it => it.cat === cat).sort((a, b) => a.ts - b.ts);
+    if(!its.length) return '';
+    return `<section class="wa-grupo"><div class="wa-grupo-cab"><h3>${tit} (${its.length})</h3><span>${dest}</span></div>${its.map(it => {
+      const e = WA_EST[it.est];
+      const m = WA.msgs[it.msg];
+      const editable = it.cat === 'maniobras' && it.est !== 'dup';
+      return `<div class="wa-it ${e[1]}" data-wid="${it.id}">
+        ${it.est === 'no' || it.est === 'dup' ? '<span class="wa-chk-vacio"></span>' : `<input type="checkbox" class="wa-chk" id="chk_${it.id}" ${it.chk ? 'checked' : ''} aria-label="Incluir ${avisoEsc(it.titulo)}">`}
+        <div class="wa-it-cuerpo">
+          <div class="wa-it-top"><label for="chk_${it.id}" class="wa-it-tit">${avisoEsc(it.titulo)}</label><span class="wa-it-det">${avisoEsc(it.detalle || '')}</span><span class="wa-pill">${e[0]}</span></div>
+          <span class="wa-it-meta">${avisoEsc(new Date(it.ts).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' }))} ${avisoEsc(hhmmDeTs(it.ts))} · ${avisoEsc(it.por)} · <button type="button" class="wa-ver" data-msg="${it.msg}">ver mensaje</button></span>
+          ${editable ? `<div class="wa-edit"><label>Hora <input type="time" class="wa-hora" value="${avisoEsc(it.hora)}"></label><label>${it.tipo === 'abrir' ? 'Presión apertura' : 'Presión cierre'} (kg/cm²) <input type="text" inputmode="decimal" class="wa-pres" value="${it.presion !== null && it.presion !== undefined ? avisoEsc(waFmt(it.presion)) : ''}"></label></div>` : ''}
+          ${it.nota ? `<span class="wa-it-nota">${avisoEsc(it.nota)}</span>` : ''}
+        </div></div>`;
+    }).join('')}</section>`;
+  }).join('');
+  const nChat = WA.msgs.filter(m => waEstadoMsg(m.i) === 'chat').length;
+  el.innerHTML = `<div class="wa-caja ancha">
+    <div class="wa-cab"><div><h2 id="waTit">Pegar de WhatsApp · confirmar</h2><p>${WA.msgs.length} mensajes · ${nChat} de charla se ignoran. Revisá lo marcado y guardá.</p></div><button type="button" class="close-btn" id="waX" aria-label="Cerrar">&times;</button></div>
+    <div class="wa-resumen"><span class="wa-r ok">${cuenta('ok')} listos</span><span class="wa-r rev">${cuenta('rev')} para revisar</span><span class="wa-r no">${cuenta('no')} sin entender</span>${cuenta('dup') ? `<span class="wa-r dup">${cuenta('dup')} ya cargados</span>` : ''}</div>
+    <div class="wa-cols">
+      <div class="wa-col-msgs"><div class="wa-lbl">Mensajes pegados</div><div class="wa-leyenda"><span class="wa-m-ok">Entendido</span><span class="wa-m-rev">Revisar</span><span class="wa-m-no">Sin entender</span><span class="wa-m-chat">Se ignora</span></div>${msgsHtml}</div>
+      <div class="wa-col-items">${grupos || '<div class="empty-msg">No encontré datos para cargar en estos mensajes.</div>'}</div>
+    </div>
+    <div class="wa-pie fijo"><button type="button" class="cancel-btn" id="waVolver">Volver a pegar</button><button type="button" class="save-btn" id="waGuardar"></button></div>
+  </div>`;
+  const pintarBoton = () => { const n = WA.items.filter(it => it.chk && it.est !== 'no' && it.est !== 'dup').length; const b = document.getElementById('waGuardar'); b.textContent = 'Guardar ' + n + ' seleccionado' + (n === 1 ? '' : 's'); b.disabled = !n; };
+  el.querySelectorAll('.wa-it').forEach(row => {
+    const it = WA.items.find(x => x.id === row.dataset.wid);
+    const chk = row.querySelector('.wa-chk');
+    if(chk) chk.addEventListener('change', () => { it.chk = chk.checked; pintarBoton(); });
+    const h = row.querySelector('.wa-hora');
+    if(h) h.addEventListener('change', () => { if(/^\d{2}:\d{2}$/.test(h.value)){ it.hora = h.value; it.ts = horaATs(h.value, Math.min(Date.now(), WA.msgs[it.msg].ts + 3600e3)); } });
+    const pr = row.querySelector('.wa-pres');
+    if(pr) pr.addEventListener('input', () => { const v = waNum(pr.value); it.presion = v; });
+  });
+  el.querySelectorAll('.wa-ver').forEach(b => b.addEventListener('click', () => {
+    const t = document.getElementById('waMsg' + b.dataset.msg);
+    if(!t) return;
+    t.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    t.classList.add('wa-foco'); setTimeout(() => t.classList.remove('wa-foco'), 1600);
+  }));
+  document.getElementById('waX').addEventListener('click', waCerrar);
+  document.getElementById('waVolver').addEventListener('click', () => { waPasoPegar(); const t = document.getElementById('waTxt'); if(t) t.value = WA.raw || ''; });
+  document.getElementById('waGuardar').addEventListener('click', waGuardar);
+  pintarBoton();
+}
+
 // ---------------- Anti doble toque en botones de guardar/enviar ----------------
 // Si se toca el MISMO boton de guardar o enviar otra vez antes de 2,5 s, el segundo toque no hace nada
 // (evita registros repetidos cuando parece que "no llego" y se vuelve a tocar).
@@ -10195,7 +10979,7 @@ function exigirNombre(){
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202610272300;
+var APP_VERSION = 202610302330;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
