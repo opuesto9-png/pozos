@@ -10401,14 +10401,25 @@ function waSeparar(raw){
     if(!msgs.length){ if(!l.trim()) return; msgs.push({ ts: ahora, autor: operadorName || 'Sin nombre', texto: l, sinCabecera: true }); return; }
     msgs[msgs.length - 1].texto += '\n' + l;
   });
-  msgs.forEach((m, i) => { m.i = i; m.texto = m.texto.replace(/\s+$/, ''); m.hora = hhmmDeTs(m.ts); });
-  return msgs;
+  // se puede pegar en varias tandas (WhatsApp solo copia lo que tiene cargado en pantalla): los mensajes
+  // repetidos entre tandas se sacan y todo queda en orden de hora
+  const vistos = new Set();
+  const unicos = msgs.filter(m => { m.texto = m.texto.replace(/\s+$/, ''); const k = m.ts + '|' + m.autor + '|' + m.texto; if(vistos.has(k)) return false; vistos.add(k); return true; });
+  unicos.sort((a, b) => a.ts - b.ts);
+  // un chat exportado entero trae semanas: solo se leen las ultimas 48 h (desde el ultimo mensaje)
+  if(unicos.length){
+    const lim = unicos[unicos.length - 1].ts - 48 * 3600e3;
+    const viejos = unicos.filter(m => m.ts < lim).length;
+    if(viejos){ const quedan = unicos.filter(m => m.ts >= lim); quedan.viejos = viejos; quedan.desdeLim = lim; quedan.forEach((m, i) => { m.i = i; m.hora = hhmmDeTs(m.ts); }); return quedan; }
+  }
+  unicos.forEach((m, i) => { m.i = i; m.hora = hhmmDeTs(m.ts); });
+  return unicos;
 }
 
 // pozos nombrados en un texto (solo numeros que son pozos de la lista: no confunde con kg, m3, horas, tanques)
 function waPozos(texto){
   const out = [];
-  const re = /(\bce\.?\s*a?\.?\s*-?\s*)?\b(\d{2,4})\b/gi;
+  const re = /(\bce\.?\s*a?\.?\s*-?\s*)?(?<![\d.,])(\d{2,4})(?![\d])/gi;
   let m;
   while((m = re.exec(texto))){
     const num = m[2];
@@ -10416,6 +10427,7 @@ function waPozos(texto){
     const antes = texto.slice(Math.max(0, ini - 12), ini).toLowerCase();
     const despues = texto.slice(fin, fin + 12).toLowerCase();
     if(!m[1]){
+      if(/[a-z]$/i.test(antes)) continue;
       if(/(tk|tanque|\bv|col|colector|u|p|isla|uspa|bat\w*|pc|k|sg|nodo|batch|sep)\s*[-.]?\s*$/.test(antes)) continue;
       if(/^\s*(?:[.,]\d|\/\s*\d|:\s*\d|\s*(?:kg|m3|m³|lt|cm|psi|%|bar|min))/.test(despues)) continue;
       if(num.length < 4 && /^\s*(?:hs?\b|horas?|am\b|pm\b|x\s*\d)/.test(despues)) continue;
@@ -10611,7 +10623,7 @@ function waAnalizar(msgs){
     // pedidos del supervisor
     if(esPedido){
       let tipo = /lanz|vela/.test(n) ? 'velas' : (/\b(abrir\w*|dejar abiert\w*)\b/.test(n) ? 'abrir' : (/\b(cerrar\w*|dejar cerrad\w*)\b/.test(n) ? 'cerrar' : 'otro'));
-      const cond = /(hasta que|si (no )?supera|luego|cuando)/.test(n);
+      const cond = /(hasta\s+que|si\s+(no\s+)?supera|luego|cuando)/.test(n);
       let dur = waDuracion(txt);
       const dm = n.match(/\b(?:cerrar|abrir)\w*\s+(\d+(?:[.,]\d+)?)\s*(?:hs?|horas?)\b/);
       if(dur === null && dm) dur = waNum(dm[1]);
@@ -10623,7 +10635,7 @@ function waAnalizar(msgs){
       } else objetivos.forEach(pz => {
         const pedTipoFinal = cond && tipo !== 'velas' ? 'otro' : tipo;
         const tit = (tipo === 'velas' ? 'Lanzar velas en ' : (tipo === 'abrir' ? 'Abrir ' : (tipo === 'cerrar' ? 'Cerrar ' : 'Tarea en '))) + pz + (dur && tipo !== 'velas' ? ' por ' + waFmt(dur) + ' h' : '');
-        add(m, { cat: 'pedidos', est: cond ? 'rev' : 'ok', pozo: pz, titulo: tit, detalle: cond ? 'pedido con condición' : 'pedido', pedido: { tipo: pedTipoFinal, objetivo: pedTipoFinal === 'otro' ? '' : pz, detalle: det, duracionHs: (pedTipoFinal === 'abrir' || pedTipoFinal === 'cerrar') && dur && dur <= 72 ? dur : 0 },
+        add(m, { cat: 'pedidos', est: (cond || pedTipoFinal === 'otro') ? 'rev' : 'ok', pozo: pz, titulo: tit, detalle: cond ? 'pedido con condición' : 'pedido', pedido: { tipo: pedTipoFinal, objetivo: pedTipoFinal === 'otro' ? '' : pz, detalle: det, duracionHs: (pedTipoFinal === 'abrir' || pedTipoFinal === 'cerrar') && dur && dur <= 72 ? dur : 0 },
           nota: cond ? 'Depende de una presión o un caudal: se carga como tarea y se marca hecha a mano.' : 'Va a Pedidos y se tacha solo cuando se cargue.' });
       });
       objetivos.forEach(pz => { ultimoPozoDe[m.autor] = { pozo: pz, ts: m.ts }; });
@@ -10643,9 +10655,14 @@ function waAnalizar(msgs){
         const linIni = txt.lastIndexOf('\n', p.ini) + 1;
         const linFin = txt.indexOf('\n', p.ini) < 0 ? txt.length : txt.indexOf('\n', p.ini);
         const linea = waSinAcentos(txt.slice(linIni, linFin));
-        if(/venian|venia\b|ya estaba/.test(linea)) return;
+        const RE_VENIA = /\b(venian?|ya\s+estaba\w*)\s+(cerrad|abiert)/;
+        if(RE_VENIA.test(waSinAcentos(txt.slice(linIni, p.ini)))) return;
         const sN = waSinAcentos(seg);
-        let tipo = WA_RE_CERRADO.test(sN) && !WA_RE_ABIERTO.test(sN) ? 'cerrar' : (WA_RE_ABIERTO.test(sN) && !WA_RE_CERRADO.test(sN) ? 'abrir' : '');
+        // si el tramo del pozo trae las dos palabras, vale la primera que aparece ("1214 abierto 10 kg, venian cerrados...")
+        const iA = sN.search(WA_RE_ABIERTO), iC = sN.search(WA_RE_CERRADO);
+        let tipo = iA < 0 && iC < 0 ? '' : (iA < 0 ? 'cerrar' : (iC < 0 ? 'abrir' : (iA < iC ? 'abrir' : 'cerrar')));
+        const mv = sN.match(RE_VENIA);
+        if(mv && mv.index + mv[0].length - mv[2].length === Math.min(iA < 0 ? 1e9 : iA, iC < 0 ? 1e9 : iC)) return;
         if(!tipo) tipo = WA_RE_CERRADO.test(linea) && !WA_RE_ABIERTO.test(linea) ? 'cerrar' : (WA_RE_ABIERTO.test(linea) && !WA_RE_CERRADO.test(linea) ? 'abrir' : familiaMsg);
         if(!tipo) return;
         const pr = waPresiones(seg);
@@ -10667,6 +10684,7 @@ function waAnalizar(msgs){
         if(/\bab\b/.test(sN)) notas.push('“ab” = abierto.');
         if(pr.psi) notas.push('Venía en psi: pasado a kg/cm².');
         if(dur) notas.push('Por ' + waFmt(dur) + ' h: queda en la nota del horario.');
+        if(/optimizador|automatico/.test(n)) notas.push('Menciona el optimizador en automático: si cambió, actualizalo en la ficha.');
         if(rev) notas.push(rev);
         if(p.desconocido){
           add(m, { cat: 'no', est: 'no', pozo: p.pozo, titulo: p.pozo + ' · ' + (tipo === 'abrir' ? 'Abierto' : 'Cerrado'), detalle: (presion !== null ? waFmt(presion) + ' kg/cm² · ' : '') + hora,
@@ -10882,7 +10900,7 @@ function waPasoPegar(){
     <div class="wa-cab"><div><h2 id="waTit">Pegar de WhatsApp</h2><p>Copiá los mensajes del grupo (seleccioná varios y Ctrl+C) y pegalos acá. La app separa cada dato y te muestra qué entendió. Nada se guarda hasta que confirmes.</p></div><button type="button" class="close-btn" id="waX" aria-label="Cerrar">&times;</button></div>
     <label for="waTxt" class="wa-lbl">Mensajes</label>
     <textarea id="waTxt" class="wa-txt" placeholder="[20:15, 30/10/2026] Juan: Ce-1214, quedó abierto (16.5 kg/cm2)."></textarea>
-    <div class="wa-pie"><span class="wa-ayuda">Sirve el formato que copia WhatsApp: con hora y nombre de quien escribió.</span><button type="button" class="save-btn" id="waLeer">Leer mensajes</button></div>
+    <div class="wa-pie"><span class="wa-ayuda">WhatsApp copia solo lo que tiene cargado en pantalla: si es mucho, pegá en varias tandas (subí un poco, copiá, pegá debajo). Lo repetido se saca solo.</span><button type="button" class="save-btn" id="waLeer">Leer mensajes</button></div>
   </div>`;
   document.getElementById('waX').addEventListener('click', waCerrar);
   document.getElementById('waLeer').addEventListener('click', () => {
@@ -10930,7 +10948,7 @@ function waPasoConfirmar(){
   }).join('');
   const nChat = WA.msgs.filter(m => waEstadoMsg(m.i) === 'chat').length;
   el.innerHTML = `<div class="wa-caja ancha">
-    <div class="wa-cab"><div><h2 id="waTit">Pegar de WhatsApp · confirmar</h2><p>${WA.msgs.length} mensajes · ${nChat} de charla se ignoran. Revisá lo marcado y guardá.</p></div><button type="button" class="close-btn" id="waX" aria-label="Cerrar">&times;</button></div>
+    <div class="wa-cab"><div><h2 id="waTit">Pegar de WhatsApp · confirmar</h2><p>${WA.msgs.length} mensajes, del ${avisoEsc(tendFechaHora(WA.msgs[0].ts))} al ${avisoEsc(tendFechaHora(WA.msgs[WA.msgs.length - 1].ts))} · ${nChat} de charla se ignoran${WA.msgs.viejos ? ' · ' + WA.msgs.viejos + ' mensajes de más de 48 h no se leyeron' : ''}. ¿Falta un tramo? Tocá “Volver a pegar” y agregalo debajo.</p></div><button type="button" class="close-btn" id="waX" aria-label="Cerrar">&times;</button></div>
     <div class="wa-resumen"><span class="wa-r ok">${cuenta('ok')} listos</span><span class="wa-r rev">${cuenta('rev')} para revisar</span><span class="wa-r no">${cuenta('no')} sin entender</span>${cuenta('dup') ? `<span class="wa-r dup">${cuenta('dup')} ya cargados</span>` : ''}</div>
     <div class="wa-cols">
       <div class="wa-col-msgs"><div class="wa-lbl">Mensajes pegados</div><div class="wa-leyenda"><span class="wa-m-ok">Entendido</span><span class="wa-m-rev">Revisar</span><span class="wa-m-no">Sin entender</span><span class="wa-m-chat">Se ignora</span></div>${msgsHtml}</div>
@@ -10955,7 +10973,7 @@ function waPasoConfirmar(){
     t.classList.add('wa-foco'); setTimeout(() => t.classList.remove('wa-foco'), 1600);
   }));
   document.getElementById('waX').addEventListener('click', waCerrar);
-  document.getElementById('waVolver').addEventListener('click', () => { waPasoPegar(); const t = document.getElementById('waTxt'); if(t) t.value = WA.raw || ''; });
+  document.getElementById('waVolver').addEventListener('click', () => { waPasoPegar(); const t = document.getElementById('waTxt'); if(t){ t.value = (WA.raw || '').replace(/\s*$/, '\n'); t.scrollTop = t.scrollHeight; t.setSelectionRange(t.value.length, t.value.length); } });
   document.getElementById('waGuardar').addEventListener('click', waGuardar);
   pintarBoton();
 }
@@ -10979,7 +10997,7 @@ function waPasoConfirmar(){
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202610302330;
+var APP_VERSION = 202610302332;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
