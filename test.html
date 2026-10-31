@@ -1507,7 +1507,7 @@
   .wa-apr-it .cancel-btn{ flex:0 0 auto; padding:5px 10px; }
   @media (max-width: 820px){ .wa-cols{ grid-template-columns:1fr; } .wa-caja.ancha{ max-height:none; } .wa-col-msgs{ max-height:40vh; } }
 
-  main#ctrlMain, main#quimMain, main#scrMain{ max-width: 1100px; }
+  main#ctrlMain, main#quimMain, main#scrMain, main#acumMain{ max-width: 1100px; }
   .ini-tile.ancho2{ grid-column: span 2; min-height:0; flex-direction:row; align-items:center; gap:12px; }
   .ini-tile.ancho2 .tx{ display:flex; flex-direction:column; gap:2px; }
   .ini-tile.quim svg{ stroke:#B08CE0; }
@@ -1518,6 +1518,7 @@
   .qc-tit-fila{ display:flex; justify-content:space-between; align-items:baseline; gap:10px; flex-wrap:wrap; }
   .qc-sub{ font-size:.74rem; color:var(--muted); }
   .qc-prev-parte{ margin-top:10px; font-size:.82rem; background:var(--bg); border:1px dashed var(--line); border-radius:6px; padding:8px 10px; } .qc-prev-parte:empty{ display:none; } .qc-prev-parte span{ color:var(--muted); }
+  .ac-dif{ font-size:.72rem; } .ac-dif.sube{ color:#7fd3a0; } .ac-dif.baja{ color:#ef8a8a; }
   .qc-sub-tit{ font-size:.7rem; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:14px 0 6px; }
   .qc-form{ display:grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap:10px; }
   .qc-f{ display:flex; flex-direction:column; gap:4px; font-size:.74rem; color:var(--muted); }
@@ -1583,6 +1584,7 @@
     <button class="tab-btn" id="tabCtrl">Controles</button>
     <button class="tab-btn" id="tabQuim">Químicos</button>
     <button class="tab-btn" id="tabScr">Scraper</button>
+    <button class="tab-btn" id="tabAcum">Acumulados</button>
     <button class="tab-btn" id="tabAib">AIB</button>
     <button class="tab-btn" id="tabTanques">Baterias</button>
     <button class="tab-btn" id="tabPias">Pías 2</button>
@@ -1632,7 +1634,8 @@
   <div class="ini-grid">
     <button type="button" class="ini-tile quim ancho2" data-tab="tabCtrl"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3"/><path d="M7 15h10"/></svg><span class="tx"><span class="t">Controles</span><span class="s">FPD, APD, OPD y % de agua por punto</span></span><span class="ini-nuevo" style="display:none;"></span></button>
     <button type="button" class="ini-tile quim ancho2" data-tab="tabQuim"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="15" rx="2"/><path d="M9 3h6v3H9z"/><path d="M6 13h12"/></svg><span class="tx"><span class="t">Químicos</span><span class="s">Stock e inyección por equipo</span></span><span class="ini-nuevo" style="display:none;"></span></button>
-    <button type="button" class="ini-tile quim ancho2" data-tab="tabScr"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12h14"/><path d="M12 8l4 4-4 4"/><circle cx="19" cy="12" r="3"/></svg><span class="tx"><span class="t">Scraper</span><span class="s">Lanzamientos: horas, presiones, TK 01 y control</span></span><span class="ini-nuevo" style="display:none;"></span></button>
+    <button type="button" class="ini-tile quim ancho2" data-tab="tabScr"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12h14"/><path d="M12 8l4 4-4 4"/><circle cx="19" cy="12" r="3"/></svg><span class="tx"><span class="t">Scraper</span><span class="s">Lanzamientos: destino, tanque, horas y presiones</span></span><span class="ini-nuevo" style="display:none;"></span></button>
+    <button type="button" class="ini-tile quim ancho2" data-tab="tabAcum"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span class="tx"><span class="t">Acumulados</span><span class="s">m³/día por nodo (V 100, V 1600, COL 29…)</span></span><span class="ini-nuevo" style="display:none;"></span></button>
   </div>
   <div class="ini-fila">
     <button type="button" class="ini-btn" data-tab="tabTend" id="iniTendBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l5-5 4 3 7-8"/><path d="M15 7h4v4"/></svg>Tendencia</button>
@@ -1655,6 +1658,7 @@
 <main id="ctrlMain" style="display:none;"></main>
 <main id="quimMain" style="display:none;"></main>
 <main id="scrMain" style="display:none;"></main>
+<main id="acumMain" style="display:none;"></main>
 <main id="aibMain" style="display:none;"></main>
 <main id="tanquesMain" style="display:none;"></main>
 <main id="piasMain" style="display:none;"></main>
@@ -7427,8 +7431,8 @@ function abrirPestanaAvisos(){
 }
 
 // ---------------- Manejo de pestañas (helper generico) ----------------
-const TAB_IDS = ['tabLista','tabPlano','tabRed','tabCiclaje','tabComp','tabMov','tabPed','tabParte','tabTend','tabCtrl','tabQuim','tabScr','tabAib','tabTanques','tabPias','tabPtc','tabAvisos'];
-const MAIN_IDS = ['main','planoMain','redMain','ciclajeMain','compMain','movMain','pedMain','parteMain','tendMain','ctrlMain','quimMain','scrMain','aibMain','tanquesMain','piasMain','ptcMain','avisosMain'];
+const TAB_IDS = ['tabLista','tabPlano','tabRed','tabCiclaje','tabComp','tabMov','tabPed','tabParte','tabTend','tabCtrl','tabQuim','tabScr','tabAcum','tabAib','tabTanques','tabPias','tabPtc','tabAvisos'];
+const MAIN_IDS = ['main','planoMain','redMain','ciclajeMain','compMain','movMain','pedMain','parteMain','tendMain','ctrlMain','quimMain','scrMain','acumMain','aibMain','tanquesMain','piasMain','ptcMain','avisosMain'];
 function switchTab(activeTabId, activeMainId){
   if(window.__seccionListo && seccionActual !== activeTabId) entrarSeccion(activeTabId);
   movMarcarVistos(activeTabId);
@@ -9430,6 +9434,30 @@ function parteVivoDatos(iso){
   out.hojas.push({ id: 'comp', titulo: 'Compresión BP', sub: 'Lecturas de compresores', desde: ini6,
     cols: ['Hora', 'Instalación', 'Unidad', 'Novedad'],
     filas: comp.map(l => { const ts = parteMs(l._updatedAtDate); return { ts, enviado: !!(envComp && ts <= envComp), celdas: [l.hora || parteHoraTs(ts), bateriaToInstalacion(l.uspa), l.unidad, compNovedad(l)] }; }) });
+  // controles, quimicos y acumulados del dia (06 a 06): solo se ven aca, no van en ningun Excel
+  const histQ = (typeof HIST !== 'undefined' && HIST ? HIST : []).filter(h => ['acumulado', 'control', 'stock'].includes(h.tipo));
+  const filasQ = histQ.filter(h => en6(h.ts)).sort((a, b) => a.ts - b.ts).map(h => {
+    const v = h.vals || {};
+    let tipo = '', det = '';
+    if(h.tipo === 'acumulado'){
+      tipo = 'Acumulado';
+      det = qcFmt(v.m3d) + ' m³/d';
+      const ant = histQ.filter(x => x.tipo === 'acumulado' && x.equipo === h.equipo && x.ts < h.ts && acumDia(x.ts) !== acumDia(h.ts)).sort((a, b) => b.ts - a.ts)[0];
+      if(ant && ant.vals.m3d !== undefined && v.m3d !== undefined){ const d = v.m3d - ant.vals.m3d; if(d) det += ' (' + (d > 0 ? '+' : '−') + qcFmt(Math.abs(d)) + ' contra el día anterior)'; }
+    } else if(h.tipo === 'control'){
+      tipo = 'Control';
+      det = ['fpd', 'apd', 'opd'].filter(k => v[k] !== undefined).map(k => k.toUpperCase() + ' ' + qcFmt(v[k])).concat(v.agua !== undefined ? ['agua ' + qcFmt(v.agua) + ' %'] : []).join(' · ');
+    } else {
+      tipo = 'Químico';
+      det = (v.lts !== undefined ? qcFmt(v.lts) + ' lts' : '') + (v.cm !== undefined ? (v.lts !== undefined ? ' (' + qcFmt(v.cm) + ' cm)' : qcFmt(v.cm) + ' cm') : '') + (v.iny === 0 ? ' · inyección PARADA' : (v.iny === 1 ? ' · en servicio' : ''));
+      const ant = histQ.filter(x => x.tipo === 'stock' && x.equipo === h.equipo && x.ts < h.ts).sort((a, b) => b.ts - a.ts)[0];
+      if(ant && ant.vals.lts !== undefined && v.lts !== undefined){ const dl = ant.vals.lts - v.lts, dh = (h.ts - ant.ts) / 36e5; if(dh > 0) det += dl < 0 ? ' · recargado' : ' · consumo ≈ ' + qcFmt(Math.round(dl / dh * 24)) + ' lts/día'; }
+      if(h.nota) det += ' · ' + h.nota;
+    }
+    return { ts: h.ts, enviado: null, celdas: [parteHoraTs(h.ts), tipo, h.equipo, det] };
+  });
+  out.hojas.push({ id: 'quim', titulo: 'Controles y químicos', sub: 'Acumulados, controles y stock de químicos · solo en pantalla, no va en los Excel', desde: ini6,
+    cols: ['Hora', 'Tipo', 'Punto / equipo', 'Dato'], filas: filasQ });
   return out;
 }
 
@@ -9459,6 +9487,7 @@ function parteVivoPendientes(){
 function renderParteVivo(){
   const main = document.getElementById('parteMain');
   if(!main) return;
+  iniciarTendenciaSync();
   const hoyIso = pedHoy();
   if(!parteDiaSel || parteDiaSel > hoyIso) parteDiaSel = hoyIso;
   const esHoy = parteDiaSel === hoyIso;
@@ -9475,7 +9504,7 @@ function renderParteVivo(){
   const vistos = new Set();
   const ahora = Date.now();
   const total = d.hojas.reduce((n, h) => n + h.filas.length, 0);
-  const sinEnviar = d.hojas.reduce((n, h) => n + h.filas.filter(f => !f.enviado).length, 0);
+  const sinEnviar = d.hojas.reduce((n, h) => n + h.filas.filter(f => f.enviado === false).length, 0);
   let html = `<div class="pv-wrap">
     <div class="pv-top">
       <div class="pv-tit">${esHoy ? `<span class="pv-live${firestoreOk ? '' : ' off'}">${firestoreOk ? '● En vivo' : '● Sin conexión'}</span>` : '<span class="pv-live pasado">Día anterior</span>'}
@@ -9501,11 +9530,11 @@ function renderParteVivo(){
       const k = h.id + '|' + f.celdas.join('|');
       vistos.add(k);
       const nueva = !primera && !parteVivoVistos.has(k);
-      html += `<tr class="${f.enviado ? 'env' : ''}${nueva ? ' nueva' : ''}">${f.celdas.map((c, i) => `<td${i === 3 ? ' class="nov"' : ''}>${parteEsc(c)}</td>`).join('')}<td class="est">${f.enviado ? 'enviado' : 'sin enviar'}</td></tr>`;
+      html += `<tr class="${f.enviado ? 'env' : ''}${nueva ? ' nueva' : ''}">${f.celdas.map((c, i) => `<td${i === 3 ? ' class="nov"' : ''}>${parteEsc(c)}</td>`).join('')}<td class="est">${f.enviado === null ? '' : (f.enviado ? 'enviado' : 'sin enviar')}</td></tr>`;
     });
     html += `</tbody></table></div></section>`;
   });
-  html += `<div class="pv-pie">Es el mismo contenido que sale en los Excel. Para mandarlos, se siguen enviando desde "Enviar partes y reportes" en la compu principal. PTC no está acá porque su reporte es el acumulado del mes.</div></div>`;
+  html += `<div class="pv-pie">Es el mismo contenido que sale en los Excel (salvo Controles y químicos, que es solo de pantalla). Para mandarlos, se siguen enviando desde "Enviar partes y reportes" en la compu principal. PTC no está acá porque su reporte es el acumulado del mes.</div></div>`;
   const y = window.scrollY;
   main.innerHTML = html;
   window.scrollTo(0, y);
@@ -9590,6 +9619,7 @@ function iniciarTendenciaSync(){
     const locales = HIST.filter(h => String(h.id).startsWith('local-') && Date.now() - (h._creado || h.ts) < 60e3 && !l.some(x => x.id === h.docId || (x.equipo === h.equipo && x.ts === h.ts)));
     HIST = l.concat(locales);
     tendRefrescarSiAbierta();
+    if(typeof parteRefrescarSiAbierto === 'function') parteRefrescarSiAbierto();
   }, (e) => console.error('historial', e));
   syncVivo('tendencia_diaria', { campo: 'fecha', tipo: 'iso', desde: () => ventanaDesdeIso(31) }, (snap) => {
     TEND_DIA = {};
@@ -9600,12 +9630,12 @@ function iniciarTendenciaSync(){
 var tendTimer = null;
 function tendRefrescarSiAbierta(){
   // Controles / Quimicos abiertos: se redibujan con lo nuevo, salvo que se este escribiendo en el formulario
-  ['ctrlMain', 'quimMain', 'scrMain'].forEach(id => {
+  ['ctrlMain', 'quimMain', 'scrMain', 'acumMain'].forEach(id => {
     const q = document.getElementById(id);
     if(!q || q.style.display === 'none') return;
     const escribiendo = () => (q.contains(document.activeElement) && document.activeElement.tagName !== 'BUTTON') || [...q.querySelectorAll('.qc-form input:not([type=time])')].some(i => i.value.trim());
     clearTimeout(q._t);
-    q._t = setTimeout(() => { if(q.style.display !== 'none' && !escribiendo()) ({ ctrlMain: renderControles, quimMain: renderQuimicos, scrMain: renderScraper })[id](); }, 400);
+    q._t = setTimeout(() => { if(q.style.display !== 'none' && !escribiendo()) ({ ctrlMain: renderControles, quimMain: renderQuimicos, scrMain: renderScraper, acumMain: renderAcumulados })[id](); }, 400);
   });
   const m = document.getElementById('tendMain');
   if(!m || m.style.display === 'none') return;
@@ -10202,8 +10232,8 @@ renderPlano();
 // "‹ Inicio" o el boton Atras del celular vuelven. Dentro de Gas y de Petroleo quedan las
 // pestañas hermanas para pasar de una a otra sin volver al inicio.
 const SECCION_TITULO = { tabLista: 'Pozos de gas', tabPlano: 'Plano (colectoras)', tabRed: 'Red', tabCiclaje: 'Ciclaje del día', tabComp: 'Compresión BP',
-  tabMov: 'Últimos movimientos', tabPed: 'Pedidos del día', tabParte: 'Parte en vivo', tabTend: 'Tendencia', tabCtrl: 'Controles', tabQuim: 'Químicos', tabScr: 'Scraper', tabAib: 'AIB', tabTanques: 'Baterías', tabPias: 'Pías 2', tabPtc: 'PTC', tabAvisos: 'Avisos' };
-const SECCION_GRUPO = { tabLista: 'gas', tabPlano: 'gas', tabRed: 'gas', tabCiclaje: 'gas', tabComp: 'gas', tabAib: 'oil', tabTanques: 'oil', tabCtrl: 'quim', tabQuim: 'quim', tabScr: 'quim' };
+  tabMov: 'Últimos movimientos', tabPed: 'Pedidos del día', tabParte: 'Parte en vivo', tabTend: 'Tendencia', tabCtrl: 'Controles', tabQuim: 'Químicos', tabScr: 'Scraper', tabAcum: 'Acumulados', tabAib: 'AIB', tabTanques: 'Baterías', tabPias: 'Pías 2', tabPtc: 'PTC', tabAvisos: 'Avisos' };
+const SECCION_GRUPO = { tabLista: 'gas', tabPlano: 'gas', tabRed: 'gas', tabCiclaje: 'gas', tabComp: 'gas', tabAib: 'oil', tabTanques: 'oil', tabCtrl: 'quim', tabQuim: 'quim', tabScr: 'quim', tabAcum: 'quim' };
 const SECCION_CON_BUSQUEDA = ['tabLista', 'tabPlano', 'tabRed', 'tabAvisos'];
 (function(){ const t = document.getElementById('iniParteTile'); if(t && esMovil()) t.style.display = 'none'; const td = document.getElementById('iniTendBtn'); if(td && esMovil()) td.style.display = 'none'; })();
 var seccionActual = null;
@@ -10261,7 +10291,8 @@ function inicioActualizar(){
   const visibles = ids.filter(id => { const e = document.getElementById(id); return e && e.style.display !== 'none'; });
   if(env) env.style.display = visibles.length ? '' : 'none';
   const waB = document.getElementById('iniWaBtn');
-  if(waB){ waB.style.display = visibles.length ? '' : 'none'; if(!waB._wa){ waB._wa = true; waB.addEventListener('click', waAbrir); } }
+  // el pegado de WhatsApp todavia esta en prueba: solo aparece en test.html, no en la app oficial (index)
+  if(waB){ waB.style.display = (visibles.length && /test/i.test(location.pathname)) ? '' : 'none'; if(!waB._wa){ waB._wa = true; waB.addEventListener('click', waAbrir); } }
   let pend = 0;
   ['pendCount', 'pendCountBaterias', 'pendCountAgua', 'pendCountPtc', 'pendCountComp'].forEach(id => {
     const e = document.getElementById(id);
@@ -11444,7 +11475,7 @@ function qcBorrar(h){
 var qcTabActual = 'ctrl';
 function qcRender(){
   const v = (id) => document.getElementById(id) && document.getElementById(id).style.display !== 'none';
-  if(v('scrMain')) renderScraper(); else if(qcTabActual === 'quim') renderQuimicos(); else renderControles();
+  if(v('acumMain')) renderAcumulados(); else if(v('scrMain')) renderScraper(); else if(qcTabActual === 'quim') renderQuimicos(); else renderControles();
 }
 function qcFormHora(id){ return `<label class="qc-f"><span>Hora</span><input type="time" class="edit-input" id="${id}" value="${qcHoraAhora()}"></label>`; }
 function qcTsDeHora(v){ return /^\d{2}:\d{2}$/.test(v || '') ? horaATs(v, Date.now()) : Date.now(); }
@@ -11773,6 +11804,77 @@ function renderScraper(){
   });
 }
 document.getElementById('tabScr').addEventListener('click', () => { switchTab('tabScr', 'scrMain'); renderScraper(); });
+// ---- Acumulados (m3/dia por nodo: V 100, V 1600, COL 29, V 502...): se cargan todos juntos, como llegan en el grupo ----
+var ACUM_NODOS = ['V 100', 'V 1600', 'COL 29', 'V 502'];
+function acumNodos(){ return qcNombres('acumulado', ACUM_NODOS); }
+function acumDia(ts){ return pedIso(inicioDiaOperativo(new Date(ts))); }
+function renderAcumulados(){
+  const main = document.getElementById('acumMain');
+  if(!main) return;
+  iniciarTendenciaSync();
+  const nodos = acumNodos();
+  const lista = qcLista('acumulado');
+  const ultimo = {};
+  HIST.filter(h => h.tipo === 'acumulado').sort((a, b) => b.ts - a.ts).forEach(h => { if(!ultimo[h.equipo]) ultimo[h.equipo] = h; });
+  // tabla por dia operativo: la ultima carga de cada nodo en ese dia
+  const dias = {};
+  lista.forEach(h => { const d = acumDia(h.ts); dias[d] = dias[d] || {}; if(!dias[d][h.equipo]) dias[d][h.equipo] = h; });
+  const diasOrd = Object.keys(dias).sort().reverse();
+  const nodosTabla = nodos.filter(n => lista.some(h => h.equipo === n));
+  const diaTxt = (iso) => { const hoy = pedHoy(); const ay = pedIso(new Date(inicioDiaOperativo(new Date()).getTime() - 86400e3)); return iso === hoy ? 'hoy' : (iso === ay ? 'ayer' : iso.slice(8, 10) + '/' + iso.slice(5, 7)); };
+  main.innerHTML = `<div class="qc-wrap">
+    <section class="qc-card">
+      <h2>Cargar acumulados</h2>
+      <div class="qc-form">
+        ${qcFormHora('acHora')}
+        ${nodos.map((n, i) => `<label class="qc-f"><span>${avisoEsc(n)} (m³/d)</span><input class="edit-input ac-val" data-nodo="${avisoEsc(n)}" inputmode="decimal" placeholder="${ultimo[n] ? 'antes ' + qcFmt(ultimo[n].vals.m3d) : ''}"></label>`).join('')}
+      </div>
+      <div class="qc-sub-tit">Otro nodo</div>
+      <div class="qc-form">
+        <label class="qc-f"><span>Nombre</span><input class="edit-input" id="acOtroN" placeholder="ej: V 300"></label>
+        <label class="qc-f"><span>m³/d</span><input class="edit-input" id="acOtroV" inputmode="decimal"></label>
+      </div>
+      <div class="qc-err" id="acErr" role="alert"></div>
+      <div class="qc-bot"><button type="button" class="save-btn" id="acGuardar">Guardar acumulados</button></div>
+    </section>
+    <section class="qc-card">
+      <div class="qc-tit-fila"><h2>Por día</h2><span class="qc-sub">día operativo (06 a 06), últimos ${QC_DIAS} días</span></div>
+      ${diasOrd.length ? `<div class="qc-tabla-wrap"><table class="qc-tabla"><thead><tr><th>Día</th>${nodosTabla.map(n => `<th>${avisoEsc(n)}</th>`).join('')}</tr></thead><tbody>
+        ${diasOrd.map((d, k) => { const ant = diasOrd[k + 1] ? dias[diasOrd[k + 1]] : null; return `<tr><td>${diaTxt(d)}</td>${nodosTabla.map(n => { const h = dias[d][n]; if(!h) return '<td>—</td>'; const v = h.vals.m3d; const a = ant && ant[n] ? ant[n].vals.m3d : null; const dif = a !== null && a !== undefined ? v - a : null;
+          return `<td>${qcFmt(v)}${dif !== null && dif !== 0 ? ` <span class="ac-dif ${dif > 0 ? 'sube' : 'baja'}">${dif > 0 ? '▲' : '▼'} ${qcFmt(Math.abs(dif))}</span>` : ''}</td>`; }).join('')}</tr>`; }).join('')}
+      </tbody></table></div>` : '<div class="empty-msg">Todavía no hay acumulados cargados.</div>'}
+    </section>
+    <section class="qc-card">
+      <div class="qc-tit-fila"><h2>Cargas</h2><span class="qc-sub">${lista.length} en ${QC_DIAS} días</span></div>
+      ${lista.length ? `<div class="qc-tabla-wrap"><table class="qc-tabla"><thead><tr><th>Cuándo</th><th>Nodo</th><th>m³/d</th><th>Cargó</th><th></th></tr></thead><tbody>
+        ${lista.map((h, i) => `<tr><td>${avisoEsc(qcCuando(h.ts))}</td><td>${avisoEsc(h.equipo)}</td><td>${qcFmt(h.vals.m3d)}</td><td>${avisoEsc(h.por || '')}</td><td><button type="button" class="qc-x" data-i="${i}" aria-label="Borrar">&times;</button></td></tr>`).join('')}
+      </tbody></table></div>` : '<div class="empty-msg">Sin cargas.</div>'}
+    </section>
+  </div>`;
+  const $ = (id) => document.getElementById(id);
+  main.querySelectorAll('.qc-x').forEach(b => b.addEventListener('click', () => qcBorrar(lista[+b.dataset.i])));
+  $('acGuardar').addEventListener('click', () => {
+    const err = $('acErr'); err.textContent = '';
+    const cargas = [];
+    let malo = false;
+    main.querySelectorAll('.ac-val').forEach(i => { const n = qcNum(i.value); if(Number.isNaN(n)) malo = true; else if(n !== null) cargas.push([i.dataset.nodo, n]); });
+    let otroN = $('acOtroN').value.trim().toUpperCase().replace(/\s+/g, ' ').replace(/^([A-Z]+)\s*-?\s*(\d)/, '$1 $2');
+    const otroV = qcNum($('acOtroV').value);
+    if(Number.isNaN(otroV)) malo = true;
+    if(otroN && otroV !== null && !Number.isNaN(otroV)){ const ya = nodos.find(n => n.toUpperCase() === otroN); cargas.push([ya || otroN, otroV]); }
+    else if(otroN || (otroV !== null && !Number.isNaN(otroV))){ err.textContent = 'Para otro nodo poné el nombre y el valor.'; return; }
+    if(malo){ err.textContent = 'Los valores tienen que ser números (ej: 1633).'; return; }
+    if(!cargas.length){ err.textContent = 'Cargá al menos un nodo.'; return; }
+    if(!puedeModificar()) return;
+    if(!firestoreOk){ alert('No hay conexion con el guardado compartido. Revisa tu internet e intenta de nuevo.'); return; }
+    const ts = qcTsDeHora($('acHora').value);
+    cargas.forEach(([n, v]) => histRegistrar('acumulado', 'Acumulados', n, { m3d: v }, ts));
+    movToast('Acumulados guardados (' + cargas.length + ' nodo' + (cargas.length === 1 ? '' : 's') + ').');
+    renderAcumulados();
+  });
+}
+document.getElementById('tabAcum').addEventListener('click', () => { switchTab('tabAcum', 'acumMain'); renderAcumulados(); });
+
 
 
 
@@ -11795,7 +11897,7 @@ document.getElementById('tabScr').addEventListener('click', () => { switchTab('t
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202610310210;
+var APP_VERSION = 202610312050;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
