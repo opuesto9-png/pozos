@@ -1485,6 +1485,21 @@
   .wa-edit{ display:flex; gap:12px; flex-wrap:wrap; margin-top:3px; }
   .wa-edit label{ font-size:.72rem; color:var(--muted); display:flex; gap:6px; align-items:center; }
   .wa-edit input{ background:var(--bg); border:1px solid var(--line); color:var(--text); border-radius:5px; padding:4px 6px; font:inherit; font-size:.82rem; width:124px; }
+  .wa-corr{ background:none; border:0; padding:0; color:#E8B64A; text-decoration:underline; font:inherit; cursor:pointer; font-weight:600; }
+  .wa-corr.suave{ color:#8fc3df; font-weight:400; }
+  .wa-cf{ margin-top:6px; padding:10px; border:1px solid #7a5f22; border-radius:8px; background:var(--bg); display:flex; flex-wrap:wrap; gap:10px 14px; align-items:flex-end; }
+  .wa-cf label{ font-size:.72rem; color:var(--muted); display:flex; flex-direction:column; gap:3px; }
+  .wa-cf input, .wa-cf select, .wa-cf textarea{ background:var(--panel); border:1px solid var(--line); color:var(--text); border-radius:5px; padding:5px 7px; font:inherit; font-size:.84rem; }
+  .wa-cf input{ width:124px; }
+  .wa-cf .cf-ancho{ flex:1 1 100%; } .wa-cf .cf-ancho textarea{ width:100%; resize:vertical; }
+  .wa-cf .cf-rec{ flex-direction:row; align-items:center; gap:6px; flex:1 1 100%; font-size:.78rem; color:var(--text); }
+  .wa-cf .cf-rec input{ width:16px; height:16px; }
+  .cf-err{ flex:1 1 100%; color:#ef8a8a; font-size:.78rem; } .cf-err:empty{ display:none; }
+  .cf-bot{ display:flex; gap:8px; margin-left:auto; } .cf-bot button{ padding:7px 14px; }
+  .wa-apr{ display:flex; flex-direction:column; gap:6px; max-height:220px; overflow:auto; } .wa-apr:empty{ display:none; }
+  .wa-apr-it{ display:flex; justify-content:space-between; gap:10px; align-items:center; background:var(--bg); border:1px solid var(--line); border-radius:6px; padding:7px 9px; font-size:.78rem; }
+  .wa-apr-ej{ color:var(--muted); margin-top:2px; }
+  .wa-apr-it .cancel-btn{ flex:0 0 auto; padding:5px 10px; }
   @media (max-width: 820px){ .wa-cols{ grid-template-columns:1fr; } .wa-caja.ancha{ max-height:none; } .wa-col-msgs{ max-height:40vh; } }
 </style>
 </head>
@@ -1930,7 +1945,7 @@ var SYNC_RESYNC_DIAS = 7;
 var SYNC_MARGEN_MS = 3 * 60e3;
 var SYNC_NOMBRES = ['pozos_overrides', 'uspa_notas', 'equipos_notas', 'aib_pozos', 'pozos_velas', 'baterias_tanques', 'baterias_bombeo',
   'baterias_bombeo_log', 'pias2_tanques', 'pias2_equipos', 'pias2_camiones', 'ptc_descargas', 'avisos_mtto', 'ciclaje_eventos', 'ciclaje_plan',
-  'pedidos', 'compresores_bp', 'compresores_lecturas', 'historial_mediciones', 'tendencia_diaria', 'pozos_maniobras'];
+  'pedidos', 'compresores_bp', 'compresores_lecturas', 'historial_mediciones', 'tendencia_diaria', 'pozos_maniobras', 'wa_aprendido'];
 var SYNC_COLS = {};
 var SYNC_STATS = { servidor: 0, consultas: 0, modo: '' };
 var syncModoP = null;
@@ -10495,6 +10510,10 @@ function waAnalizar(msgs){
       add(m, { cat: 'no', est: 'no', titulo: 'Foto o archivo', detalle: 'una imagen no se puede leer', nota: 'Cargalo a mano, o pedí que lo manden también como texto.' });
       return;
     }
+    // escrito igual que un mensaje que ya se corrigio antes: se lee como se enseño
+    const plantilla = waPlantilla(txt);
+    const regla = WA_APRENDIDO.find(x => x.plantilla === plantilla);
+    if(regla){ waItemsDeRegla(m, regla).forEach(o => add(m, o)); return; }
     // scraper
     if(/scraper|escraper/.test(n) && /(hs de sal|psal|hs de lleg|plleg)/.test(n)){
       const g = (re) => { const x = n.match(re); return x ? x[1] : ''; };
@@ -10722,6 +10741,7 @@ function waAnalizar(msgs){
     if(hecho[waClave(it)]) { it.est = 'dup'; it.nota = 'Ya se guardó en un pegado anterior desde este equipo.'; }
   });
   items.forEach(it => { it.chk = it.est === 'ok'; });
+  WA.reglas = {};
   return items;
 }
 function waClave(it){ return [it.cat, it.tipo || '', it.pozo || '', it.titulo, it.ts].join('|'); }
@@ -10852,9 +10872,10 @@ function waAplicarDatos(it){
 }
 function waGuardar(){
   const sel = WA.items.filter(it => it.chk && it.est !== 'no' && it.est !== 'dup');
-  if(!sel.length) return;
+  if(!sel.length && !Object.keys(WA.reglas || {}).length) return;
   if(!puedeModificar()) return;
   if(!firestoreOk){ alert('No hay conexion con el guardado compartido. Revisa tu internet e intenta de nuevo.'); return; }
+  const nAprendido = waGuardarReglas();
   const orden = sel.slice().sort((a, b) => a.ts - b.ts);
   let ok = 0;
   orden.forEach(it => {
@@ -10865,9 +10886,191 @@ function waGuardar(){
   });
   waMarcarHechos(sel);
   waCerrar();
-  movToast('Guardado desde WhatsApp: ' + ok + ' dato' + (ok === 1 ? '' : 's') + '.');
+  movToast('Guardado desde WhatsApp: ' + ok + ' dato' + (ok === 1 ? '' : 's') + (nAprendido ? ' · aprendió ' + nAprendido + ' forma' + (nAprendido === 1 ? '' : 's') + ' de escribir' : '') + '.');
   refreshEverything();
   if(typeof renderPedidos === 'function' && document.getElementById('pedMain').style.display !== 'none') renderPedidos();
+}
+
+// ---- Correcciones que la app aprende (coleccion 'wa_aprendido', compartida por todos) ----
+// Cuando un mensaje sale "sin entender" o "revisar", se corrige a mano y, si se deja tildado "Recordar",
+// la app guarda la FORMA en que estaba escrito (con los pozos y los numeros como comodines). La proxima vez
+// que alguien escriba igual, lo lee de esa forma solo. Solo aprende frases iguales, no parecidas.
+var WA_APRENDIDO = [];
+var waAprSync = false;
+function iniciarAprendidoSync(){
+  if(waAprSync || !firestoreOk) return;
+  waAprSync = true;
+  syncVivo('wa_aprendido', {}, (snap) => {
+    const l = [];
+    snap.forEach(d => l.push(Object.assign({ id: d.id }, d.data())));
+    WA_APRENDIDO = l;
+  }, (e) => console.error('wa_aprendido', e));
+}
+function waPlantilla(t){
+  return waSinAcentos(t).replace(/\bce\.?\s*a?\.?\s*-?\s*\d{2,4}(?!\d)/g, ' #p ').replace(/\d+(?:[.,]\d+)?/g, ' #n ')
+    .replace(/[^a-z#ñ]+/g, ' ').replace(/\s+/g, ' ').trim();
+}
+function waHash(s){ let h = 5381; for(let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0; return 'r' + (h >>> 0).toString(36) + '_' + s.length; }
+// numeros del mensaje que no son pozos (para saber cual era la presion)
+function waNumsSinPozos(txt){
+  let t = txt;
+  waPozos(txt).slice().sort((a, b) => b.ini - a.ini).forEach(p => { t = t.slice(0, p.ini) + ' '.repeat(p.fin - p.ini) + t.slice(p.fin); });
+  t = t.replace(/\bce\.?\s*a?\.?\s*-?\s*\d{2,4}(?!\d)/gi, ' ');
+  return (t.match(/\d+(?:[.,]\d+)?/g) || []).map(waNum);
+}
+var WA_QUE = { abrir: 'Apertura de pozo', cerrar: 'Cierre de pozo', pedido: 'Pedido del supervisor', novedad: 'Novedad para el parte', ignorar: 'Charla: no cargar nada' };
+// renglones a partir de una correccion (hecha a mano o aprendida)
+function waItemsCorreccion(m, c){
+  const out = [];
+  const nota = c.nota || '';
+  if(c.que === 'abrir' || c.que === 'cerrar'){
+    const hora = c.hora || m.hora;
+    const ts = horaATs(hora, m.ts + 10 * 60e3);
+    out.push({ cat: 'maniobras', est: 'ok', pozo: c.pozo, tipo: c.que, ts, hora, presion: c.presion, notaHorario: '',
+      titulo: c.pozo + ' · ' + (c.que === 'abrir' ? 'Abierto' : 'Cerrado'), detalle: c.presion !== null && c.presion !== undefined ? (c.que === 'abrir' ? waFmt(c.presion) + ' kg/cm²' : 'presión de cierre ' + waFmt(c.presion) + ' kg/cm²') : '', nota });
+  } else if(c.que === 'pedido'){
+    const t = c.pedTipo || 'otro';
+    const det = (c.texto || m.texto).replace(/\s+/g, ' ').trim().slice(0, 200);
+    out.push({ cat: 'pedidos', est: 'ok', pozo: c.pozo || '', titulo: (t === 'abrir' ? 'Abrir ' : (t === 'cerrar' ? 'Cerrar ' : 'Tarea: ')) + (t === 'otro' ? (c.pozo ? c.pozo + ' · ' : '') + det.slice(0, 60) : c.pozo) + (c.dur && t !== 'otro' ? ' por ' + waFmt(c.dur) + ' h' : ''),
+      detalle: 'pedido', pedido: { tipo: t, objetivo: t === 'otro' ? '' : c.pozo, detalle: det, duracionHs: (t === 'abrir' || t === 'cerrar') && c.dur && c.dur <= 72 ? c.dur : 0 }, nota });
+  } else if(c.que === 'novedad'){
+    const tx = (c.texto || m.texto).replace(/\s+/g, ' ').trim().slice(0, 400);
+    out.push({ cat: 'novedades', est: 'ok', titulo: c.pozo || 'Novedad general', detalle: tx.slice(0, 160), texto: tx, equipo: c.pozo || '', nota });
+  }
+  return out;
+}
+// aplicar lo aprendido a un mensaje nuevo escrito de la misma forma
+function waItemsDeRegla(m, regla){
+  if(regla.que === 'ignorar') return [];
+  const pozos = waPozos(m.texto);
+  const gas = pozos.filter(p => p.gas).map(p => p.pozo);
+  const nums = waNumsSinPozos(m.texto);
+  const quien = regla.por === '__ahora' ? 'Corregido igual que el mensaje que acabás de corregir.' : 'Aprendido: así lo corrigió ' + (regla.por || 'alguien') + '.';
+  const hora = waHoraEnTexto(m.texto, true) || m.hora;
+  if(regla.que === 'abrir' || regla.que === 'cerrar'){
+    if(!gas.length){
+      const p = pozos[0];
+      return [{ cat: 'no', est: 'no', titulo: (p ? p.pozo : 'Pozo') + ' · ' + (regla.que === 'abrir' ? 'Abierto' : 'Cerrado'), detalle: m.texto.slice(0, 120),
+        nota: p ? p.pozo + ' no está en la lista de pozos de gas de la app.' : 'Se aprendió como maniobra, pero no encuentro el pozo en el mensaje.' }];
+    }
+    const pres = gas.length === 1 && regla.presIdx >= 0 && nums[regla.presIdx] !== undefined ? nums[regla.presIdx] : null;
+    return [].concat.apply([], gas.map(pz => waItemsCorreccion(m, { que: regla.que, pozo: pz, hora, presion: pres, nota: quien })));
+  }
+  if(regla.que === 'pedido'){
+    const t = regla.pedTipo || 'otro';
+    if(t !== 'otro' && !gas.length) return [{ cat: 'no', est: 'no', titulo: 'Pedido', detalle: m.texto.slice(0, 120), nota: 'Se aprendió como pedido, pero no encuentro el pozo en el mensaje.' }];
+    const dur = regla.durIdx >= 0 && nums[regla.durIdx] !== undefined ? nums[regla.durIdx] : waDuracion(m.texto);
+    return (t === 'otro' ? [gas[0] || ''] : gas).reduce((a, pz) => a.concat(waItemsCorreccion(m, { que: 'pedido', pedTipo: t, pozo: pz, dur, nota: quien })), []);
+  }
+  if(regla.que === 'novedad') return waItemsCorreccion(m, { que: 'novedad', pozo: (pozos[0] && !pozos[0].desconocido) ? pozos[0].pozo : '', nota: quien });
+  return [];
+}
+function waGuardarReglas(){
+  const rs = Object.values(WA.reglas || {});
+  rs.forEach(r => {
+    const id = waHash(r.plantilla);
+    const d = Object.assign({}, r, { por: operadorName || 'Sin nombre', ts: Date.now() });
+    db.collection('wa_aprendido').doc(id).set(d).catch(e => console.error('wa_aprendido', e));
+    WA_APRENDIDO = WA_APRENDIDO.filter(x => x.id !== id).concat([Object.assign({ id }, d)]);
+  });
+  return rs.length;
+}
+function waNormPozo(v){
+  const m = String(v || '').match(/(\d{2,4})/);
+  return m ? 'Ce-' + m[1] : '';
+}
+// formulario de correccion dentro del renglon
+function waAbrirCorreccion(row, it){
+  if(row.querySelector('.wa-cf')) return;
+  const m = WA.msgs[it.msg];
+  const pz0 = it.pozo || ((waPozos(m.texto)[0] || {}).pozo) || '';
+  const n = waSinAcentos(m.texto);
+  let que = it.cat === 'maniobras' ? it.tipo : (it.cat === 'pedidos' ? 'pedido' : (it.cat === 'novedades' ? 'novedad' : (WA_RE_CERRADO.test(n) ? 'cerrar' : (WA_RE_ABIERTO.test(n) ? 'abrir' : 'novedad'))));
+  const nums = waNumsSinPozos(m.texto);
+  const pres0 = it.presion !== undefined && it.presion !== null ? waFmt(it.presion) : (nums.length ? waFmt(nums[0]) : '');
+  const f = document.createElement('div');
+  f.className = 'wa-cf';
+  f.innerHTML = `
+    <label>Qué es <select class="cf-que">${Object.keys(WA_QUE).map(k => `<option value="${k}" ${k === que ? 'selected' : ''}>${WA_QUE[k]}</option>`).join('')}</select></label>
+    <label class="cf-f" data-para="abrir cerrar pedido novedad">Pozo <input class="cf-pozo" value="${avisoEsc(pz0)}" placeholder="Ce-0000"></label>
+    <label class="cf-f" data-para="abrir cerrar">Hora <input type="time" class="cf-hora" value="${avisoEsc(it.hora || waHoraEnTexto(m.texto, true) || m.hora)}"></label>
+    <label class="cf-f" data-para="abrir cerrar">Presión (kg/cm²) <input class="cf-pres" inputmode="decimal" value="${avisoEsc(pres0)}"></label>
+    <label class="cf-f" data-para="pedido">Pide <select class="cf-ped"><option value="abrir">Abrir</option><option value="cerrar">Cerrar</option><option value="otro">Otra tarea</option></select></label>
+    <label class="cf-f" data-para="pedido">Por cuántas horas <input class="cf-dur" inputmode="decimal" value="${avisoEsc(waFmt(waDuracion(m.texto)))}"></label>
+    <label class="cf-f cf-ancho" data-para="pedido novedad">Texto <textarea class="cf-txt" rows="2">${avisoEsc(m.texto.replace(/\s+/g, ' ').trim())}</textarea></label>
+    <label class="cf-rec"><input type="checkbox" class="cf-recordar" checked> Recordar: cuando escriban un mensaje igual (con otro pozo, hora o presión), leerlo así</label>
+    <div class="cf-err" role="alert"></div>
+    <div class="cf-bot"><button type="button" class="cancel-btn cf-no">Cancelar</button><button type="button" class="save-btn cf-ok">Aplicar</button></div>`;
+  row.querySelector('.wa-it-cuerpo').appendChild(f);
+  const ped = f.querySelector('.cf-ped');
+  if(it.pedido) ped.value = it.pedido.tipo; else ped.value = /\babrir/.test(n) ? 'abrir' : (/\bcerrar/.test(n) ? 'cerrar' : 'otro');
+  const mostrar = () => { const q = f.querySelector('.cf-que').value; f.querySelectorAll('.cf-f').forEach(l => { l.style.display = l.dataset.para.split(' ').includes(q) ? '' : 'none'; }); };
+  f.querySelector('.cf-que').addEventListener('change', mostrar);
+  mostrar();
+  f.querySelector('.cf-no').addEventListener('click', () => f.remove());
+  f.querySelector('.cf-ok').addEventListener('click', () => {
+    const q = f.querySelector('.cf-que').value;
+    const err = f.querySelector('.cf-err');
+    const pozo = waNormPozo(f.querySelector('.cf-pozo').value);
+    const hora = f.querySelector('.cf-hora').value;
+    const presTxt = f.querySelector('.cf-pres').value.trim();
+    const presion = presTxt ? waNum(presTxt) : null;
+    const pedTipo = ped.value;
+    const durTxt = f.querySelector('.cf-dur').value.trim();
+    const dur = durTxt ? waNum(durTxt) : null;
+    const texto = f.querySelector('.cf-txt').value.trim();
+    let msg = '';
+    const esGas = pozo && POZOS.some(p => p.pozo === pozo);
+    if((q === 'abrir' || q === 'cerrar') && !esGas) msg = pozo ? pozo + ' no está en la lista de pozos de gas de la app.' : 'Escribí el pozo (ej: Ce-1214).';
+    else if((q === 'abrir' || q === 'cerrar') && !/^\d{2}:\d{2}$/.test(hora)) msg = 'Poné la hora.';
+    else if(presTxt && presion === null) msg = 'La presión tiene que ser un número.';
+    else if(q === 'pedido' && pedTipo !== 'otro' && !esGas) msg = 'Para un pedido de abrir o cerrar, escribí un pozo de gas de la lista.';
+    else if(q === 'novedad' && !texto) msg = 'Escribí el texto de la novedad.';
+    if(msg){ err.textContent = msg; return; }
+    const c = { que: q, pozo: q === 'novedad' ? (pozo && (esGas || (AIB_POZOS || []).some(p => p.pozo === pozo)) ? pozo : '') : pozo, hora, presion, pedTipo, dur, texto, nota: 'Corregido a mano.' };
+    const nuevos = waItemsCorreccion(m, c).map(o => Object.assign({ id: 'wa' + Math.random().toString(36).slice(2), msg: m.i, por: m.autor, ts: m.ts, chk: true }, o));
+    const pos = WA.items.indexOf(it);
+    WA.items.splice(pos, 1, ...nuevos);
+    if(f.querySelector('.cf-recordar').checked){
+      const plantilla = waPlantilla(m.texto);
+      if(plantilla.replace(/#[pn]/g, '').trim().length >= 2){
+        const r = { plantilla, que: q, pedTipo: q === 'pedido' ? pedTipo : '', presIdx: -1, durIdx: -1, ejemplo: m.texto.replace(/\s+/g, ' ').trim().slice(0, 200) };
+        const nums = waNumsSinPozos(m.texto);
+        if(presion !== null) r.presIdx = nums.findIndex(x => Math.abs(x - presion) < 1e-6);
+        if(dur !== null) r.durIdx = nums.findIndex(x => Math.abs(x - dur) < 1e-6);
+        WA.reglas = WA.reglas || {};
+        WA.reglas[plantilla] = r;
+        // los otros mensajes de este mismo pegado escritos igual tambien se corrigen
+        WA.msgs.forEach(o => {
+          if(o.i === m.i || waPlantilla(o.texto) !== plantilla) return;
+          const its = WA.items.filter(x => x.msg === o.i);
+          if(its.some(x => x.nota === 'Corregido a mano.' || x.est === 'dup')) return;
+          WA.items = WA.items.filter(x => x.msg !== o.i).concat(waItemsDeRegla(o, Object.assign({ por: '__ahora' }, r)).map(x => Object.assign({ id: 'wa' + Math.random().toString(36).slice(2), msg: o.i, por: o.autor, ts: o.ts, est: 'ok', chk: true }, x, { chk: x.est !== 'no' })));
+        });
+      }
+    }
+    const col = document.querySelector('.wa-col-items');
+    const sc = col ? col.scrollTop : 0;
+    waPasoConfirmar();
+    const col2 = document.querySelector('.wa-col-items');
+    if(col2) col2.scrollTop = sc;
+  });
+}
+function waListaAprendido(){
+  const cont = document.getElementById('waApr');
+  if(!cont) return;
+  if(cont.dataset.abierto === '1'){ cont.dataset.abierto = ''; cont.innerHTML = ''; return; }
+  cont.dataset.abierto = '1';
+  const l = WA_APRENDIDO.slice().sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  cont.innerHTML = l.length ? l.map(r => `<div class="wa-apr-it"><div><b>${avisoEsc(WA_QUE[r.que] || r.que)}${r.que === 'pedido' && r.pedTipo ? ' (' + avisoEsc(r.pedTipo) + ')' : ''}</b> · ${avisoEsc(r.por || '')} · ${avisoEsc(r.ts ? tendFechaCorta(r.ts) : '')}<div class="wa-apr-ej">“${avisoEsc(r.ejemplo || r.plantilla)}”</div></div><button type="button" class="cancel-btn wa-olvidar" data-id="${avisoEsc(r.id)}">Olvidar</button></div>`).join('')
+    : '<div class="wa-ayuda">Todavía no aprendió nada. Cuando corrijas un mensaje con “Recordar” tildado, aparece acá.</div>';
+  cont.querySelectorAll('.wa-olvidar').forEach(b => b.addEventListener('click', () => {
+    if(!confirm('¿Olvidar esta corrección? Los mensajes escritos así van a volver a salir sin entender.')) return;
+    if(!puedeModificar()) return;
+    db.collection('wa_aprendido').doc(b.dataset.id).delete().catch(e => alert('No se pudo (' + e.message + ').'));
+    WA_APRENDIDO = WA_APRENDIDO.filter(x => x.id !== b.dataset.id);
+    cont.dataset.abierto = ''; waListaAprendido();
+  }));
 }
 
 // 4) pantalla
@@ -10885,6 +11088,7 @@ var WA_EST = { ok: ['listo', 'wa-ok'], rev: ['revisar', 'wa-rev'], no: ['sin ent
 function waAbrir(){
   if(document.getElementById('waPegar')) return;
   iniciarTendenciaSync();
+  iniciarAprendidoSync();
   const el = document.createElement('div');
   el.id = 'waPegar';
   el.setAttribute('role', 'dialog');
@@ -10899,10 +11103,13 @@ function waPasoPegar(){
   el.innerHTML = `<div class="wa-caja">
     <div class="wa-cab"><div><h2 id="waTit">Pegar de WhatsApp</h2><p>Copiá los mensajes del grupo (seleccioná varios y Ctrl+C) y pegalos acá. La app separa cada dato y te muestra qué entendió. Nada se guarda hasta que confirmes.</p></div><button type="button" class="close-btn" id="waX" aria-label="Cerrar">&times;</button></div>
     <label for="waTxt" class="wa-lbl">Mensajes</label>
-    <textarea id="waTxt" class="wa-txt" placeholder="[20:15, 30/10/2026] Juan: Ce-1214, quedó abierto (16.5 kg/cm2)."></textarea>
+    <textarea id="waTxt" class="wa-txt" placeholder="[20:15, 30/10/2026] Nombre: Ce-1214, quedó abierto (16.5 kg/cm2)."></textarea>
+    <div class="wa-pie"><button type="button" class="wa-ver" id="waAprBtn">Lo que aprendió la app (${WA_APRENDIDO.length})</button></div>
+    <div id="waApr" class="wa-apr"></div>
     <div class="wa-pie"><span class="wa-ayuda">WhatsApp copia solo lo que tiene cargado en pantalla: si es mucho, pegá en varias tandas (subí un poco, copiá, pegá debajo). Lo repetido se saca solo.</span><button type="button" class="save-btn" id="waLeer">Leer mensajes</button></div>
   </div>`;
   document.getElementById('waX').addEventListener('click', waCerrar);
+  document.getElementById('waAprBtn').addEventListener('click', waListaAprendido);
   document.getElementById('waLeer').addEventListener('click', () => {
     const raw = document.getElementById('waTxt').value;
     if(!raw.trim()) return;
@@ -10940,7 +11147,7 @@ function waPasoConfirmar(){
         ${it.est === 'no' || it.est === 'dup' ? '<span class="wa-chk-vacio"></span>' : `<input type="checkbox" class="wa-chk" id="chk_${it.id}" ${it.chk ? 'checked' : ''} aria-label="Incluir ${avisoEsc(it.titulo)}">`}
         <div class="wa-it-cuerpo">
           <div class="wa-it-top"><label for="chk_${it.id}" class="wa-it-tit">${avisoEsc(it.titulo)}</label><span class="wa-it-det">${avisoEsc(it.detalle || '')}</span><span class="wa-pill">${e[0]}</span></div>
-          <span class="wa-it-meta">${avisoEsc(new Date(it.ts).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' }))} ${avisoEsc(hhmmDeTs(it.ts))} · ${avisoEsc(it.por)} · <button type="button" class="wa-ver" data-msg="${it.msg}">ver mensaje</button></span>
+          <span class="wa-it-meta">${avisoEsc(new Date(it.ts).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' }))} ${avisoEsc(hhmmDeTs(it.ts))} · ${avisoEsc(it.por)} · <button type="button" class="wa-ver" data-msg="${it.msg}">ver mensaje</button>${it.est !== 'dup' && !/^Foto/.test(it.titulo) ? ` · <button type="button" class="wa-corr${it.est === 'ok' ? ' suave' : ''}">Corregir</button>` : ''}</span>
           ${editable ? `<div class="wa-edit"><label>Hora <input type="time" class="wa-hora" value="${avisoEsc(it.hora)}"></label><label>${it.tipo === 'abrir' ? 'Presión apertura' : 'Presión cierre'} (kg/cm²) <input type="text" inputmode="decimal" class="wa-pres" value="${it.presion !== null && it.presion !== undefined ? avisoEsc(waFmt(it.presion)) : ''}"></label></div>` : ''}
           ${it.nota ? `<span class="wa-it-nota">${avisoEsc(it.nota)}</span>` : ''}
         </div></div>`;
@@ -10956,13 +11163,16 @@ function waPasoConfirmar(){
     </div>
     <div class="wa-pie fijo"><button type="button" class="cancel-btn" id="waVolver">Volver a pegar</button><button type="button" class="save-btn" id="waGuardar"></button></div>
   </div>`;
-  const pintarBoton = () => { const n = WA.items.filter(it => it.chk && it.est !== 'no' && it.est !== 'dup').length; const b = document.getElementById('waGuardar'); b.textContent = 'Guardar ' + n + ' seleccionado' + (n === 1 ? '' : 's'); b.disabled = !n; };
+  const pintarBoton = () => { const n = WA.items.filter(it => it.chk && it.est !== 'no' && it.est !== 'dup').length; const nr = Object.keys(WA.reglas || {}).length; const b = document.getElementById('waGuardar');
+    b.textContent = n ? 'Guardar ' + n + ' seleccionado' + (n === 1 ? '' : 's') + (nr ? ' y lo aprendido' : '') : (nr ? 'Guardar lo aprendido' : 'Guardar'); b.disabled = !n && !nr; };
   el.querySelectorAll('.wa-it').forEach(row => {
     const it = WA.items.find(x => x.id === row.dataset.wid);
     const chk = row.querySelector('.wa-chk');
     if(chk) chk.addEventListener('change', () => { it.chk = chk.checked; pintarBoton(); });
     const h = row.querySelector('.wa-hora');
     if(h) h.addEventListener('change', () => { if(/^\d{2}:\d{2}$/.test(h.value)){ it.hora = h.value; it.ts = horaATs(h.value, Math.min(Date.now(), WA.msgs[it.msg].ts + 3600e3)); } });
+    const cb = row.querySelector('.wa-corr');
+    if(cb) cb.addEventListener('click', () => waAbrirCorreccion(row, it));
     const pr = row.querySelector('.wa-pres');
     if(pr) pr.addEventListener('input', () => { const v = waNum(pr.value); it.presion = v; });
   });
@@ -10997,7 +11207,7 @@ function waPasoConfirmar(){
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202610302332;
+var APP_VERSION = 202610302333;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
