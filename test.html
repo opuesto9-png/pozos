@@ -10612,7 +10612,7 @@ function waAnalizar(msgs, opt){
     const n = waSinAcentos(txt);
     const pozos = waPozos(txt);
     const antes = items.length;
-    const ctxPozo = ultimoPozoGrupo && m.ts - ultimoPozoGrupo.ts <= 15 * 60e3 ? ultimoPozoGrupo : null;
+    const ctxPozo = ultimoPozoGrupo && m.ts - ultimoPozoGrupo.ts <= 30 * 60e3 ? ultimoPozoGrupo : null;
     if(pozos.some(x => x.gas)) ultimoPozoGrupo = { pozo: pozos.find(x => x.gas).pozo, ts: m.ts };
     // fotos y archivos: no se pueden leer
     if(/(\(imagen\)|<multimedia omitido>|imagen omitida|image omitted|foto omitida|documento omitido|sticker omitido|<adjunto)/.test(n) || (!txt.trim() && m.sinCabecera)){
@@ -10719,9 +10719,32 @@ function waAnalizar(msgs, opt){
       if(nodos.length || stocks.length) return;
     }
     if(tks.length) return;
+    // preguntas ("Ce-1567: esta cerrado?"): no son maniobras. Si el mensaje copia la pregunta y abajo contesta
+    // ("Esta abierto"), se toma la respuesta como estado informado del pozo de la pregunta, para revisar.
+    const lnsTodas = txt.split('\n').map(l => l.trim()).filter(Boolean);
+    const lnsPreg = lnsTodas.filter(l => /\?\s*$/.test(l));
+    if(lnsPreg.length){
+      const resp = lnsTodas.filter(l => !/\?\s*$/.test(l)).join('\n');
+      const rN = waSinAcentos(resp);
+      const pResp = waPozos(resp).filter(x => x.gas);
+      const pPreg = waPozos(lnsPreg.join('\n')).filter(x => x.gas);
+      const tResp = WA_RE_ABIERTO.test(rN) && !WA_RE_CERRADO.test(rN) ? 'abrir' : (WA_RE_CERRADO.test(rN) && !WA_RE_ABIERTO.test(rN) ? 'cerrar' : '');
+      if(!resp.trim() || (!tResp && !pResp.length)) return;
+      if(tResp && !pResp.length && pPreg.length){
+        const pz = pPreg[0].pozo;
+        const pr = waPresiones(resp);
+        add(m, { cat: 'maniobras', est: 'rev', pozo: pz, tipo: tResp, ts: m.ts, hora: m.hora, presion: pr.ec !== null ? pr.ec : (pr.plain[0] !== undefined ? pr.plain[0] : null), notaHorario: '',
+          titulo: pz + ' · ' + (tResp === 'abrir' ? 'Abierto' : 'Cerrado'), detalle: 'informado al contestar una pregunta',
+          nota: 'Contesta la pregunta sobre el ' + pz + ': informa que está ' + (tResp === 'abrir' ? 'abierto' : 'cerrado') + ', pero no dice a qué hora ' + (tResp === 'abrir' ? 'abrió' : 'cerró') + '. Si lo tildás, se carga a la hora del mensaje.' });
+        return;
+      }
+    }
     const imper = WA_RE_PEDIDO.test(n);
     const hecho = WA_RE_ABIERTO.test(n) || WA_RE_CERRADO.test(n);
-    const esPedido = imper && (!hecho || /\b(favor|dejar)\b/.test(n));
+    // pedido: verbo en infinitivo/ruego ("abrir", "podrian ir a verlo", "porfa", "tendria que haber cerrado")
+    const ruego = /\b(favor|dejar|podrian|podrias|podes|pueden|puede|porfa|por favor|tendria que|deberia|verificar|revisar|chequear|ir a ver\w*|ir a velo|ir a verlo)\b/.test(n);
+    const esPedido = (imper || ruego) && (!hecho || ruego);
+    const negado = /\bno\s+(abrir|cerrar|tocar|abran|cierren|lo abran|lo cierren)\b/.test(n);
     // cambios de ciclo / optimizador (horas abierto x horas cerrado)
     const { nw, hAb, hCe } = waCicloHoras(n);
     if(hAb && hCe && /(optimizador|controlador|ciclo|ciclando|\bon\b|\boff\b|\baut|parametro|horas? de apertura|de cierre|de apertura|hs ab|configur|habilitad)/.test(nw)){
@@ -10757,7 +10780,7 @@ function waAnalizar(msgs, opt){
     }
     // pedidos del supervisor
     if(esPedido){
-      let tipo = /lanz|vela/.test(n) ? 'velas' : (/\b(abrir\w*|dejar abiert\w*)\b/.test(n) ? 'abrir' : (/\b(cerrar\w*|dejar cerrad\w*)\b/.test(n) ? 'cerrar' : 'otro'));
+      let tipo = negado ? 'otro' : (/lanz|vela/.test(n) ? 'velas' : (/\b(abrir\w*|dejar abiert\w*)\b/.test(n) ? 'abrir' : (/\b(cerrar\w*|dejar cerrad\w*)\b/.test(n) ? 'cerrar' : 'otro')));
       const cond = /(hasta\s+que|si\s+(no\s+)?supera|luego|cuando)/.test(n);
       let dur = waDuracion(txt);
       const dm = n.match(/\b(?:cerrar|abrir)\w*\s+(\d+(?:[.,]\d+)?)\s*(?:hs?|horas?)\b/);
@@ -10767,13 +10790,19 @@ function waAnalizar(msgs, opt){
         nota: p.pozo + ' no está en la lista de pozos de gas de la app: el pedido para ese pozo no se carga.' }));
       if(!objetivos.length && tipo !== 'otro' && ultimoPozoDe[m.autor] && m.ts - ultimoPozoDe[m.autor].ts < 10 * 60e3) objetivos = [ultimoPozoDe[m.autor].pozo];
       const det = txt.replace(/\s+/g, ' ').trim().slice(0, 200);
+      // tarea sin pozo nombrado, pero se viene hablando de uno ("verificar si lo pueden dejar en automatico")
+      if(!objetivos.length && ctxPozo){
+        add(m, { cat: 'pedidos', est: 'rev', pozo: ctxPozo.pozo, titulo: 'Tarea en ' + ctxPozo.pozo + ': ' + det.slice(0, 60), detalle: 'otra tarea', pedido: { tipo: 'otro', objetivo: '', detalle: ctxPozo.pozo + ': ' + det, duracionHs: 0 },
+          nota: 'No nombra el pozo: es el ' + ctxPozo.pozo + ' del mensaje de las ' + hhmmDeTs(ctxPozo.ts) + '. Se carga como “Otra tarea”.' });
+        return;
+      }
       if(!objetivos.length){
         add(m, { cat: 'pedidos', est: 'rev', tipo: 'otro', titulo: 'Tarea: ' + det.slice(0, 70), detalle: 'otra tarea', pedido: { tipo: 'otro', objetivo: '', detalle: det, duracionHs: 0 }, nota: 'No nombra un pozo: se carga como “Otra tarea”.' });
       } else objetivos.forEach(pz => {
         const pedTipoFinal = cond && tipo !== 'velas' ? 'otro' : tipo;
         const tit = (tipo === 'velas' ? 'Lanzar velas en ' : (tipo === 'abrir' ? 'Abrir ' : (tipo === 'cerrar' ? 'Cerrar ' : 'Tarea en '))) + pz + (dur && tipo !== 'velas' ? ' por ' + waFmt(dur) + ' h' : '');
-        add(m, { cat: 'pedidos', est: (cond || pedTipoFinal === 'otro') ? 'rev' : 'ok', pozo: pz, titulo: tit, detalle: cond ? 'pedido con condición' : 'pedido', pedido: { tipo: pedTipoFinal, objetivo: pedTipoFinal === 'otro' ? '' : pz, detalle: det, duracionHs: (pedTipoFinal === 'abrir' || pedTipoFinal === 'cerrar') && dur && dur <= 72 ? dur : 0 },
-          nota: cond ? 'Es un pedido con condición (“cuando…”, “hasta que…”): se carga como tarea y se marca hecha a mano.' : 'Va a Pedidos y se tacha solo cuando se cargue.' });
+        add(m, { cat: 'pedidos', est: (cond || pedTipoFinal === 'otro') ? 'rev' : 'ok', pozo: pz, titulo: negado ? 'No tocar ' + pz + ' (' + det.slice(0, 40) + ')' : tit, detalle: cond ? 'pedido con condición' : 'pedido', pedido: { tipo: pedTipoFinal, objetivo: pedTipoFinal === 'otro' ? '' : pz, detalle: det, duracionHs: (pedTipoFinal === 'abrir' || pedTipoFinal === 'cerrar') && dur && dur <= 72 ? dur : 0 },
+          nota: negado ? 'Es una indicación de NO maniobrar: se carga como tarea, para que se vea en Pedidos.' : (cond ? 'Es un pedido con condición (“cuando…”, “hasta que…”): se carga como tarea y se marca hecha a mano.' : (pedTipoFinal === 'otro' ? 'Se carga como “Otra tarea” en Pedidos y se marca hecha a mano.' : 'Va a Pedidos y se tacha solo cuando se cargue.')) });
       });
       objetivos.forEach(pz => { ultimoPozoDe[m.autor] = { pozo: pz, ts: m.ts }; });
       return;
@@ -10816,13 +10845,16 @@ function waAnalizar(msgs, opt){
         const dur = waDuracion(seg) || waDuracion(linea);
         const notas = [];
         if(desdeTexto && hora !== m.hora) notas.push('La hora sale del texto (' + hora + '), no de la del mensaje (' + m.hora + ').');
+        const vago = !desdeTexto && /\b(anoche|ayer|madrugada|temprano|a la manana|a la tarde|a la noche|hace un rato)\b/.test(n);
+        if(vago){ rev = rev || ' '; notas.push('Dice “' + (n.match(/\b(anoche|ayer|madrugada|temprano|a la manana|a la tarde|a la noche|hace un rato)\b/) || [''])[0] + '” sin hora: corregí la hora antes de guardar (está la del mensaje).'); }
+        if(/\bmanual\b/.test(n)) notas.push('Dice que quedó en manual: si tiene optimizador, cambialo en la ficha.');
         if(lista.length > 1) notas.push('Un mensaje con ' + lista.length + ' pozos: un renglón por pozo.');
         if(/\bcerr\b/.test(sN)) notas.push('“cerr” = cerrado.');
         if(/\bab\b/.test(sN)) notas.push('“ab” = abierto.');
         if(pr.psi) notas.push('Venía en psi: pasado a kg/cm².');
         if(dur) notas.push('Por ' + waFmt(dur) + ' h: queda en la nota del horario.');
         if(/optimizador|automatico/.test(n)) notas.push('Menciona el optimizador en automático: si cambió, actualizalo en la ficha.');
-        if(rev) notas.push(rev);
+        if(rev && rev.trim()) notas.push(rev);
         if(p.desconocido){
           add(m, { cat: 'no', est: 'no', pozo: p.pozo, titulo: p.pozo + ' · ' + (tipo === 'abrir' ? 'Abierto' : 'Cerrado'), detalle: (presion !== null ? waFmt(presion) + ' kg/cm² · ' : '') + hora,
             nota: p.pozo + ' no está en la lista de pozos de gas de la app: agregalo en Pozos y volvé a pegar, o cargalo a mano.' });
@@ -10858,9 +10890,13 @@ function waAnalizar(msgs, opt){
       const rec = POZOS.find(p => p.pozo === it.pozo);
       if(!rec) return;
       if(!est[it.pozo]){
-        const ev = MANIOBRAS.filter(e => e.pozo === it.pozo && e.ts < it.ts - 20 * 60e3).sort((a, b) => b.ts - a.ts)[0];
+        // solo se compara con lo cargado en las ultimas 24 h: si hace dias que no se carga nada (francos, baches),
+        // el estado viejo no sirve y no se cuestiona la maniobra
+        const lim = it.ts - 24 * 3600e3;
+        const ev = MANIOBRAS.filter(e => e.pozo === it.pozo && e.ts < it.ts - 20 * 60e3 && e.ts >= lim).sort((a, b) => b.ts - a.ts)[0];
+        const uR = waUltimoTs(rec);
         if(ev) est[it.pozo] = { estado: ev.tipo === 'abrir' ? 'Abierto' : 'Cerrado', desde: ev.hora, dia: ev.ts };
-        else if(waUltimoTs(rec) && waUltimoTs(rec) < it.ts - 20 * 60e3) est[it.pozo] = { estado: rec.estado || '', desde: rec.estado === 'Cerrado' ? rec.horaCierre : rec.horaApertura, dia: waUltimoTs(rec) };
+        else if(uR && uR < it.ts - 20 * 60e3 && uR >= lim) est[it.pozo] = { estado: rec.estado || '', desde: rec.estado === 'Cerrado' ? rec.horaCierre : rec.horaApertura, dia: uR };
         else est[it.pozo] = { estado: '' };
       }
       const st = est[it.pozo];
@@ -10935,8 +10971,10 @@ function waAplicarManiobra(it){
   const ultimo = waUltimoTs(rec);
   const prevMan = MANIOBRAS.filter(e => e.pozo === rec.pozo && e.ts < it.ts).sort((a, b) => b.ts - a.ts)[0];
   const esLaUltima = it.ts >= ultimo && !MANIOBRAS.some(e => e.pozo === rec.pozo && e.ts > it.ts);
-  // estado ANTES de esta maniobra
-  const prev = esLaUltima
+  // estado ANTES de esta maniobra (si lo ultimo cargado es de hace mas de 36 h, no se usa: es un dato viejo)
+  const prevTs = esLaUltima ? ultimo : (prevMan ? prevMan.ts : 0);
+  const prevViejo = !prevTs || it.ts - prevTs > 36 * 3600e3;
+  const prev = prevViejo ? { estado: '', tsA: null, tsC: null, hA: '', hC: '' } : esLaUltima
     ? { estado: rec.estado || '', tsA: maniobraTsValido(rec.tsApertura, rec.horaApertura) ? rec.tsApertura : null, tsC: maniobraTsValido(rec.tsCierre, rec.horaCierre) ? rec.tsCierre : null, hA: rec.horaApertura || '', hC: rec.horaCierre || '' }
     : (prevMan ? { estado: prevMan.estado, tsA: prevMan.tipo === 'abrir' ? prevMan.ts : null, tsC: prevMan.tipo === 'cerrar' ? prevMan.ts : null, hA: prevMan.horaApertura || '', hC: prevMan.horaCierre || '' } : { estado: '', tsA: null, tsC: null, hA: '', hC: '' });
   const f = {};
@@ -11175,7 +11213,7 @@ function waCicloHoras(n){
 }
 // pozo del que se viene hablando en el grupo antes de este mensaje (hasta 15 min antes)
 function waPozoContexto(m){
-  const prev = WA.msgs.filter(o => o.ts <= m.ts && o.i !== m.i && m.ts - o.ts <= 15 * 60e3).sort((a, b) => b.ts - a.ts);
+  const prev = WA.msgs.filter(o => o.ts <= m.ts && o.i !== m.i && m.ts - o.ts <= 30 * 60e3).sort((a, b) => b.ts - a.ts);
   for(const o of prev){ const p = waPozos(o.texto).find(x => x.gas); if(p) return p.pozo; }
   return '';
 }
@@ -11225,6 +11263,12 @@ function waExplicacion(m, txt){
   t = t.replace(/\baperturas?\b/g, 'abierto').replace(/\bcierres?\b/g, 'cerrado').replace(/\b(se )?abrio\b/g, 'abierto').replace(/\b(se )?cerro\b/g, 'cerrado')
        .replace(/\b(con|a|de|en)\s+(\d+(?:[.,]\d+)?)(?!\s*(?:kg|psi|hs?\b|horas?|:|\d|velas?|de gas|de agua|de oil))/g, '$1 $2 kg')
        .replace(/\bpedido de\b/g, 'favor').replace(/\bpide\b/g, 'favor');
+  // si la explicacion no nombra el pozo ("el pozo esta abierto", "dieron el ok para abrirlo"), es el del mensaje
+  if(!waPozos(txt).some(x => x.gas)){
+    const pm = waPozos(m.texto).find(x => x.gas);
+    const pz = pm ? pm.pozo : waPozoContexto(m);
+    if(pz) t = pz + ' ' + t;
+  }
   const syn = { i: m.i, ts: m.ts, hora: m.hora, autor: m.autor, texto: t.trim() };
   const its = waAnalizar([syn], { sinReglas: true, sinDup: true });
   const buenos = its.filter(x => x.cat !== 'no');
@@ -11970,7 +12014,7 @@ document.getElementById('tabAcum').addEventListener('click', () => { switchTab('
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202610312115;
+var APP_VERSION = 202610312210;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
