@@ -10606,11 +10606,14 @@ function waAnalizar(msgs, opt){
   let nid = 0;
   const add = (m, o) => { const it = Object.assign({ id: 'wa' + (nid++), msg: m.i, por: m.autor, ts: m.ts, est: 'ok' }, o); items.push(it); return it; };
   const ultimoPozoDe = {};
+  let ultimoPozoGrupo = null;
   msgs.forEach(m => {
     const txt = m.texto;
     const n = waSinAcentos(txt);
     const pozos = waPozos(txt);
     const antes = items.length;
+    const ctxPozo = ultimoPozoGrupo && m.ts - ultimoPozoGrupo.ts <= 15 * 60e3 ? ultimoPozoGrupo : null;
+    if(pozos.some(x => x.gas)) ultimoPozoGrupo = { pozo: pozos.find(x => x.gas).pozo, ts: m.ts };
     // fotos y archivos: no se pueden leer
     if(/(\(imagen\)|<multimedia omitido>|imagen omitida|image omitted|foto omitida|documento omitido|sticker omitido|<adjunto)/.test(n) || (!txt.trim() && m.sinCabecera)){
       add(m, { cat: 'no', est: 'no', titulo: 'Foto o archivo', detalle: 'una imagen no se puede leer', nota: 'Cargalo a mano, o pedí que lo manden también como texto.' });
@@ -10720,16 +10723,15 @@ function waAnalizar(msgs, opt){
     const hecho = WA_RE_ABIERTO.test(n) || WA_RE_CERRADO.test(n);
     const esPedido = imper && (!hecho || /\b(favor|dejar)\b/.test(n));
     // cambios de ciclo / optimizador (horas abierto x horas cerrado)
-    const nw = n.replace(/\b(un|una|uno|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|doce|veinticuatro)\b/g, w => String(WA_PALABRAS_NUM[w]));
-    const hAb = nw.match(/(\d+(?:[.,]\d+)?)\s*(?:hs?|horas?)?\s*(?:de\s*)?(?:\bon\b|\bab\b|abiert\w*|apertur\w*)/) || nw.match(/\bon\s*:?\s*(\d+(?:[.,]\d+)?)/) || nw.match(/abrir\s+por\s+(\d+(?:[.,]\d+)?)/);
-    const hCe = nw.match(/(\d+(?:[.,]\d+)?)\s*(?:hs?|horas?)?\s*(?:de\s*)?(?:\boff\b|cerr\w*|cierre)/) || nw.match(/\boff\s*:?\s*(\d+(?:[.,]\d+)?)/);
-    if(hAb && hCe && /(optimizador|controlador|ciclo|ciclando|\bon\b|\boff\b|\baut|parametro|horas? de apertura|de cierre|hs ab|configur|habilitad)/.test(nw)){
-      const p = pozos[0];
+    const { nw, hAb, hCe } = waCicloHoras(n);
+    if(hAb && hCe && /(optimizador|controlador|ciclo|ciclando|\bon\b|\boff\b|\baut|parametro|horas? de apertura|de cierre|de apertura|hs ab|configur|habilitad)/.test(nw)){
+      // si no nombra el pozo, es el del mensaje anterior del grupo (ej: "Tiene 4 de cierre por 5 de apertura")
+      const p = pozos.find(x => x.gas) || (ctxPozo ? { pozo: ctxPozo.pozo, gas: true, ctx: true } : null);
       const modo = /\baut/.test(n) ? 'auto' : (/manual/.test(n) ? 'manual' : '');
       const arranca = (n.match(/(?:arranca|comienza|inicia)\s*(abiert\w*|cerr\w*)/) || [])[1];
       if(p && p.gas){
         add(m, { cat: 'ciclo', est: 'rev', pozo: p.pozo, titulo: p.pozo + ' · ' + (modo === 'auto' ? 'optimizador en automático' : 'cambio de ciclo'), detalle: waFmt(waNum(hCe[1])) + ' h cerrado × ' + waFmt(waNum(hAb[1])) + ' h abierto' + (arranca ? ' · arranca ' + (/cerr/.test(arranca) ? 'cerrado' : 'abierto') : ''),
-          ciclo: waFmt(waNum(hCe[1])).replace(',', '.') + 'c x ' + waFmt(waNum(hAb[1])).replace(',', '.') + 'a', modo, nota: (esPedido ? 'Lo pidió el supervisor. ' : '') + 'Cambia el ciclo guardado del pozo (antes: ' + ((POZOS.find(x => x.pozo === p.pozo) || {}).ciclo || 'sin ciclo') + '). Confirmá.' });
+          ciclo: waFmt(waNum(hCe[1])).replace(',', '.') + 'c x ' + waFmt(waNum(hAb[1])).replace(',', '.') + 'a', modo, nota: (p.ctx ? 'No nombra el pozo: es el ' + p.pozo + ' del mensaje de las ' + hhmmDeTs(ctxPozo.ts) + '. ' : '') + (esPedido ? 'Lo pidió el supervisor. ' : '') + 'Cambia el ciclo guardado del pozo (antes: ' + ((POZOS.find(x => x.pozo === p.pozo) || {}).ciclo || 'sin ciclo') + '). Confirmá.' });
         return;
       }
     }
@@ -10871,6 +10873,15 @@ function waAnalizar(msgs, opt){
           ' en el medio. Si está en el grupo, pegalo también (puede ser después); si no, se carga sin horas de ' + (it.tipo === 'abrir' ? 'cierre' : 'apertura') + '.';
       }
       est[it.pozo] = { estado: it.tipo === 'abrir' ? 'Abierto' : 'Cerrado', desde: it.hora, dia: it.ts };
+    });
+  }
+  // un pedido repetido en el mismo pegado (el operador le contesta copiando el pedido): va una sola vez
+  if(!opt.sinDup){
+    const vistosPed = [];
+    items.filter(it => it.cat === 'pedidos' && it.pedido && it.pedido.objetivo).sort((a, b) => a.ts - b.ts).forEach(it => {
+      const ya = vistosPed.find(v => v.pedido.tipo === it.pedido.tipo && v.pedido.objetivo === it.pedido.objetivo && it.ts - v.ts <= 60 * 60e3);
+      if(ya){ it.est = 'dup'; it.nota = 'Repite el pedido de las ' + hhmmDeTs(ya.ts) + ' (' + ya.por + '): va una sola vez.'; }
+      else vistosPed.push(it);
     });
   }
   // ya cargados (no se duplican)
@@ -11156,11 +11167,37 @@ function waNormPozo(v){
 // formulario de correccion dentro del renglon
 // el operador explica el mensaje con sus palabras ("apertura del 1338 con 21 kg", "dos aperturas: 1399 con 20 y
 // 1400 con 10", "es charla", "novedad del colector 1136") y la app lo lee con el mismo lector de mensajes
+function waCicloHoras(n){
+  const nw = n.replace(/\b(un|una|uno|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|doce|veinticuatro)\b/g, w => String(WA_PALABRAS_NUM[w]));
+  const hAb = nw.match(/(\d+(?:[.,]\d+)?)\s*(?:hs?|horas?)?\s*(?:de\s*)?(?:\bon\b|\bab\b|abiert\w*|apertur\w*)/) || nw.match(/\bon\s*:?\s*(\d+(?:[.,]\d+)?)/) || nw.match(/abrir\s+por\s+(\d+(?:[.,]\d+)?)/);
+  const hCe = nw.match(/(\d+(?:[.,]\d+)?)\s*(?:hs?|horas?)?\s*(?:de\s*)?(?:\boff\b|cerr\w*|cierre)/) || nw.match(/\boff\s*:?\s*(\d+(?:[.,]\d+)?)/);
+  return { nw, hAb, hCe };
+}
+// pozo del que se viene hablando en el grupo antes de este mensaje (hasta 15 min antes)
+function waPozoContexto(m){
+  const prev = WA.msgs.filter(o => o.ts <= m.ts && o.i !== m.i && m.ts - o.ts <= 15 * 60e3).sort((a, b) => b.ts - a.ts);
+  for(const o of prev){ const p = waPozos(o.texto).find(x => x.gas); if(p) return p.pozo; }
+  return '';
+}
 function waExplicacion(m, txt){
   const n = waSinAcentos(txt).trim();
   if(!n) return { error: 'Escribí qué es el mensaje.' };
   if(/^(es\s+)?(charla|nada|ignorar|ignoralo|saludo|una pregunta|pregunta|respuesta|no cargar|no se carga|no va)\b/.test(n) || /\b(es charla|no cargar nada|no va nada)\b/.test(n))
     return { items: [], regla: { que: 'ignorar' }, resumen: 'No se carga nada (charla).' };
+  // "es el horario/ciclo cargado": horas de apertura y cierre del pozo (del mensaje, o de la explicacion si las trae)
+  if(/\b(horario|horarios|ciclo|configurad\w*|configuracion|programad\w*|parametros?)\b/.test(n)){
+    let h = waCicloHoras(n);
+    if(!(h.hAb && h.hCe)) h = waCicloHoras(waSinAcentos(m.texto));
+    const p = waPozos(txt).find(x => x.gas) || waPozos(m.texto).find(x => x.gas);
+    const pozo = p ? p.pozo : waPozoContexto(m);
+    if(!(h.hAb && h.hCe)) return { error: 'No encuentro las horas de apertura y cierre. Decilas, por ejemplo: “ciclo del 1299: 5 hs abierto x 4 hs cerrado”.' };
+    if(!pozo) return { error: 'No encuentro el pozo: decilo, por ejemplo “es el ciclo del 1299”.' };
+    const ab = waNum(h.hAb[1]), ce = waNum(h.hCe[1]);
+    const rec = POZOS.find(x => x.pozo === pozo);
+    const it = { cat: 'ciclo', est: 'ok', chk: true, pozo, ts: m.ts, modo: '', ciclo: waFmt(ce).replace(',', '.') + 'c x ' + waFmt(ab).replace(',', '.') + 'a',
+      titulo: pozo + ' · ciclo', detalle: waFmt(ce) + ' h cerrado × ' + waFmt(ab) + ' h abierto' + (rec && rec.ciclo ? ' (antes: ' + rec.ciclo + ')' : ''), nota: 'Corregido con tu explicación.' };
+    return { items: [it], regla: null, resumen: '' };
+  }
   // "esta en automatico", "optimizador en manual": la maniobra del mensaje queda como estaba y el optimizador
   // del pozo pasa a ese modo
   const mModo = n.match(/\b(automatico|auto|aut|manual)\b/);
@@ -11933,7 +11970,7 @@ document.getElementById('tabAcum').addEventListener('click', () => { switchTab('
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202610312105;
+var APP_VERSION = 202610312115;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
