@@ -10495,7 +10495,16 @@ function waSeparar(raw){
     let H = parseInt(hh, 10); const M = parseInt(mi, 10);
     if(ap){ const a = ap.toLowerCase(); if(a === 'p' && H < 12) H += 12; if(a === 'a' && H === 12) H = 0; }
     let ts;
-    if(y){ let Y = parseInt(y, 10); if(Y < 100) Y += 2000; ts = new Date(Y, parseInt(mo, 10) - 1, parseInt(d, 10), H, M).getTime(); }
+    if(y){
+      // la fecha puede venir dia/mes (31/10/2026) o mes/dia (10/31/2026), segun como este configurado WhatsApp:
+      // se usa la que da una fecha valida mas cercana a hoy (y no en el futuro)
+      let Y = parseInt(y, 10); if(Y < 100) Y += 2000;
+      const a = parseInt(d, 10), b = parseInt(mo, 10);
+      const cand = [[a, b], [b, a]].filter(([dd, mm]) => mm >= 1 && mm <= 12 && dd >= 1 && dd <= 31)
+        .map(([dd, mm]) => ({ x: new Date(Y, mm - 1, dd, H, M), dd })).filter(o => o.x.getDate() === o.dd && o.x.getTime() <= ahora + 86400e3).map(o => o.x);
+      cand.sort((x, z) => Math.abs(ahora - x.getTime()) - Math.abs(ahora - z.getTime()));
+      ts = cand.length ? cand[0].getTime() : new Date(Y, b - 1, a, H, M).getTime();
+    }
     else ts = horaATs(String(H).padStart(2, '0') + ':' + String(M).padStart(2, '0'), ahora);
     msgs.push({ ts, autor: String(autor || '').trim(), texto: txt || '' });
   };
@@ -10668,10 +10677,18 @@ function waAnalizar(msgs, opt){
       lineas.forEach(l => {
         const ln = waSinAcentos(l).trim();
         if(!ln) return;
-        const v = ln.match(/^(fpd|apd|opd|%\s*agua|agua\s*%?)\s*:?\s*(\d+(?:[.,]\d+)?)/);
-        if(v){ if(!actual){ actual = { punto: 'Control', vals: {} }; ctrls.push(actual); } const k = v[1].indexOf('agua') >= 0 ? 'agua' : v[1]; actual.vals[k] = waNum(v[2]); return; }
-        if(/\b(tk|q\s*o|q\s*agua|bat|hs)\b|\/\d/.test(ln) || /^\d{1,2}:\d{2}/.test(ln)) { actual = null; return; }
-        if(ln.length <= 30){ actual = { punto: l.trim().replace(/^control\s*/i, '').replace(/\s*[:.]$/, '').replace(/^ce\s*-?\s*/i, 'Ce-'), vals: {} }; ctrls.push(actual); }
+        // "H20"/"H2O" sin % es el agua por dia (APD); con % es el porcentaje de agua
+        const v = ln.match(/^(fpd|apd|opd|%\s*(?:agua|h2o|h20)|(?:agua|h2o|h20)\s*%|h2o|h20|agua)\s*:?\s*(\d+(?:[.,]\d+)?)/);
+        if(v){ if(!actual){ actual = { punto: 'Control', vals: {} }; ctrls.push(actual); } const k = /%|^agua$/.test(v[1]) ? 'agua' : (/^h2[o0]$/.test(v[1]) ? 'apd' : v[1]); actual.vals[k] = waNum(v[2]); return; }
+        // titulo del punto: "Control 1318", "Control 1101/1093", "PTG", "USPA II"
+        const esTitPozo = /^(control\s*)?(ce\s*-?\s*)?\d{3,4}(\s*\/\s*\d{3,4})?\s*[:.]?$/.test(ln);
+        if(!esTitPozo && (/\b(tk|q\s*o|q\s*agua|bat|hs)\b|\/\d/.test(ln) || /^\d{1,2}:\d{2}/.test(ln))) { actual = null; return; }
+        if(ln.length <= 30){
+          let punto = l.trim().replace(/^control\s*/i, '').replace(/\s*[:.]$/, '').replace(/^ce\s*-?\s*/i, '').replace(/\s*\/\s*/g, '/');
+          if(/^\d{3,4}(\/\d{3,4})?$/.test(punto)) punto = 'Ce-' + punto;
+          else punto = l.trim().replace(/^control\s*/i, '').replace(/\s*[:.]$/, '');
+          actual = { punto: punto || 'Control', vals: {} }; ctrls.push(actual);
+        }
       });
       ctrls.filter(c => Object.keys(c.vals).length >= 2).forEach(c => {
         add(m, { cat: 'datos', tipo: 'control', titulo: 'Control ' + c.punto, detalle: ['fpd', 'apd', 'opd'].filter(k => c.vals[k] !== undefined).map(k => k.toUpperCase() + ' ' + waFmt(c.vals[k])).concat(c.vals.agua !== undefined ? ['agua ' + waFmt(c.vals.agua) + ' %'] : []).join(' · '),
@@ -10845,7 +10862,8 @@ function waAnalizar(msgs, opt){
         else est[it.pozo] = { estado: '' };
       }
       const st = est[it.pozo];
-      const repite = (it.tipo === 'abrir' && st.estado === 'Abierto') || (it.tipo === 'cerrar' && st.estado === 'Cerrado');
+      const esAuto = pozoOptimAuto(rec) || /\b(aut|auto|automatico)\b/.test(waSinAcentos((msgs[it.msg] || {}).texto || ''));
+      const repite = !esAuto && ((it.tipo === 'abrir' && st.estado === 'Abierto') || (it.tipo === 'cerrar' && st.estado === 'Cerrado'));
       if(repite){
         const cuando = st.desde ? ' desde las ' + st.desde + (st.dia && new Date(st.dia).toDateString() !== new Date(it.ts).toDateString() ? ' del ' + tendFechaCorta(st.dia) : '') : '';
         it.est = 'rev';
@@ -11001,8 +11019,10 @@ function waAplicarPedido(it){
 function waAplicarCiclo(it){
   const rec = POZOS.find(p => p.pozo === it.pozo);
   if(!rec) return false;
-  const f = { ciclo: it.ciclo };
+  const f = {};
+  if(it.ciclo) f.ciclo = it.ciclo;
   if(it.modo && pozoTieneOptim(rec)) f.optimModo = it.modo;
+  if(!Object.keys(f).length) return false;
   Object.assign(rec, f); rec._edited = true;
   saveEdit(rec.pozo, Object.assign({}, f, { operador: it.por }), Object.keys(f));
   return true;
@@ -11141,6 +11161,22 @@ function waExplicacion(m, txt){
   if(!n) return { error: 'Escribí qué es el mensaje.' };
   if(/^(es\s+)?(charla|nada|ignorar|ignoralo|saludo|una pregunta|pregunta|respuesta|no cargar|no se carga|no va)\b/.test(n) || /\b(es charla|no cargar nada|no va nada)\b/.test(n))
     return { items: [], regla: { que: 'ignorar' }, resumen: 'No se carga nada (charla).' };
+  // "esta en automatico", "optimizador en manual": la maniobra del mensaje queda como estaba y el optimizador
+  // del pozo pasa a ese modo
+  const mModo = n.match(/\b(automatico|auto|aut|manual)\b/);
+  if(mModo && !/\b(apertura|cierre|abri\w*|cerr\w*|pedido|velas?)\b/.test(n)){
+    const modo = mModo[1] === 'manual' ? 'manual' : 'auto';
+    const p = waPozos(txt).find(x => x.gas) || waPozos(m.texto).find(x => x.gas);
+    if(!p) return { error: 'No encuentro el pozo: decilo, por ejemplo “el 1149 está en automático”.' };
+    const rec = POZOS.find(x => x.pozo === p.pozo);
+    const its = waAnalizar([m], { sinReglas: true, sinDup: true }).filter(x => x.cat === 'maniobras' && x.pozo === p.pozo);
+    its.forEach(x => { x.est = 'ok'; x.chk = true; x.nota = 'Pozo con optimizador en ' + (modo === 'auto' ? 'automático' : 'manual') + '.'; });
+    if(rec && pozoTieneOptim(rec)) its.push({ cat: 'ciclo', est: 'ok', chk: true, pozo: p.pozo, ts: m.ts, modo, ciclo: '', titulo: p.pozo + ' · optimizador en ' + (modo === 'auto' ? 'automático' : 'manual'),
+      detalle: pozoOptimAuto(rec) === (modo === 'auto') ? 'ya figuraba así' : 'cambia el modo del optimizador en la ficha', nota: 'Corregido con tu explicación.' });
+    else if(modo === 'auto') its.forEach(x => { x.nota += ' En la app ' + p.pozo + ' no tiene optimizador cargado: si lo tiene, cargalo en la ficha.'; });
+    if(!its.length) return { error: 'No encuentro una maniobra del ' + p.pozo + ' en el mensaje. Si es solo el cambio de modo, cargalo en la ficha del pozo.' };
+    return { items: its, regla: null, resumen: '' };
+  }
   if(/\bnovedad\b/.test(n)){
     const p = waPozos(txt)[0] || waPozos(m.texto)[0];
     const pozo = p && !p.desconocido ? p.pozo : '';
@@ -11897,7 +11933,7 @@ document.getElementById('tabAcum').addEventListener('click', () => { switchTab('
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202610312050;
+var APP_VERSION = 202610312105;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
