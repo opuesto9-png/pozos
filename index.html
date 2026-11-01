@@ -1507,7 +1507,7 @@
   .wa-apr-it .cancel-btn{ flex:0 0 auto; padding:5px 10px; }
   @media (max-width: 820px){ .wa-cols{ grid-template-columns:1fr; } .wa-caja.ancha{ max-height:none; } .wa-col-msgs{ max-height:40vh; } }
 
-  main#ctrlMain, main#quimMain, main#scrMain{ max-width: 1100px; }
+  main#ctrlMain, main#quimMain, main#scrMain, main#acumMain{ max-width: 1100px; }
   .ini-tile.ancho2{ grid-column: span 2; min-height:0; flex-direction:row; align-items:center; gap:12px; }
   .ini-tile.ancho2 .tx{ display:flex; flex-direction:column; gap:2px; }
   .ini-tile.quim svg{ stroke:#B08CE0; }
@@ -1518,6 +1518,7 @@
   .qc-tit-fila{ display:flex; justify-content:space-between; align-items:baseline; gap:10px; flex-wrap:wrap; }
   .qc-sub{ font-size:.74rem; color:var(--muted); }
   .qc-prev-parte{ margin-top:10px; font-size:.82rem; background:var(--bg); border:1px dashed var(--line); border-radius:6px; padding:8px 10px; } .qc-prev-parte:empty{ display:none; } .qc-prev-parte span{ color:var(--muted); }
+  .ac-dif{ font-size:.72rem; } .ac-dif.sube{ color:#7fd3a0; } .ac-dif.baja{ color:#ef8a8a; }
   .qc-sub-tit{ font-size:.7rem; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:14px 0 6px; }
   .qc-form{ display:grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap:10px; }
   .qc-f{ display:flex; flex-direction:column; gap:4px; font-size:.74rem; color:var(--muted); }
@@ -1583,6 +1584,7 @@
     <button class="tab-btn" id="tabCtrl">Controles</button>
     <button class="tab-btn" id="tabQuim">Químicos</button>
     <button class="tab-btn" id="tabScr">Scraper</button>
+    <button class="tab-btn" id="tabAcum">Acumulados</button>
     <button class="tab-btn" id="tabAib">AIB</button>
     <button class="tab-btn" id="tabTanques">Baterias</button>
     <button class="tab-btn" id="tabPias">Pías 2</button>
@@ -1632,7 +1634,8 @@
   <div class="ini-grid">
     <button type="button" class="ini-tile quim ancho2" data-tab="tabCtrl"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3"/><path d="M7 15h10"/></svg><span class="tx"><span class="t">Controles</span><span class="s">FPD, APD, OPD y % de agua por punto</span></span><span class="ini-nuevo" style="display:none;"></span></button>
     <button type="button" class="ini-tile quim ancho2" data-tab="tabQuim"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="15" rx="2"/><path d="M9 3h6v3H9z"/><path d="M6 13h12"/></svg><span class="tx"><span class="t">Químicos</span><span class="s">Stock e inyección por equipo</span></span><span class="ini-nuevo" style="display:none;"></span></button>
-    <button type="button" class="ini-tile quim ancho2" data-tab="tabScr"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12h14"/><path d="M12 8l4 4-4 4"/><circle cx="19" cy="12" r="3"/></svg><span class="tx"><span class="t">Scraper</span><span class="s">Lanzamientos: horas, presiones, TK 01 y control</span></span><span class="ini-nuevo" style="display:none;"></span></button>
+    <button type="button" class="ini-tile quim ancho2" data-tab="tabScr"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12h14"/><path d="M12 8l4 4-4 4"/><circle cx="19" cy="12" r="3"/></svg><span class="tx"><span class="t">Scraper</span><span class="s">Lanzamientos: destino, tanque, horas y presiones</span></span><span class="ini-nuevo" style="display:none;"></span></button>
+    <button type="button" class="ini-tile quim ancho2" data-tab="tabAcum"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span class="tx"><span class="t">Acumulados</span><span class="s">m³/día por nodo (V 100, V 1600, COL 29…)</span></span><span class="ini-nuevo" style="display:none;"></span></button>
   </div>
   <div class="ini-fila">
     <button type="button" class="ini-btn" data-tab="tabTend" id="iniTendBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l5-5 4 3 7-8"/><path d="M15 7h4v4"/></svg>Tendencia</button>
@@ -1655,6 +1658,7 @@
 <main id="ctrlMain" style="display:none;"></main>
 <main id="quimMain" style="display:none;"></main>
 <main id="scrMain" style="display:none;"></main>
+<main id="acumMain" style="display:none;"></main>
 <main id="aibMain" style="display:none;"></main>
 <main id="tanquesMain" style="display:none;"></main>
 <main id="piasMain" style="display:none;"></main>
@@ -7427,8 +7431,8 @@ function abrirPestanaAvisos(){
 }
 
 // ---------------- Manejo de pestañas (helper generico) ----------------
-const TAB_IDS = ['tabLista','tabPlano','tabRed','tabCiclaje','tabComp','tabMov','tabPed','tabParte','tabTend','tabCtrl','tabQuim','tabScr','tabAib','tabTanques','tabPias','tabPtc','tabAvisos'];
-const MAIN_IDS = ['main','planoMain','redMain','ciclajeMain','compMain','movMain','pedMain','parteMain','tendMain','ctrlMain','quimMain','scrMain','aibMain','tanquesMain','piasMain','ptcMain','avisosMain'];
+const TAB_IDS = ['tabLista','tabPlano','tabRed','tabCiclaje','tabComp','tabMov','tabPed','tabParte','tabTend','tabCtrl','tabQuim','tabScr','tabAcum','tabAib','tabTanques','tabPias','tabPtc','tabAvisos'];
+const MAIN_IDS = ['main','planoMain','redMain','ciclajeMain','compMain','movMain','pedMain','parteMain','tendMain','ctrlMain','quimMain','scrMain','acumMain','aibMain','tanquesMain','piasMain','ptcMain','avisosMain'];
 function switchTab(activeTabId, activeMainId){
   if(window.__seccionListo && seccionActual !== activeTabId) entrarSeccion(activeTabId);
   movMarcarVistos(activeTabId);
@@ -9430,6 +9434,30 @@ function parteVivoDatos(iso){
   out.hojas.push({ id: 'comp', titulo: 'Compresión BP', sub: 'Lecturas de compresores', desde: ini6,
     cols: ['Hora', 'Instalación', 'Unidad', 'Novedad'],
     filas: comp.map(l => { const ts = parteMs(l._updatedAtDate); return { ts, enviado: !!(envComp && ts <= envComp), celdas: [l.hora || parteHoraTs(ts), bateriaToInstalacion(l.uspa), l.unidad, compNovedad(l)] }; }) });
+  // controles, quimicos y acumulados del dia (06 a 06): solo se ven aca, no van en ningun Excel
+  const histQ = (typeof HIST !== 'undefined' && HIST ? HIST : []).filter(h => ['acumulado', 'control', 'stock'].includes(h.tipo));
+  const filasQ = histQ.filter(h => en6(h.ts)).sort((a, b) => a.ts - b.ts).map(h => {
+    const v = h.vals || {};
+    let tipo = '', det = '';
+    if(h.tipo === 'acumulado'){
+      tipo = 'Acumulado';
+      det = qcFmt(v.m3d) + ' m³/d';
+      const ant = histQ.filter(x => x.tipo === 'acumulado' && x.equipo === h.equipo && x.ts < h.ts && acumDia(x.ts) !== acumDia(h.ts)).sort((a, b) => b.ts - a.ts)[0];
+      if(ant && ant.vals.m3d !== undefined && v.m3d !== undefined){ const d = v.m3d - ant.vals.m3d; if(d) det += ' (' + (d > 0 ? '+' : '−') + qcFmt(Math.abs(d)) + ' contra el día anterior)'; }
+    } else if(h.tipo === 'control'){
+      tipo = 'Control';
+      det = ['fpd', 'apd', 'opd'].filter(k => v[k] !== undefined).map(k => k.toUpperCase() + ' ' + qcFmt(v[k])).concat(v.agua !== undefined ? ['agua ' + qcFmt(v.agua) + ' %'] : []).join(' · ');
+    } else {
+      tipo = 'Químico';
+      det = (v.lts !== undefined ? qcFmt(v.lts) + ' lts' : '') + (v.cm !== undefined ? (v.lts !== undefined ? ' (' + qcFmt(v.cm) + ' cm)' : qcFmt(v.cm) + ' cm') : '') + (v.iny === 0 ? ' · inyección PARADA' : (v.iny === 1 ? ' · en servicio' : ''));
+      const ant = histQ.filter(x => x.tipo === 'stock' && x.equipo === h.equipo && x.ts < h.ts).sort((a, b) => b.ts - a.ts)[0];
+      if(ant && ant.vals.lts !== undefined && v.lts !== undefined){ const dl = ant.vals.lts - v.lts, dh = (h.ts - ant.ts) / 36e5; if(dh > 0) det += dl < 0 ? ' · recargado' : ' · consumo ≈ ' + qcFmt(Math.round(dl / dh * 24)) + ' lts/día'; }
+      if(h.nota) det += ' · ' + h.nota;
+    }
+    return { ts: h.ts, enviado: null, celdas: [parteHoraTs(h.ts), tipo, h.equipo, det] };
+  });
+  out.hojas.push({ id: 'quim', titulo: 'Controles y químicos', sub: 'Acumulados, controles y stock de químicos · solo en pantalla, no va en los Excel', desde: ini6,
+    cols: ['Hora', 'Tipo', 'Punto / equipo', 'Dato'], filas: filasQ });
   return out;
 }
 
@@ -9459,6 +9487,7 @@ function parteVivoPendientes(){
 function renderParteVivo(){
   const main = document.getElementById('parteMain');
   if(!main) return;
+  iniciarTendenciaSync();
   const hoyIso = pedHoy();
   if(!parteDiaSel || parteDiaSel > hoyIso) parteDiaSel = hoyIso;
   const esHoy = parteDiaSel === hoyIso;
@@ -9475,7 +9504,7 @@ function renderParteVivo(){
   const vistos = new Set();
   const ahora = Date.now();
   const total = d.hojas.reduce((n, h) => n + h.filas.length, 0);
-  const sinEnviar = d.hojas.reduce((n, h) => n + h.filas.filter(f => !f.enviado).length, 0);
+  const sinEnviar = d.hojas.reduce((n, h) => n + h.filas.filter(f => f.enviado === false).length, 0);
   let html = `<div class="pv-wrap">
     <div class="pv-top">
       <div class="pv-tit">${esHoy ? `<span class="pv-live${firestoreOk ? '' : ' off'}">${firestoreOk ? '● En vivo' : '● Sin conexión'}</span>` : '<span class="pv-live pasado">Día anterior</span>'}
@@ -9501,11 +9530,11 @@ function renderParteVivo(){
       const k = h.id + '|' + f.celdas.join('|');
       vistos.add(k);
       const nueva = !primera && !parteVivoVistos.has(k);
-      html += `<tr class="${f.enviado ? 'env' : ''}${nueva ? ' nueva' : ''}">${f.celdas.map((c, i) => `<td${i === 3 ? ' class="nov"' : ''}>${parteEsc(c)}</td>`).join('')}<td class="est">${f.enviado ? 'enviado' : 'sin enviar'}</td></tr>`;
+      html += `<tr class="${f.enviado ? 'env' : ''}${nueva ? ' nueva' : ''}">${f.celdas.map((c, i) => `<td${i === 3 ? ' class="nov"' : ''}>${parteEsc(c)}</td>`).join('')}<td class="est">${f.enviado === null ? '' : (f.enviado ? 'enviado' : 'sin enviar')}</td></tr>`;
     });
     html += `</tbody></table></div></section>`;
   });
-  html += `<div class="pv-pie">Es el mismo contenido que sale en los Excel. Para mandarlos, se siguen enviando desde "Enviar partes y reportes" en la compu principal. PTC no está acá porque su reporte es el acumulado del mes.</div></div>`;
+  html += `<div class="pv-pie">Es el mismo contenido que sale en los Excel (salvo Controles y químicos, que es solo de pantalla). Para mandarlos, se siguen enviando desde "Enviar partes y reportes" en la compu principal. PTC no está acá porque su reporte es el acumulado del mes.</div></div>`;
   const y = window.scrollY;
   main.innerHTML = html;
   window.scrollTo(0, y);
@@ -9590,6 +9619,7 @@ function iniciarTendenciaSync(){
     const locales = HIST.filter(h => String(h.id).startsWith('local-') && Date.now() - (h._creado || h.ts) < 60e3 && !l.some(x => x.id === h.docId || (x.equipo === h.equipo && x.ts === h.ts)));
     HIST = l.concat(locales);
     tendRefrescarSiAbierta();
+    if(typeof parteRefrescarSiAbierto === 'function') parteRefrescarSiAbierto();
   }, (e) => console.error('historial', e));
   syncVivo('tendencia_diaria', { campo: 'fecha', tipo: 'iso', desde: () => ventanaDesdeIso(31) }, (snap) => {
     TEND_DIA = {};
@@ -9600,12 +9630,12 @@ function iniciarTendenciaSync(){
 var tendTimer = null;
 function tendRefrescarSiAbierta(){
   // Controles / Quimicos abiertos: se redibujan con lo nuevo, salvo que se este escribiendo en el formulario
-  ['ctrlMain', 'quimMain', 'scrMain'].forEach(id => {
+  ['ctrlMain', 'quimMain', 'scrMain', 'acumMain'].forEach(id => {
     const q = document.getElementById(id);
     if(!q || q.style.display === 'none') return;
     const escribiendo = () => (q.contains(document.activeElement) && document.activeElement.tagName !== 'BUTTON') || [...q.querySelectorAll('.qc-form input:not([type=time])')].some(i => i.value.trim());
     clearTimeout(q._t);
-    q._t = setTimeout(() => { if(q.style.display !== 'none' && !escribiendo()) ({ ctrlMain: renderControles, quimMain: renderQuimicos, scrMain: renderScraper })[id](); }, 400);
+    q._t = setTimeout(() => { if(q.style.display !== 'none' && !escribiendo()) ({ ctrlMain: renderControles, quimMain: renderQuimicos, scrMain: renderScraper, acumMain: renderAcumulados })[id](); }, 400);
   });
   const m = document.getElementById('tendMain');
   if(!m || m.style.display === 'none') return;
@@ -10202,8 +10232,8 @@ renderPlano();
 // "‹ Inicio" o el boton Atras del celular vuelven. Dentro de Gas y de Petroleo quedan las
 // pestañas hermanas para pasar de una a otra sin volver al inicio.
 const SECCION_TITULO = { tabLista: 'Pozos de gas', tabPlano: 'Plano (colectoras)', tabRed: 'Red', tabCiclaje: 'Ciclaje del día', tabComp: 'Compresión BP',
-  tabMov: 'Últimos movimientos', tabPed: 'Pedidos del día', tabParte: 'Parte en vivo', tabTend: 'Tendencia', tabCtrl: 'Controles', tabQuim: 'Químicos', tabScr: 'Scraper', tabAib: 'AIB', tabTanques: 'Baterías', tabPias: 'Pías 2', tabPtc: 'PTC', tabAvisos: 'Avisos' };
-const SECCION_GRUPO = { tabLista: 'gas', tabPlano: 'gas', tabRed: 'gas', tabCiclaje: 'gas', tabComp: 'gas', tabAib: 'oil', tabTanques: 'oil', tabCtrl: 'quim', tabQuim: 'quim', tabScr: 'quim' };
+  tabMov: 'Últimos movimientos', tabPed: 'Pedidos del día', tabParte: 'Parte en vivo', tabTend: 'Tendencia', tabCtrl: 'Controles', tabQuim: 'Químicos', tabScr: 'Scraper', tabAcum: 'Acumulados', tabAib: 'AIB', tabTanques: 'Baterías', tabPias: 'Pías 2', tabPtc: 'PTC', tabAvisos: 'Avisos' };
+const SECCION_GRUPO = { tabLista: 'gas', tabPlano: 'gas', tabRed: 'gas', tabCiclaje: 'gas', tabComp: 'gas', tabAib: 'oil', tabTanques: 'oil', tabCtrl: 'quim', tabQuim: 'quim', tabScr: 'quim', tabAcum: 'quim' };
 const SECCION_CON_BUSQUEDA = ['tabLista', 'tabPlano', 'tabRed', 'tabAvisos'];
 (function(){ const t = document.getElementById('iniParteTile'); if(t && esMovil()) t.style.display = 'none'; const td = document.getElementById('iniTendBtn'); if(td && esMovil()) td.style.display = 'none'; })();
 var seccionActual = null;
@@ -10465,7 +10495,16 @@ function waSeparar(raw){
     let H = parseInt(hh, 10); const M = parseInt(mi, 10);
     if(ap){ const a = ap.toLowerCase(); if(a === 'p' && H < 12) H += 12; if(a === 'a' && H === 12) H = 0; }
     let ts;
-    if(y){ let Y = parseInt(y, 10); if(Y < 100) Y += 2000; ts = new Date(Y, parseInt(mo, 10) - 1, parseInt(d, 10), H, M).getTime(); }
+    if(y){
+      // la fecha puede venir dia/mes (31/10/2026) o mes/dia (10/31/2026), segun como este configurado WhatsApp:
+      // se usa la que da una fecha valida mas cercana a hoy (y no en el futuro)
+      let Y = parseInt(y, 10); if(Y < 100) Y += 2000;
+      const a = parseInt(d, 10), b = parseInt(mo, 10);
+      const cand = [[a, b], [b, a]].filter(([dd, mm]) => mm >= 1 && mm <= 12 && dd >= 1 && dd <= 31)
+        .map(([dd, mm]) => ({ x: new Date(Y, mm - 1, dd, H, M), dd })).filter(o => o.x.getDate() === o.dd && o.x.getTime() <= ahora + 86400e3).map(o => o.x);
+      cand.sort((x, z) => Math.abs(ahora - x.getTime()) - Math.abs(ahora - z.getTime()));
+      ts = cand.length ? cand[0].getTime() : new Date(Y, b - 1, a, H, M).getTime();
+    }
     else ts = horaATs(String(H).padStart(2, '0') + ':' + String(M).padStart(2, '0'), ahora);
     msgs.push({ ts, autor: String(autor || '').trim(), texto: txt || '' });
   };
@@ -10567,11 +10606,14 @@ function waAnalizar(msgs, opt){
   let nid = 0;
   const add = (m, o) => { const it = Object.assign({ id: 'wa' + (nid++), msg: m.i, por: m.autor, ts: m.ts, est: 'ok' }, o); items.push(it); return it; };
   const ultimoPozoDe = {};
+  let ultimoPozoGrupo = null;
   msgs.forEach(m => {
     const txt = m.texto;
     const n = waSinAcentos(txt);
     const pozos = waPozos(txt);
     const antes = items.length;
+    const ctxPozo = ultimoPozoGrupo && m.ts - ultimoPozoGrupo.ts <= 30 * 60e3 ? ultimoPozoGrupo : null;
+    if(pozos.some(x => x.gas)) ultimoPozoGrupo = { pozo: pozos.find(x => x.gas).pozo, ts: m.ts };
     // fotos y archivos: no se pueden leer
     if(/(\(imagen\)|<multimedia omitido>|imagen omitida|image omitted|foto omitida|documento omitido|sticker omitido|<adjunto)/.test(n) || (!txt.trim() && m.sinCabecera)){
       add(m, { cat: 'no', est: 'no', titulo: 'Foto o archivo', detalle: 'una imagen no se puede leer', nota: 'Cargalo a mano, o pedí que lo manden también como texto.' });
@@ -10638,10 +10680,18 @@ function waAnalizar(msgs, opt){
       lineas.forEach(l => {
         const ln = waSinAcentos(l).trim();
         if(!ln) return;
-        const v = ln.match(/^(fpd|apd|opd|%\s*agua|agua\s*%?)\s*:?\s*(\d+(?:[.,]\d+)?)/);
-        if(v){ if(!actual){ actual = { punto: 'Control', vals: {} }; ctrls.push(actual); } const k = v[1].indexOf('agua') >= 0 ? 'agua' : v[1]; actual.vals[k] = waNum(v[2]); return; }
-        if(/\b(tk|q\s*o|q\s*agua|bat|hs)\b|\/\d/.test(ln) || /^\d{1,2}:\d{2}/.test(ln)) { actual = null; return; }
-        if(ln.length <= 30){ actual = { punto: l.trim().replace(/^control\s*/i, '').replace(/\s*[:.]$/, '').replace(/^ce\s*-?\s*/i, 'Ce-'), vals: {} }; ctrls.push(actual); }
+        // "H20"/"H2O" sin % es el agua por dia (APD); con % es el porcentaje de agua
+        const v = ln.match(/^(fpd|apd|opd|%\s*(?:agua|h2o|h20)|(?:agua|h2o|h20)\s*%|h2o|h20|agua)\s*:?\s*(\d+(?:[.,]\d+)?)/);
+        if(v){ if(!actual){ actual = { punto: 'Control', vals: {} }; ctrls.push(actual); } const k = /%|^agua$/.test(v[1]) ? 'agua' : (/^h2[o0]$/.test(v[1]) ? 'apd' : v[1]); actual.vals[k] = waNum(v[2]); return; }
+        // titulo del punto: "Control 1318", "Control 1101/1093", "PTG", "USPA II"
+        const esTitPozo = /^(control\s*)?(ce\s*-?\s*)?\d{3,4}(\s*\/\s*\d{3,4})?\s*[:.]?$/.test(ln);
+        if(!esTitPozo && (/\b(tk|q\s*o|q\s*agua|bat|hs)\b|\/\d/.test(ln) || /^\d{1,2}:\d{2}/.test(ln))) { actual = null; return; }
+        if(ln.length <= 30){
+          let punto = l.trim().replace(/^control\s*/i, '').replace(/\s*[:.]$/, '').replace(/^ce\s*-?\s*/i, '').replace(/\s*\/\s*/g, '/');
+          if(/^\d{3,4}(\/\d{3,4})?$/.test(punto)) punto = 'Ce-' + punto;
+          else punto = l.trim().replace(/^control\s*/i, '').replace(/\s*[:.]$/, '');
+          actual = { punto: punto || 'Control', vals: {} }; ctrls.push(actual);
+        }
       });
       ctrls.filter(c => Object.keys(c.vals).length >= 2).forEach(c => {
         add(m, { cat: 'datos', tipo: 'control', titulo: 'Control ' + c.punto, detalle: ['fpd', 'apd', 'opd'].filter(k => c.vals[k] !== undefined).map(k => k.toUpperCase() + ' ' + waFmt(c.vals[k])).concat(c.vals.agua !== undefined ? ['agua ' + waFmt(c.vals.agua) + ' %'] : []).join(' · '),
@@ -10669,20 +10719,42 @@ function waAnalizar(msgs, opt){
       if(nodos.length || stocks.length) return;
     }
     if(tks.length) return;
+    // preguntas ("Ce-1567: esta cerrado?"): no son maniobras. Si el mensaje copia la pregunta y abajo contesta
+    // ("Esta abierto"), se toma la respuesta como estado informado del pozo de la pregunta, para revisar.
+    const lnsTodas = txt.split('\n').map(l => l.trim()).filter(Boolean);
+    const lnsPreg = lnsTodas.filter(l => /\?\s*$/.test(l));
+    if(lnsPreg.length){
+      const resp = lnsTodas.filter(l => !/\?\s*$/.test(l)).join('\n');
+      const rN = waSinAcentos(resp);
+      const pResp = waPozos(resp).filter(x => x.gas);
+      const pPreg = waPozos(lnsPreg.join('\n')).filter(x => x.gas);
+      const tResp = WA_RE_ABIERTO.test(rN) && !WA_RE_CERRADO.test(rN) ? 'abrir' : (WA_RE_CERRADO.test(rN) && !WA_RE_ABIERTO.test(rN) ? 'cerrar' : '');
+      if(!resp.trim() || (!tResp && !pResp.length)) return;
+      if(tResp && !pResp.length && pPreg.length){
+        const pz = pPreg[0].pozo;
+        const pr = waPresiones(resp);
+        add(m, { cat: 'maniobras', est: 'rev', pozo: pz, tipo: tResp, ts: m.ts, hora: m.hora, presion: pr.ec !== null ? pr.ec : (pr.plain[0] !== undefined ? pr.plain[0] : null), notaHorario: '',
+          titulo: pz + ' · ' + (tResp === 'abrir' ? 'Abierto' : 'Cerrado'), detalle: 'informado al contestar una pregunta',
+          nota: 'Contesta la pregunta sobre el ' + pz + ': informa que está ' + (tResp === 'abrir' ? 'abierto' : 'cerrado') + ', pero no dice a qué hora ' + (tResp === 'abrir' ? 'abrió' : 'cerró') + '. Si lo tildás, se carga a la hora del mensaje.' });
+        return;
+      }
+    }
     const imper = WA_RE_PEDIDO.test(n);
     const hecho = WA_RE_ABIERTO.test(n) || WA_RE_CERRADO.test(n);
-    const esPedido = imper && (!hecho || /\b(favor|dejar)\b/.test(n));
+    // pedido: verbo en infinitivo/ruego ("abrir", "podrian ir a verlo", "porfa", "tendria que haber cerrado")
+    const ruego = /\b(favor|dejar|podrian|podrias|podes|pueden|puede|porfa|por favor|tendria que|deberia|verificar|revisar|chequear|ir a ver\w*|ir a velo|ir a verlo)\b/.test(n);
+    const esPedido = (imper || ruego) && (!hecho || ruego);
+    const negado = /\bno\s+(abrir|cerrar|tocar|abran|cierren|lo abran|lo cierren)\b/.test(n);
     // cambios de ciclo / optimizador (horas abierto x horas cerrado)
-    const nw = n.replace(/\b(un|una|uno|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|doce|veinticuatro)\b/g, w => String(WA_PALABRAS_NUM[w]));
-    const hAb = nw.match(/(\d+(?:[.,]\d+)?)\s*(?:hs?|horas?)?\s*(?:de\s*)?(?:\bon\b|\bab\b|abiert\w*|apertur\w*)/) || nw.match(/\bon\s*:?\s*(\d+(?:[.,]\d+)?)/) || nw.match(/abrir\s+por\s+(\d+(?:[.,]\d+)?)/);
-    const hCe = nw.match(/(\d+(?:[.,]\d+)?)\s*(?:hs?|horas?)?\s*(?:de\s*)?(?:\boff\b|cerr\w*|cierre)/) || nw.match(/\boff\s*:?\s*(\d+(?:[.,]\d+)?)/);
-    if(hAb && hCe && /(optimizador|controlador|ciclo|ciclando|\bon\b|\boff\b|\baut|parametro|horas? de apertura|de cierre|hs ab|configur|habilitad)/.test(nw)){
-      const p = pozos[0];
+    const { nw, hAb, hCe } = waCicloHoras(n);
+    if(hAb && hCe && /(optimizador|controlador|ciclo|ciclando|\bon\b|\boff\b|\baut|parametro|horas? de apertura|de cierre|de apertura|hs ab|configur|habilitad)/.test(nw)){
+      // si no nombra el pozo, es el del mensaje anterior del grupo (ej: "Tiene 4 de cierre por 5 de apertura")
+      const p = pozos.find(x => x.gas) || (ctxPozo ? { pozo: ctxPozo.pozo, gas: true, ctx: true } : null);
       const modo = /\baut/.test(n) ? 'auto' : (/manual/.test(n) ? 'manual' : '');
       const arranca = (n.match(/(?:arranca|comienza|inicia)\s*(abiert\w*|cerr\w*)/) || [])[1];
       if(p && p.gas){
         add(m, { cat: 'ciclo', est: 'rev', pozo: p.pozo, titulo: p.pozo + ' · ' + (modo === 'auto' ? 'optimizador en automático' : 'cambio de ciclo'), detalle: waFmt(waNum(hCe[1])) + ' h cerrado × ' + waFmt(waNum(hAb[1])) + ' h abierto' + (arranca ? ' · arranca ' + (/cerr/.test(arranca) ? 'cerrado' : 'abierto') : ''),
-          ciclo: waFmt(waNum(hCe[1])).replace(',', '.') + 'c x ' + waFmt(waNum(hAb[1])).replace(',', '.') + 'a', modo, nota: (esPedido ? 'Lo pidió el supervisor. ' : '') + 'Cambia el ciclo guardado del pozo (antes: ' + ((POZOS.find(x => x.pozo === p.pozo) || {}).ciclo || 'sin ciclo') + '). Confirmá.' });
+          ciclo: waFmt(waNum(hCe[1])).replace(',', '.') + 'c x ' + waFmt(waNum(hAb[1])).replace(',', '.') + 'a', modo, nota: (p.ctx ? 'No nombra el pozo: es el ' + p.pozo + ' del mensaje de las ' + hhmmDeTs(ctxPozo.ts) + '. ' : '') + (esPedido ? 'Lo pidió el supervisor. ' : '') + 'Cambia el ciclo guardado del pozo (antes: ' + ((POZOS.find(x => x.pozo === p.pozo) || {}).ciclo || 'sin ciclo') + '). Confirmá.' });
         return;
       }
     }
@@ -10708,7 +10780,7 @@ function waAnalizar(msgs, opt){
     }
     // pedidos del supervisor
     if(esPedido){
-      let tipo = /lanz|vela/.test(n) ? 'velas' : (/\b(abrir\w*|dejar abiert\w*)\b/.test(n) ? 'abrir' : (/\b(cerrar\w*|dejar cerrad\w*)\b/.test(n) ? 'cerrar' : 'otro'));
+      let tipo = negado ? 'otro' : (/lanz|vela/.test(n) ? 'velas' : (/\b(abrir\w*|dejar abiert\w*)\b/.test(n) ? 'abrir' : (/\b(cerrar\w*|dejar cerrad\w*)\b/.test(n) ? 'cerrar' : 'otro')));
       const cond = /(hasta\s+que|si\s+(no\s+)?supera|luego|cuando)/.test(n);
       let dur = waDuracion(txt);
       const dm = n.match(/\b(?:cerrar|abrir)\w*\s+(\d+(?:[.,]\d+)?)\s*(?:hs?|horas?)\b/);
@@ -10718,13 +10790,19 @@ function waAnalizar(msgs, opt){
         nota: p.pozo + ' no está en la lista de pozos de gas de la app: el pedido para ese pozo no se carga.' }));
       if(!objetivos.length && tipo !== 'otro' && ultimoPozoDe[m.autor] && m.ts - ultimoPozoDe[m.autor].ts < 10 * 60e3) objetivos = [ultimoPozoDe[m.autor].pozo];
       const det = txt.replace(/\s+/g, ' ').trim().slice(0, 200);
+      // tarea sin pozo nombrado, pero se viene hablando de uno ("verificar si lo pueden dejar en automatico")
+      if(!objetivos.length && ctxPozo){
+        add(m, { cat: 'pedidos', est: 'rev', pozo: ctxPozo.pozo, titulo: 'Tarea en ' + ctxPozo.pozo + ': ' + det.slice(0, 60), detalle: 'otra tarea', pedido: { tipo: 'otro', objetivo: '', detalle: ctxPozo.pozo + ': ' + det, duracionHs: 0 },
+          nota: 'No nombra el pozo: es el ' + ctxPozo.pozo + ' del mensaje de las ' + hhmmDeTs(ctxPozo.ts) + '. Se carga como “Otra tarea”.' });
+        return;
+      }
       if(!objetivos.length){
         add(m, { cat: 'pedidos', est: 'rev', tipo: 'otro', titulo: 'Tarea: ' + det.slice(0, 70), detalle: 'otra tarea', pedido: { tipo: 'otro', objetivo: '', detalle: det, duracionHs: 0 }, nota: 'No nombra un pozo: se carga como “Otra tarea”.' });
       } else objetivos.forEach(pz => {
         const pedTipoFinal = cond && tipo !== 'velas' ? 'otro' : tipo;
         const tit = (tipo === 'velas' ? 'Lanzar velas en ' : (tipo === 'abrir' ? 'Abrir ' : (tipo === 'cerrar' ? 'Cerrar ' : 'Tarea en '))) + pz + (dur && tipo !== 'velas' ? ' por ' + waFmt(dur) + ' h' : '');
-        add(m, { cat: 'pedidos', est: (cond || pedTipoFinal === 'otro') ? 'rev' : 'ok', pozo: pz, titulo: tit, detalle: cond ? 'pedido con condición' : 'pedido', pedido: { tipo: pedTipoFinal, objetivo: pedTipoFinal === 'otro' ? '' : pz, detalle: det, duracionHs: (pedTipoFinal === 'abrir' || pedTipoFinal === 'cerrar') && dur && dur <= 72 ? dur : 0 },
-          nota: cond ? 'Es un pedido con condición (“cuando…”, “hasta que…”): se carga como tarea y se marca hecha a mano.' : 'Va a Pedidos y se tacha solo cuando se cargue.' });
+        add(m, { cat: 'pedidos', est: (cond || pedTipoFinal === 'otro') ? 'rev' : 'ok', pozo: pz, titulo: negado ? 'No tocar ' + pz + ' (' + det.slice(0, 40) + ')' : tit, detalle: cond ? 'pedido con condición' : 'pedido', pedido: { tipo: pedTipoFinal, objetivo: pedTipoFinal === 'otro' ? '' : pz, detalle: det, duracionHs: (pedTipoFinal === 'abrir' || pedTipoFinal === 'cerrar') && dur && dur <= 72 ? dur : 0 },
+          nota: negado ? 'Es una indicación de NO maniobrar: se carga como tarea, para que se vea en Pedidos.' : (cond ? 'Es un pedido con condición (“cuando…”, “hasta que…”): se carga como tarea y se marca hecha a mano.' : (pedTipoFinal === 'otro' ? 'Se carga como “Otra tarea” en Pedidos y se marca hecha a mano.' : 'Va a Pedidos y se tacha solo cuando se cargue.')) });
       });
       objetivos.forEach(pz => { ultimoPozoDe[m.autor] = { pozo: pz, ts: m.ts }; });
       return;
@@ -10767,13 +10845,16 @@ function waAnalizar(msgs, opt){
         const dur = waDuracion(seg) || waDuracion(linea);
         const notas = [];
         if(desdeTexto && hora !== m.hora) notas.push('La hora sale del texto (' + hora + '), no de la del mensaje (' + m.hora + ').');
+        const vago = !desdeTexto && /\b(anoche|ayer|madrugada|temprano|a la manana|a la tarde|a la noche|hace un rato)\b/.test(n);
+        if(vago){ rev = rev || ' '; notas.push('Dice “' + (n.match(/\b(anoche|ayer|madrugada|temprano|a la manana|a la tarde|a la noche|hace un rato)\b/) || [''])[0] + '” sin hora: corregí la hora antes de guardar (está la del mensaje).'); }
+        if(/\bmanual\b/.test(n)) notas.push('Dice que quedó en manual: si tiene optimizador, cambialo en la ficha.');
         if(lista.length > 1) notas.push('Un mensaje con ' + lista.length + ' pozos: un renglón por pozo.');
         if(/\bcerr\b/.test(sN)) notas.push('“cerr” = cerrado.');
         if(/\bab\b/.test(sN)) notas.push('“ab” = abierto.');
         if(pr.psi) notas.push('Venía en psi: pasado a kg/cm².');
         if(dur) notas.push('Por ' + waFmt(dur) + ' h: queda en la nota del horario.');
         if(/optimizador|automatico/.test(n)) notas.push('Menciona el optimizador en automático: si cambió, actualizalo en la ficha.');
-        if(rev) notas.push(rev);
+        if(rev && rev.trim()) notas.push(rev);
         if(p.desconocido){
           add(m, { cat: 'no', est: 'no', pozo: p.pozo, titulo: p.pozo + ' · ' + (tipo === 'abrir' ? 'Abierto' : 'Cerrado'), detalle: (presion !== null ? waFmt(presion) + ' kg/cm² · ' : '') + hora,
             nota: p.pozo + ' no está en la lista de pozos de gas de la app: agregalo en Pozos y volvé a pegar, o cargalo a mano.' });
@@ -10809,13 +10890,18 @@ function waAnalizar(msgs, opt){
       const rec = POZOS.find(p => p.pozo === it.pozo);
       if(!rec) return;
       if(!est[it.pozo]){
-        const ev = MANIOBRAS.filter(e => e.pozo === it.pozo && e.ts < it.ts - 20 * 60e3).sort((a, b) => b.ts - a.ts)[0];
+        // solo se compara con lo cargado en las ultimas 24 h: si hace dias que no se carga nada (francos, baches),
+        // el estado viejo no sirve y no se cuestiona la maniobra
+        const lim = it.ts - 24 * 3600e3;
+        const ev = MANIOBRAS.filter(e => e.pozo === it.pozo && e.ts < it.ts - 20 * 60e3 && e.ts >= lim).sort((a, b) => b.ts - a.ts)[0];
+        const uR = waUltimoTs(rec);
         if(ev) est[it.pozo] = { estado: ev.tipo === 'abrir' ? 'Abierto' : 'Cerrado', desde: ev.hora, dia: ev.ts };
-        else if(waUltimoTs(rec) && waUltimoTs(rec) < it.ts - 20 * 60e3) est[it.pozo] = { estado: rec.estado || '', desde: rec.estado === 'Cerrado' ? rec.horaCierre : rec.horaApertura, dia: waUltimoTs(rec) };
+        else if(uR && uR < it.ts - 20 * 60e3 && uR >= lim) est[it.pozo] = { estado: rec.estado || '', desde: rec.estado === 'Cerrado' ? rec.horaCierre : rec.horaApertura, dia: uR };
         else est[it.pozo] = { estado: '' };
       }
       const st = est[it.pozo];
-      const repite = (it.tipo === 'abrir' && st.estado === 'Abierto') || (it.tipo === 'cerrar' && st.estado === 'Cerrado');
+      const esAuto = pozoOptimAuto(rec) || /\b(aut|auto|automatico)\b/.test(waSinAcentos((msgs[it.msg] || {}).texto || ''));
+      const repite = !esAuto && ((it.tipo === 'abrir' && st.estado === 'Abierto') || (it.tipo === 'cerrar' && st.estado === 'Cerrado'));
       if(repite){
         const cuando = st.desde ? ' desde las ' + st.desde + (st.dia && new Date(st.dia).toDateString() !== new Date(it.ts).toDateString() ? ' del ' + tendFechaCorta(st.dia) : '') : '';
         it.est = 'rev';
@@ -10823,6 +10909,15 @@ function waAnalizar(msgs, opt){
           ' en el medio. Si está en el grupo, pegalo también (puede ser después); si no, se carga sin horas de ' + (it.tipo === 'abrir' ? 'cierre' : 'apertura') + '.';
       }
       est[it.pozo] = { estado: it.tipo === 'abrir' ? 'Abierto' : 'Cerrado', desde: it.hora, dia: it.ts };
+    });
+  }
+  // un pedido repetido en el mismo pegado (el operador le contesta copiando el pedido): va una sola vez
+  if(!opt.sinDup){
+    const vistosPed = [];
+    items.filter(it => it.cat === 'pedidos' && it.pedido && it.pedido.objetivo).sort((a, b) => a.ts - b.ts).forEach(it => {
+      const ya = vistosPed.find(v => v.pedido.tipo === it.pedido.tipo && v.pedido.objetivo === it.pedido.objetivo && it.ts - v.ts <= 60 * 60e3);
+      if(ya){ it.est = 'dup'; it.nota = 'Repite el pedido de las ' + hhmmDeTs(ya.ts) + ' (' + ya.por + '): va una sola vez.'; }
+      else vistosPed.push(it);
     });
   }
   // ya cargados (no se duplican)
@@ -10876,8 +10971,10 @@ function waAplicarManiobra(it){
   const ultimo = waUltimoTs(rec);
   const prevMan = MANIOBRAS.filter(e => e.pozo === rec.pozo && e.ts < it.ts).sort((a, b) => b.ts - a.ts)[0];
   const esLaUltima = it.ts >= ultimo && !MANIOBRAS.some(e => e.pozo === rec.pozo && e.ts > it.ts);
-  // estado ANTES de esta maniobra
-  const prev = esLaUltima
+  // estado ANTES de esta maniobra (si lo ultimo cargado es de hace mas de 36 h, no se usa: es un dato viejo)
+  const prevTs = esLaUltima ? ultimo : (prevMan ? prevMan.ts : 0);
+  const prevViejo = !prevTs || it.ts - prevTs > 36 * 3600e3;
+  const prev = prevViejo ? { estado: '', tsA: null, tsC: null, hA: '', hC: '' } : esLaUltima
     ? { estado: rec.estado || '', tsA: maniobraTsValido(rec.tsApertura, rec.horaApertura) ? rec.tsApertura : null, tsC: maniobraTsValido(rec.tsCierre, rec.horaCierre) ? rec.tsCierre : null, hA: rec.horaApertura || '', hC: rec.horaCierre || '' }
     : (prevMan ? { estado: prevMan.estado, tsA: prevMan.tipo === 'abrir' ? prevMan.ts : null, tsC: prevMan.tipo === 'cerrar' ? prevMan.ts : null, hA: prevMan.horaApertura || '', hC: prevMan.horaCierre || '' } : { estado: '', tsA: null, tsC: null, hA: '', hC: '' });
   const f = {};
@@ -10971,8 +11068,10 @@ function waAplicarPedido(it){
 function waAplicarCiclo(it){
   const rec = POZOS.find(p => p.pozo === it.pozo);
   if(!rec) return false;
-  const f = { ciclo: it.ciclo };
+  const f = {};
+  if(it.ciclo) f.ciclo = it.ciclo;
   if(it.modo && pozoTieneOptim(rec)) f.optimModo = it.modo;
+  if(!Object.keys(f).length) return false;
   Object.assign(rec, f); rec._edited = true;
   saveEdit(rec.pozo, Object.assign({}, f, { operador: it.por }), Object.keys(f));
   return true;
@@ -11106,11 +11205,53 @@ function waNormPozo(v){
 // formulario de correccion dentro del renglon
 // el operador explica el mensaje con sus palabras ("apertura del 1338 con 21 kg", "dos aperturas: 1399 con 20 y
 // 1400 con 10", "es charla", "novedad del colector 1136") y la app lo lee con el mismo lector de mensajes
+function waCicloHoras(n){
+  const nw = n.replace(/\b(un|una|uno|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|doce|veinticuatro)\b/g, w => String(WA_PALABRAS_NUM[w]));
+  const hAb = nw.match(/(\d+(?:[.,]\d+)?)\s*(?:hs?|horas?)?\s*(?:de\s*)?(?:\bon\b|\bab\b|abiert\w*|apertur\w*)/) || nw.match(/\bon\s*:?\s*(\d+(?:[.,]\d+)?)/) || nw.match(/abrir\s+por\s+(\d+(?:[.,]\d+)?)/);
+  const hCe = nw.match(/(\d+(?:[.,]\d+)?)\s*(?:hs?|horas?)?\s*(?:de\s*)?(?:\boff\b|cerr\w*|cierre)/) || nw.match(/\boff\s*:?\s*(\d+(?:[.,]\d+)?)/);
+  return { nw, hAb, hCe };
+}
+// pozo del que se viene hablando en el grupo antes de este mensaje (hasta 15 min antes)
+function waPozoContexto(m){
+  const prev = WA.msgs.filter(o => o.ts <= m.ts && o.i !== m.i && m.ts - o.ts <= 30 * 60e3).sort((a, b) => b.ts - a.ts);
+  for(const o of prev){ const p = waPozos(o.texto).find(x => x.gas); if(p) return p.pozo; }
+  return '';
+}
 function waExplicacion(m, txt){
   const n = waSinAcentos(txt).trim();
   if(!n) return { error: 'Escribí qué es el mensaje.' };
   if(/^(es\s+)?(charla|nada|ignorar|ignoralo|saludo|una pregunta|pregunta|respuesta|no cargar|no se carga|no va)\b/.test(n) || /\b(es charla|no cargar nada|no va nada)\b/.test(n))
     return { items: [], regla: { que: 'ignorar' }, resumen: 'No se carga nada (charla).' };
+  // "es el horario/ciclo cargado": horas de apertura y cierre del pozo (del mensaje, o de la explicacion si las trae)
+  if(/\b(horario|horarios|ciclo|configurad\w*|configuracion|programad\w*|parametros?)\b/.test(n)){
+    let h = waCicloHoras(n);
+    if(!(h.hAb && h.hCe)) h = waCicloHoras(waSinAcentos(m.texto));
+    const p = waPozos(txt).find(x => x.gas) || waPozos(m.texto).find(x => x.gas);
+    const pozo = p ? p.pozo : waPozoContexto(m);
+    if(!(h.hAb && h.hCe)) return { error: 'No encuentro las horas de apertura y cierre. Decilas, por ejemplo: “ciclo del 1299: 5 hs abierto x 4 hs cerrado”.' };
+    if(!pozo) return { error: 'No encuentro el pozo: decilo, por ejemplo “es el ciclo del 1299”.' };
+    const ab = waNum(h.hAb[1]), ce = waNum(h.hCe[1]);
+    const rec = POZOS.find(x => x.pozo === pozo);
+    const it = { cat: 'ciclo', est: 'ok', chk: true, pozo, ts: m.ts, modo: '', ciclo: waFmt(ce).replace(',', '.') + 'c x ' + waFmt(ab).replace(',', '.') + 'a',
+      titulo: pozo + ' · ciclo', detalle: waFmt(ce) + ' h cerrado × ' + waFmt(ab) + ' h abierto' + (rec && rec.ciclo ? ' (antes: ' + rec.ciclo + ')' : ''), nota: 'Corregido con tu explicación.' };
+    return { items: [it], regla: null, resumen: '' };
+  }
+  // "esta en automatico", "optimizador en manual": la maniobra del mensaje queda como estaba y el optimizador
+  // del pozo pasa a ese modo
+  const mModo = n.match(/\b(automatico|auto|aut|manual)\b/);
+  if(mModo && !/\b(apertura|cierre|abri\w*|cerr\w*|pedido|velas?)\b/.test(n)){
+    const modo = mModo[1] === 'manual' ? 'manual' : 'auto';
+    const p = waPozos(txt).find(x => x.gas) || waPozos(m.texto).find(x => x.gas);
+    if(!p) return { error: 'No encuentro el pozo: decilo, por ejemplo “el 1149 está en automático”.' };
+    const rec = POZOS.find(x => x.pozo === p.pozo);
+    const its = waAnalizar([m], { sinReglas: true, sinDup: true }).filter(x => x.cat === 'maniobras' && x.pozo === p.pozo);
+    its.forEach(x => { x.est = 'ok'; x.chk = true; x.nota = 'Pozo con optimizador en ' + (modo === 'auto' ? 'automático' : 'manual') + '.'; });
+    if(rec && pozoTieneOptim(rec)) its.push({ cat: 'ciclo', est: 'ok', chk: true, pozo: p.pozo, ts: m.ts, modo, ciclo: '', titulo: p.pozo + ' · optimizador en ' + (modo === 'auto' ? 'automático' : 'manual'),
+      detalle: pozoOptimAuto(rec) === (modo === 'auto') ? 'ya figuraba así' : 'cambia el modo del optimizador en la ficha', nota: 'Corregido con tu explicación.' });
+    else if(modo === 'auto') its.forEach(x => { x.nota += ' En la app ' + p.pozo + ' no tiene optimizador cargado: si lo tiene, cargalo en la ficha.'; });
+    if(!its.length) return { error: 'No encuentro una maniobra del ' + p.pozo + ' en el mensaje. Si es solo el cambio de modo, cargalo en la ficha del pozo.' };
+    return { items: its, regla: null, resumen: '' };
+  }
   if(/\bnovedad\b/.test(n)){
     const p = waPozos(txt)[0] || waPozos(m.texto)[0];
     const pozo = p && !p.desconocido ? p.pozo : '';
@@ -11122,6 +11263,12 @@ function waExplicacion(m, txt){
   t = t.replace(/\baperturas?\b/g, 'abierto').replace(/\bcierres?\b/g, 'cerrado').replace(/\b(se )?abrio\b/g, 'abierto').replace(/\b(se )?cerro\b/g, 'cerrado')
        .replace(/\b(con|a|de|en)\s+(\d+(?:[.,]\d+)?)(?!\s*(?:kg|psi|hs?\b|horas?|:|\d|velas?|de gas|de agua|de oil))/g, '$1 $2 kg')
        .replace(/\bpedido de\b/g, 'favor').replace(/\bpide\b/g, 'favor');
+  // si la explicacion no nombra el pozo ("el pozo esta abierto", "dieron el ok para abrirlo"), es el del mensaje
+  if(!waPozos(txt).some(x => x.gas)){
+    const pm = waPozos(m.texto).find(x => x.gas);
+    const pz = pm ? pm.pozo : waPozoContexto(m);
+    if(pz) t = pz + ' ' + t;
+  }
   const syn = { i: m.i, ts: m.ts, hora: m.hora, autor: m.autor, texto: t.trim() };
   const its = waAnalizar([syn], { sinReglas: true, sinDup: true });
   const buenos = its.filter(x => x.cat !== 'no');
@@ -11445,7 +11592,7 @@ function qcBorrar(h){
 var qcTabActual = 'ctrl';
 function qcRender(){
   const v = (id) => document.getElementById(id) && document.getElementById(id).style.display !== 'none';
-  if(v('scrMain')) renderScraper(); else if(qcTabActual === 'quim') renderQuimicos(); else renderControles();
+  if(v('acumMain')) renderAcumulados(); else if(v('scrMain')) renderScraper(); else if(qcTabActual === 'quim') renderQuimicos(); else renderControles();
 }
 function qcFormHora(id){ return `<label class="qc-f"><span>Hora</span><input type="time" class="edit-input" id="${id}" value="${qcHoraAhora()}"></label>`; }
 function qcTsDeHora(v){ return /^\d{2}:\d{2}$/.test(v || '') ? horaATs(v, Date.now()) : Date.now(); }
@@ -11774,6 +11921,77 @@ function renderScraper(){
   });
 }
 document.getElementById('tabScr').addEventListener('click', () => { switchTab('tabScr', 'scrMain'); renderScraper(); });
+// ---- Acumulados (m3/dia por nodo: V 100, V 1600, COL 29, V 502...): se cargan todos juntos, como llegan en el grupo ----
+var ACUM_NODOS = ['V 100', 'V 1600', 'COL 29', 'V 502'];
+function acumNodos(){ return qcNombres('acumulado', ACUM_NODOS); }
+function acumDia(ts){ return pedIso(inicioDiaOperativo(new Date(ts))); }
+function renderAcumulados(){
+  const main = document.getElementById('acumMain');
+  if(!main) return;
+  iniciarTendenciaSync();
+  const nodos = acumNodos();
+  const lista = qcLista('acumulado');
+  const ultimo = {};
+  HIST.filter(h => h.tipo === 'acumulado').sort((a, b) => b.ts - a.ts).forEach(h => { if(!ultimo[h.equipo]) ultimo[h.equipo] = h; });
+  // tabla por dia operativo: la ultima carga de cada nodo en ese dia
+  const dias = {};
+  lista.forEach(h => { const d = acumDia(h.ts); dias[d] = dias[d] || {}; if(!dias[d][h.equipo]) dias[d][h.equipo] = h; });
+  const diasOrd = Object.keys(dias).sort().reverse();
+  const nodosTabla = nodos.filter(n => lista.some(h => h.equipo === n));
+  const diaTxt = (iso) => { const hoy = pedHoy(); const ay = pedIso(new Date(inicioDiaOperativo(new Date()).getTime() - 86400e3)); return iso === hoy ? 'hoy' : (iso === ay ? 'ayer' : iso.slice(8, 10) + '/' + iso.slice(5, 7)); };
+  main.innerHTML = `<div class="qc-wrap">
+    <section class="qc-card">
+      <h2>Cargar acumulados</h2>
+      <div class="qc-form">
+        ${qcFormHora('acHora')}
+        ${nodos.map((n, i) => `<label class="qc-f"><span>${avisoEsc(n)} (m³/d)</span><input class="edit-input ac-val" data-nodo="${avisoEsc(n)}" inputmode="decimal" placeholder="${ultimo[n] ? 'antes ' + qcFmt(ultimo[n].vals.m3d) : ''}"></label>`).join('')}
+      </div>
+      <div class="qc-sub-tit">Otro nodo</div>
+      <div class="qc-form">
+        <label class="qc-f"><span>Nombre</span><input class="edit-input" id="acOtroN" placeholder="ej: V 300"></label>
+        <label class="qc-f"><span>m³/d</span><input class="edit-input" id="acOtroV" inputmode="decimal"></label>
+      </div>
+      <div class="qc-err" id="acErr" role="alert"></div>
+      <div class="qc-bot"><button type="button" class="save-btn" id="acGuardar">Guardar acumulados</button></div>
+    </section>
+    <section class="qc-card">
+      <div class="qc-tit-fila"><h2>Por día</h2><span class="qc-sub">día operativo (06 a 06), últimos ${QC_DIAS} días</span></div>
+      ${diasOrd.length ? `<div class="qc-tabla-wrap"><table class="qc-tabla"><thead><tr><th>Día</th>${nodosTabla.map(n => `<th>${avisoEsc(n)}</th>`).join('')}</tr></thead><tbody>
+        ${diasOrd.map((d, k) => { const ant = diasOrd[k + 1] ? dias[diasOrd[k + 1]] : null; return `<tr><td>${diaTxt(d)}</td>${nodosTabla.map(n => { const h = dias[d][n]; if(!h) return '<td>—</td>'; const v = h.vals.m3d; const a = ant && ant[n] ? ant[n].vals.m3d : null; const dif = a !== null && a !== undefined ? v - a : null;
+          return `<td>${qcFmt(v)}${dif !== null && dif !== 0 ? ` <span class="ac-dif ${dif > 0 ? 'sube' : 'baja'}">${dif > 0 ? '▲' : '▼'} ${qcFmt(Math.abs(dif))}</span>` : ''}</td>`; }).join('')}</tr>`; }).join('')}
+      </tbody></table></div>` : '<div class="empty-msg">Todavía no hay acumulados cargados.</div>'}
+    </section>
+    <section class="qc-card">
+      <div class="qc-tit-fila"><h2>Cargas</h2><span class="qc-sub">${lista.length} en ${QC_DIAS} días</span></div>
+      ${lista.length ? `<div class="qc-tabla-wrap"><table class="qc-tabla"><thead><tr><th>Cuándo</th><th>Nodo</th><th>m³/d</th><th>Cargó</th><th></th></tr></thead><tbody>
+        ${lista.map((h, i) => `<tr><td>${avisoEsc(qcCuando(h.ts))}</td><td>${avisoEsc(h.equipo)}</td><td>${qcFmt(h.vals.m3d)}</td><td>${avisoEsc(h.por || '')}</td><td><button type="button" class="qc-x" data-i="${i}" aria-label="Borrar">&times;</button></td></tr>`).join('')}
+      </tbody></table></div>` : '<div class="empty-msg">Sin cargas.</div>'}
+    </section>
+  </div>`;
+  const $ = (id) => document.getElementById(id);
+  main.querySelectorAll('.qc-x').forEach(b => b.addEventListener('click', () => qcBorrar(lista[+b.dataset.i])));
+  $('acGuardar').addEventListener('click', () => {
+    const err = $('acErr'); err.textContent = '';
+    const cargas = [];
+    let malo = false;
+    main.querySelectorAll('.ac-val').forEach(i => { const n = qcNum(i.value); if(Number.isNaN(n)) malo = true; else if(n !== null) cargas.push([i.dataset.nodo, n]); });
+    let otroN = $('acOtroN').value.trim().toUpperCase().replace(/\s+/g, ' ').replace(/^([A-Z]+)\s*-?\s*(\d)/, '$1 $2');
+    const otroV = qcNum($('acOtroV').value);
+    if(Number.isNaN(otroV)) malo = true;
+    if(otroN && otroV !== null && !Number.isNaN(otroV)){ const ya = nodos.find(n => n.toUpperCase() === otroN); cargas.push([ya || otroN, otroV]); }
+    else if(otroN || (otroV !== null && !Number.isNaN(otroV))){ err.textContent = 'Para otro nodo poné el nombre y el valor.'; return; }
+    if(malo){ err.textContent = 'Los valores tienen que ser números (ej: 1633).'; return; }
+    if(!cargas.length){ err.textContent = 'Cargá al menos un nodo.'; return; }
+    if(!puedeModificar()) return;
+    if(!firestoreOk){ alert('No hay conexion con el guardado compartido. Revisa tu internet e intenta de nuevo.'); return; }
+    const ts = qcTsDeHora($('acHora').value);
+    cargas.forEach(([n, v]) => histRegistrar('acumulado', 'Acumulados', n, { m3d: v }, ts));
+    movToast('Acumulados guardados (' + cargas.length + ' nodo' + (cargas.length === 1 ? '' : 's') + ').');
+    renderAcumulados();
+  });
+}
+document.getElementById('tabAcum').addEventListener('click', () => { switchTab('tabAcum', 'acumMain'); renderAcumulados(); });
+
 
 
 
@@ -11796,7 +12014,7 @@ document.getElementById('tabScr').addEventListener('click', () => { switchTab('t
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202610310215;
+var APP_VERSION = 202610312210;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
