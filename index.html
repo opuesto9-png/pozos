@@ -9456,8 +9456,15 @@ function parteVivoDatos(iso){
     }
     return { ts: h.ts, enviado: null, celdas: [parteHoraTs(h.ts), tipo, h.equipo, det] };
   });
-  out.hojas.push({ id: 'quim', titulo: 'Controles y químicos', sub: 'Acumulados, controles y stock de químicos · solo en pantalla, no va en los Excel', desde: ini6,
-    cols: ['Hora', 'Tipo', 'Punto / equipo', 'Dato'], filas: filasQ });
+  // dos secciones: acumulados por un lado, controles y quimicos por otro
+  const filasAc = filasQ.filter(f => f.celdas[1] === 'Acumulado').map(f => {
+    const m = String(f.celdas[3]).match(/^(.*? m³\/d)(?: \((.*) contra el día anterior\))?$/);
+    return { ts: f.ts, enviado: null, celdas: [f.celdas[0], f.celdas[2], m ? m[1] : f.celdas[3], m && m[2] ? m[2] : ''] };
+  });
+  out.hojas.push({ id: 'acum', titulo: 'Acumulados', sub: 'm³/día por nodo · solo en pantalla, no va en los Excel', desde: ini6,
+    cols: ['Hora', 'Nodo', 'Acumulado', 'Contra el día anterior'], filas: filasAc });
+  out.hojas.push({ id: 'quim', titulo: 'Controles y químicos', sub: 'Controles por punto y stock de químicos · solo en pantalla, no va en los Excel', desde: ini6,
+    cols: ['Hora', 'Tipo', 'Punto / equipo', 'Dato'], filas: filasQ.filter(f => f.celdas[1] !== 'Acumulado') });
   return out;
 }
 
@@ -9534,7 +9541,7 @@ function renderParteVivo(){
     });
     html += `</tbody></table></div></section>`;
   });
-  html += `<div class="pv-pie">Es el mismo contenido que sale en los Excel (salvo Controles y químicos, que es solo de pantalla). Para mandarlos, se siguen enviando desde "Enviar partes y reportes" en la compu principal. PTC no está acá porque su reporte es el acumulado del mes.</div></div>`;
+  html += `<div class="pv-pie">Es el mismo contenido que sale en los Excel (salvo Acumulados y Controles y químicos, que son solo de pantalla). Para mandarlos, se siguen enviando desde "Enviar partes y reportes" en la compu principal. PTC no está acá porque su reporte es el acumulado del mes.</div></div>`;
   const y = window.scrollY;
   main.innerHTML = html;
   window.scrollTo(0, y);
@@ -12014,7 +12021,7 @@ document.getElementById('tabAcum').addEventListener('click', () => { switchTab('
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202610312210;
+var APP_VERSION = 202610312220;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
