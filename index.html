@@ -5045,6 +5045,8 @@ function renderCardEdit(rec, bat){
     Object.assign(rec, newFields);
     rec._edited = true;
     saveEdit(rec.pozo, newFields, changedKeys);
+    // lo que sigue es secundario: si algo falla, el pozo ya quedo guardado y la ficha se cierra igual
+    try {
     // cada maniobra queda registrada aparte (el parte arma un renglon por maniobra, no solo la ultima)
     if((aperturaCambio || cierreCambio) && (hA || hcEfectivo) && newFields.estado){
       maniobraRegistrar(rec, { tipo: newFields.estado === 'Abierto' ? 'abrir' : 'cerrar', ts: newFields.estado === 'Abierto' ? rec.tsApertura : rec.tsCierre,
@@ -5060,6 +5062,7 @@ function renderCardEdit(rec, bat){
     }
     // vela/s cargadas en este mismo guardado: quedan como su propio movimiento
     velasACargar.forEach(v => registrarVela(rec.pozo, rec.bateria, v.tipo, v.numero));
+    } catch(e){ console.error('guardado ficha', e); appRegistrarError('ficha ' + rec.pozo + ': ' + (e && e.message)); }
     renderCardView(rec, bat);
     render(document.getElementById('searchBox').value);
     if(document.getElementById('planoMain').style.display !== 'none'){
@@ -9505,9 +9508,10 @@ function abrirPedidoForm(){
     const ref = db.collection('pedidos').doc();
     ref.set(datos).catch(e => alert('No se pudo guardar (' + e.message + ').'));
     PEDIDOS = [Object.assign({ id: ref.id }, datos)].concat(PEDIDOS.filter(x => x.id !== ref.id));
-    acuseMarcar('pedido', ref.id, true);
+    closeCard();
     if(pedPuedeVerDias()) pedDiaSel = datos.fecha;
-    closeCard(); renderPedidos(); pedActualizarInicio();
+    acuseMarcar('pedido', ref.id, true);
+    try { renderPedidos(); pedActualizarInicio(); } catch(e){ appRegistrarError('pedidos: ' + (e && e.message)); }
   });
 }
 
@@ -12185,6 +12189,9 @@ function acuseGuardarLocal(){
 }
 function acuseEquipoNombre(){ return HAB.nombre || (habTipoDispositivo() === 'celular' ? 'Celular' : 'Compu'); }
 function acuseMarcar(tipo, ref, visto){
+  try { acuseMarcarSinProteger(tipo, ref, visto); } catch(e){ console.error('acuse', e); appRegistrarError('acuse: ' + (e && e.message)); }
+}
+function acuseMarcarSinProteger(tipo, ref, visto){
   if(!firestoreOk || !HAB.uid || HAB.estado !== 'habilitado' || !ref) return;
   const kR = tipo + '|' + ref + '|r', kV = tipo + '|' + ref + '|v';
   if(visto ? acuseHechos[kV] : acuseHechos[kR]) return;
@@ -12461,6 +12468,22 @@ setInterval(() => { if(ahoraVisible() && !document.hidden) ahoraPintar(); }, 60e
   fijar();
   if(window.ResizeObserver) new ResizeObserver(fijar).observe(h); else window.addEventListener('resize', fijar);
 })();
+// ---------------- Errores: si algo falla, se avisa en pantalla y queda anotado en este equipo ----------------
+// (asi un "toque Guardar y no hizo nada" deja rastro: Dispositivos no hace falta, se lee con appUltimosErrores())
+function appRegistrarError(txt){
+  try {
+    const l = JSON.parse(localStorage.getItem('app_errores') || '[]');
+    l.push({ ts: Date.now(), ver: typeof APP_VERSION !== 'undefined' ? APP_VERSION : 0, txt: String(txt).slice(0, 300) });
+    localStorage.setItem('app_errores', JSON.stringify(l.slice(-15)));
+  } catch(e) {}
+}
+function appUltimosErrores(){ try { return JSON.parse(localStorage.getItem('app_errores') || '[]').map(e => new Date(e.ts).toLocaleString('es-AR') + ' · v' + e.ver + ' · ' + e.txt).join('\n'); } catch(e){ return ''; } }
+var appErrorAvisado = 0;
+window.addEventListener('error', (ev) => {
+  if(!ev || !ev.message || ev.target !== window && ev.target && ev.target.tagName) return; // recursos (imagenes, scripts) no
+  appRegistrarError(ev.message + (ev.lineno ? ' (línea ' + ev.lineno + ')' : ''));
+  if(Date.now() - appErrorAvisado > 10e3 && typeof movToast === 'function'){ appErrorAvisado = Date.now(); movToast('⚠ La app tuvo un error: ' + ev.message + '. Si algo no se guardó, volvé a intentarlo.'); }
+});
 // ---------------- Anti doble toque en botones de guardar/enviar ----------------
 // Si se toca el MISMO boton de guardar o enviar otra vez antes de 2,5 s, el segundo toque no hace nada
 // (evita registros repetidos cuando parece que "no llego" y se vuelve a tocar).
@@ -12480,7 +12503,7 @@ setInterval(() => { if(ahoraVisible() && !document.hidden) ahoraPintar(); }, 60e
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202611041200;
+var APP_VERSION = 202611041300;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
