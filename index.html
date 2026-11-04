@@ -1126,6 +1126,8 @@
   .crit-pill.media{ background: #e8c14d; color: #14181d; }
   .tag.mtto-tag{ color: #f0a35e; font-weight: 800; }
   .tag.mtto-tag.urgente{ color: #ff7a6e; }
+  .tag.naser-tag{ color:#C7B5F2; font-weight:800; } .tag.naser-tag.en{ color:#6FC9B0; }
+  .pozo-chip.con-naser{ box-shadow: inset 0 0 0 1.5px #7E68C8; opacity:1; }
   .pend-badge.urgente{ background: #c0524a; color: #fff; }
   .aviso-mini-btn{ display:block; width:100%; margin-top: 8px; background: transparent; color: #f0a35e; border: 1.5px solid #d98e3f; border-radius: 10px; padding: 8px; font-weight: 800; font-size: .84rem; cursor:pointer; }
   .aviso-slot .aviso-en-ficha{ margin: 8px 0 0; }
@@ -1649,6 +1651,10 @@
   .ped-item.alam-item.enpozo{ border-left:4px solid #6FC9B0; }
   .alam-ev-form{ border-top:1px dashed var(--line); padding-top:10px; }
   .alam-ev-tit{ font-weight:800; font-size:.88rem; margin-bottom:8px; }
+  .alam-pozo .alam-item{ margin:8px 0; }
+  .alam-pozo-check{ display:flex; align-items:center; gap:10px; margin-top:8px; font-weight:700; font-size:.95rem; cursor:pointer; padding:10px 12px; border:1.5px dashed #574A86; border-radius:10px; background:#211D35; }
+  .alam-pozo-check input{ width:22px; height:22px; accent-color:#9C86E0; }
+  .alam-pozo-form{ margin-top:10px; }
 </style>
 </head>
 <body>
@@ -2021,7 +2027,11 @@ function render(filterText){
         + (rec._edited ? '<span class="tag edit-tag">editado</span>' : '')
         + (() => { const av = avisosAbiertosDePozo(rec.pozo); if(!av.length) return '';
             const urg = av.some(a => a.criticidad === 'Urgente');
-            return `<span class="tag mtto-tag${urg ? ' urgente' : ''}">MTTO${urg ? ' urgente' : ''}</span>`; })();
+            return `<span class="tag mtto-tag${urg ? ' urgente' : ''}">MTTO${urg ? ' urgente' : ''}</span>`; })()
+        + (() => { const al = (typeof alamPendHoy === 'function' ? alamPendHoy() : []).filter(j => j.pozo === rec.pozo); if(!al.length) return '';
+            const en = al.some(j => j.estado === 'enpozo');
+            return `<span class="tag naser-tag${en ? ' en' : ''}">${en ? 'NASER en el pozo' : 'NASER hoy'}</span>`; })();
+      if((typeof alamPendHoy === 'function' ? alamPendHoy() : []).some(j => j.pozo === rec.pozo)) chip.classList.add('con-naser');
       chip.addEventListener('click', () => openCard(rec, bat));
       grid.appendChild(chip);
     });
@@ -4567,6 +4577,7 @@ function renderCardView(rec, bat){
       <div class="v ${!hInfo.text ? 'empty' : ''}">${hInfo.text || 'Sin dato'}</div>
     </div>
     ${avisosDePozoHtml(rec)}
+    <div class="field alam-pozo" id="alamPozoBox"></div>
     ${(() => { const vp = velaPendienteDe(rec); return vp ? `<div class="vela-pend"><b>Vela pendiente:</b> ${vp.txt} · ${vp.cuando}. Sale en el parte junto con la próxima apertura.<button type="button" class="vela-quitar" id="velaQuitarBtn">Quitar vela pendiente</button></div>` : ''; })()}
     ${field('Presion', presionMostrada, 'presion')}
     ${field('Colectora', rec.colectora)}
@@ -4594,6 +4605,7 @@ function renderCardView(rec, bat){
   if(clearBtn) clearBtn.addEventListener('click', () => clearPozoData(rec, bat));
   const vq = document.getElementById('velaQuitarBtn');
   if(vq) vq.addEventListener('click', () => quitarVelaPendiente(rec, bat));
+  try { alamPozoPintar(rec); } catch(e){ if(typeof appRegistrarError === 'function') appRegistrarError(e); }
 }
 
 function parseCiclo(cicloText){
@@ -10437,7 +10449,7 @@ const SECCION_TITULO = { tabLista: 'Pozos de gas', tabPlano: 'Plano (colectoras)
   tabMov: 'Últimos movimientos', tabPed: 'Por hacer', tabAlam: 'Equipo de alambre', tabParte: 'Parte en vivo', tabTend: 'Tendencia', tabCtrl: 'Controles', tabQuim: 'Químicos', tabScr: 'Scraper', tabAcum: 'Acumulados', tabAib: 'AIB', tabTanques: 'Baterías', tabPias: 'Pías 2', tabPtc: 'PTC', tabAvisos: 'Avisos' };
 const SECCION_GRUPO = { tabLista: 'gas', tabPlano: 'gas', tabRed: 'gas', tabCiclaje: 'sup', tabPed: 'sup', tabAlam: 'sup', tabComp: 'gas', tabAib: 'oil', tabTanques: 'oil', tabCtrl: 'quim', tabQuim: 'quim', tabScr: 'quim', tabAcum: 'quim' };
 const SECCION_CON_BUSQUEDA = ['tabLista', 'tabPlano', 'tabRed', 'tabAvisos'];
-(function(){ const t = document.getElementById('iniParteTile'); if(t && esMovil()) t.style.display = 'none'; const td = document.getElementById('iniTendBtn'); if(td && esMovil()) td.style.display = 'none'; })();
+(function(){ const t = document.getElementById('iniParteTile'); if(t && esMovil()) t.style.display = 'none'; const ta = document.getElementById('tabAlam'); if(ta && esMovil()) ta.style.display = 'none'; const td = document.getElementById('iniTendBtn'); if(td && esMovil()) td.style.display = 'none'; })();
 var seccionActual = null;
 
 function entrarSeccion(tabId){
@@ -12183,8 +12195,8 @@ function iniciarAlambreSync(){
     if(alamCargaInicial && typeof snap.docChanges === 'function'){
       snap.docChanges().forEach(ch => {
         const d = ch.doc.data();
-        if(ch.type === 'added' && !(ch.doc.metadata && ch.doc.metadata.hasPendingWrites) && d.estado === 'pendiente' && d.creadoPor !== operadorName && alamFecha(d) <= pedHoy()){
-          movToast('Equipo de alambre: ' + d.pozo + ' · ' + alamTrabajosTxt(d, true) + (d.hora ? ' · ' + d.hora : '') + (d.creadoPor ? ' (' + d.creadoPor + ')' : ''));
+        if(ch.type === 'added' && !(ch.doc.metadata && ch.doc.metadata.hasPendingWrites) && (d.estado === 'pendiente' || d.estado === 'enpozo') && d.creadoPor !== operadorName && alamFecha(d) <= pedHoy()){
+          movToast((d.estado === 'enpozo' ? 'Naser en el pozo: ' : 'Equipo de alambre: ') + d.pozo + ' · ' + alamTrabajosTxt(d, true) + (d.hora ? ' · ' + d.hora : '') + (d.creadoPor ? ' (' + d.creadoPor + ')' : ''));
           if(typeof movDing === 'function') movDing();
         }
       });
@@ -12197,7 +12209,7 @@ function iniciarAlambreSync(){
     alamRefrescar();
   }, (e) => console.error('alambre', e));
 }
-var alamRefrescoTimer = null;
+var alamRefrescoTimer = null, alamFirmaLista = '';
 function alamRefrescar(){
   clearTimeout(alamRefrescoTimer);
   alamRefrescoTimer = setTimeout(() => {
@@ -12208,6 +12220,9 @@ function alamRefrescar(){
       if(a && a.style.display !== 'none' && !alamEscribiendo()) renderAlambre();
       const p = document.getElementById('pedMain');
       if(p && p.style.display !== 'none' && !alamEscribiendo()) renderPedidos();
+      if(document.getElementById('alamPozoBox') && window._currentCardRec && !alamEscribiendo()) alamPozoPintar(window._currentCardRec);
+      const firma = alamPendHoy().map(j => j.pozo + j.estado).sort().join(',');
+      if(firma !== alamFirmaLista){ alamFirmaLista = firma; const m = document.getElementById('main'); if(m && m.style.display !== 'none') render(document.getElementById('searchBox').value); }
       if(typeof ahoraRender === 'function') ahoraRender();
     } catch(e){ appRegistrarError && appRegistrarError(e); }
   }, 250);
@@ -12294,7 +12309,8 @@ function alamAnular(j){
 }
 
 // tarjeta de un trabajo (se usa en la solapa Equipo de alambre y en "Por hacer")
-function alamItem(j){
+function alamItem(j, opt){
+  opt = opt || {};
   const el = document.createElement('div');
   const hoy = pedHoy();
   const abierto = alamAbierto(j);
@@ -12302,7 +12318,7 @@ function alamItem(j){
   el.className = 'ped-item alam-item' + (!abierto ? ' hecho' : '') + (j.estado === 'enpozo' ? ' enpozo' : '') + (atrasado ? ' atrasado' : '');
   const ic = j.estado === 'terminado' ? '<span class="ped-ic hecho" aria-label="Terminado">✓</span>' : (j.estado === 'suspendido' ? '<span class="ped-ic no" aria-label="Suspendido">✕</span>' : '<span class="ped-ic pend" aria-label="Pendiente"></span>');
   const fechaTxt = alamFecha(j) === hoy ? '' : (atrasado ? '<b style="color:#F2A08F">Era para el ' + avisoEsc(pedNombreDia(alamFecha(j), true).replace(/^(Ayer|Hoy|Mañana), /, '')) + '</b> · ' : avisoEsc(pedNombreDia(alamFecha(j), true)) + ' · ');
-  const meta = (j.instalacion ? avisoEsc(j.instalacion) + ' · ' : '') + (abierto ? fechaTxt : '') + 'Pedido por ' + avisoEsc(j.creadoPor || '—') + ' a las ' + pedHoraTs(j.creadoTs) + (j.detalle ? ' · ' + avisoEsc(j.detalle) : '');
+  const meta = (j.instalacion ? avisoEsc(j.instalacion) + ' · ' : '') + (abierto ? fechaTxt : '') + (j.origen === 'pozo' ? 'Cargado en el pozo por ' : 'Pedido por ') + avisoEsc(j.creadoPor || '—') + ' a las ' + pedHoraTs(j.creadoTs) + (j.detalle ? ' · ' + avisoEsc(j.detalle) : '');
   const ult = (j.eventos || [])[(j.eventos || []).length - 1];
   let estadoTxt = '';
   if(j.estado === 'enpozo') estadoTxt = `<div class="ped-ev">Naser en el pozo desde las <b>${avisoEsc(j.llegoHora || '')}</b>${j.llegoPor ? ' (cargó ' + avisoEsc(j.llegoPor) + ')' : ''}</div>`;
@@ -12345,6 +12361,7 @@ function alamItem(j){
     });
   };
   if(abierto){
+    if(!opt.enFicha && esMovil()) btn('Ir al pozo', 'ir', () => { const r = POZOS.find(x => x.pozo === j.pozo); if(r){ document.getElementById('tabLista').click(); openCard(r, r.bateria || 'Sin bateria'); } });
     if(j.estado === 'pendiente') btn('Llegó Naser al pozo', 'ir', () => abrirForm('llego'));
     btn('Terminó', 'si', () => abrirForm('fin'));
     btn('Sigue mañana', '', () => abrirForm('sigue'));
@@ -12446,6 +12463,70 @@ function renderAlambre(){
     movToast('Trabajo de alambre cargado: ' + d.pozo + ' · ' + alamTrabajosTxt(d, true) + '.');
     try { document.activeElement && document.activeElement.blur && document.activeElement.blur(); } catch(e) {}
     renderAlambre();
+    alamRefrescar();
+  });
+}
+// ---- En la ficha de cada pozo: casilla "Está Naser en este pozo" para que el operador cargue en el momento
+// que llegó el equipo de alambre y que trabajo va a hacer (sin que haya pedido del supervisor). Si ya hay un
+// trabajo abierto para el pozo (pedido o cargado antes), se ve aca con sus botones (Llegó / Terminó / ...).
+var alamPozoSel = { pozo: '', abierto: false, trabajos: [], otra: false, otraTxt: '', hora: '', det: '' };
+function alamPozoPintar(rec){
+  const box = document.getElementById('alamPozoBox');
+  if(!box || !rec) return;
+  const hoy = pedHoy();
+  const abiertos = (ALAMBRE || []).filter(j => j.pozo === rec.pozo && alamAbierto(j) && alamFecha(j) <= pedSumarDias(hoy, 1)).sort((a, b) => alamOrden(a) - alamOrden(b));
+  if(alamPozoSel.pozo !== rec.pozo) alamPozoSel = { pozo: rec.pozo, abierto: false, trabajos: [], otra: false, otraTxt: '', hora: '', det: '' };
+  const S = alamPozoSel;
+  box.innerHTML = `<div class="k">Equipo de alambre (Naser)</div>
+    <div class="alam-pozo-lista"></div>
+    <label class="alam-pozo-check"><input type="checkbox" id="alpCheck" ${S.abierto ? 'checked' : ''}> ${abiertos.length ? 'Naser vino a hacer otro trabajo' : 'Está Naser en este pozo'}</label>
+    <div class="alam-form alam-pozo-form" style="${S.abierto ? '' : 'display:none;'}">
+      <div class="time-label">¿Qué trabajo va a hacer? (se pueden marcar varios)</div>
+      <div class="alam-chips">${ALAM_TRABAJOS.map(t => `<button type="button" class="alam-chip${S.trabajos.includes(t[0]) ? ' on' : ''}" data-k="${t[0]}" aria-pressed="${S.trabajos.includes(t[0])}">${avisoEsc(t[1])}</button>`).join('')}
+        <button type="button" class="alam-chip otra${S.otra ? ' on' : ''}" data-k="__otra" aria-pressed="${S.otra}">+ Otra tarea</button></div>
+      <input class="edit-input" id="alpOtra" maxlength="80" placeholder="¿Qué tarea? ej: recupero de resorte" value="${avisoEsc(S.otraTxt)}" style="margin-top:8px;${S.otra ? '' : 'display:none;'}">
+      <div class="time-row" style="margin-top:8px;">
+        <div><div class="time-label">Hora de llegada</div><input type="time" class="edit-input time-input" id="alpHora" value="${S.hora || hhmmDeTs(Date.now())}"></div>
+        <div><div class="time-label">Detalle (opcional)</div><input class="edit-input" id="alpDet" maxlength="120" placeholder="ej: con bacheo de Wezol" value="${avisoEsc(S.det)}"></div>
+      </div>
+      <div class="qc-err" id="alpErr" role="alert"></div>
+      <button type="button" class="save-btn" id="alpGuardar" style="width:100%;margin-top:8px;">Guardar: Naser en el pozo</button>
+      <div class="edit-hint" style="margin-top:6px;">Queda “en el pozo”. Cuando termine, tocá <b>Terminó</b> acá mismo y sale en el parte de gas.</div>
+    </div>`;
+  const lista = box.querySelector('.alam-pozo-lista');
+  abiertos.forEach(j => lista.appendChild(alamItem(j, { enFicha: true })));
+  const $ = (id) => document.getElementById(id);
+  $('alpCheck').addEventListener('change', () => { S.abierto = $('alpCheck').checked; box.querySelector('.alam-pozo-form').style.display = S.abierto ? '' : 'none'; });
+  box.querySelectorAll('.alam-pozo-form .alam-chip').forEach(b => b.addEventListener('click', () => {
+    const k = b.dataset.k;
+    if(k === '__otra'){ S.otra = !S.otra; $('alpOtra').style.display = S.otra ? '' : 'none'; if(S.otra) $('alpOtra').focus(); }
+    else S.trabajos = S.trabajos.includes(k) ? S.trabajos.filter(x => x !== k) : S.trabajos.concat([k]);
+    const on = k === '__otra' ? S.otra : S.trabajos.includes(k);
+    b.classList.toggle('on', on); b.setAttribute('aria-pressed', on);
+  }));
+  $('alpOtra').addEventListener('input', () => { S.otraTxt = $('alpOtra').value; });
+  $('alpHora').addEventListener('input', () => { S.hora = $('alpHora').value; });
+  $('alpDet').addEventListener('input', () => { S.det = $('alpDet').value; });
+  $('alpGuardar').addEventListener('click', () => {
+    const err = $('alpErr'); err.textContent = '';
+    const otra = S.otra ? $('alpOtra').value.trim().slice(0, 80) : '';
+    const hora = $('alpHora').value;
+    if(S.otra && !otra){ err.textContent = 'Escribí cuál es la otra tarea.'; return; }
+    if(!S.trabajos.length && !otra){ err.textContent = 'Marcá qué trabajo va a hacer.'; return; }
+    if(!/^\d{2}:\d{2}$/.test(hora || '')){ err.textContent = 'Poné la hora de llegada.'; return; }
+    if(!puedeModificar()) return;
+    if(!firestoreOk){ alert('No hay conexion con el guardado compartido. Revisa tu internet e intenta de nuevo.'); return; }
+    const ahora = Date.now(), por = operadorName || 'Sin nombre';
+    const doc = { pozo: rec.pozo, trabajos: S.trabajos.slice(), otra, fecha: hoy, hora, detalle: $('alpDet').value.trim().slice(0, 120),
+      instalacion: alamInstalacion(rec.pozo), estado: 'enpozo', llegoHora: hora, llegoTs: horaATs(hora, ahora) || ahora, llegoPor: por,
+      origen: 'pozo', creadoTs: ahora, creadoPor: por, eventos: [] };
+    const ref = db.collection('alambre_trabajos').doc();
+    ref.set(doc).catch(e => alert('No se pudo guardar (' + e.message + ').'));
+    ALAMBRE = ALAMBRE.concat([Object.assign({ id: ref.id, _local: true }, doc)]);
+    alamPozoSel = { pozo: '', abierto: false, trabajos: [], otra: false, otraTxt: '', hora: '', det: '' };
+    movToast('Naser en ' + rec.pozo + ': ' + alamTrabajosTxt(doc, true) + '. Queda en "Por hacer" hasta que termine.');
+    try { document.activeElement && document.activeElement.blur && document.activeElement.blur(); } catch(e) {}
+    alamPozoPintar(rec);
     alamRefrescar();
   });
 }
@@ -12863,7 +12944,7 @@ window.addEventListener('error', (ev) => {
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202611041530;
+var APP_VERSION = 202611041600;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
