@@ -1597,6 +1597,8 @@
   .ah-nums b{ font-size:1.35rem; } .ah-nums b.amb{ color:#E8B64A; } .ah-nums span{ font-size:.72rem; color:#9FB3C3; }
   .ah-alerta{ text-align:left; background:#3A2026; border:0; border-radius:6px; padding:7px 10px; color:#F6D5D5; font:inherit; font-size:.82rem; cursor:pointer; }
   .ah-mov{ font-size:.8rem; color:#C9D6E0; } .ah-mov span{ color:#9FB3C3; font-variant-numeric: tabular-nums; }
+  .ped-tag.cic{ background:#173A44; color:#6FC9B0; border:1px solid #2E6B63; }
+  .ped-item.atrasado{ border-left:3px solid #C9573F; }
   .acq{ background: var(--panel); border:1px solid var(--line); border-radius:12px; padding:10px 14px; margin:8px 0 12px; }
   .acq:empty{ display:none; }
   .acq-tit{ font-weight:700; font-size:.9rem; margin-bottom:6px; } .acq-tit span{ display:block; font-weight:400; font-size:.72rem; color:#9FB3C3; margin-top:2px; }
@@ -1611,6 +1613,26 @@
   .acq-c{ display:flex; flex-direction:column; gap:1px; padding:6px 10px; background: var(--bg); border-radius:6px; font-size:.8rem; }
   .acq-n{ display:flex; justify-content:space-between; gap:8px; } .acq-n i{ font-style:normal; font-size:.72rem; color:#9FB3C3; }
   .acq-ah .acq-tit{ font-size:.74rem; letter-spacing:.08em; text-transform:uppercase; color:#C3A6EA; margin:0; } .acq-ah .acq-tit span{ text-transform:none; letter-spacing:0; }
+  /* compu: las solapas de la seccion van arriba, al lado del titulo (lejos de los botones de enviar partes) */
+  @media (min-width: 1000px){
+    body.modo-seccion header{ display:flex; flex-wrap:wrap; align-items:center; column-gap:28px; }
+    body.modo-seccion header > *{ flex-basis:100%; }
+    body.modo-seccion .nav-seccion{ order:1; flex-basis:auto; margin:0; }
+    body.modo-seccion .tabs{ order:2; flex-basis:auto; margin:0; gap:8px; }
+    body.modo-seccion .tabs .tab-btn{ font-size:.92rem; padding:9px 18px; }
+    body.modo-seccion header > :not(.nav-seccion):not(.tabs){ order:3; }
+    body.modo-seccion .status-bar{ margin-top:8px; }
+  }
+  /* Supervisores en la compu ancha: las solapas Por hacer / Ciclaje como menu al costado izquierdo de la lista */
+  @media (min-width: 1300px){
+    body.modo-seccion.sec-tabPed .tabs, body.modo-seccion.sec-tabCiclaje .tabs{
+      position:fixed; top:calc(var(--hdr-h, 170px) + 24px); left:calc(50% - 564px); width:220px; z-index:4;
+      flex-direction:column; flex-wrap:nowrap; gap:8px; margin:0; }
+    body.modo-seccion.sec-tabPed .tabs .tab-btn, body.modo-seccion.sec-tabCiclaje .tabs .tab-btn{
+      width:100%; text-align:left; font-size:1rem; padding:14px 18px; border-radius:12px; }
+    body.modo-seccion.sec-tabPed .tabs::before, body.modo-seccion.sec-tabCiclaje .tabs::before{
+      content:'SUPERVISORES'; font-size:.72rem; font-weight:700; letter-spacing:.1em; color:#9FB3C3; margin:0 0 2px 4px; }
+  }
 </style>
 </head>
 <body>
@@ -1648,10 +1670,10 @@
     <button class="tab-btn" id="tabLista">Lista</button>
     <button class="tab-btn active" id="tabPlano">Plano (colectoras)</button>
     <button class="tab-btn" id="tabRed">Red</button>
-    <button class="tab-btn" id="tabCiclaje">Ciclaje del día</button>
     <button class="tab-btn" id="tabComp">Compresión BP</button>
     <button class="tab-btn" id="tabMov">Últimos movimientos</button>
-    <button class="tab-btn" id="tabPed">Pedidos del día</button>
+    <button class="tab-btn" id="tabPed">Por hacer</button>
+    <button class="tab-btn" id="tabCiclaje">Ciclaje del día</button>
     <button class="tab-btn" id="tabParte">Parte en vivo</button>
     <button class="tab-btn" id="tabTend">Tendencia</button>
     <button class="tab-btn" id="tabCtrl">Controles</button>
@@ -1694,8 +1716,7 @@
     <button type="button" class="ini-tile gas" data-tab="tabLista"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c2 3 5 5 5 9a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-5 1-8z"/></svg><span class="t">Pozos de gas</span><span class="s">Lista por USPA</span><span class="ini-nuevo" style="display:none;"></span></button>
     <button type="button" class="ini-tile gas" data-tab="tabPlano"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/></svg><span class="t">Plano</span><span class="s">Por colectora</span><span class="ini-nuevo" style="display:none;"></span></button>
     <button type="button" class="ini-tile gas" data-tab="tabRed"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="12" cy="18" r="2"/><path d="M7.5 7.5l3.5 8.5M16.5 7.5L13 16M8 6h8"/></svg><span class="t">Red</span><span class="s">Radial y esquema</span><span class="ini-nuevo" style="display:none;"></span></button>
-    <button type="button" class="ini-tile gas" data-tab="tabCiclaje"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 0 1-14 5"/><path d="M4 12a8 8 0 0 1 14-5"/><path d="M18 3v4h-4M6 21v-4h4"/></svg><span class="t">Ciclaje del día</span><span class="s" id="iniCicSub">Pozos a maniobrar hoy</span><span class="ini-nuevo" style="display:none;"></span></button>
-    <button type="button" class="ini-tile gas ancho" data-tab="tabComp"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 13l4-4"/><path d="M9 3h6"/><path d="M12 3v2"/></svg><span class="tx"><span class="t">Compresión BP Hoerbiger</span><span class="s">Lecturas de compresores por pozo</span></span><span class="ini-nuevo" style="display:none;"></span></button>
+    <button type="button" class="ini-tile gas" data-tab="tabComp"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 13l4-4"/><path d="M9 3h6"/><path d="M12 3v2"/></svg><span class="t">Compresión BP</span><span class="s">Lecturas por pozo</span><span class="ini-nuevo" style="display:none;"></span></button>
   </div>
   <div class="ini-grupo">PETRÓLEO, AGUA Y PTC</div>
   <div class="ini-grid">
@@ -7724,6 +7745,7 @@ function iniciarCiclajeSync(){
     snap.forEach(d => CICLO_EV.push(Object.assign({ id: d.id }, d.data())));
     locales.forEach(e => { if(!CICLO_EV.some(x => x.id === e.id)) CICLO_EV.push(e); });
     cicActualizarInicio();
+    if(document.getElementById('pedMain').style.display !== 'none') renderPedidos();
     if(document.getElementById('ciclajeMain').style.display !== 'none') renderCiclaje();
   }, err => console.error('Firestore sync error (ciclaje_eventos)', err));
   syncVivo('ciclaje_plan', { campo: 'fecha', tipo: 'iso', desde: () => ventanaDesdeIso(VENTANA_DIAS.ciclajePlan), limite: 500 }, snap => {
@@ -7733,10 +7755,12 @@ function iniciarCiclajeSync(){
     cicProgramarAuto();
     acuseAlLlegarCiclaje();
     if(document.getElementById('ciclajeMain').style.display !== 'none') renderCiclaje();
+    if(document.getElementById('pedMain').style.display !== 'none') renderPedidos();
     ahoraRender();
   }, err => console.error('Firestore sync error (ciclaje_plan)', err));
 }
 function cicActualizarInicio(){
+  if(typeof pedActualizarInicio === 'function') pedActualizarInicio();
   const sub = document.getElementById('iniCicSub');
   if(!sub) return;
   const n = cicPendientes();
@@ -9138,13 +9162,15 @@ function pedAtrasados(){ const hoy = pedHoy(); return PEDIDOS.filter(p => p.esta
 function pedDelDia(){ return pedDeFecha(pedHoy()).concat(pedAtrasados()); }
 function pedActualizarInicio(){
   const tit = document.getElementById('iniPedTit'), sub = document.getElementById('iniPedSub');
-  if(tit && !esMovil()){ tit.textContent = 'Supervisores'; if(sub) sub.textContent = 'Cargar y seguir los pedidos del día'; }
+  if(tit){ tit.textContent = esMovil() ? 'Por hacer hoy' : 'Supervisores'; if(sub) sub.textContent = esMovil() ? 'Pedidos del supervisor y ciclaje del día' : 'Pedidos y ciclaje del día'; }
   const cnt = document.getElementById('iniPedCnt');
   if(!cnt) return;
   const pend = pedDelDia().filter(p => p.estado === 'pendiente');
   const urg = pend.some(p => p.prioridad === 'urgente');
-  const hechosHoy = pedDelDia().filter(p => p.estado === 'hecho').length;
-  if(pend.length){ cnt.textContent = pend.length + (pend.length === 1 ? ' pendiente' : ' pendientes'); cnt.className = 'ped-cnt' + (urg ? ' urg' : ''); cnt.style.display = ''; }
+  const cic = cicPorHacer().filter(i => !i.hecho);
+  const hechosHoy = pedDelDia().filter(p => p.estado === 'hecho').length + cicPorHacer().filter(i => i.hecho).length;
+  const n = pend.length + cic.length;
+  if(n){ cnt.textContent = n + (n === 1 ? ' por hacer' : ' por hacer'); cnt.className = 'ped-cnt' + (urg ? ' urg' : ''); cnt.style.display = ''; }
   else if(hechosHoy){ cnt.textContent = 'Todo hecho'; cnt.className = 'ped-cnt ok'; cnt.style.display = ''; }
   else cnt.style.display = 'none';
 }
@@ -9177,6 +9203,31 @@ function iniciarPedidosSync(){
   }, (err) => { console.error('Firestore sync error (pedidos)', err); });
 }
 
+// maniobras del ciclaje de hoy (plan del supervisor), con su estado: van en la lista "Por hacer" junto a los pedidos
+function cicPorHacer(){
+  try {
+    const hoy = cicHoy();
+    if(!cicHayPlan(hoy)) return [];
+    const minutos = (Date.now() - cicInicioDia(hoy)) / 60e3;
+    const out = [];
+    [...new Set(cicPlanDe(hoy).map(p => p.pozo))].forEach(pz => {
+      cicEstadoPlan(hoy, pz).filter(i => !i.extra).forEach(i => out.push(Object.assign({ pozo: pz, atrasado: !i.hecho && i.orden + 30 < minutos }, i)));
+    });
+    return out.sort((a, b) => a.orden - b.orden);
+  } catch(e){ return []; }
+}
+function cicItemPorHacer(i){
+  const el = document.createElement('div');
+  el.className = 'ped-item cic-item' + (i.hecho ? ' hecho' : '') + (i.atrasado ? ' atrasado' : '');
+  const ic = i.hecho ? '<span class="ped-ic hecho" aria-label="Hecho">✓</span>' : '<span class="ped-ic pend" aria-label="Pendiente"></span>';
+  const que = (i.tipo === 'abrir' ? 'Abrir ' : 'Cerrar ') + i.pozo;
+  const meta = 'Ciclaje · ' + (CIC_TURNOS[i.turno] || '') + (i.hecho ? ' · <b style="color:#8FD9A8">hecho ' + avisoEsc(i.hecho.hora || hhmmDeTs(i.hecho.ts)) + (i.hecho.por ? ' por ' + avisoEsc(i.hecho.por) : '') + '</b>' : (i.atrasado ? ' · <b style="color:#F2A08F">atrasada</b>' : ''));
+  el.innerHTML = `<div class="ped-l1">${ic}<div class="ped-tit">${avisoEsc(que)}${i.hora ? ' · ' + avisoEsc(i.hora) : ''}<small>${meta}</small></div><span class="ped-tag cic">CICLAJE</span></div>
+    ${i.hecho ? '' : '<div class="ped-acc"><button type="button" class="ir">Ir a cargarlo</button></div>'}`;
+  const b = el.querySelector('.ir');
+  if(b) b.addEventListener('click', () => { const r = POZOS.find(x => x.pozo === i.pozo); if(r){ document.getElementById('tabLista').click(); openCard(r, r.bateria || 'Sin bateria'); } });
+  return el;
+}
 function renderPedidos(){
   const main = document.getElementById('pedMain');
   if(!main) return;
@@ -9197,7 +9248,7 @@ function renderPedidos(){
       ${verDias ? `<button type="button" class="ped-nuevo-btn" id="pedNuevoBtn">+ Nuevo pedido${!esHoy ? ' para el ' + avisoEsc(pedNombreDia(pedDiaSel).num) : ''}</button>` : ''}
       <button type="button" class="ped-copiar-btn" id="pedCopiarBtn">Copiar resumen para WhatsApp</button>
     </div>
-    <p class="ped-resumen">${total ? `${esHoy ? 'Hoy' : 'Ese día'}: <b>${hechos.length} de ${total}</b> hechos${pend.length ? ' · ' + pend.length + ' pendiente' + (pend.length === 1 ? '' : 's') : ''}${nos.length ? ' · ' + nos.length + ' no se pudo' : ''}` : (esHoy ? 'Todavía no hay pedidos para hoy.' : (pedDiaSel > hoy ? 'Todavía no hay pedidos cargados para ese día.' : 'No hubo pedidos ese día.'))}</p>
+    <p class="ped-resumen">${esHoy && cicPorHacer().length ? `Ciclaje de hoy: <b>${cicPorHacer().filter(i => i.hecho).length} de ${cicPorHacer().length}</b> maniobras hechas · ` : ''}${total ? `${esHoy ? 'Pedidos de hoy' : 'Ese día'}: <b>${hechos.length} de ${total}</b> hechos${pend.length ? ' · ' + pend.length + ' pendiente' + (pend.length === 1 ? '' : 's') : ''}${nos.length ? ' · ' + nos.length + ' no se pudo' : ''}` : (esHoy ? 'Todavía no hay pedidos para hoy.' : (pedDiaSel > hoy ? 'Todavía no hay pedidos cargados para ese día.' : 'No hubo pedidos ese día.'))}</p>
     <div id="acuseCuadro" class="acq"></div>
     <div id="pedLista"></div>`;
   const nuevoBtn = document.getElementById('pedNuevoBtn');
@@ -9220,6 +9271,28 @@ function renderPedidos(){
     cont.appendChild(g);
   };
   grupo('Atrasados de días anteriores', atras.sort((a, b) => pedFechaDe(a).localeCompare(pedFechaDe(b))));
+  if(esHoy){
+    // hoy: pedidos y maniobras del ciclaje en una sola lista, por hora (urgentes y pedidos sin hora primero)
+    const cic = cicPorHacer();
+    if(cic.length && acuseCiclajeNuevo(cicHoy()) && !document.hidden) acuseMarcar('ciclaje', acuseRefCiclaje(cicHoy()), true);
+    const mezcla = (peds, cics) => peds.map(p => ({ k: p.prioridad === 'urgente' ? -2 : (p.hora ? cicOrden(p.hora) : -1), el: () => {
+        const it = pedItem(p);
+        if(p.estado === 'pendiente' && (p.creadoTs || 0) >= ACUSE_DESDE && !document.hidden) acuseMarcar('pedido', p.id, true);
+        return it; } }))
+      .concat(cics.map(i => ({ k: i.orden, el: () => cicItemPorHacer(i) }))).sort((a, b) => a.k - b.k);
+    const grupoMix = (titulo, lista) => {
+      if(!lista.length) return;
+      const g = document.createElement('div');
+      g.innerHTML = `<div class="ped-grupo">${titulo} (${lista.length})</div>`;
+      lista.forEach(x => g.appendChild(x.el()));
+      cont.appendChild(g);
+    };
+    grupoMix('Por hacer hoy', mezcla(pend, cic.filter(i => !i.hecho)));
+    grupoMix('Hechos', mezcla(hechos, cic.filter(i => i.hecho)));
+    grupo('No se pudo', nos);
+    if(!cicHayPlan(cicHoy())) cont.insertAdjacentHTML('beforeend', '<p class="ped-resumen">Todavía no se cargó el ciclaje de hoy (solapa Ciclaje).</p>');
+    return;
+  }
   grupo(pedDiaSel > hoy ? 'Programados' : 'Pendientes', pend);
   grupo('Hechos', hechos);
   grupo('No se pudo', nos);
@@ -10331,8 +10404,8 @@ renderPlano();
 // "‹ Inicio" o el boton Atras del celular vuelven. Dentro de Gas y de Petroleo quedan las
 // pestañas hermanas para pasar de una a otra sin volver al inicio.
 const SECCION_TITULO = { tabLista: 'Pozos de gas', tabPlano: 'Plano (colectoras)', tabRed: 'Red', tabCiclaje: 'Ciclaje del día', tabComp: 'Compresión BP',
-  tabMov: 'Últimos movimientos', tabPed: 'Pedidos del día', tabParte: 'Parte en vivo', tabTend: 'Tendencia', tabCtrl: 'Controles', tabQuim: 'Químicos', tabScr: 'Scraper', tabAcum: 'Acumulados', tabAib: 'AIB', tabTanques: 'Baterías', tabPias: 'Pías 2', tabPtc: 'PTC', tabAvisos: 'Avisos' };
-const SECCION_GRUPO = { tabLista: 'gas', tabPlano: 'gas', tabRed: 'gas', tabCiclaje: 'gas', tabComp: 'gas', tabAib: 'oil', tabTanques: 'oil', tabCtrl: 'quim', tabQuim: 'quim', tabScr: 'quim', tabAcum: 'quim' };
+  tabMov: 'Últimos movimientos', tabPed: 'Por hacer', tabParte: 'Parte en vivo', tabTend: 'Tendencia', tabCtrl: 'Controles', tabQuim: 'Químicos', tabScr: 'Scraper', tabAcum: 'Acumulados', tabAib: 'AIB', tabTanques: 'Baterías', tabPias: 'Pías 2', tabPtc: 'PTC', tabAvisos: 'Avisos' };
+const SECCION_GRUPO = { tabLista: 'gas', tabPlano: 'gas', tabRed: 'gas', tabCiclaje: 'sup', tabPed: 'sup', tabComp: 'gas', tabAib: 'oil', tabTanques: 'oil', tabCtrl: 'quim', tabQuim: 'quim', tabScr: 'quim', tabAcum: 'quim' };
 const SECCION_CON_BUSQUEDA = ['tabLista', 'tabPlano', 'tabRed', 'tabAvisos'];
 (function(){ const t = document.getElementById('iniParteTile'); if(t && esMovil()) t.style.display = 'none'; const td = document.getElementById('iniTendBtn'); if(td && esMovil()) td.style.display = 'none'; })();
 var seccionActual = null;
@@ -10349,7 +10422,7 @@ function entrarSeccion(tabId){
   const grupo = SECCION_GRUPO[tabId];
   b.classList.toggle('tabs-solo', !grupo);
   TAB_IDS.forEach(id => document.getElementById(id).classList.toggle('fuera-grupo', !grupo || SECCION_GRUPO[id] !== grupo));
-  document.getElementById('navTitulo').textContent = grupo === 'gas' ? 'Gas' : (grupo === 'oil' ? 'Petróleo' : grupo === 'quim' ? 'Controles y químicos' : (tabId === 'tabPed' && !esMovil() ? 'Supervisores' : (SECCION_TITULO[tabId] || '')));
+  document.getElementById('navTitulo').textContent = grupo === 'gas' ? 'Gas' : (grupo === 'oil' ? 'Petróleo' : grupo === 'quim' ? 'Controles y químicos' : grupo === 'sup' ? (esMovil() ? 'Por hacer' : 'Supervisores') : (SECCION_TITULO[tabId] || ''));
   if(veniaDeInicio){
     try { history.pushState({ pozosSeccion: true }, ''); } catch(e) {}
     window.scrollTo(0, 0);
@@ -12374,6 +12447,14 @@ function ahoraPintar(){
 window.addEventListener('resize', () => ahoraRender());
 setInterval(() => { if(ahoraVisible()) ahoraPintar(); }, 60e3);
 
+// alto del encabezado (para ubicar el menu lateral de Supervisores justo debajo)
+(function(){
+  const h = document.querySelector('header');
+  if(!h) return;
+  const fijar = () => document.documentElement.style.setProperty('--hdr-h', h.offsetHeight + 'px');
+  fijar();
+  if(window.ResizeObserver) new ResizeObserver(fijar).observe(h); else window.addEventListener('resize', fijar);
+})();
 // ---------------- Anti doble toque en botones de guardar/enviar ----------------
 // Si se toca el MISMO boton de guardar o enviar otra vez antes de 2,5 s, el segundo toque no hace nada
 // (evita registros repetidos cuando parece que "no llego" y se vuelve a tocar).
@@ -12393,7 +12474,7 @@ setInterval(() => { if(ahoraVisible()) ahoraPintar(); }, 60e3);
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202611040845;
+var APP_VERSION = 202611041055;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
