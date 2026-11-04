@@ -1409,6 +1409,8 @@
   body.modo-inicio main{ display:none !important; }
   #inicio{ display:none; padding: 14px 16px 24px; max-width: 760px; margin: 0 auto; }
   body.modo-inicio #inicio{ display:flex; flex-direction:column; gap:14px; }
+  .ini-col{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+  .ini-ahora{ display:none; }
   .ini-grupo{ font-size:0.75rem; font-weight:700; letter-spacing:1px; color:#9FB3C3; margin-top:4px; }
   .ini-grid{ display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:10px; }
   @media (min-width: 620px){ .ini-grid{ grid-template-columns: repeat(4, minmax(0,1fr)); } }
@@ -1538,6 +1540,63 @@
   .qc-tabla td{ padding:6px 8px; border-bottom:1px solid var(--line); white-space:nowrap; }
   .qc-nota-fila td{ color:var(--muted); font-size:.76rem; border-bottom-style:dashed; white-space:normal; }
   .qc-x{ background:none; border:1px solid var(--line); color:var(--muted); border-radius:6px; width:28px; height:28px; cursor:pointer; }
+
+  /* ---------- entrega a cada equipo ---------- */
+  .acuse{ margin-top:8px; font-size:.78rem; }
+  .acuse-res{ cursor:pointer; list-style:none; color:#9FB3C3; }
+  .acuse-res::-webkit-details-marker{ display:none; }
+  .acuse-res::before{ content:'▸ '; }
+  .acuse[open] .acuse-res::before{ content:'▾ '; }
+  .acuse-res.ok{ color:#8FD9A8; } .acuse-res.falta{ color:#F2C26B; }
+  .acuse-lista{ display:flex; flex-direction:column; gap:3px; margin:6px 0 0 14px; }
+  .acuse-eq{ color:#C9D6E0; } .acuse-eq.visto{ color:#8FD9A8; } .acuse-eq.sin{ color:#F2A8A8; }
+  .acuse-cic{ background: var(--panel); border:1px solid var(--line); border-radius:10px; padding:8px 12px; margin:6px 0 10px; }
+  /* ---------- compu (pantalla ancha): encabezado en una fila, tarjetas compactas y panel "Ahora" ---------- */
+  @media (min-width: 1200px){
+    body.modo-inicio header{ display:flex; flex-wrap:wrap; align-items:center; column-gap:22px; row-gap:8px; padding:14px 32px; }
+    body.modo-inicio .nav-marca{ margin:0; order:1; }
+    body.modo-inicio .status-bar{ order:2; margin:0; }
+    body.modo-inicio .search{ order:3; flex:1 1 320px; margin:0; }
+    body.modo-inicio .search input{ height:44px; box-sizing:border-box; }
+    body.modo-inicio .toolbar{ order:4; margin:0; }
+    #inicio{ padding:18px 32px 24px; }
+    body.modo-inicio #inicio{ max-width:1760px; flex-direction:row; align-items:flex-start; gap:24px; }
+    body.modo-inicio .ini-col{ flex:1 1 0; gap:12px; }
+    body.modo-inicio .ini-grid{ grid-template-columns: repeat(4, minmax(0,1fr)); gap:10px; }
+    body.modo-inicio .ini-grid:first-child{ grid-template-columns: repeat(2, minmax(0,1fr)); }
+    body.modo-inicio .ini-tile.ped, body.modo-inicio .ini-tile.parte{ grid-column:auto; padding:12px 16px; }
+    body.modo-inicio .ini-tile{ min-height:0; padding:12px 16px; border-radius:12px; }
+    body.modo-inicio .ini-tile:not(.ancho):not(.ancho2):not(.ped):not(.parte){ display:grid; grid-template-columns:24px 1fr; column-gap:12px; row-gap:1px; align-items:center; }
+    body.modo-inicio .ini-tile:not(.ancho):not(.ancho2):not(.ped):not(.parte) svg{ grid-row: 1 / span 2; }
+    body.modo-inicio .ini-tile svg{ width:22px; height:22px; }
+    body.modo-inicio .ini-tile.ancho2{ grid-column:auto; }
+    body.modo-inicio .ini-grupo{ margin-top:2px; }
+    body.modo-inicio .ini-fila{ margin-top:2px; }
+    body.modo-inicio .ini-ahora{ display:flex; flex-direction:column; gap:12px; flex:0 0 470px; position:sticky; top:96px; max-height:calc(100vh - 120px); overflow:auto;
+      background:#132A3E; border:1px solid var(--line); border-radius:14px; padding:16px 18px; box-sizing:border-box; }
+  }
+  @media (min-width: 1200px) and (max-width: 1500px){ body.modo-inicio .ini-ahora{ flex-basis:400px; } }
+  .ah-cab{ display:flex; justify-content:space-between; align-items:baseline; }
+  .ah-cab h2{ margin:0; font-size:1.15rem; }
+  .ah-cab span{ font-size:.74rem; color:#9FB3C3; }
+  .ah-sec{ display:flex; flex-direction:column; gap:6px; }
+  .ah-tit{ background:none; border:0; padding:0; text-align:left; font:inherit; font-size:.74rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:#9FB3C3; cursor:pointer; }
+  .ah-tit.ped{ color:#E8B64A; } .ah-tit.cic{ color:#6FC9B0; } .ah-tit.atn{ color:#F2A8A8; cursor:default; }
+  .ah-tit:hover{ text-decoration:underline; } .ah-tit.atn:hover{ text-decoration:none; }
+  .ah-vacio{ font-size:.82rem; color:#9FB3C3; }
+  .ah-ped{ background: var(--bg); border:1px solid var(--line); border-radius:8px; padding:8px 10px; display:flex; flex-direction:column; gap:5px; }
+  .ah-ped.urg{ border-color:#C9573F; }
+  .ah-fila{ display:flex; justify-content:space-between; gap:8px; font-size:.88rem; } .ah-fila span{ font-size:.74rem; color:#9FB3C3; white-space:nowrap; }
+  .ah-eqs{ display:flex; flex-direction:column; gap:2px; font-size:.75rem; }
+  .ah-man{ display:flex; justify-content:space-between; gap:8px; padding:6px 10px; background: var(--bg); border-radius:6px; font-size:.86rem; }
+  .ah-man span:last-child{ font-size:.75rem; color:#9FB3C3; white-space:nowrap; }
+  .ah-man.pronto span:last-child{ color:#F2C26B; } .ah-man.atr span:last-child{ color:#F2A8A8; font-weight:700; }
+  .ah-nota{ font-size:.76rem; } .ah-nota.ok{ color:#8FD9A8; } .ah-nota.falta{ color:#F2C26B; }
+  .ah-nums{ display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:8px; text-align:center; }
+  .ah-nums div{ background: var(--bg); border-radius:8px; padding:8px 4px; display:flex; flex-direction:column; }
+  .ah-nums b{ font-size:1.35rem; } .ah-nums b.amb{ color:#E8B64A; } .ah-nums span{ font-size:.72rem; color:#9FB3C3; }
+  .ah-alerta{ text-align:left; background:#3A2026; border:0; border-radius:6px; padding:7px 10px; color:#F6D5D5; font:inherit; font-size:.82rem; cursor:pointer; }
+  .ah-mov{ font-size:.8rem; color:#C9D6E0; } .ah-mov span{ color:#9FB3C3; font-variant-numeric: tabular-nums; }
 </style>
 </head>
 <body>
@@ -1611,6 +1670,7 @@
 
 
 <section id="inicio" aria-label="Inicio">
+<div class="ini-col">
   <div class="ini-grid">
     <button type="button" class="ini-tile ped" data-tab="tabPed"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4h6v3H9z"/><path d="M8 5H6v16h12V5h-2"/><path d="M9 12l2 2 4-4"/><path d="M9 17h6"/></svg><span class="tx"><span class="t" id="iniPedTit">Pedidos del día</span><span class="s" id="iniPedSub">Lo que pidió el supervisor, se tacha solo al cargarlo</span></span><span class="ped-cnt" id="iniPedCnt" style="display:none;"></span></button>
     <button type="button" class="ini-tile parte" data-tab="tabParte" id="iniParteTile"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4"/><path d="M9 12h7M9 16h7M9 8h3"/></svg><span class="tx"><span class="t">Parte en vivo</span><span class="s" id="iniParteSub">El parte del día armándose solo, a medida que se carga</span></span><span class="pv-ini-dot" aria-hidden="true"></span></button>
@@ -1645,6 +1705,8 @@
   <button type="button" class="ini-wa" id="iniWaBtn" style="display:none;"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1.3-3.9A8 8 0 1 1 8 19z"/><path d="M9 10h6M9 13h4"/></svg>Pegar de WhatsApp</button>
   <button type="button" class="ini-enviar" id="iniEnviarBtn" style="display:none;"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg>Enviar partes y reportes <span class="ini-badge" id="iniEnviarBadge" style="display:none;"></span></button>
   <div class="ini-version" id="iniVersion"></div>
+</div>
+<aside id="iniAhora" class="ini-ahora" aria-label="Ahora"></aside>
 </section>
 <main id="main" style="display:none;"></main>
 <main id="planoMain"></main>
@@ -1997,7 +2059,7 @@ var SYNC_RESYNC_DIAS = 7;
 var SYNC_MARGEN_MS = 3 * 60e3;
 var SYNC_NOMBRES = ['pozos_overrides', 'uspa_notas', 'equipos_notas', 'aib_pozos', 'pozos_velas', 'baterias_tanques', 'baterias_bombeo',
   'baterias_bombeo_log', 'pias2_tanques', 'pias2_equipos', 'pias2_camiones', 'ptc_descargas', 'avisos_mtto', 'ciclaje_eventos', 'ciclaje_plan',
-  'pedidos', 'compresores_bp', 'compresores_lecturas', 'historial_mediciones', 'tendencia_diaria', 'pozos_maniobras', 'wa_aprendido', 'scraper_lanzamientos'];
+  'pedidos', 'compresores_bp', 'compresores_lecturas', 'historial_mediciones', 'tendencia_diaria', 'pozos_maniobras', 'wa_aprendido', 'scraper_lanzamientos', 'acuses'];
 var SYNC_COLS = {};
 var SYNC_STATS = { servidor: 0, consultas: 0, modo: '' };
 var syncModoP = null;
@@ -3872,6 +3934,7 @@ function startSync(){
   iniciarAvisosSync();
   iniciarManiobrasSync();
   iniciarScraperSync();
+  iniciarAcusesSync();
   syncVivo('pozos_overrides', {}, (snapshot) => {
     lastOverridesCount = snapshot.size;
     detectarMovimientos(snapshot, 'pozos_overrides');
@@ -7654,7 +7717,9 @@ function iniciarCiclajeSync(){
     snap.forEach(d => CIC_PLAN.push(Object.assign({ id: d.id }, d.data())));
     cicActualizarInicio();
     cicProgramarAuto();
+    acuseAlLlegarCiclaje();
     if(document.getElementById('ciclajeMain').style.display !== 'none') renderCiclaje();
+    ahoraRender();
   }, err => console.error('Firestore sync error (ciclaje_plan)', err));
 }
 function cicActualizarInicio(){
@@ -7770,6 +7835,13 @@ function renderCiclaje(){
   const cb = document.getElementById('cicCopiarBtn');
   if(cb) cb.addEventListener('click', () => cicCopiarDia(pedSumarDias(fecha, -1), fecha));
   const cuerpo = document.getElementById('cicCuerpo');
+  if(plan.length && fecha >= hoy && acuseCiclajeNuevo(fecha)){
+    const refC = acuseRefCiclaje(fecha);
+    if(!document.hidden) acuseMarcar('ciclaje', refC, true);
+    const blq = acuseBloque('ciclaje', refC);
+    blq.classList.add('acuse-cic');
+    cuerpo.appendChild(blq);
+  }
 
   if(plan.length){
     const turnos = (fecha === hoy && turnoAct === 'noche') ? ['noche', 'dia'] : ['dia', 'noche'];
@@ -9088,7 +9160,9 @@ function iniciarPedidosSync(){
     });
     pedActualizarInicio();
     pedProgramarAuto();
+    acuseAlLlegarPedidos();
     if(document.getElementById('pedMain').style.display !== 'none') renderPedidos();
+    ahoraRender();
   }, (err) => { console.error('Firestore sync error (pedidos)', err); });
 }
 
@@ -9125,7 +9199,14 @@ function renderPedidos(){
     if(!items.length) return;
     const g = document.createElement('div');
     g.innerHTML = `<div class="ped-grupo">${titulo} (${items.length})</div>`;
-    items.forEach(p => g.appendChild(pedItem(p)));
+    items.forEach(p => {
+      const it = pedItem(p);
+      if(p.estado === 'pendiente' && (p.creadoTs || 0) >= ACUSE_DESDE){
+        it.appendChild(acuseBloque('pedido', p.id));
+        if(!document.hidden) acuseMarcar('pedido', p.id, true);
+      }
+      g.appendChild(it);
+    });
     cont.appendChild(g);
   };
   grupo('Atrasados de días anteriores', atras.sort((a, b) => pedFechaDe(a).localeCompare(pedFechaDe(b))));
@@ -9341,6 +9422,7 @@ function abrirPedidoForm(){
     const ref = db.collection('pedidos').doc();
     ref.set(datos).catch(e => alert('No se pudo guardar (' + e.message + ').'));
     PEDIDOS = [Object.assign({ id: ref.id }, datos)].concat(PEDIDOS.filter(x => x.id !== ref.id));
+    acuseMarcar('pedido', ref.id, true);
     if(pedPuedeVerDias()) pedDiaSel = datos.fecha;
     closeCard(); renderPedidos(); pedActualizarInicio();
   });
@@ -9456,8 +9538,15 @@ function parteVivoDatos(iso){
     }
     return { ts: h.ts, enviado: null, celdas: [parteHoraTs(h.ts), tipo, h.equipo, det] };
   });
-  out.hojas.push({ id: 'quim', titulo: 'Controles y químicos', sub: 'Acumulados, controles y stock de químicos · solo en pantalla, no va en los Excel', desde: ini6,
-    cols: ['Hora', 'Tipo', 'Punto / equipo', 'Dato'], filas: filasQ });
+  // dos secciones: acumulados por un lado, controles y quimicos por otro
+  const filasAc = filasQ.filter(f => f.celdas[1] === 'Acumulado').map(f => {
+    const m = String(f.celdas[3]).match(/^(.*? m³\/d)(?: \((.*) contra el día anterior\))?$/);
+    return { ts: f.ts, enviado: null, celdas: [f.celdas[0], f.celdas[2], m ? m[1] : f.celdas[3], m && m[2] ? m[2] : ''] };
+  });
+  out.hojas.push({ id: 'acum', titulo: 'Acumulados', sub: 'm³/día por nodo · solo en pantalla, no va en los Excel', desde: ini6,
+    cols: ['Hora', 'Nodo', 'Acumulado', 'Contra el día anterior'], filas: filasAc });
+  out.hojas.push({ id: 'quim', titulo: 'Controles y químicos', sub: 'Controles por punto y stock de químicos · solo en pantalla, no va en los Excel', desde: ini6,
+    cols: ['Hora', 'Tipo', 'Punto / equipo', 'Dato'], filas: filasQ.filter(f => f.celdas[1] !== 'Acumulado') });
   return out;
 }
 
@@ -9534,7 +9623,7 @@ function renderParteVivo(){
     });
     html += `</tbody></table></div></section>`;
   });
-  html += `<div class="pv-pie">Es el mismo contenido que sale en los Excel (salvo Controles y químicos, que es solo de pantalla). Para mandarlos, se siguen enviando desde "Enviar partes y reportes" en la compu principal. PTC no está acá porque su reporte es el acumulado del mes.</div></div>`;
+  html += `<div class="pv-pie">Es el mismo contenido que sale en los Excel (salvo Acumulados y Controles y químicos, que son solo de pantalla). Para mandarlos, se siguen enviando desde "Enviar partes y reportes" en la compu principal. PTC no está acá porque su reporte es el acumulado del mes.</div></div>`;
   const y = window.scrollY;
   main.innerHTML = html;
   window.scrollTo(0, y);
@@ -10268,6 +10357,7 @@ function irInicio(){
 }
 
 function inicioActualizar(){
+  if(typeof ahoraRender === 'function') ahoraRender();
   const nuevos = (typeof MOV_AV_NUEVOS !== 'undefined') ? MOV_AV_NUEVOS : [];
   document.querySelectorAll('#inicio .ini-tile').forEach(t => {
     const n = nuevos.filter(x => x.tab === t.dataset.tab).length;
@@ -11995,6 +12085,208 @@ document.getElementById('tabAcum').addEventListener('click', () => { switchTab('
 
 
 
+// ---------------- Entrega a cada equipo (pedidos del supervisor y ciclaje del dia) ----------------
+// Como los tildes de WhatsApp: cada equipo (celular o compu) avisa solo cuando le llega un pedido o la lista de
+// ciclaje del dia ("recibido"), y otra vez cuando alguien la ve en pantalla ("visto", con quien la vio).
+// Coleccion 'acuses', un documento por cosa y por equipo. Los equipos sin avisar se ven con su ultima conexion.
+var ACUSE_VER = 202611040800;          // primera version de la app que avisa la entrega
+var ACUSE_DESDE = 1793786400000;       // pedidos/ciclaje cargados antes de esto no tienen datos de entrega
+var ACUSES = [];
+var PRESENCIA = {};
+var presenciaLeida = 0;
+var acuseHechos = (() => { try { return JSON.parse(localStorage.getItem('acuses_hechos') || '{}') || {}; } catch(e){ return {}; } })();
+function acuseGuardarLocal(){
+  const lim = Date.now() - 5 * 86400e3;
+  Object.keys(acuseHechos).forEach(k => { if(acuseHechos[k] < lim) delete acuseHechos[k]; });
+  try { localStorage.setItem('acuses_hechos', JSON.stringify(acuseHechos)); } catch(e) {}
+}
+function acuseEquipoNombre(){ return HAB.nombre || (habTipoDispositivo() === 'celular' ? 'Celular' : 'Compu'); }
+function acuseMarcar(tipo, ref, visto){
+  if(!firestoreOk || !HAB.uid || HAB.estado !== 'habilitado' || !ref) return;
+  const kR = tipo + '|' + ref + '|r', kV = tipo + '|' + ref + '|v';
+  if(visto ? acuseHechos[kV] : acuseHechos[kR]) return;
+  const ahora = Date.now();
+  const d = { tipo, ref, uid: HAB.uid, equipo: acuseEquipoNombre(), dispositivo: habTipoDispositivo(), operador: operadorName || '', clientTs: ahora };
+  if(!acuseHechos[kR]) d.recibidoTs = ahora;
+  if(visto){ d.vistoTs = ahora; d.vistoPor = operadorName || ''; }
+  acuseHechos[kR] = acuseHechos[kR] || ahora;
+  if(visto) acuseHechos[kV] = ahora;
+  acuseGuardarLocal();
+  const id = (tipo + '_' + ref + '_' + HAB.uid).replace(/[\/\s.#$\[\]]/g, '_');
+  db.collection('acuses').doc(id).set(d, { merge: true }).catch(() => {});
+  const ya = ACUSES.find(a => a.id === id);
+  if(ya) Object.assign(ya, d); else ACUSES.push(Object.assign({ id }, d));
+}
+function iniciarAcusesSync(){
+  syncVivo('acuses', { campo: 'clientTs', tipo: 'num', desde: () => ventanaDesdeMs(4) }, (snap) => {
+    const l = [];
+    snap.forEach(d => l.push(Object.assign({ id: d.id }, d.data())));
+    ACUSES = l.concat(ACUSES.filter(a => !l.some(x => x.id === a.id) && Date.now() - (a.clientTs || 0) < 60e3));
+    acuseRefrescarVistas();
+  }, (e) => console.error('acuses', e));
+}
+// presencia (ultima conexion de cada equipo): se lee como mucho cada 3 min, solo cuando se muestra la entrega
+function acuseLeerPresencia(){
+  if(!firestoreOk || Date.now() - presenciaLeida < 3 * 60e3) return;
+  presenciaLeida = Date.now();
+  db.collection('presencia').get().then(snap => {
+    PRESENCIA = {};
+    snap.forEach(d => { PRESENCIA[d.id] = d.data() || {}; });
+    acuseRefrescarVistas();
+  }).catch(() => {});
+}
+var acuseTimer = null;
+function acuseRefrescarVistas(){
+  clearTimeout(acuseTimer);
+  acuseTimer = setTimeout(() => {
+    const ped = document.getElementById('pedMain');
+    if(ped && ped.style.display !== 'none') document.querySelectorAll('[data-acuse]').forEach(acusePintar);
+    const cic = document.getElementById('ciclajeMain');
+    if(cic && cic.style.display !== 'none') document.querySelectorAll('[data-acuse]').forEach(acusePintar);
+    if(typeof ahoraRender === 'function') ahoraRender();
+  }, 300);
+}
+// equipos a mostrar: los que se conectaron en los ultimos 3 dias, mas los que ya avisaron
+function acuseEstado(tipo, ref){
+  const lim = Date.now() - 3 * 86400e3;
+  const eqs = {};
+  Object.keys(PRESENCIA).forEach(uid => { const p = PRESENCIA[uid]; if(p.ts && p.ts >= lim) eqs[uid] = { uid, equipo: p.nombre || (p.tipo === 'celular' ? 'Celular' : 'Compu'), p }; });
+  ACUSES.filter(a => a.tipo === tipo && a.ref === ref).forEach(a => { eqs[a.uid] = Object.assign(eqs[a.uid] || { uid: a.uid, equipo: a.equipo }, { a }); if(a.equipo) eqs[a.uid].equipo = a.equipo; });
+  const lista = Object.values(eqs).map(e => {
+    const a = e.a, p = e.p;
+    let est = 'sin', txt = '';
+    if(a && a.vistoTs){ est = 'visto'; txt = 'visto ' + hhmmDeTs(a.vistoTs) + (a.vistoPor ? ' por ' + a.vistoPor : ''); }
+    else if(a && a.recibidoTs){ est = 'recibido'; txt = 'recibido ' + hhmmDeTs(a.recibidoTs); }
+    else if(p && p.ver && p.ver < ACUSE_VER) txt = 'app sin actualizar: no avisa la entrega';
+    else txt = 'sin recibir' + (p && p.ts ? ' · última conexión ' + acuseHace(p.ts) : '');
+    return { uid: e.uid, equipo: e.equipo, est, txt, yo: e.uid === HAB.uid };
+  }).sort((x, y) => ({ visto: 0, recibido: 1, sin: 2 }[x.est] - { visto: 0, recibido: 1, sin: 2 }[y.est]) || String(x.equipo).localeCompare(String(y.equipo)));
+  return { lista, visto: lista.filter(x => x.est === 'visto').length, recibido: lista.filter(x => x.est === 'recibido').length, sin: lista.filter(x => x.est === 'sin').length, total: lista.length };
+}
+function acuseHace(ts){
+  const m = Math.max(0, Math.round((Date.now() - ts) / 60e3));
+  if(m < 2) return 'recién';
+  if(m < 60) return 'hace ' + m + ' min';
+  const h = Math.round(m / 60);
+  return h < 24 ? 'hace ' + h + ' h' : 'hace ' + Math.round(h / 24) + ' d';
+}
+function acuseResumenTxt(e){
+  if(!e.total) return 'Entrega: todavía no hay equipos conectados';
+  return [e.visto ? '✓✓ visto en ' + e.visto : '', e.recibido ? '✓ recibido en ' + e.recibido : '', e.sin ? '⏳ ' + e.sin + ' sin recibir' : ''].filter(Boolean).join(' · ') + ' (de ' + e.total + ' equipo' + (e.total === 1 ? '' : 's') + ')';
+}
+// bloque desplegable con la entrega equipo por equipo (se pinta y repinta solo)
+function acuseBloque(tipo, ref){
+  const el = document.createElement('details');
+  el.className = 'acuse';
+  el.dataset.acuse = tipo + '|' + ref;
+  acuseLeerPresencia();
+  acusePintar(el);
+  return el;
+}
+function acusePintar(el){
+  const [tipo, ref] = el.dataset.acuse.split('|');
+  const e = acuseEstado(tipo, ref);
+  const abierto = el.open;
+  el.innerHTML = `<summary class="acuse-res ${e.sin ? 'falta' : 'ok'}">${avisoEsc(acuseResumenTxt(e))}</summary>
+    <div class="acuse-lista">${e.lista.map(x => `<span class="acuse-eq ${x.est}">${x.est === 'visto' ? '✓✓' : (x.est === 'recibido' ? '✓' : '⏳')} <b>${avisoEsc(x.equipo)}${x.yo ? ' (este equipo)' : ''}</b> · ${avisoEsc(x.txt)}</span>`).join('') || '<span class="acuse-eq">Sin datos de equipos todavía.</span>'}</div>`;
+  el.open = abierto;
+}
+// referencia de la lista de ciclaje de un dia: cambia si el supervisor la modifica (vuelve a pedir la entrega)
+function acuseRefCiclaje(fecha){
+  const plan = cicPlanDe(fecha);
+  if(!plan.length) return '';
+  const txt = plan.map(p => p.turno + p.pozo + JSON.stringify(p.maniobras || [])).sort().join('|');
+  let h = 5381; for(let i = 0; i < txt.length; i++) h = ((h << 5) + h + txt.charCodeAt(i)) | 0;
+  return fecha + '_' + (h >>> 0).toString(36);
+}
+function acuseCiclajeNuevo(fecha){ return cicPlanDe(fecha).some(p => (p.creadoTs || 0) >= ACUSE_DESDE); }
+// al llegar datos: avisar recibido
+function acuseAlLlegarPedidos(){
+  const hoy = pedHoy();
+  (PEDIDOS || []).filter(p => p.estado === 'pendiente' && pedFechaDe(p) <= pedSumarDias(hoy, 1) && (p.creadoTs || 0) >= ACUSE_DESDE).forEach(p => acuseMarcar('pedido', p.id, false));
+}
+function acuseAlLlegarCiclaje(){
+  const hoy = cicHoy();
+  [hoy, pedSumarDias(hoy, 1)].forEach(f => { if(acuseCiclajeNuevo(f)) acuseMarcar('ciclaje', acuseRefCiclaje(f), false); });
+}
+
+// ---------------- Panel "Ahora" (solo en pantallas anchas: la compu) ----------------
+function ahoraVisible(){ const a = document.getElementById('iniAhora'); return a && document.body.classList.contains('modo-inicio') && window.matchMedia('(min-width: 1200px)').matches; }
+var ahoraTimer = null;
+function ahoraRender(){
+  clearTimeout(ahoraTimer);
+  ahoraTimer = setTimeout(ahoraPintar, 250);
+}
+function ahoraPintar(){
+  if(!ahoraVisible()) return;
+  const el = document.getElementById('iniAhora');
+  acuseLeerPresencia();
+  iniciarTendenciaSync();
+  const hoyP = pedHoy();
+  const peds = (PEDIDOS || []).filter(p => p.estado === 'pendiente' && pedFechaDe(p) <= hoyP)
+    .sort((a, b) => ((b.prioridad === 'urgente') - (a.prioridad === 'urgente')) || (pedFechaDe(a).localeCompare(pedFechaDe(b))) || ((a.creadoTs || 0) - (b.creadoTs || 0)));
+  let html = `<div class="ah-cab"><h2>Ahora</h2><span>se actualiza solo · ${hhmmDeTs(Date.now())}</span></div>`;
+  // pedidos
+  html += `<section class="ah-sec"><button type="button" class="ah-tit ped" data-ir="tabPed">Pedidos pendientes${peds.length ? ' · ' + peds.length : ''} ›</button>`;
+  if(!peds.length) html += '<div class="ah-vacio">No hay pedidos pendientes.</div>';
+  peds.slice(0, 4).forEach(p => {
+    const nuevo = (p.creadoTs || 0) >= ACUSE_DESDE;
+    const e = nuevo ? acuseEstado('pedido', p.id) : null;
+    html += `<div class="ah-ped${p.prioridad === 'urgente' ? ' urg' : ''}"><div class="ah-fila"><b>${avisoEsc(pedTitulo(p))}</b><span>${avisoEsc((p.creadoTs ? hhmmDeTs(p.creadoTs) : '') + (p.creadoPor ? ' · ' + p.creadoPor : ''))}</span></div>
+      ${e ? `<div class="ah-eqs">${e.lista.map(x => `<span class="acuse-eq ${x.est}">${x.est === 'visto' ? '✓✓' : (x.est === 'recibido' ? '✓' : '⏳')} ${avisoEsc(x.equipo)} · ${avisoEsc(x.txt)}</span>`).join('') || '<span class="acuse-eq">Sin equipos conectados</span>'}</div>` : ''}</div>`;
+  });
+  if(peds.length > 4) html += `<div class="ah-vacio">y ${peds.length - 4} más…</div>`;
+  html += '</section>';
+  // ciclaje
+  const hoyC = cicHoy();
+  const pend = (typeof parteVivoPendientes === 'function' ? parteVivoPendientes() : []).filter(i => i.tipo === 'Ciclaje');
+  html += `<section class="ah-sec"><button type="button" class="ah-tit cic" data-ir="tabCiclaje">Próximas maniobras · ciclaje ›</button>`;
+  if(!cicHayPlan(hoyC)) html += '<div class="ah-vacio">Todavía no se cargó el ciclaje de hoy.</div>';
+  else if(!pend.length) html += '<div class="ah-vacio">Todas las maniobras del día están hechas.</div>';
+  else {
+    const ini = cicInicioDia(hoyC);
+    pend.slice(0, 5).forEach(i => {
+      const falta = Math.round((ini + i.orden * 60e3 - Date.now()) / 60e3);
+      const cuando = i.atrasado ? 'atrasada' : (falta < 60 ? 'en ' + falta + ' min' : 'en ' + Math.floor(falta / 60) + ' h' + (falta % 60 ? ' ' + (falta % 60) : ''));
+      html += `<div class="ah-man${i.atrasado ? ' atr' : (falta <= 15 ? ' pronto' : '')}"><span>${avisoEsc(i.txt)}</span><span>${cuando}</span></div>`;
+    });
+    if(acuseCiclajeNuevo(hoyC)){ const e = acuseEstado('ciclaje', acuseRefCiclaje(hoyC)); html += `<div class="ah-nota ${e.sin ? 'falta' : 'ok'}">Lista del día: ${avisoEsc(acuseResumenTxt(e))}</div>`; }
+  }
+  html += '</section>';
+  // parte del dia
+  let tot = 0, sinEnv = 0;
+  try { const d = parteVivoDatos(pedHoy()); d.hojas.forEach(h => { tot += h.filas.length; sinEnv += h.filas.filter(f => f.enviado === false).length; }); } catch(e) {}
+  const abiertos = POZOS.filter(p => p.estado === 'Abierto').length;
+  html += `<section class="ah-sec"><button type="button" class="ah-tit" data-ir="tabParte">Parte del día ›</button>
+    <div class="ah-nums"><div><b>${tot}</b><span>novedades</span></div><div><b class="${sinEnv ? 'amb' : ''}">${sinEnv}</b><span>sin enviar</span></div><div><b>${abiertos}</b><span>pozos abiertos</span></div></div></section>`;
+  // atencion
+  const alertas = [];
+  const ultStock = {};
+  (HIST || []).filter(h => h.tipo === 'stock' && h.ts > Date.now() - 7 * 86400e3).sort((a, b) => b.ts - a.ts).forEach(h => { if(!ultStock[h.equipo]) ultStock[h.equipo] = h; });
+  Object.values(ultStock).filter(h => h.vals && h.vals.iny === 0).forEach(h => alertas.push({ txt: 'Químico ' + h.equipo + ': inyección parada (' + qcCuando(h.ts) + ')', ir: 'tabQuim' }));
+  const ultScr = (SCRAPER || []).slice().sort((a, b) => b.ts - a.ts)[0];
+  if(ultScr && Date.now() - ultScr.ts >= 7 * 86400e3) alertas.push({ txt: 'Scraper: el último lanzamiento fue hace ' + Math.floor((Date.now() - ultScr.ts) / 86400e3) + ' días', ir: 'tabScr' });
+  const atrasados = (PEDIDOS || []).filter(p => p.estado === 'pendiente' && pedFechaDe(p) < hoyP).length;
+  if(atrasados) alertas.push({ txt: atrasados + ' pedido' + (atrasados === 1 ? '' : 's') + ' de días anteriores sin hacer', ir: 'tabPed' });
+  const pedSin = peds.filter(p => (p.creadoTs || 0) >= ACUSE_DESDE && Date.now() - p.creadoTs > 30 * 60e3 && acuseEstado('pedido', p.id).visto === 0);
+  pedSin.forEach(p => alertas.push({ txt: 'Nadie vio todavía: ' + pedTitulo(p) + ' (cargado ' + hhmmDeTs(p.creadoTs) + ')', ir: 'tabPed' }));
+  if(alertas.length){
+    html += `<section class="ah-sec"><div class="ah-tit atn">Atención</div>${alertas.slice(0, 5).map(a => `<button type="button" class="ah-alerta" data-ir="${a.ir}">${avisoEsc(a.txt)}</button>`).join('')}</section>`;
+  }
+  // ultimos movimientos
+  const ini6 = inicioDiaOperativo(new Date()).getTime();
+  const movs = [];
+  POZOS.forEach(p => { if(p._updatedAtDate && p._updatedAtDate.getTime() >= ini6) movs.push({ ts: p._updatedAtDate.getTime(), txt: p.pozo + ' ' + (p.estado ? p.estado.toLowerCase() : 'editado') + (p.estado === 'Abierto' && p.presion && p.presion !== 's/d' ? ' ' + String(p.presion).replace(/\s*kg\/cm2/, ' kg') : ''), por: p.operador }); });
+  (TANQUES_DATA || []).concat(PIAS2_TANQUES_DATA || []).forEach(t => { if(t._updatedAtDate && t._updatedAtDate.getTime() >= ini6) movs.push({ ts: t._updatedAtDate.getTime(), txt: t.nombre.split(' ')[0] + ' ' + (t.nivelTotal || '') + '/' + (t.nivelInterfaz || ''), por: t.operador }); });
+  (USPA_NOTAS || []).concat(EQUIPOS_NOTAS || []).forEach(n => { if(n._updatedAtDate && n._updatedAtDate.getTime() >= ini6) movs.push({ ts: n._updatedAtDate.getTime(), txt: 'Novedad ' + (n.equipo || n.bateria || n.grupo || ''), por: n.operador }); });
+  movs.sort((a, b) => b.ts - a.ts);
+  html += `<section class="ah-sec"><button type="button" class="ah-tit" data-ir="tabMov">Últimos movimientos ›</button>${movs.length ? movs.slice(0, 6).map(m => `<div class="ah-mov"><span>${hhmmDeTs(m.ts)}</span> ${avisoEsc(m.txt)}${m.por ? ' · ' + avisoEsc(m.por) : ''}</div>`).join('') : '<div class="ah-vacio">Nada cargado hoy todavía.</div>'}</section>`;
+  el.innerHTML = html;
+  el.querySelectorAll('[data-ir]').forEach(b => b.addEventListener('click', () => { const t = document.getElementById(b.dataset.ir); if(t) t.click(); }));
+}
+window.addEventListener('resize', () => ahoraRender());
+setInterval(() => { if(ahoraVisible()) ahoraPintar(); }, 60e3);
+
 // ---------------- Anti doble toque en botones de guardar/enviar ----------------
 // Si se toca el MISMO boton de guardar o enviar otra vez antes de 2,5 s, el segundo toque no hace nada
 // (evita registros repetidos cuando parece que "no llego" y se vuelve a tocar).
@@ -12014,7 +12306,7 @@ document.getElementById('tabAcum').addEventListener('click', () => { switchTab('
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202610312210;
+var APP_VERSION = 202611040800;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
