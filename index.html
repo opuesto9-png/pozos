@@ -12295,7 +12295,8 @@ function acuseCuadroHtml(compacto){
 }
 function acusePintarCuadros(){
   const c = document.getElementById('acuseCuadro');
-  if(c) c.innerHTML = acuseCuadroHtml(false);
+  // el cuadro de entrega es para el supervisor en la compu: en los celulares no se muestra
+  if(c) c.innerHTML = esMovil() ? '' : acuseCuadroHtml(false);
 }
 
 // ---------------- Panel "Ahora" (solo en pantallas anchas: la compu) ----------------
@@ -12392,7 +12393,7 @@ setInterval(() => { if(ahoraVisible()) ahoraPintar(); }, 60e3);
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202611040840;
+var APP_VERSION = 202611040845;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
