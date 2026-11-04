@@ -1625,14 +1625,30 @@
   }
   /* Supervisores en la compu ancha: las solapas Por hacer / Ciclaje como menu al costado izquierdo de la lista */
   @media (min-width: 1300px){
-    body.modo-seccion.sec-tabPed .tabs, body.modo-seccion.sec-tabCiclaje .tabs{
+    body.modo-seccion.sec-tabPed .tabs, body.modo-seccion.sec-tabCiclaje .tabs, body.modo-seccion.sec-tabAlam .tabs{
       position:fixed; top:calc(var(--hdr-h, 170px) + 24px); left:calc(50% - 564px); width:220px; z-index:4;
       flex-direction:column; flex-wrap:nowrap; gap:8px; margin:0; }
-    body.modo-seccion.sec-tabPed .tabs .tab-btn, body.modo-seccion.sec-tabCiclaje .tabs .tab-btn{
+    body.modo-seccion.sec-tabPed .tabs .tab-btn, body.modo-seccion.sec-tabCiclaje .tabs .tab-btn, body.modo-seccion.sec-tabAlam .tabs .tab-btn{
       width:100%; text-align:left; font-size:1rem; padding:14px 18px; border-radius:12px; }
-    body.modo-seccion.sec-tabPed .tabs::before, body.modo-seccion.sec-tabCiclaje .tabs::before{
+    body.modo-seccion.sec-tabPed .tabs::before, body.modo-seccion.sec-tabCiclaje .tabs::before, body.modo-seccion.sec-tabAlam .tabs::before{
       content:'SUPERVISORES'; font-size:.72rem; font-weight:700; letter-spacing:.1em; color:#9FB3C3; margin:0 0 2px 4px; }
+    main#alamMain{ margin-left:calc(50% - 320px); margin-right:0; max-width:880px; }
   }
+  /* ---------- Equipo de alambre (Naser) ---------- */
+  main#alamMain{ max-width: 1000px; }
+  .alam-grid{ display:grid; gap:14px; padding:6px 0 30px; }
+  @media (min-width: 1000px){ .alam-grid{ grid-template-columns: minmax(0, 1fr) 380px; align-items:start; } }
+  .alam-h{ margin:0; font-size:1.05rem; }
+  .alam-chips{ display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:8px; }
+  .alam-chip{ min-height:40px; border-radius:10px; border:1px solid var(--line); background:var(--bg); color:var(--text); font:inherit; font-size:.86rem; cursor:pointer; padding:6px 8px; }
+  .alam-chip.on{ border-color:#5FA3C9; background:#1B3F58; font-weight:700; }
+  .alam-chip.on::before{ content:'✓ '; }
+  .alam-chip.otra{ grid-column: 1 / -1; border-style:dashed; }
+  .alam-chip.otra.on::before{ content:''; }
+  .ped-tag.alam{ background:#2E2748; color:#C7B5F2; border:1px solid #574A86; }
+  .ped-item.alam-item.enpozo{ border-left:4px solid #6FC9B0; }
+  .alam-ev-form{ border-top:1px dashed var(--line); padding-top:10px; }
+  .alam-ev-tit{ font-weight:800; font-size:.88rem; margin-bottom:8px; }
 </style>
 </head>
 <body>
@@ -1674,6 +1690,7 @@
     <button class="tab-btn" id="tabMov">Últimos movimientos</button>
     <button class="tab-btn" id="tabPed">Por hacer</button>
     <button class="tab-btn" id="tabCiclaje">Ciclaje del día</button>
+    <button class="tab-btn" id="tabAlam">Equipo de alambre</button>
     <button class="tab-btn" id="tabParte">Parte en vivo</button>
     <button class="tab-btn" id="tabTend">Tendencia</button>
     <button class="tab-btn" id="tabCtrl">Controles</button>
@@ -1750,6 +1767,7 @@
 <main id="compMain" style="display:none;"></main>
 <main id="movMain" style="display:none;"></main>
 <main id="pedMain" style="display:none;"></main>
+<main id="alamMain" style="display:none;"></main>
 <main id="parteMain" style="display:none;"></main>
 <main id="tendMain" style="display:none;"></main>
 <main id="ctrlMain" style="display:none;"></main>
@@ -2094,7 +2112,7 @@ var SYNC_RESYNC_DIAS = 7;
 var SYNC_MARGEN_MS = 3 * 60e3;
 var SYNC_NOMBRES = ['pozos_overrides', 'uspa_notas', 'equipos_notas', 'aib_pozos', 'pozos_velas', 'baterias_tanques', 'baterias_bombeo',
   'baterias_bombeo_log', 'pias2_tanques', 'pias2_equipos', 'pias2_camiones', 'ptc_descargas', 'avisos_mtto', 'ciclaje_eventos', 'ciclaje_plan',
-  'pedidos', 'compresores_bp', 'compresores_lecturas', 'historial_mediciones', 'tendencia_diaria', 'pozos_maniobras', 'wa_aprendido', 'scraper_lanzamientos', 'acuses'];
+  'pedidos', 'compresores_bp', 'compresores_lecturas', 'historial_mediciones', 'tendencia_diaria', 'pozos_maniobras', 'wa_aprendido', 'scraper_lanzamientos', 'acuses', 'alambre_trabajos'];
 var SYNC_COLS = {};
 var SYNC_STATS = { servidor: 0, consultas: 0, modo: '' };
 var syncModoP = null;
@@ -3056,7 +3074,7 @@ function updatePendCount(){
   if(typeof cicProgramarAuto === 'function') cicProgramarAuto();
   const badge = document.getElementById('pendCount');
   if(badge){
-    const n = pendientesDeReporte().length + pendientesDeReporteAib().length + pendientesDeReporteNotas().length + pendientesDeVelas().length + pendientesScraper().length;
+    const n = pendientesDeReporte().length + pendientesDeReporteAib().length + pendientesDeReporteNotas().length + pendientesDeVelas().length + pendientesScraper().length + (typeof pendientesAlambre === 'function' ? pendientesAlambre().length : 0);
     if(n > 0){ badge.style.display = ''; badge.textContent = n; } else { badge.style.display = 'none'; }
   }
   const badgeBat = document.getElementById('pendCountBaterias');
@@ -3969,6 +3987,7 @@ function startSync(){
   iniciarAvisosSync();
   iniciarManiobrasSync();
   iniciarScraperSync();
+  iniciarAlambreSync();
   iniciarAcusesSync();
   syncVivo('pozos_overrides', {}, (snapshot) => {
     lastOverridesCount = snapshot.size;
@@ -5942,7 +5961,8 @@ function parteCampoFilas(forzarTodos){
   }));
   velaAutoBase.forEach(p => pozosConVelaUsada.add(p.pozo));
   const filasScraper = scraperFilasParte(forzarTodos);
-  const filasGasConNotas = [...filasGas, ...filasNotas, ...filasVelasSueltas, ...filasVelasAuto, ...filasScraper];
+  const filasAlambre = alambreFilasParte(forzarTodos);
+  const filasGasConNotas = [...filasGas, ...filasNotas, ...filasVelasSueltas, ...filasVelasAuto, ...filasScraper, ...filasAlambre];
   return { filasGasConNotas, filasOil, gasBase, oilBase, notasBase, velaSueltaBase: velaSueltaBase.concat(velaAutoBase) };
 }
 
@@ -7532,8 +7552,8 @@ function abrirPestanaAvisos(){
 }
 
 // ---------------- Manejo de pestañas (helper generico) ----------------
-const TAB_IDS = ['tabLista','tabPlano','tabRed','tabCiclaje','tabComp','tabMov','tabPed','tabParte','tabTend','tabCtrl','tabQuim','tabScr','tabAcum','tabAib','tabTanques','tabPias','tabPtc','tabAvisos'];
-const MAIN_IDS = ['main','planoMain','redMain','ciclajeMain','compMain','movMain','pedMain','parteMain','tendMain','ctrlMain','quimMain','scrMain','acumMain','aibMain','tanquesMain','piasMain','ptcMain','avisosMain'];
+const TAB_IDS = ['tabLista','tabPlano','tabRed','tabCiclaje','tabComp','tabMov','tabPed','tabAlam','tabParte','tabTend','tabCtrl','tabQuim','tabScr','tabAcum','tabAib','tabTanques','tabPias','tabPtc','tabAvisos'];
+const MAIN_IDS = ['main','planoMain','redMain','ciclajeMain','compMain','movMain','pedMain','alamMain','parteMain','tendMain','ctrlMain','quimMain','scrMain','acumMain','aibMain','tanquesMain','piasMain','ptcMain','avisosMain'];
 function switchTab(activeTabId, activeMainId){
   if(window.__seccionListo && seccionActual !== activeTabId) entrarSeccion(activeTabId);
   movMarcarVistos(activeTabId);
@@ -9165,14 +9185,15 @@ function pedAtrasados(){ const hoy = pedHoy(); return PEDIDOS.filter(p => p.esta
 function pedDelDia(){ return pedDeFecha(pedHoy()).concat(pedAtrasados()); }
 function pedActualizarInicio(){
   const tit = document.getElementById('iniPedTit'), sub = document.getElementById('iniPedSub');
-  if(tit){ tit.textContent = esMovil() ? 'Por hacer hoy' : 'Supervisores'; if(sub) sub.textContent = esMovil() ? 'Pedidos del supervisor y ciclaje del día' : 'Pedidos y ciclaje del día'; }
+  if(tit){ tit.textContent = esMovil() ? 'Por hacer hoy' : 'Supervisores'; if(sub) sub.textContent = esMovil() ? 'Pedidos del supervisor, ciclaje y alambre' : 'Pedidos, ciclaje y equipo de alambre'; }
   const cnt = document.getElementById('iniPedCnt');
   if(!cnt) return;
   const pend = pedDelDia().filter(p => p.estado === 'pendiente');
   const urg = pend.some(p => p.prioridad === 'urgente');
   const cic = cicPorHacer().filter(i => !i.hecho);
-  const hechosHoy = pedDelDia().filter(p => p.estado === 'hecho').length + cicPorHacer().filter(i => i.hecho).length;
-  const n = pend.length + cic.length;
+  const alamP = typeof alamPendHoy === 'function' ? alamPendHoy().length : 0;
+  const hechosHoy = pedDelDia().filter(p => p.estado === 'hecho').length + cicPorHacer().filter(i => i.hecho).length + (typeof alamHechosHoy === 'function' ? alamHechosHoy().length : 0);
+  const n = pend.length + cic.length + alamP;
   if(n){ cnt.textContent = n + (n === 1 ? ' por hacer' : ' por hacer'); cnt.className = 'ped-cnt' + (urg ? ' urg' : ''); cnt.style.display = ''; }
   else if(hechosHoy){ cnt.textContent = 'Todo hecho'; cnt.className = 'ped-cnt ok'; cnt.style.display = ''; }
   else cnt.style.display = 'none';
@@ -9251,7 +9272,7 @@ function renderPedidos(){
       ${verDias ? `<button type="button" class="ped-nuevo-btn" id="pedNuevoBtn">+ Nuevo pedido${!esHoy ? ' para el ' + avisoEsc(pedNombreDia(pedDiaSel).num) : ''}</button>` : ''}
       <button type="button" class="ped-copiar-btn" id="pedCopiarBtn">Copiar resumen para WhatsApp</button>
     </div>
-    <p class="ped-resumen">${esHoy && cicPorHacer().length ? `Ciclaje de hoy: <b>${cicPorHacer().filter(i => i.hecho).length} de ${cicPorHacer().length}</b> maniobras hechas · ` : ''}${total ? `${esHoy ? 'Pedidos de hoy' : 'Ese día'}: <b>${hechos.length} de ${total}</b> hechos${pend.length ? ' · ' + pend.length + ' pendiente' + (pend.length === 1 ? '' : 's') : ''}${nos.length ? ' · ' + nos.length + ' no se pudo' : ''}` : (esHoy ? 'Todavía no hay pedidos para hoy.' : (pedDiaSel > hoy ? 'Todavía no hay pedidos cargados para ese día.' : 'No hubo pedidos ese día.'))}</p>
+    <p class="ped-resumen">${esHoy && alamPendHoy().length ? `Equipo de alambre: <b>${alamPendHoy().length}</b> para hacer · ` : ''}${esHoy && cicPorHacer().length ? `Ciclaje de hoy: <b>${cicPorHacer().filter(i => i.hecho).length} de ${cicPorHacer().length}</b> maniobras hechas · ` : ''}${total ? `${esHoy ? 'Pedidos de hoy' : 'Ese día'}: <b>${hechos.length} de ${total}</b> hechos${pend.length ? ' · ' + pend.length + ' pendiente' + (pend.length === 1 ? '' : 's') : ''}${nos.length ? ' · ' + nos.length + ' no se pudo' : ''}` : (esHoy ? 'Todavía no hay pedidos para hoy.' : (pedDiaSel > hoy ? 'Todavía no hay pedidos cargados para ese día.' : 'No hubo pedidos ese día.'))}</p>
     <div id="acuseCuadro" class="acq"></div>
     <div id="pedLista"></div>`;
   const nuevoBtn = document.getElementById('pedNuevoBtn');
@@ -9290,8 +9311,9 @@ function renderPedidos(){
       lista.forEach(x => g.appendChild(x.el()));
       cont.appendChild(g);
     };
-    grupoMix('Por hacer hoy', mezcla(pend, cic.filter(i => !i.hecho)));
-    grupoMix('Hechos', mezcla(hechos, cic.filter(i => i.hecho)));
+    const conAlam = (l, js) => l.concat(js.map(j => ({ k: alamOrden(j), el: () => alamItem(j) }))).sort((a, b) => a.k - b.k);
+    grupoMix('Por hacer hoy', conAlam(mezcla(pend, cic.filter(i => !i.hecho)), alamPendHoy()));
+    grupoMix('Hechos', conAlam(mezcla(hechos, cic.filter(i => i.hecho)), alamHechosHoy()));
     grupo('No se pudo', nos);
     if(!cicHayPlan(cicHoy())) cont.insertAdjacentHTML('beforeend', '<p class="ped-resumen">Todavía no se cargó el ciclaje de hoy (solapa Ciclaje).</p>');
     return;
@@ -9655,6 +9677,10 @@ function parteVivoPendientes(){
     (PEDIDOS || []).filter(p => p.estado === 'pendiente' && p.fecha && p.fecha <= hoyP).forEach(p => {
       items.push({ tipo: 'Pedido', txt: pedTitulo(p) + (p.estado === 'pendiente' && p.paso1Ts ? ' (en curso)' : ''), atrasado: p.fecha < hoyP, orden: -1 });
     });
+  } catch(e) {}
+  try {
+    const hoyA = pedHoy();
+    alamPendHoy().forEach(j => items.push({ tipo: 'Alambre', txt: j.pozo + ' · ' + alamTrabajosTxt(j, true) + (j.estado === 'enpozo' ? ' (Naser en el pozo)' : (j.hora ? ' ' + j.hora : '')), atrasado: alamFecha(j) < hoyA, orden: j.hora ? cicOrden(j.hora) : -1 }));
   } catch(e) {}
   items.sort((x, y) => (y.atrasado - x.atrasado) || (x.orden - y.orden));
   return items;
@@ -10408,8 +10434,8 @@ renderPlano();
 // "‹ Inicio" o el boton Atras del celular vuelven. Dentro de Gas y de Petroleo quedan las
 // pestañas hermanas para pasar de una a otra sin volver al inicio.
 const SECCION_TITULO = { tabLista: 'Pozos de gas', tabPlano: 'Plano (colectoras)', tabRed: 'Red', tabCiclaje: 'Ciclaje del día', tabComp: 'Compresión BP',
-  tabMov: 'Últimos movimientos', tabPed: 'Por hacer', tabParte: 'Parte en vivo', tabTend: 'Tendencia', tabCtrl: 'Controles', tabQuim: 'Químicos', tabScr: 'Scraper', tabAcum: 'Acumulados', tabAib: 'AIB', tabTanques: 'Baterías', tabPias: 'Pías 2', tabPtc: 'PTC', tabAvisos: 'Avisos' };
-const SECCION_GRUPO = { tabLista: 'gas', tabPlano: 'gas', tabRed: 'gas', tabCiclaje: 'sup', tabPed: 'sup', tabComp: 'gas', tabAib: 'oil', tabTanques: 'oil', tabCtrl: 'quim', tabQuim: 'quim', tabScr: 'quim', tabAcum: 'quim' };
+  tabMov: 'Últimos movimientos', tabPed: 'Por hacer', tabAlam: 'Equipo de alambre', tabParte: 'Parte en vivo', tabTend: 'Tendencia', tabCtrl: 'Controles', tabQuim: 'Químicos', tabScr: 'Scraper', tabAcum: 'Acumulados', tabAib: 'AIB', tabTanques: 'Baterías', tabPias: 'Pías 2', tabPtc: 'PTC', tabAvisos: 'Avisos' };
+const SECCION_GRUPO = { tabLista: 'gas', tabPlano: 'gas', tabRed: 'gas', tabCiclaje: 'sup', tabPed: 'sup', tabAlam: 'sup', tabComp: 'gas', tabAib: 'oil', tabTanques: 'oil', tabCtrl: 'quim', tabQuim: 'quim', tabScr: 'quim', tabAcum: 'quim' };
 const SECCION_CON_BUSQUEDA = ['tabLista', 'tabPlano', 'tabRed', 'tabAvisos'];
 (function(){ const t = document.getElementById('iniParteTile'); if(t && esMovil()) t.style.display = 'none'; const td = document.getElementById('iniTendBtn'); if(td && esMovil()) td.style.display = 'none'; })();
 var seccionActual = null;
@@ -12098,6 +12124,332 @@ function renderScraper(){
   });
 }
 document.getElementById('tabScr').addEventListener('click', () => { switchTab('tabScr', 'scrMain'); renderScraper(); });
+// ---- Equipo de alambre (cia. Naser): calibres, gradientes y otras tareas en pozos (coleccion 'alambre_trabajos').
+// El supervisor carga el trabajo (pozo + trabajos + dia/hora), aparece en "Por hacer" con la etiqueta ALAMBRE,
+// y cuando se marca Terminó / Sigue mañana / Se suspendió sale como renglon en el parte de gas (y en el Parte en vivo),
+// con el mismo texto que se viene usando en el REPORTE_CE: "Naser realiza calibre y gradiente."
+var ALAMBRE = [];
+var alamCargaInicial = false;
+var ALAM_TRABAJOS = [
+  ['calibre', 'Calibre', 'calibre'],
+  ['ge', 'Gradiente estático', 'gradiente estático'],
+  ['gd', 'Gradiente dinámico (GDP)', 'gradiente dinámico'],
+  ['fondo', 'Constatar fondo', 'constatación de fondo'],
+  ['muestreo', 'Muestreo de fondo', 'muestreo de fondo'],
+  ['piston', 'Pistón / plunger', 'intervención en pistón/plunger']
+];
+function alamUnir(l){ return l.length <= 1 ? (l[0] || '') : l.slice(0, -1).join(', ') + ' y ' + l[l.length - 1]; }
+// frase de los trabajos ("calibre y gradiente estático"); corto = para el titulo ("Calibre + Gradiente estático")
+function alamTrabajosTxt(j, corto){
+  const l = (j.trabajos || []).map(k => { const t = ALAM_TRABAJOS.find(x => x[0] === k); return t ? (corto ? t[1] : t[2]) : null; }).filter(Boolean);
+  if(j.otra) l.push(corto ? j.otra : j.otra.charAt(0).toLowerCase() + j.otra.slice(1));
+  return corto ? l.join(' + ') : alamUnir(l);
+}
+function alamPunto(t){ t = String(t || '').trim(); return !t ? '' : (/[.!?]$/.test(t) ? t : t + '.'); }
+// texto del renglon del parte de gas
+function alamNovedad(j, tipo, nota){
+  const tr = alamTrabajosTxt(j) || 'trabajos de alambre';
+  const det = j.detalle ? ' ' + j.detalle.replace(/[.\s]+$/, '') : '';
+  let t;
+  if(tipo === 'susp') t = 'Se suspende tarea de Naser (' + tr + ')' + (nota ? ': ' + nota.replace(/[.\s]+$/, '') : '') + '.';
+  else if(tipo === 'sigue') t = 'Naser realiza ' + tr + det + ', continúa mañana.';
+  else t = (j.continua ? 'Naser continúa intervención en pozo y finaliza ' + tr : 'Naser realiza ' + tr) + det + '.';
+  if(nota && tipo !== 'susp') t += ' ' + alamPunto(nota);
+  return t;
+}
+function alamPozoNorm(v){
+  v = String(v || '').trim();
+  if(!v) return '';
+  const n = v.match(/(\d{3,5})/);
+  const cand = n ? 'Ce-' + n[1] : v;
+  const r = POZOS.find(p => p.pozo.toLowerCase() === cand.toLowerCase()) || POZOS.find(p => p.pozo.toLowerCase() === v.toLowerCase());
+  return r ? r.pozo : '';
+}
+function alamInstalacion(pozo){ const r = POZOS.find(p => p.pozo === pozo); return r ? bateriaToInstalacion(r.bateria) : ''; }
+function alamFecha(j){ return j.fecha || (j.creadoTs ? pedIso(inicioDiaOperativo(new Date(j.creadoTs))) : pedHoy()); }
+function alamAbierto(j){ return j.estado === 'pendiente' || j.estado === 'enpozo'; }
+// trabajos que hay que hacer hoy (incluye atrasados de dias anteriores)
+function alamPendHoy(){ const hoy = pedHoy(); return (ALAMBRE || []).filter(j => alamAbierto(j) && alamFecha(j) <= hoy); }
+// trabajos que se cerraron (terminado / sigue / suspendido) durante el dia operativo de hoy
+function alamHechosHoy(){
+  const ini = inicioDiaOperativo(new Date()).getTime();
+  return (ALAMBRE || []).filter(j => !alamPendHoy().includes(j) && (j.eventos || []).some(e => (e.cargadoTs || 0) >= ini));
+}
+function alamOrden(j){ return j.estado === 'enpozo' ? -3 : (j.hora ? cicOrden(j.hora) : -1); }
+
+function iniciarAlambreSync(){
+  if(!firestoreOk) return;
+  syncVivo('alambre_trabajos', { campo: 'creadoTs', tipo: 'num', desde: () => ventanaDesdeMs(60), limite: 300 }, (snap) => {
+    if(alamCargaInicial && typeof snap.docChanges === 'function'){
+      snap.docChanges().forEach(ch => {
+        const d = ch.doc.data();
+        if(ch.type === 'added' && !(ch.doc.metadata && ch.doc.metadata.hasPendingWrites) && d.estado === 'pendiente' && d.creadoPor !== operadorName && alamFecha(d) <= pedHoy()){
+          movToast('Equipo de alambre: ' + d.pozo + ' · ' + alamTrabajosTxt(d, true) + (d.hora ? ' · ' + d.hora : '') + (d.creadoPor ? ' (' + d.creadoPor + ')' : ''));
+          if(typeof movDing === 'function') movDing();
+        }
+      });
+    }
+    alamCargaInicial = true;
+    const l = [];
+    snap.forEach(d => l.push(Object.assign({ id: d.id }, d.data())));
+    const locales = ALAMBRE.filter(x => x._local && !l.some(y => y.id === x.id) && Date.now() - x.creadoTs < 60e3);
+    ALAMBRE = l.concat(locales);
+    alamRefrescar();
+  }, (e) => console.error('alambre', e));
+}
+var alamRefrescoTimer = null;
+function alamRefrescar(){
+  clearTimeout(alamRefrescoTimer);
+  alamRefrescoTimer = setTimeout(() => {
+    try {
+      updatePendCount();
+      pedActualizarInicio();
+      const a = document.getElementById('alamMain');
+      if(a && a.style.display !== 'none' && !alamEscribiendo()) renderAlambre();
+      const p = document.getElementById('pedMain');
+      if(p && p.style.display !== 'none' && !alamEscribiendo()) renderPedidos();
+      if(typeof ahoraRender === 'function') ahoraRender();
+    } catch(e){ appRegistrarError && appRegistrarError(e); }
+  }, 250);
+}
+// no redibujar mientras alguien esta escribiendo en un formulario de alambre (se borraria lo tipeado)
+function alamEscribiendo(){
+  const el = document.activeElement;
+  if(!el || !el.closest) return false;
+  if(el.closest('.alam-form') && (el.value || '').trim()) return true;
+  const f = el.closest('.alam-ev-form');
+  return !!(f && f.style.display !== 'none');
+}
+
+// renglones del parte de gas: uno por cada cierre (terminado / sigue / suspendido)
+function alamEventosParte(forzarTodos){
+  const corte = corteDePendientes().getTime();
+  const out = [];
+  (ALAMBRE || []).forEach(j => (j.eventos || []).forEach(e => {
+    if(forzarTodos ? (e.ts > Date.now() - 864e5) : ((e.cargadoTs || 0) > corte)) out.push({ j, e });
+  }));
+  return out.sort((a, b) => a.e.ts - b.e.ts);
+}
+function pendientesAlambre(){ return alamEventosParte(false); }
+function alambreFilasParte(forzarTodos){
+  return alamEventosParte(forzarTodos).map(({ j, e }) => ({
+    hora: e.hora || hhmmDeTs(e.ts),
+    instalacion: j.instalacion || alamInstalacion(j.pozo),
+    pozo: j.pozo,
+    novedad: e.txt || alamNovedad(j, e.tipo, e.nota),
+    _ts: e.ts,
+    horasPerdida: null,
+    horasProduccion: null
+  }));
+}
+
+function alamGuardarEvento(j, tipo, hora, nota){
+  if(!puedeModificar()) return false;
+  if(!firestoreOk){ alert('No hay conexion con el guardado compartido. Revisa tu internet e intenta de nuevo.'); return false; }
+  const ahora = Date.now();
+  const ts = horaATs(hora, ahora) || ahora;
+  const por = operadorName || 'Sin nombre';
+  let datos;
+  if(tipo === 'llego'){
+    datos = { estado: 'enpozo', llegoHora: hora, llegoTs: ts, llegoPor: por };
+  } else {
+    const ev = { tipo, hora, ts, por, nota: nota || '', cargadoTs: ahora, txt: alamNovedad(j, tipo, nota) };
+    datos = { eventos: (j.eventos || []).concat([ev]) };
+    if(tipo === 'fin') Object.assign(datos, { estado: 'terminado', finTs: ahora, finPor: por });
+    else if(tipo === 'susp') Object.assign(datos, { estado: 'suspendido', finTs: ahora, finPor: por });
+    else Object.assign(datos, { estado: 'pendiente', fecha: pedSumarDias(pedHoy(), 1), continua: true, llegoHora: '', llegoTs: 0, llegoPor: '' });
+  }
+  Object.assign(j, datos);
+  db.collection('alambre_trabajos').doc(j.id).update(datos).catch(e => alert('No se pudo guardar (' + e.message + ').'));
+  movToast(tipo === 'llego' ? 'Naser en ' + j.pozo + ' desde las ' + hora + '.' : (tipo === 'fin' ? 'Trabajo de alambre terminado: va en el parte de gas.' : (tipo === 'sigue' ? 'Queda para mañana; lo de hoy va en el parte de gas.' : 'Suspendido: va en el parte de gas.')));
+  alamRefrescar();
+  return true;
+}
+function alamDeshacer(j){
+  const ult = (j.eventos || [])[(j.eventos || []).length - 1];
+  if(!confirm('¿Volver “' + j.pozo + ' · ' + alamTrabajosTxt(j, true) + '” a pendiente?' + (ult ? '\n\nSe saca del parte la línea: “' + (ult.txt || '') + '”' : ''))) return;
+  if(!puedeModificar()) return;
+  const datos = { eventos: (j.eventos || []).slice(0, -1), estado: j.llegoTs ? 'enpozo' : 'pendiente', finTs: 0, finPor: '' };
+  if(j.estado === 'suspendido' || j.estado === 'terminado') datos.fecha = alamFecha(j) < pedHoy() ? pedHoy() : alamFecha(j);
+  Object.assign(j, datos);
+  db.collection('alambre_trabajos').doc(j.id).update(datos).catch(e => alert('No se pudo guardar (' + e.message + ').'));
+  alamRefrescar();
+}
+function alamReprogramar(j){
+  const f = (window.prompt('¿Para qué día lo reprogramamos? (AAAA-MM-DD)', pedSumarDias(pedHoy(), 1)) || '').trim();
+  if(!f) return;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(f)){ alert('Escribí la fecha así: ' + pedSumarDias(pedHoy(), 1)); return; }
+  if(!puedeModificar()) return;
+  const datos = { estado: 'pendiente', fecha: f, llegoHora: '', llegoTs: 0, llegoPor: '', finTs: 0, finPor: '' };
+  Object.assign(j, datos);
+  db.collection('alambre_trabajos').doc(j.id).update(datos).catch(e => alert('No se pudo guardar (' + e.message + ').'));
+  alamRefrescar();
+}
+function alamAnular(j){
+  if(!confirm('¿Anular el trabajo de alambre “' + j.pozo + ' · ' + alamTrabajosTxt(j, true) + '”? Se borra de la lista.')) return;
+  if(!puedeModificar()) return;
+  db.collection('alambre_trabajos').doc(j.id).delete().catch(e => alert('No se pudo (' + e.message + ').'));
+  ALAMBRE = ALAMBRE.filter(x => x.id !== j.id);
+  alamRefrescar();
+}
+
+// tarjeta de un trabajo (se usa en la solapa Equipo de alambre y en "Por hacer")
+function alamItem(j){
+  const el = document.createElement('div');
+  const hoy = pedHoy();
+  const abierto = alamAbierto(j);
+  const atrasado = abierto && alamFecha(j) < hoy;
+  el.className = 'ped-item alam-item' + (!abierto ? ' hecho' : '') + (j.estado === 'enpozo' ? ' enpozo' : '') + (atrasado ? ' atrasado' : '');
+  const ic = j.estado === 'terminado' ? '<span class="ped-ic hecho" aria-label="Terminado">✓</span>' : (j.estado === 'suspendido' ? '<span class="ped-ic no" aria-label="Suspendido">✕</span>' : '<span class="ped-ic pend" aria-label="Pendiente"></span>');
+  const fechaTxt = alamFecha(j) === hoy ? '' : (atrasado ? '<b style="color:#F2A08F">Era para el ' + avisoEsc(pedNombreDia(alamFecha(j), true).replace(/^(Ayer|Hoy|Mañana), /, '')) + '</b> · ' : avisoEsc(pedNombreDia(alamFecha(j), true)) + ' · ');
+  const meta = (j.instalacion ? avisoEsc(j.instalacion) + ' · ' : '') + (abierto ? fechaTxt : '') + 'Pedido por ' + avisoEsc(j.creadoPor || '—') + ' a las ' + pedHoraTs(j.creadoTs) + (j.detalle ? ' · ' + avisoEsc(j.detalle) : '');
+  const ult = (j.eventos || [])[(j.eventos || []).length - 1];
+  let estadoTxt = '';
+  if(j.estado === 'enpozo') estadoTxt = `<div class="ped-ev">Naser en el pozo desde las <b>${avisoEsc(j.llegoHora || '')}</b>${j.llegoPor ? ' (cargó ' + avisoEsc(j.llegoPor) + ')' : ''}</div>`;
+  if(abierto && j.continua) estadoTxt += `<div class="ped-ev">Viene de antes: Naser continúa la intervención.</div>`;
+  if(!abierto && ult) estadoTxt = `<div class="ped-ev${j.estado === 'suspendido' ? ' no' : ''}">${j.estado === 'suspendido' ? 'Suspendido' : 'Terminado'} · ${avisoEsc(ult.por || '—')}, ${pedHoraTs(ult.cargadoTs)} · al parte: <i>${avisoEsc(ult.hora || '')} ${avisoEsc(ult.txt || '')}</i></div>`;
+  el.innerHTML = `<div class="ped-l1">${ic}<div class="ped-tit">${avisoEsc(j.pozo)} · ${avisoEsc(alamTrabajosTxt(j, true))}${j.hora && abierto ? ' · ' + avisoEsc(j.hora) : ''}<small>${meta}</small></div>
+      <span class="ped-tag alam">ALAMBRE</span>${j.estado === 'enpozo' ? '<span class="ped-tag curso">EN EL POZO</span>' : ''}</div>
+    ${estadoTxt}
+    <div class="ped-acc"></div>
+    <div class="alam-ev-form" style="display:none;"></div>`;
+  const acc = el.querySelector('.ped-acc');
+  const form = el.querySelector('.alam-ev-form');
+  const btn = (txt, cls, fn) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = txt; if(cls) b.className = cls; b.addEventListener('click', fn); acc.appendChild(b); };
+  const abrirForm = (tipo) => {
+    const tit = { llego: 'Llegó Naser al pozo', fin: 'Terminó', sigue: 'Sigue mañana', susp: 'Se suspendió' }[tipo];
+    const horaIni = tipo === 'llego' ? hhmmDeTs(Date.now()) : (j.llegoHora || hhmmDeTs(Date.now()));
+    form.innerHTML = `<div class="alam-ev-tit">${tit}</div>
+      <div class="qc-form">
+        <label class="qc-f"><span>${tipo === 'llego' ? 'Hora de llegada' : 'Hora (inicio del trabajo)'}</span><input type="time" class="edit-input aef-hora" value="${horaIni}"></label>
+        ${tipo === 'llego' ? '' : `<label class="qc-f ancho"><span>${tipo === 'susp' ? 'Motivo' : 'Nota para el parte (opcional)'}</span><input class="edit-input aef-nota" maxlength="200" placeholder="${tipo === 'susp' ? 'ej: rotura de hidráulico en equipo wireline' : 'ej: abierto con presión estática de 12,5 kg/cm²'}"></label>`}
+      </div>
+      <div class="qc-prev-parte aef-prev"></div>
+      <div class="qc-err aef-err" role="alert"></div>
+      <div class="ped-acc"><button type="button" class="si aef-ok">Guardar</button><button type="button" class="aef-no">Cancelar</button></div>`;
+    form.style.display = '';
+    acc.style.display = 'none';
+    const h = form.querySelector('.aef-hora'), n = form.querySelector('.aef-nota'), prev = form.querySelector('.aef-prev');
+    const calc = () => { if(tipo !== 'llego') prev.innerHTML = '<span>Así sale en el parte de gas:</span> ' + avisoEsc((h.value || '') + ' ' + j.pozo + ' · ' + alamNovedad(j, tipo, n ? n.value.trim() : '')); };
+    [h, n].filter(Boolean).forEach(x => x.addEventListener('input', calc));
+    calc();
+    (n || h).focus();
+    form.querySelector('.aef-no').addEventListener('click', () => { form.style.display = 'none'; form.innerHTML = ''; acc.style.display = ''; });
+    form.querySelector('.aef-ok').addEventListener('click', () => {
+      const err = form.querySelector('.aef-err'); err.textContent = '';
+      if(!/^\d{2}:\d{2}$/.test(h.value || '')){ err.textContent = 'Poné la hora.'; return; }
+      const nota = n ? n.value.trim().slice(0, 200) : '';
+      if(tipo === 'susp' && !nota){ err.textContent = 'Escribí el motivo.'; return; }
+      form.style.display = 'none';
+      if(!alamGuardarEvento(j, tipo, h.value, nota)){ form.style.display = ''; }
+    });
+  };
+  if(abierto){
+    if(j.estado === 'pendiente') btn('Llegó Naser al pozo', 'ir', () => abrirForm('llego'));
+    btn('Terminó', 'si', () => abrirForm('fin'));
+    btn('Sigue mañana', '', () => abrirForm('sigue'));
+    btn('Se suspendió…', '', () => abrirForm('susp'));
+    if(!(j.eventos || []).length && pedPuedeVerDias()) btn('Anular', '', () => alamAnular(j));
+  } else {
+    if(j.estado === 'suspendido') btn('Reprogramar', 'ir', () => alamReprogramar(j));
+    btn('Volver a pendiente', '', () => alamDeshacer(j));
+  }
+  return el;
+}
+
+var alamSel = { trabajos: ['calibre'], otra: false };
+function renderAlambre(){
+  const main = document.getElementById('alamMain');
+  if(!main) return;
+  const hoy = pedHoy();
+  const todos = (ALAMBRE || []).slice();
+  const pend = todos.filter(j => alamAbierto(j) && alamFecha(j) <= hoy).sort((a, b) => (alamOrden(a) - alamOrden(b)) || (a.creadoTs - b.creadoTs));
+  const prog = todos.filter(j => alamAbierto(j) && alamFecha(j) > hoy).sort((a, b) => alamFecha(a).localeCompare(alamFecha(b)) || (alamOrden(a) - alamOrden(b)));
+  const cerr = todos.filter(j => !alamAbierto(j)).sort((a, b) => (b.finTs || 0) - (a.finTs || 0)).slice(0, 30);
+  const pozosDl = POZOS.map(p => `<option value="${avisoEsc(p.pozo)}">`).join('');
+  main.innerHTML = `<div class="alam-grid">
+    <section class="alam-lista">
+      <div class="qc-tit-fila"><h2 class="alam-h">Equipo de alambre · Naser</h2><span class="qc-sub">calibres, gradientes y otras tareas</span></div>
+      <p class="ped-resumen">${pend.length ? `<b>${pend.length}</b> para hacer` : 'Nada pendiente para hoy'}${prog.length ? ' · ' + prog.length + ' programado' + (prog.length === 1 ? '' : 's') : ''}. Cuando se marca <b>Terminó</b>, <b>Sigue mañana</b> o <b>Se suspendió</b>, sale solo en el parte de gas y en el Parte en vivo.</p>
+      <div id="alamListaCont"></div>
+    </section>
+    <section class="qc-card alam-form">
+      <h2>Nuevo trabajo de alambre</h2>
+      <p class="qc-sub" style="margin:-4px 0 10px;">Lo hace la cía. Naser · va a “Por hacer” y al parte de gas cuando se termina</p>
+      <label class="qc-f"><span>Pozo</span><input class="edit-input" id="alPozo" list="alPozoList" placeholder="ej: 1044" autocomplete="off"><datalist id="alPozoList">${pozosDl}</datalist></label>
+      <div class="qc-sub-tit">Trabajos (se pueden marcar varios)</div>
+      <div class="alam-chips" id="alChips">${ALAM_TRABAJOS.map(t => `<button type="button" class="alam-chip${alamSel.trabajos.includes(t[0]) ? ' on' : ''}" data-k="${t[0]}" aria-pressed="${alamSel.trabajos.includes(t[0])}">${avisoEsc(t[1])}</button>`).join('')}
+        <button type="button" class="alam-chip otra${alamSel.otra ? ' on' : ''}" data-k="__otra" aria-pressed="${alamSel.otra}">+ Otra tarea</button></div>
+      <label class="qc-f" id="alOtraL" style="margin-top:8px;${alamSel.otra ? '' : 'display:none;'}"><span>¿Qué tarea?</span><input class="edit-input" id="alOtra" maxlength="80" placeholder="ej: recupero de resorte"></label>
+      <div class="qc-form" style="margin-top:10px;">
+        <label class="qc-f"><span>Día</span><input type="date" class="edit-input" id="alFecha" value="${hoy}" min="${pedSumarDias(hoy, -1)}"></label>
+        <label class="qc-f"><span>Hora</span><input type="time" class="edit-input" id="alHora" value="09:00"></label>
+      </div>
+      <label class="qc-f" style="margin-top:10px;"><span>Detalle (opcional, sale en el parte)</span><input class="edit-input" id="alDet" maxlength="120" placeholder="ej: en conjunto con bacheo de Wezol"></label>
+      <div class="qc-prev-parte" id="alPrev"></div>
+      <div class="qc-err" id="alErr" role="alert"></div>
+      <div class="qc-bot"><button type="button" class="ped-nuevo-btn" id="alGuardar" style="flex:1 1 auto;">Cargar trabajo</button></div>
+    </section>
+  </div>`;
+  const cont = document.getElementById('alamListaCont');
+  const grupo = (titulo, items) => {
+    if(!items.length) return;
+    const g = document.createElement('div');
+    g.innerHTML = `<div class="ped-grupo">${titulo} (${items.length})</div>`;
+    items.forEach(j => g.appendChild(alamItem(j)));
+    cont.appendChild(g);
+  };
+  grupo('Para hacer', pend);
+  grupo('Programados', prog);
+  grupo('Terminados y suspendidos', cerr);
+  if(!todos.length) cont.innerHTML = '<div class="empty-msg">Todavía no hay trabajos de alambre cargados.</div>';
+  const $ = (id) => document.getElementById(id);
+  const leer = () => ({
+    pozo: alamPozoNorm($('alPozo').value),
+    trabajos: alamSel.trabajos.slice(),
+    otra: alamSel.otra ? $('alOtra').value.trim().slice(0, 80) : '',
+    fecha: $('alFecha').value || hoy,
+    hora: $('alHora').value || '',
+    detalle: $('alDet').value.trim().slice(0, 120)
+  });
+  const calc = () => {
+    const d = leer();
+    $('alPrev').innerHTML = (d.trabajos.length || d.otra) ? '<span>Así va a salir en el parte de gas:</span> ' + avisoEsc((d.hora || '') + ' ' + (d.pozo || $('alPozo').value.trim() || 'Ce-____') + ' · ' + alamNovedad(d, 'fin', '')) : '';
+  };
+  $('alChips').querySelectorAll('.alam-chip').forEach(b => b.addEventListener('click', () => {
+    const k = b.dataset.k;
+    if(k === '__otra'){ alamSel.otra = !alamSel.otra; $('alOtraL').style.display = alamSel.otra ? '' : 'none'; if(alamSel.otra) $('alOtra').focus(); }
+    else alamSel.trabajos = alamSel.trabajos.includes(k) ? alamSel.trabajos.filter(x => x !== k) : alamSel.trabajos.concat([k]);
+    const on = k === '__otra' ? alamSel.otra : alamSel.trabajos.includes(k);
+    b.classList.toggle('on', on); b.setAttribute('aria-pressed', on);
+    calc();
+  }));
+  main.querySelectorAll('.alam-form input').forEach(i => i.addEventListener('input', calc));
+  calc();
+  $('alGuardar').addEventListener('click', () => {
+    const err = $('alErr'); err.textContent = '';
+    const d = leer();
+    if(!$('alPozo').value.trim()){ err.textContent = 'Poné el pozo.'; return; }
+    if(!d.pozo){ err.textContent = 'No encuentro el pozo “' + $('alPozo').value.trim() + '” en la lista. Escribilo como Ce-1044 o solo el número.'; return; }
+    if(alamSel.otra && !d.otra){ err.textContent = 'Escribí cuál es la otra tarea.'; return; }
+    if(!d.trabajos.length && !d.otra){ err.textContent = 'Marcá al menos un trabajo.'; return; }
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(d.fecha)){ err.textContent = 'Elegí el día.'; return; }
+    const repe = (ALAMBRE || []).find(j => alamAbierto(j) && j.pozo === d.pozo);
+    if(repe && !confirm('Ya hay un trabajo de alambre abierto en ' + d.pozo + ' (' + alamTrabajosTxt(repe, true) + ', ' + pedNombreDia(alamFecha(repe), true) + ').\n\n¿Cargar este otro igual?')) return;
+    if(!puedeModificar()) return;
+    if(!firestoreOk){ alert('No hay conexion con el guardado compartido. Revisa tu internet e intenta de nuevo.'); return; }
+    const doc = Object.assign(d, { instalacion: alamInstalacion(d.pozo), estado: 'pendiente', creadoTs: Date.now(), creadoPor: operadorName || 'Sin nombre', eventos: [] });
+    const ref = db.collection('alambre_trabajos').doc();
+    ref.set(doc).catch(e => alert('No se pudo guardar (' + e.message + ').'));
+    ALAMBRE = ALAMBRE.concat([Object.assign({ id: ref.id, _local: true }, doc)]);
+    alamSel = { trabajos: ['calibre'], otra: false };
+    movToast('Trabajo de alambre cargado: ' + d.pozo + ' · ' + alamTrabajosTxt(d, true) + '.');
+    try { document.activeElement && document.activeElement.blur && document.activeElement.blur(); } catch(e) {}
+    renderAlambre();
+    alamRefrescar();
+  });
+}
+document.getElementById('tabAlam').addEventListener('click', () => { switchTab('tabAlam', 'alamMain'); renderAlambre(); });
 // ---- Acumulados (m3/dia por nodo: V 100, V 1600, COL 29, V 502...): se cargan todos juntos, como llegan en el grupo ----
 var ACUM_NODOS = ['V 100', 'V 1600', 'COL 29', 'V 502'];
 function acumNodos(){ return qcNombres('acumulado', ACUM_NODOS); }
@@ -12405,6 +12757,14 @@ function ahoraPintar(){
   });
   if(peds.length > 4) html += `<div class="ah-vacio">y ${peds.length - 4} más…</div>`;
   html += '</section>';
+  // equipo de alambre (Naser)
+  const alams = (typeof alamPendHoy === 'function' ? alamPendHoy() : []).sort((a, b) => alamOrden(a) - alamOrden(b));
+  if(alams.length){
+    html += `<section class="ah-sec"><button type="button" class="ah-tit ped" data-ir="tabAlam">Equipo de alambre · ${alams.length} ›</button>`;
+    alams.slice(0, 3).forEach(j => { html += `<div class="ah-ped"><div class="ah-fila"><b>${avisoEsc(j.pozo + ' · ' + alamTrabajosTxt(j, true))}</b><span>${avisoEsc(j.estado === 'enpozo' ? 'en el pozo ' + (j.llegoHora || '') : (j.hora || ''))}</span></div></div>`; });
+    if(alams.length > 3) html += `<div class="ah-vacio">y ${alams.length - 3} más…</div>`;
+    html += '</section>';
+  }
   // ciclaje
   const hoyC = cicHoy();
   const pend = (typeof parteVivoPendientes === 'function' ? parteVivoPendientes() : []).filter(i => i.tipo === 'Ciclaje');
@@ -12503,7 +12863,7 @@ window.addEventListener('error', (ev) => {
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202611041300;
+var APP_VERSION = 202611041530;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
