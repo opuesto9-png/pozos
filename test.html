@@ -1549,7 +1549,7 @@
   .acuse[open] .acuse-res::before{ content:'▾ '; }
   .acuse-res.ok{ color:#8FD9A8; } .acuse-res.falta{ color:#F2C26B; }
   .acuse-lista{ display:flex; flex-direction:column; gap:3px; margin:6px 0 0 14px; }
-  .acuse-eq{ color:#C9D6E0; } .acuse-eq.visto{ color:#8FD9A8; } .acuse-eq.sin{ color:#F2A8A8; }
+  .acuse-eq{ color:#C9D6E0; } .acuse-eq.visto{ color:#8FD9A8; } .acuse-eq.probable{ color:#B9C7D3; } .acuse-eq.sin{ color:#F2A8A8; }
   .acuse-cic{ background: var(--panel); border:1px solid var(--line); border-radius:10px; padding:8px 12px; margin:6px 0 10px; }
   /* ---------- compu (pantalla ancha): encabezado en una fila, tarjetas compactas y panel "Ahora" ---------- */
   @media (min-width: 1200px){
@@ -1597,6 +1597,20 @@
   .ah-nums b{ font-size:1.35rem; } .ah-nums b.amb{ color:#E8B64A; } .ah-nums span{ font-size:.72rem; color:#9FB3C3; }
   .ah-alerta{ text-align:left; background:#3A2026; border:0; border-radius:6px; padding:7px 10px; color:#F6D5D5; font:inherit; font-size:.82rem; cursor:pointer; }
   .ah-mov{ font-size:.8rem; color:#C9D6E0; } .ah-mov span{ color:#9FB3C3; font-variant-numeric: tabular-nums; }
+  .acq{ background: var(--panel); border:1px solid var(--line); border-radius:12px; padding:10px 14px; margin:8px 0 12px; }
+  .acq:empty{ display:none; }
+  .acq-tit{ font-weight:700; font-size:.9rem; margin-bottom:6px; } .acq-tit span{ display:block; font-weight:400; font-size:.72rem; color:#9FB3C3; margin-top:2px; }
+  .acq-tabla-wrap{ overflow-x:auto; }
+  .acq-tabla{ width:100%; border-collapse:collapse; font-size:.8rem; }
+  .acq-tabla th{ text-align:left; font-size:.68rem; text-transform:uppercase; letter-spacing:.05em; color:#9FB3C3; font-weight:600; padding:5px 8px; border-bottom:1px solid var(--line); white-space:nowrap; }
+  .acq-tabla td{ padding:6px 8px; border-bottom:1px solid var(--line); vertical-align:top; }
+  .acq-tabla td.on, .acq-c i.on{ color:#8FD9A8; font-style:normal; }
+  .acq-tabla td.visto, .acq-v.visto{ color:#8FD9A8; } .acq-tabla td.recibido, .acq-v.recibido{ color:#C9D6E0; } .acq-tabla td.probable, .acq-v.probable{ color:#B9C7D3; } .acq-tabla td.sin, .acq-v.sin{ color:#F2A8A8; }
+  .acq-faltan{ font-size:.72rem; color:#F2C26B; margin-top:2px; }
+  .acq-viejo{ color:#F2C26B; font-size:.72rem; }
+  .acq-c{ display:flex; flex-direction:column; gap:1px; padding:6px 10px; background: var(--bg); border-radius:6px; font-size:.8rem; }
+  .acq-n{ display:flex; justify-content:space-between; gap:8px; } .acq-n i{ font-style:normal; font-size:.72rem; color:#9FB3C3; }
+  .acq-ah .acq-tit{ font-size:.74rem; letter-spacing:.08em; text-transform:uppercase; color:#C3A6EA; margin:0; } .acq-ah .acq-tit span{ text-transform:none; letter-spacing:0; }
 </style>
 </head>
 <body>
@@ -7838,9 +7852,6 @@ function renderCiclaje(){
   if(plan.length && fecha >= hoy && acuseCiclajeNuevo(fecha)){
     const refC = acuseRefCiclaje(fecha);
     if(!document.hidden) acuseMarcar('ciclaje', refC, true);
-    const blq = acuseBloque('ciclaje', refC);
-    blq.classList.add('acuse-cic');
-    cuerpo.appendChild(blq);
   }
 
   if(plan.length){
@@ -9187,6 +9198,7 @@ function renderPedidos(){
       <button type="button" class="ped-copiar-btn" id="pedCopiarBtn">Copiar resumen para WhatsApp</button>
     </div>
     <p class="ped-resumen">${total ? `${esHoy ? 'Hoy' : 'Ese día'}: <b>${hechos.length} de ${total}</b> hechos${pend.length ? ' · ' + pend.length + ' pendiente' + (pend.length === 1 ? '' : 's') : ''}${nos.length ? ' · ' + nos.length + ' no se pudo' : ''}` : (esHoy ? 'Todavía no hay pedidos para hoy.' : (pedDiaSel > hoy ? 'Todavía no hay pedidos cargados para ese día.' : 'No hubo pedidos ese día.'))}</p>
+    <div id="acuseCuadro" class="acq"></div>
     <div id="pedLista"></div>`;
   const nuevoBtn = document.getElementById('pedNuevoBtn');
   if(nuevoBtn) nuevoBtn.addEventListener('click', () => abrirPedidoForm());
@@ -9194,6 +9206,7 @@ function renderPedidos(){
   const selFecha = document.getElementById('pedFechaSel');
   if(selFecha) selFecha.addEventListener('change', () => { if(selFecha.value){ pedDiaSel = selFecha.value; renderPedidos(); } });
   document.getElementById('pedCopiarBtn').addEventListener('click', pedCopiarResumen);
+  acusePintarCuadros();
   const cont = document.getElementById('pedLista');
   const grupo = (titulo, items) => {
     if(!items.length) return;
@@ -9201,10 +9214,7 @@ function renderPedidos(){
     g.innerHTML = `<div class="ped-grupo">${titulo} (${items.length})</div>`;
     items.forEach(p => {
       const it = pedItem(p);
-      if(p.estado === 'pendiente' && (p.creadoTs || 0) >= ACUSE_DESDE){
-        it.appendChild(acuseBloque('pedido', p.id));
-        if(!document.hidden) acuseMarcar('pedido', p.id, true);
-      }
+      if(p.estado === 'pendiente' && (p.creadoTs || 0) >= ACUSE_DESDE && !document.hidden) acuseMarcar('pedido', p.id, true);
       g.appendChild(it);
     });
     cont.appendChild(g);
@@ -12140,14 +12150,12 @@ function acuseRefrescarVistas(){
   clearTimeout(acuseTimer);
   acuseTimer = setTimeout(() => {
     const ped = document.getElementById('pedMain');
-    if(ped && ped.style.display !== 'none') document.querySelectorAll('[data-acuse]').forEach(acusePintar);
-    const cic = document.getElementById('ciclajeMain');
-    if(cic && cic.style.display !== 'none') document.querySelectorAll('[data-acuse]').forEach(acusePintar);
+    if(ped && ped.style.display !== 'none') acusePintarCuadros();
     if(typeof ahoraRender === 'function') ahoraRender();
   }, 300);
 }
 // equipos a mostrar: los que se conectaron en los ultimos 3 dias, mas los que ya avisaron
-function acuseEstado(tipo, ref){
+function acuseEstado(tipo, ref, desdeTs){
   const lim = Date.now() - 3 * 86400e3;
   const eqs = {};
   Object.keys(PRESENCIA).forEach(uid => { const p = PRESENCIA[uid]; if(p.ts && p.ts >= lim) eqs[uid] = { uid, equipo: p.nombre || (p.tipo === 'celular' ? 'Celular' : 'Compu'), p }; });
@@ -12157,11 +12165,15 @@ function acuseEstado(tipo, ref){
     let est = 'sin', txt = '';
     if(a && a.vistoTs){ est = 'visto'; txt = 'visto ' + hhmmDeTs(a.vistoTs) + (a.vistoPor ? ' por ' + a.vistoPor : ''); }
     else if(a && a.recibidoTs){ est = 'recibido'; txt = 'recibido ' + hhmmDeTs(a.recibidoTs); }
-    else if(p && p.ver && p.ver < ACUSE_VER) txt = 'app sin actualizar: no avisa la entrega';
+    else if(p && (!p.ver || p.ver < ACUSE_VER)){
+      // app vieja: no confirma, pero si se conecto despues de cargado, casi seguro le llego
+      if(desdeTs && p.ts && p.ts > desdeTs + 60e3){ est = 'probable'; txt = 'se conectó a las ' + hhmmDeTs(p.ts) + ', después de cargado (app sin actualizar: no confirma)'; }
+      else txt = 'app sin actualizar: no avisa la entrega' + (p.ts ? ' · última conexión ' + acuseHace(p.ts) : '');
+    }
     else txt = 'sin recibir' + (p && p.ts ? ' · última conexión ' + acuseHace(p.ts) : '');
     return { uid: e.uid, equipo: e.equipo, est, txt, yo: e.uid === HAB.uid };
-  }).sort((x, y) => ({ visto: 0, recibido: 1, sin: 2 }[x.est] - { visto: 0, recibido: 1, sin: 2 }[y.est]) || String(x.equipo).localeCompare(String(y.equipo)));
-  return { lista, visto: lista.filter(x => x.est === 'visto').length, recibido: lista.filter(x => x.est === 'recibido').length, sin: lista.filter(x => x.est === 'sin').length, total: lista.length };
+  }).sort((x, y) => ({ visto: 0, recibido: 1, probable: 2, sin: 3 }[x.est] - { visto: 0, recibido: 1, probable: 2, sin: 3 }[y.est]) || String(x.equipo).localeCompare(String(y.equipo)));
+  return { lista, visto: lista.filter(x => x.est === 'visto').length, recibido: lista.filter(x => x.est === 'recibido').length, probable: lista.filter(x => x.est === 'probable').length, sin: lista.filter(x => x.est === 'sin').length, total: lista.length };
 }
 function acuseHace(ts){
   const m = Math.max(0, Math.round((Date.now() - ts) / 60e3));
@@ -12172,23 +12184,24 @@ function acuseHace(ts){
 }
 function acuseResumenTxt(e){
   if(!e.total) return 'Entrega: todavía no hay equipos conectados';
-  return [e.visto ? '✓✓ visto en ' + e.visto : '', e.recibido ? '✓ recibido en ' + e.recibido : '', e.sin ? '⏳ ' + e.sin + ' sin recibir' : ''].filter(Boolean).join(' · ') + ' (de ' + e.total + ' equipo' + (e.total === 1 ? '' : 's') + ')';
+  return [e.visto ? '✓✓ visto en ' + e.visto : '', e.recibido ? '✓ recibido en ' + e.recibido : '', e.probable ? '≈ ' + e.probable + ' conectado' + (e.probable === 1 ? '' : 's') + ' después (app vieja)' : '', e.sin ? '⏳ ' + e.sin + ' sin recibir' : ''].filter(Boolean).join(' · ') + ' (de ' + e.total + ' equipo' + (e.total === 1 ? '' : 's') + ')';
 }
 // bloque desplegable con la entrega equipo por equipo (se pinta y repinta solo)
 function acuseBloque(tipo, ref){
   const el = document.createElement('details');
   el.className = 'acuse';
   el.dataset.acuse = tipo + '|' + ref;
+  el.dataset.desde = String(acuseDesdeDe(tipo, ref) || '');
   acuseLeerPresencia();
   acusePintar(el);
   return el;
 }
 function acusePintar(el){
   const [tipo, ref] = el.dataset.acuse.split('|');
-  const e = acuseEstado(tipo, ref);
+  const e = acuseEstado(tipo, ref, parseInt(el.dataset.desde, 10) || acuseDesdeDe(tipo, ref));
   const abierto = el.open;
   el.innerHTML = `<summary class="acuse-res ${e.sin ? 'falta' : 'ok'}">${avisoEsc(acuseResumenTxt(e))}</summary>
-    <div class="acuse-lista">${e.lista.map(x => `<span class="acuse-eq ${x.est}">${x.est === 'visto' ? '✓✓' : (x.est === 'recibido' ? '✓' : '⏳')} <b>${avisoEsc(x.equipo)}${x.yo ? ' (este equipo)' : ''}</b> · ${avisoEsc(x.txt)}</span>`).join('') || '<span class="acuse-eq">Sin datos de equipos todavía.</span>'}</div>`;
+    <div class="acuse-lista">${e.lista.map(x => `<span class="acuse-eq ${x.est}">${x.est === 'visto' ? '✓✓' : (x.est === 'recibido' ? '✓' : (x.est === 'probable' ? '≈' : '⏳'))} <b>${avisoEsc(x.equipo)}${x.yo ? ' (este equipo)' : ''}</b> · ${avisoEsc(x.txt)}</span>`).join('') || '<span class="acuse-eq">Sin datos de equipos todavía.</span>'}</div>`;
   el.open = abierto;
 }
 // referencia de la lista de ciclaje de un dia: cambia si el supervisor la modifica (vuelve a pedir la entrega)
@@ -12199,6 +12212,12 @@ function acuseRefCiclaje(fecha){
   let h = 5381; for(let i = 0; i < txt.length; i++) h = ((h << 5) + h + txt.charCodeAt(i)) | 0;
   return fecha + '_' + (h >>> 0).toString(36);
 }
+// hora en que se cargo (o se cambio por ultima vez) lo que se entrega
+function acuseDesdeDe(tipo, ref){
+  if(tipo === 'pedido'){ const p = (PEDIDOS || []).find(x => x.id === ref); return p ? (p.creadoTs || 0) : 0; }
+  const f = String(ref).split('_')[0];
+  return Math.max(0, ...cicPlanDe(f).map(p => p.creadoTs || 0));
+}
 function acuseCiclajeNuevo(fecha){ return cicPlanDe(fecha).some(p => (p.creadoTs || 0) >= ACUSE_DESDE); }
 // al llegar datos: avisar recibido
 function acuseAlLlegarPedidos(){
@@ -12208,6 +12227,75 @@ function acuseAlLlegarPedidos(){
 function acuseAlLlegarCiclaje(){
   const hoy = cicHoy();
   [hoy, pedSumarDias(hoy, 1)].forEach(f => { if(acuseCiclajeNuevo(f)) acuseMarcar('ciclaje', acuseRefCiclaje(f), false); });
+}
+
+// ---- cuadro aparte "Entrega a los equipos": un renglon por equipo conectado hoy ----
+// equipos: los que estan en linea ahora o se conectaron en el dia operativo (desde las 06:00), mas los que avisaron algo hoy
+function acuseEquiposHoy(){
+  const ini = inicioDiaOperativo(new Date()).getTime();
+  const eqs = {};
+  Object.keys(PRESENCIA).forEach(uid => {
+    const p = PRESENCIA[uid];
+    const enLinea = p.ts && !p.cerrada && Date.now() - p.ts < 5 * 60e3;
+    if((p.ts && p.ts >= ini) || enLinea) eqs[uid] = { uid, equipo: p.nombre || (p.tipo === 'celular' ? 'Celular' : 'Compu'), p, enLinea };
+  });
+  ACUSES.filter(a => (a.clientTs || 0) >= ini).forEach(a => { if(!eqs[a.uid]) eqs[a.uid] = { uid: a.uid, equipo: a.equipo || 'Equipo', p: PRESENCIA[a.uid] || null, enLinea: false }; });
+  if(HAB.uid && !eqs[HAB.uid]) eqs[HAB.uid] = { uid: HAB.uid, equipo: acuseEquipoNombre(), p: null, enLinea: true };
+  if(eqs[HAB.uid]) eqs[HAB.uid].enLinea = true;
+  return Object.values(eqs).sort((a, b) => (b.enLinea - a.enLinea) || String(a.equipo).localeCompare(String(b.equipo)));
+}
+function acuseDe(tipo, ref, uid){ return ACUSES.find(a => a.tipo === tipo && a.ref === ref && a.uid === uid); }
+function acuseCuadroDatos(){
+  const hoyP = pedHoy();
+  const peds = (PEDIDOS || []).filter(p => p.estado === 'pendiente' && pedFechaDe(p) <= hoyP && (p.creadoTs || 0) >= ACUSE_DESDE);
+  const hoyC = cicHoy();
+  const refC = acuseCiclajeNuevo(hoyC) ? acuseRefCiclaje(hoyC) : '';
+  const desdeC = refC ? acuseDesdeDe('ciclaje', refC) : 0;
+  const filas = acuseEquiposHoy().map(e => {
+    const p = e.p;
+    const vieja = p && (!p.ver || p.ver < ACUSE_VER) && e.uid !== HAB.uid;
+    let visto = 0, recibido = 0, probable = 0;
+    const faltan = [];
+    peds.forEach(x => {
+      const a = acuseDe('pedido', x.id, e.uid);
+      if(a && a.vistoTs) visto++;
+      else if(a && a.recibidoTs) recibido++;
+      else if(vieja && p.ts && p.ts > (x.creadoTs || 0) + 60e3) probable++;
+      else faltan.push(pedTitulo(x));
+      if(a && !a.vistoTs && a.recibidoTs) faltan.push(pedTitulo(x) + ' (recibido, sin ver)');
+    });
+    let cic = '—', cicEst = '';
+    if(refC){
+      const a = acuseDe('ciclaje', refC, e.uid);
+      if(a && a.vistoTs){ cic = '✓✓ vista ' + hhmmDeTs(a.vistoTs); cicEst = 'visto'; }
+      else if(a && a.recibidoTs){ cic = '✓ recibida ' + hhmmDeTs(a.recibidoTs); cicEst = 'recibido'; }
+      else if(vieja && p.ts && p.ts > desdeC + 60e3){ cic = '≈ conectado después'; cicEst = 'probable'; }
+      else { cic = '⏳ sin recibir'; cicEst = 'sin'; }
+    }
+    const pedEst = !peds.length ? '' : (visto === peds.length ? 'visto' : (faltan.filter(f => !/recibido, sin ver/.test(f)).length ? 'sin' : (probable ? 'probable' : 'recibido')));
+    const pedTxt = !peds.length ? '—' : [visto ? '✓✓ ' + visto : '', recibido ? '✓ ' + recibido : '', probable ? '≈ ' + probable : '', (peds.length - visto - recibido - probable) ? '⏳ ' + (peds.length - visto - recibido - probable) : ''].filter(Boolean).join(' · ') + ' de ' + peds.length;
+    const con = e.enLinea ? '● en línea' : (p && p.ts ? 'última conexión ' + hhmmDeTs(p.ts) : '');
+    return { e, vieja, con, pedTxt, pedEst, cic, cicEst, faltan };
+  });
+  return { peds, refC, filas };
+}
+function acuseCuadroHtml(compacto){
+  acuseLeerPresencia();
+  const d = acuseCuadroDatos();
+  const tit = '<div class="acq-tit">Entrega a los equipos <span>conectados hoy · ✓ recibido · ✓✓ visto · ≈ se conectó después (app vieja) · ⏳ sin recibir</span></div>';
+  if(!d.filas.length) return tit + '<div class="ah-vacio">Todavía no se conectó ningún equipo hoy.</div>';
+  if(compacto){
+    return tit + d.filas.map(f => `<div class="acq-c"><span class="acq-n"><b>${avisoEsc(f.e.equipo)}</b> <i class="${f.e.enLinea ? 'on' : ''}">${avisoEsc(f.con)}</i></span><span class="acq-v ${f.pedEst}">${d.peds.length ? 'Pedidos ' + avisoEsc(f.pedTxt) : 'Sin pedidos'}</span>${d.refC ? `<span class="acq-v ${f.cicEst}">Ciclaje ${avisoEsc(f.cic)}</span>` : ''}${f.vieja ? '<span class="acq-viejo">app sin actualizar</span>' : ''}</div>`).join('');
+  }
+  return tit + `<div class="acq-tabla-wrap"><table class="acq-tabla"><thead><tr><th>Equipo</th><th>Conexión</th><th>Pedidos pendientes (${d.peds.length})</th><th>Ciclaje de hoy</th></tr></thead><tbody>${d.filas.map(f => `<tr>
+    <td><b>${avisoEsc(f.e.equipo)}</b>${f.e.uid === HAB.uid ? ' <small>(este equipo)</small>' : ''}${f.vieja ? ' <small class="acq-viejo">app sin actualizar</small>' : ''}</td>
+    <td class="${f.e.enLinea ? 'on' : ''}">${avisoEsc(f.con)}</td>
+    <td class="${f.pedEst}">${avisoEsc(f.pedTxt)}${f.faltan.length && f.faltan.length <= 4 ? `<div class="acq-faltan">Falta: ${avisoEsc(f.faltan.join(' · '))}</div>` : (f.faltan.length ? `<div class="acq-faltan">Faltan ${f.faltan.length}</div>` : '')}</td>
+    <td class="${f.cicEst}">${avisoEsc(f.cic)}</td></tr>`).join('')}</tbody></table></div>`;
+}
+function acusePintarCuadros(){
+  const c = document.getElementById('acuseCuadro');
+  if(c) c.innerHTML = acuseCuadroHtml(false);
 }
 
 // ---------------- Panel "Ahora" (solo en pantallas anchas: la compu) ----------------
@@ -12230,10 +12318,7 @@ function ahoraPintar(){
   html += `<section class="ah-sec"><button type="button" class="ah-tit ped" data-ir="tabPed">Pedidos pendientes${peds.length ? ' · ' + peds.length : ''} ›</button>`;
   if(!peds.length) html += '<div class="ah-vacio">No hay pedidos pendientes.</div>';
   peds.slice(0, 4).forEach(p => {
-    const nuevo = (p.creadoTs || 0) >= ACUSE_DESDE;
-    const e = nuevo ? acuseEstado('pedido', p.id) : null;
-    html += `<div class="ah-ped${p.prioridad === 'urgente' ? ' urg' : ''}"><div class="ah-fila"><b>${avisoEsc(pedTitulo(p))}</b><span>${avisoEsc((p.creadoTs ? hhmmDeTs(p.creadoTs) : '') + (p.creadoPor ? ' · ' + p.creadoPor : ''))}</span></div>
-      ${e ? `<div class="ah-eqs">${e.lista.map(x => `<span class="acuse-eq ${x.est}">${x.est === 'visto' ? '✓✓' : (x.est === 'recibido' ? '✓' : '⏳')} ${avisoEsc(x.equipo)} · ${avisoEsc(x.txt)}</span>`).join('') || '<span class="acuse-eq">Sin equipos conectados</span>'}</div>` : ''}</div>`;
+    html += `<div class="ah-ped${p.prioridad === 'urgente' ? ' urg' : ''}"><div class="ah-fila"><b>${avisoEsc(pedTitulo(p))}</b><span>${avisoEsc((p.creadoTs ? hhmmDeTs(p.creadoTs) : '') + (p.creadoPor ? ' · ' + p.creadoPor : ''))}</span></div></div>`;
   });
   if(peds.length > 4) html += `<div class="ah-vacio">y ${peds.length - 4} más…</div>`;
   html += '</section>';
@@ -12250,9 +12335,10 @@ function ahoraPintar(){
       const cuando = i.atrasado ? 'atrasada' : (falta < 60 ? 'en ' + falta + ' min' : 'en ' + Math.floor(falta / 60) + ' h' + (falta % 60 ? ' ' + (falta % 60) : ''));
       html += `<div class="ah-man${i.atrasado ? ' atr' : (falta <= 15 ? ' pronto' : '')}"><span>${avisoEsc(i.txt)}</span><span>${cuando}</span></div>`;
     });
-    if(acuseCiclajeNuevo(hoyC)){ const e = acuseEstado('ciclaje', acuseRefCiclaje(hoyC)); html += `<div class="ah-nota ${e.sin ? 'falta' : 'ok'}">Lista del día: ${avisoEsc(acuseResumenTxt(e))}</div>`; }
   }
   html += '</section>';
+  // entrega a los equipos (cuadro aparte)
+  html += `<section class="ah-sec acq-ah">${acuseCuadroHtml(true)}</section>`;
   // parte del dia
   let tot = 0, sinEnv = 0;
   try { const d = parteVivoDatos(pedHoy()); d.hojas.forEach(h => { tot += h.filas.length; sinEnv += h.filas.filter(f => f.enviado === false).length; }); } catch(e) {}
@@ -12268,8 +12354,8 @@ function ahoraPintar(){
   if(ultScr && Date.now() - ultScr.ts >= 7 * 86400e3) alertas.push({ txt: 'Scraper: el último lanzamiento fue hace ' + Math.floor((Date.now() - ultScr.ts) / 86400e3) + ' días', ir: 'tabScr' });
   const atrasados = (PEDIDOS || []).filter(p => p.estado === 'pendiente' && pedFechaDe(p) < hoyP).length;
   if(atrasados) alertas.push({ txt: atrasados + ' pedido' + (atrasados === 1 ? '' : 's') + ' de días anteriores sin hacer', ir: 'tabPed' });
-  const pedSin = peds.filter(p => (p.creadoTs || 0) >= ACUSE_DESDE && Date.now() - p.creadoTs > 30 * 60e3 && acuseEstado('pedido', p.id).visto === 0);
-  pedSin.forEach(p => alertas.push({ txt: 'Nadie vio todavía: ' + pedTitulo(p) + ' (cargado ' + hhmmDeTs(p.creadoTs) + ')', ir: 'tabPed' }));
+  const pedSin = peds.filter(p => (p.creadoTs || 0) >= ACUSE_DESDE && Date.now() - p.creadoTs > 30 * 60e3 && !ACUSES.some(a => a.tipo === 'pedido' && a.ref === p.id && a.vistoTs && a.uid !== HAB.uid));
+  pedSin.forEach(p => alertas.push({ txt: 'Ningún otro equipo lo vio todavía: ' + pedTitulo(p) + ' (cargado ' + hhmmDeTs(p.creadoTs) + ')', ir: 'tabPed' }));
   if(alertas.length){
     html += `<section class="ah-sec"><div class="ah-tit atn">Atención</div>${alertas.slice(0, 5).map(a => `<button type="button" class="ah-alerta" data-ir="${a.ir}">${avisoEsc(a.txt)}</button>`).join('')}</section>`;
   }
@@ -12306,7 +12392,7 @@ setInterval(() => { if(ahoraVisible()) ahoraPintar(); }, 60e3);
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202611040800;
+var APP_VERSION = 202611040840;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
