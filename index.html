@@ -12375,15 +12375,17 @@ function acusePintarCuadros(){
 // ---------------- Panel "Ahora" (solo en pantallas anchas: la compu) ----------------
 function ahoraVisible(){ const a = document.getElementById('iniAhora'); return a && document.body.classList.contains('modo-inicio') && window.matchMedia('(min-width: 1200px)').matches; }
 var ahoraTimer = null;
+// liviano para compus lentas: se redibuja como mucho una vez cada 1,5 s, solo con la app a la vista,
+// sin bajar el historial (31 dias) y con las cuentas del parte recalculadas cada 30 s
 function ahoraRender(){
   clearTimeout(ahoraTimer);
-  ahoraTimer = setTimeout(ahoraPintar, 250);
+  ahoraTimer = setTimeout(() => { if(!document.hidden) ahoraPintar(); }, 1500);
 }
+var ahoraParteCache = { ts: 0, tot: 0, sin: 0 };
 function ahoraPintar(){
   if(!ahoraVisible()) return;
   const el = document.getElementById('iniAhora');
   acuseLeerPresencia();
-  iniciarTendenciaSync();
   const hoyP = pedHoy();
   const peds = (PEDIDOS || []).filter(p => p.estado === 'pendiente' && pedFechaDe(p) <= hoyP)
     .sort((a, b) => ((b.prioridad === 'urgente') - (a.prioridad === 'urgente')) || (pedFechaDe(a).localeCompare(pedFechaDe(b))) || ((a.creadoTs || 0) - (b.creadoTs || 0)));
@@ -12414,15 +12416,19 @@ function ahoraPintar(){
   // entrega a los equipos (cuadro aparte)
   html += `<section class="ah-sec acq-ah">${acuseCuadroHtml(true)}</section>`;
   // parte del dia
-  let tot = 0, sinEnv = 0;
-  try { const d = parteVivoDatos(pedHoy()); d.hojas.forEach(h => { tot += h.filas.length; sinEnv += h.filas.filter(f => f.enviado === false).length; }); } catch(e) {}
+  if(Date.now() - ahoraParteCache.ts > 30e3){
+    let t = 0, sn = 0;
+    try { const d = parteVivoDatos(pedHoy()); d.hojas.forEach(h => { t += h.filas.length; sn += h.filas.filter(f => f.enviado === false).length; }); } catch(e) {}
+    ahoraParteCache = { ts: Date.now(), tot: t, sin: sn };
+  }
+  const tot = ahoraParteCache.tot, sinEnv = ahoraParteCache.sin;
   const abiertos = POZOS.filter(p => p.estado === 'Abierto').length;
   html += `<section class="ah-sec"><button type="button" class="ah-tit" data-ir="tabParte">Parte del día ›</button>
     <div class="ah-nums"><div><b>${tot}</b><span>novedades</span></div><div><b class="${sinEnv ? 'amb' : ''}">${sinEnv}</b><span>sin enviar</span></div><div><b>${abiertos}</b><span>pozos abiertos</span></div></div></section>`;
   // atencion
   const alertas = [];
   const ultStock = {};
-  (HIST || []).filter(h => h.tipo === 'stock' && h.ts > Date.now() - 7 * 86400e3).sort((a, b) => b.ts - a.ts).forEach(h => { if(!ultStock[h.equipo]) ultStock[h.equipo] = h; });
+  (tendSyncIniciado ? (HIST || []) : []).filter(h => h.tipo === 'stock' && h.ts > Date.now() - 7 * 86400e3).sort((a, b) => b.ts - a.ts).forEach(h => { if(!ultStock[h.equipo]) ultStock[h.equipo] = h; });
   Object.values(ultStock).filter(h => h.vals && h.vals.iny === 0).forEach(h => alertas.push({ txt: 'Químico ' + h.equipo + ': inyección parada (' + qcCuando(h.ts) + ')', ir: 'tabQuim' }));
   const ultScr = (SCRAPER || []).slice().sort((a, b) => b.ts - a.ts)[0];
   if(ultScr && Date.now() - ultScr.ts >= 7 * 86400e3) alertas.push({ txt: 'Scraper: el último lanzamiento fue hace ' + Math.floor((Date.now() - ultScr.ts) / 86400e3) + ' días', ir: 'tabScr' });
@@ -12445,7 +12451,7 @@ function ahoraPintar(){
   el.querySelectorAll('[data-ir]').forEach(b => b.addEventListener('click', () => { const t = document.getElementById(b.dataset.ir); if(t) t.click(); }));
 }
 window.addEventListener('resize', () => ahoraRender());
-setInterval(() => { if(ahoraVisible()) ahoraPintar(); }, 60e3);
+setInterval(() => { if(ahoraVisible() && !document.hidden) ahoraPintar(); }, 60e3);
 
 // alto del encabezado (para ubicar el menu lateral de Supervisores justo debajo)
 (function(){
@@ -12474,7 +12480,7 @@ setInterval(() => { if(ahoraVisible()) ahoraPintar(); }, 60e3);
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202611041055;
+var APP_VERSION = 202611041200;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
