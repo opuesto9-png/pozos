@@ -1613,6 +1613,26 @@
   .acq-c{ display:flex; flex-direction:column; gap:1px; padding:6px 10px; background: var(--bg); border-radius:6px; font-size:.8rem; }
   .acq-n{ display:flex; justify-content:space-between; gap:8px; } .acq-n i{ font-style:normal; font-size:.72rem; color:#9FB3C3; }
   .acq-ah .acq-tit{ font-size:.74rem; letter-spacing:.08em; text-transform:uppercase; color:#C3A6EA; margin:0; } .acq-ah .acq-tit span{ text-transform:none; letter-spacing:0; }
+  /* compu: las solapas de la seccion van arriba, al lado del titulo (lejos de los botones de enviar partes) */
+  @media (min-width: 1000px){
+    body.modo-seccion header{ display:flex; flex-wrap:wrap; align-items:center; column-gap:28px; }
+    body.modo-seccion header > *{ flex-basis:100%; }
+    body.modo-seccion .nav-seccion{ order:1; flex-basis:auto; margin:0; }
+    body.modo-seccion .tabs{ order:2; flex-basis:auto; margin:0; gap:8px; }
+    body.modo-seccion .tabs .tab-btn{ font-size:.92rem; padding:9px 18px; }
+    body.modo-seccion header > :not(.nav-seccion):not(.tabs){ order:3; }
+    body.modo-seccion .status-bar{ margin-top:8px; }
+  }
+  /* Supervisores en la compu ancha: las solapas Por hacer / Ciclaje como menu al costado izquierdo de la lista */
+  @media (min-width: 1300px){
+    body.modo-seccion.sec-tabPed .tabs, body.modo-seccion.sec-tabCiclaje .tabs{
+      position:fixed; top:calc(var(--hdr-h, 170px) + 24px); left:calc(50% - 564px); width:220px; z-index:4;
+      flex-direction:column; flex-wrap:nowrap; gap:8px; margin:0; }
+    body.modo-seccion.sec-tabPed .tabs .tab-btn, body.modo-seccion.sec-tabCiclaje .tabs .tab-btn{
+      width:100%; text-align:left; font-size:1rem; padding:14px 18px; border-radius:12px; }
+    body.modo-seccion.sec-tabPed .tabs::before, body.modo-seccion.sec-tabCiclaje .tabs::before{
+      content:'SUPERVISORES'; font-size:.72rem; font-weight:700; letter-spacing:.1em; color:#9FB3C3; margin:0 0 2px 4px; }
+  }
 </style>
 </head>
 <body>
@@ -12427,6 +12447,14 @@ function ahoraPintar(){
 window.addEventListener('resize', () => ahoraRender());
 setInterval(() => { if(ahoraVisible()) ahoraPintar(); }, 60e3);
 
+// alto del encabezado (para ubicar el menu lateral de Supervisores justo debajo)
+(function(){
+  const h = document.querySelector('header');
+  if(!h) return;
+  const fijar = () => document.documentElement.style.setProperty('--hdr-h', h.offsetHeight + 'px');
+  fijar();
+  if(window.ResizeObserver) new ResizeObserver(fijar).observe(h); else window.addEventListener('resize', fijar);
+})();
 // ---------------- Anti doble toque en botones de guardar/enviar ----------------
 // Si se toca el MISMO boton de guardar o enviar otra vez antes de 2,5 s, el segundo toque no hace nada
 // (evita registros repetidos cuando parece que "no llego" y se vuelve a tocar).
@@ -12446,7 +12474,7 @@ setInterval(() => { if(ahoraVisible()) ahoraPintar(); }, 60e3);
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202611041040;
+var APP_VERSION = 202611041055;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
