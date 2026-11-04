@@ -9285,7 +9285,6 @@ function renderPedidos(){
       <button type="button" class="ped-copiar-btn" id="pedCopiarBtn">Copiar resumen para WhatsApp</button>
     </div>
     <p class="ped-resumen">${esHoy && alamPendHoy().length ? `Equipo de alambre: <b>${alamPendHoy().length}</b> para hacer · ` : ''}${esHoy && cicPorHacer().length ? `Ciclaje de hoy: <b>${cicPorHacer().filter(i => i.hecho).length} de ${cicPorHacer().length}</b> maniobras hechas · ` : ''}${total ? `${esHoy ? 'Pedidos de hoy' : 'Ese día'}: <b>${hechos.length} de ${total}</b> hechos${pend.length ? ' · ' + pend.length + ' pendiente' + (pend.length === 1 ? '' : 's') : ''}${nos.length ? ' · ' + nos.length + ' no se pudo' : ''}` : (esHoy ? 'Todavía no hay pedidos para hoy.' : (pedDiaSel > hoy ? 'Todavía no hay pedidos cargados para ese día.' : 'No hubo pedidos ese día.'))}</p>
-    <div id="acuseCuadro" class="acq"></div>
     <div id="pedLista"></div>`;
   const nuevoBtn = document.getElementById('pedNuevoBtn');
   if(nuevoBtn) nuevoBtn.addEventListener('click', () => abrirPedidoForm());
@@ -12944,7 +12943,7 @@ window.addEventListener('error', (ev) => {
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202611041600;
+var APP_VERSION = 202611041700;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
