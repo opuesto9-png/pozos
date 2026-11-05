@@ -9892,8 +9892,12 @@ function tendRefrescarSiAbierta(){
 function tendSeries(){
   const desde = Date.now() - tendDias * 86400e3;
   const out = {};
+  // ultima lectura de ANTES del periodo: se suma como punto de partida, asi "24 h" compara contra la
+  // medicion anterior aunque haya sido ayer un poco mas temprano (ej: ayer 09:20 y hoy 10:15)
+  const previas = {};
   const add = (id, base, ts, v, por) => {
-    if(v === null || v === undefined || ts < desde) return;
+    if(v === null || v === undefined) return;
+    if(ts < desde){ if(ts >= desde - 3 * 86400e3 && (!previas[id] || ts > previas[id].ts)) previas[id] = { ts, v, por: por || '', ancla: true }; return; }
     if(!out[id]) out[id] = Object.assign({ id, puntos: [] }, base);
     out[id].puntos.push({ ts, v, por: por || '' });
   };
@@ -9951,6 +9955,7 @@ function tendSeries(){
     pts.push({ ts: Date.now(), v: ahora[u].ab, por: 'ahora' });
     out[id] = { id, sector: 'gas', nombre: u.replace('USPA', 'USPA '), que: 'pozos abiertos', unidad: 'de ' + ahora[u].tot, puntos: pts };
   });
+  Object.keys(previas).forEach(id => { if(out[id] && out[id].puntos) out[id].puntos.push(previas[id]); });
   return Object.values(out).map(s => { s.puntos.sort((a, b) => a.ts - b.ts); return s; });
 }
 
@@ -10036,7 +10041,7 @@ function renderTendencia(){
     html += `<button type="button" class="td-card${abierta ? ' abierta' : ''}" data-tid="${parteEsc(s.id)}" aria-expanded="${abierta}">
       <span class="td-top"><b>${parteEsc(s.nombre)}</b><em>${parteEsc(s.que)}</em></span>
       <span class="td-val"><span class="td-num">${tendFmt(ult.v)}</span><span class="td-uni">${parteEsc(s.unidad)}</span>
-        ${s.puntos.length >= 2 ? `<span class="td-delta">${d > 0 ? '▲' : (d < 0 ? '▼' : '=')} ${tendFmt(Math.abs(d))} en ${periodoTxt}</span>` : '<span class="td-delta">1 dato</span>'}</span>
+        ${s.puntos.length >= 2 ? `<span class="td-delta">${d > 0 ? '▲' : (d < 0 ? '▼' : '=')} ${tendFmt(Math.abs(d))} ${pri.ancla ? 'desde el ' + tendFechaHora(pri.ts) : 'en ' + periodoTxt}</span>` : '<span class="td-delta">1 dato</span>'}</span>
       ${sp ? `<svg viewBox="0 0 300 80" preserveAspectRatio="none" class="td-spark" role="img" aria-label="${parteEsc(s.nombre + ', ' + s.que + ': de ' + tendFmt(pri.v) + ' a ' + tendFmt(ult.v) + (baches.length ? ', con ' + baches.length + ' período(s) sin datos' : ''))}">${sp.huecos}<line x1="0" y1="79" x2="300" y2="79" class="td-base"></line>${sp.area ? `<path d="${sp.area}" class="td-area"></path>` : ''}<path d="${sp.linea}" class="td-linea"></path>${sp.sueltos}</svg>
         <span class="td-rango">mín ${tendFmt(sp.min)} · máx ${tendFmt(sp.max)} · ${s.puntos.length} datos</span>` : '<span class="td-rango">Falta historia para la curva</span>'}
       ${baches.length ? `<span class="td-bache">Sin datos ${baches.slice(-2).map(tendBacheTxt).join(' y ')}${baches.length > 2 ? ' (y ' + (baches.length - 2) + ' más)' : ''}</span>` : ''}
@@ -12975,7 +12980,7 @@ window.addEventListener('error', (ev) => {
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202611050830;
+var APP_VERSION = 202611051030;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
