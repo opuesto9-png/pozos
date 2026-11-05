@@ -1331,7 +1331,9 @@
   .cic-edit{ font: inherit; font-size:.75rem; font-weight:700; padding:6px 10px; border-radius:7px; cursor:pointer; background:none; border:1px solid #7FC4DE; color:#7FC4DE; white-space:nowrap; }
   .cic-card.sug{ opacity:.9; border-style:dashed; }
   .cic-it em.no{ color:#F2A08F; }
-  .cic-frow{ display:grid; grid-template-columns: 1fr 1fr 36px; gap:6px; margin-bottom:6px; align-items:center; }
+  .cic-frow{ display:grid; grid-template-columns: 1fr 1fr minmax(84px, auto) 36px; gap:6px; margin-bottom:6px; align-items:center; }
+  .cic-ftu{ font-size:.72rem; color: var(--muted); line-height:1.2; }
+  .cic-cruce{ color:#A9C9E0; border-top:1px dashed var(--line); padding-top:5px; margin-top:6px; }
   /* ---------- aviso de version nueva ---------- */
   #actualizarApp{ position:fixed; inset:0; z-index:9500; background:rgba(4,14,22,.9); display:flex; align-items:center; justify-content:center; padding:18px; box-sizing:border-box; }
   #actualizarApp .ua-card{ width:100%; max-width:420px; background: var(--panel); border:2px solid #6FC9B0; border-radius:16px; padding:24px 20px; box-sizing:border-box; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.5); }
@@ -7721,7 +7723,7 @@ function cicHayPlan(fecha){ return cicPlanDe(fecha).length > 0; }
 // estado de las maniobras planificadas de un pozo en un dia: cada apertura/cierre cargado tacha la proxima del mismo tipo
 function cicEstadoPlan(fecha, pozo){
   const items = [];
-  cicPlanDe(fecha).filter(p => p.pozo === pozo).forEach(p => (p.maniobras || []).forEach(m => items.push({ planId: p.id, turno: p.turno, tipo: m.tipo, hora: m.hora, orden: cicOrden(m.hora) })));
+  cicPlanDe(fecha).filter(p => p.pozo === pozo).forEach(p => (p.maniobras || []).forEach(m => items.push({ planId: p.id, turno: m.hora ? cicTurnoDeHora(m.hora) : p.turno, tipo: m.tipo, hora: m.hora, orden: cicOrden(m.hora) })));
   items.sort((x, y) => x.orden - y.orden);
   const ini = cicInicioDia(fecha), fin = ini + 86400e3;
   CICLO_EV.filter(e => e.pozo === pozo && e.ts >= ini && e.ts < fin).sort((x, y) => x.ts - y.ts).forEach(e => {
@@ -7841,12 +7843,19 @@ function cicBarraDias(){
 }
 
 // una tarjeta de pozo con sus maniobras (plan) y el estado de cada una
-function cicTarjetaPlan(doc, fecha, enCompu){
+function cicTarjetaPlan(doc, fecha, enCompu, turnoVista){
   const r = POZOS.find(x => x.pozo === doc.pozo) || { pozo: doc.pozo, bateria: 'Sin bateria' };
   const bat = r.bateria || 'Sin bateria';
   const hoy = cicHoy();
-  const items = fecha <= hoy ? cicEstadoPlan(fecha, doc.pozo).filter(i => i.planId === doc.id || (i.extra && i.turno === doc.turno))
-    : (doc.maniobras || []).map(m => ({ tipo: m.tipo, hora: m.hora, orden: cicOrden(m.hora) })).sort((x, y) => x.orden - y.orden);
+  const tv = turnoVista || doc.turno;
+  const todosPozo = fecha <= hoy ? cicEstadoPlan(fecha, doc.pozo)
+    : cicPlanDe(fecha).filter(p => p.pozo === doc.pozo).reduce((l, p) => l.concat((p.maniobras || []).map(m => ({ planId: p.id, tipo: m.tipo, hora: m.hora, turno: m.hora ? cicTurnoDeHora(m.hora) : p.turno, orden: cicOrden(m.hora) }))), []).sort((x, y) => x.orden - y.orden);
+  const items = todosPozo.filter(i => (i.planId === doc.id || i.extra) && i.turno === tv);
+  // la misma maniobra cruzada entre turnos (ej: cierra 17:00 en el turno dia y abre 02:00 en el turno noche)
+  const otros = todosPozo.filter(i => !i.extra && i.turno !== tv);
+  const otroT = tv === 'dia' ? 'noche' : 'dia';
+  const verboH = (i) => i.hecho ? (i.tipo === 'abrir' ? 'abierto ' : 'cerrado ') + (i.hecho.hora || i.hora) : (i.tipo === 'abrir' ? 'abrir ' : 'cerrar ') + i.hora;
+  const cruce = otros.length ? (tv === 'noche' ? 'Viene del turno día: ' : 'Sigue en el turno noche: ') + otros.map(verboH).join(' · ') : '';
   const card = document.createElement('div');
   card.className = 'cic-card';
   const estado = r.estado === 'Abierto' ? 'abierto' : (r.estado === 'Cerrado' ? 'cerrado' : 'sd');
@@ -7856,7 +7865,8 @@ function cicTarjetaPlan(doc, fecha, enCompu){
       ${enCompu ? '<button type="button" class="cic-edit">Editar</button><button class="cr-remove" title="Quitar del ciclaje de este día">&times;</button>' : ''}
     </div>
     ${doc.nota ? `<div class="cic-ref">${avisoEsc(doc.nota)}</div>` : ''}
-    <div class="cic-items"></div>`;
+    <div class="cic-items"></div>
+    ${cruce ? `<div class="cic-ref cic-cruce">${tv === 'noche' ? '☀' : '☾'} ${avisoEsc(cruce)}</div>` : ''}`;
   const cont = card.querySelector('.cic-items');
   const primeraPend = fecha === hoy ? items.findIndex(i => !i.hecho && !i.extra) : -1;
   items.forEach((it, k) => {
@@ -7872,13 +7882,20 @@ function cicTarjetaPlan(doc, fecha, enCompu){
   });
   card.querySelector('.cic-pozo').addEventListener('click', () => { if(r.pozo && POZOS.includes(r)) openCard(r, bat); });
   const ed = card.querySelector('.cic-edit');
-  if(ed) ed.addEventListener('click', () => cicAbrirForm({ doc }));
+  if(ed) ed.addEventListener('click', () => cicAbrirForm({ doc, pozo: doc.pozo }));
   const rm = card.querySelector('.cr-remove');
   if(rm) rm.addEventListener('click', () => {
-    if(!confirm('¿Sacar ' + doc.pozo + ' del ' + CIC_TURNOS[doc.turno].toLowerCase() + ' de este día?')) return;
+    if(!confirm('¿Sacar ' + doc.pozo + ' del ' + CIC_TURNOS[tv].toLowerCase() + ' de este día?')) return;
     if(!puedeModificar()) return;
-    db.collection('ciclaje_plan').doc(doc.id).delete().catch(e => alert('No se pudo (' + e.message + ').'));
-    CIC_PLAN = CIC_PLAN.filter(x => x.id !== doc.id);
+    const quedan = (doc.maniobras || []).filter(m => m.hora && cicTurnoDeHora(m.hora) !== tv);
+    if(quedan.length){
+      // documento viejo con maniobras de los dos turnos: se sacan solo las de este turno
+      db.collection('ciclaje_plan').doc(doc.id).update({ maniobras: quedan, turno: otroT }).catch(e => alert('No se pudo (' + e.message + ').'));
+      doc.maniobras = quedan; doc.turno = otroT;
+    } else {
+      db.collection('ciclaje_plan').doc(doc.id).delete().catch(e => alert('No se pudo (' + e.message + ').'));
+      CIC_PLAN = CIC_PLAN.filter(x => x.id !== doc.id);
+    }
     renderCiclaje();
   });
   return card;
@@ -7916,11 +7933,12 @@ function renderCiclaje(){
   if(plan.length){
     const turnos = (fecha === hoy && turnoAct === 'noche') ? ['noche', 'dia'] : ['dia', 'noche'];
     turnos.forEach(t => {
-      const docs = plan.filter(p => p.turno === t).sort((x, y) => cicOrden(((x.maniobras || [])[0] || {}).hora) - cicOrden(((y.maniobras || [])[0] || {}).hora));
+      const manT = (p) => (p.maniobras || []).filter(m => (m.hora ? cicTurnoDeHora(m.hora) : p.turno) === t);
+      const docs = plan.filter(p => manT(p).length).sort((x, y) => cicOrden((manT(x)[0] || {}).hora) - cicOrden((manT(y)[0] || {}).hora));
       const g = document.createElement('div');
       g.innerHTML = `<div class="ped-grupo">${t === 'dia' ? '☀' : '☾'} ${CIC_TURNOS[t]}${fecha === hoy && t === turnoAct ? ' · <span style="color:#E8B64A">turno actual</span>' : ''} (${docs.length})</div>`;
       if(!docs.length) g.insertAdjacentHTML('beforeend', '<div class="cic-vacio" style="margin-bottom:8px">Sin pozos para ciclar en este turno.</div>');
-      docs.forEach(d => g.appendChild(cicTarjetaPlan(d, fecha, enCompu)));
+      docs.forEach(d => g.appendChild(cicTarjetaPlan(d, fecha, enCompu, t)));
       cuerpo.appendChild(g);
     });
   } else {
@@ -7994,17 +8012,19 @@ function cicCopiarDia(desde, hasta){
 function cicAbrirForm(opt){
   const doc = opt.doc || null;
   const fecha = doc ? doc.fecha : cicDiaSel;
-  let man = (doc ? doc.maniobras : opt.maniobras || []).map(m => ({ tipo: m.tipo, hora: m.hora }));
-  if(!man.length) man = [{ tipo: 'abrir', hora: '' }, { tipo: 'cerrar', hora: '' }];
-  let turno = doc ? doc.turno : (man[0] && man[0].hora ? cicTurnoDeHora(man[0].hora) : 'dia');
-  // si viene una sugerencia con maniobras de los dos turnos, se carga solo la del turno elegido
-  const todas = man.slice();
-  if(!doc && todas.some(m => m.hora)) man = todas.filter(m => !m.hora || cicTurnoDeHora(m.hora) === turno);
+  // se editan juntas TODAS las maniobras del pozo en ese dia (turno dia y turno noche): cada una cae en su
+  // turno segun la hora (ej: cerrar 17:00 = turno dia, abrir 02:00 = turno noche del mismo dia de ciclaje)
+  const docsPozo = doc ? cicPlanDe(fecha).filter(p => p.pozo === doc.pozo) : [];
+  let man = (docsPozo.length ? docsPozo.reduce((l, p) => l.concat(p.maniobras || []), []) : (opt.maniobras || [])).map(m => ({ tipo: m.tipo, hora: m.hora }))
+    .sort((x, y) => cicOrden(x.hora) - cicOrden(y.hora));
+  if(!man.length) man = [{ tipo: 'cerrar', hora: '' }, { tipo: 'abrir', hora: '' }];
+  const tuTxt = (h) => !/^\d{1,2}:\d{2}/.test(h || '') ? '' : (cicTurnoDeHora(h) === 'dia' ? '☀ turno día' : '☾ turno noche' + (parseInt(h, 10) < TURNO_DIA_INI ? ' (madrugada)' : ''));
   window._currentCardRec = null;
   const card = document.getElementById('card');
   const filas = () => man.map((m, i) => `<div class="cic-frow" data-i="${i}">
       <select class="edit-input cic-ftipo" aria-label="Maniobra"><option value="abrir" ${m.tipo === 'abrir' ? 'selected' : ''}>Abrir</option><option value="cerrar" ${m.tipo === 'cerrar' ? 'selected' : ''}>Cerrar</option></select>
       <input type="time" class="edit-input time-input cic-fhora" value="${m.hora || ''}" aria-label="Hora">
+      <span class="cic-ftu">${tuTxt(m.hora)}</span>
       <button type="button" class="cr-remove cic-fx" aria-label="Quitar maniobra">&times;</button></div>`).join('');
   card.innerHTML = `
     <div class="card-head">
@@ -8014,9 +8034,8 @@ function cicAbrirForm(opt){
     <div class="time-label">Pozo</div>
     <input type="text" class="edit-input" id="cicFPozo" list="cicFPozoDl" placeholder="ej: 1559" value="${avisoEsc(doc ? doc.pozo : (opt.pozo || ''))}" autocomplete="off">
     <datalist id="cicFPozoDl">${POZOS.map(p => `<option value="${avisoEsc(p.pozo)}">`).join('')}</datalist>
-    <div class="time-label" style="margin-top:8px">Turno</div>
-    <div class="estado-toggle" style="margin:0"><button type="button" class="estado-btn abierto${turno === 'dia' ? ' active' : ''}" data-tu="dia">☀ DÍA (07-19)</button><button type="button" class="estado-btn cerrado${turno === 'noche' ? ' active' : ''}" data-tu="noche">☾ NOCHE (19-07)</button></div>
     <div class="time-label" style="margin-top:8px">Maniobras (las horas son de referencia)</div>
+    <div class="edit-hint">Cargá todas las del pozo en el día, aunque pasen de un turno al otro (ej: cerrar 17:00 y abrir 02:00). Cada maniobra queda sola en su turno según la hora. El día de ciclaje va de 07:00 a 07:00: lo de la madrugada va en el turno noche de este día.</div>
     <div id="cicFRows">${filas()}</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
       <button type="button" class="ped-copiar-btn" id="cicFMas" style="flex:1">+ Agregar maniobra</button>
@@ -8034,17 +8053,17 @@ function cicAbrirForm(opt){
   const pintarFilas = () => {
     $('cicFRows').innerHTML = filas();
     card.querySelectorAll('.cic-fx').forEach(b => b.addEventListener('click', () => { leer(); man.splice(parseInt(b.closest('.cic-frow').dataset.i, 10), 1); pintarFilas(); }));
+    card.querySelectorAll('.cic-fhora').forEach(i => i.addEventListener('input', () => { i.closest('.cic-frow').querySelector('.cic-ftu').textContent = tuTxt(i.value); }));
   };
   pintarFilas();
   $('closeBtn').addEventListener('click', closeCard);
   $('cicFCancel').addEventListener('click', closeCard);
-  card.querySelectorAll('[data-tu]').forEach(b => b.addEventListener('click', () => { turno = b.dataset.tu; card.querySelectorAll('[data-tu]').forEach(x => x.classList.toggle('active', x === b)); }));
   $('cicFMas').addEventListener('click', () => { leer(); const ult = man[man.length - 1]; man.push({ tipo: ult && ult.tipo === 'abrir' ? 'cerrar' : 'abrir', hora: '' }); pintarFilas(); });
   $('cicFSug').addEventListener('click', () => {
     const r = POZOS.find(x => x.pozo === pedNormPozo($('cicFPozo').value));
     if(!r){ $('cicFErr').textContent = 'Primero elegí el pozo.'; $('cicFErr').style.display = ''; return; }
-    const l = cicSugerencia(r, fecha).filter(m => cicTurnoDeHora(m.hora) === turno);
-    if(!l.length){ $('cicFErr').textContent = 'Ese pozo no tiene horario ni ciclo que caiga en el ' + CIC_TURNOS[turno].toLowerCase() + '.'; $('cicFErr').style.display = ''; return; }
+    const l = cicSugerencia(r, fecha);
+    if(!l.length){ $('cicFErr').textContent = 'Ese pozo no tiene horario ni ciclo para este día.'; $('cicFErr').style.display = ''; return; }
     $('cicFErr').style.display = 'none';
     man = l.map(m => ({ tipo: m.tipo, hora: m.hora })); pintarFilas();
   });
@@ -8057,13 +8076,26 @@ function cicAbrirForm(opt){
     if(!POZOS.some(p => p.pozo === pozo)) msg = 'No encontré el pozo ' + (pozo || '') + ' en la lista.';
     else if(!maniobras.length) msg = 'Cargá al menos una maniobra con su hora.';
     if(msg){ err.textContent = msg; err.style.display = ''; return; }
+    if(!doc && cicPlanDe(fecha).some(p => p.pozo === pozo) && !confirm(pozo + ' ya tiene maniobras cargadas en este día.\n\n¿Reemplazarlas por estas? (Para sumarle maniobras, mejor tocá "Editar" en su tarjeta.)')) return;
     if(!puedeModificar()) return;
     if(!firestoreOk){ alert('No hay conexion con el guardado compartido. Revisa tu internet e intenta de nuevo.'); return; }
-    const id = fecha + '_' + turno + '_' + pozo;
-    const datos = { fecha, turno, pozo, maniobras, nota: $('cicFNota').value.trim(), creadoPor: operadorName || 'Sin nombre', creadoTs: doc ? (doc.creadoTs || Date.now()) : Date.now() };
-    if(doc && doc.id !== id){ db.collection('ciclaje_plan').doc(doc.id).delete().catch(() => {}); CIC_PLAN = CIC_PLAN.filter(x => x.id !== doc.id); }
-    db.collection('ciclaje_plan').doc(id).set(datos).catch(e => alert('No se pudo guardar (' + e.message + ').'));
-    CIC_PLAN = CIC_PLAN.filter(x => x.id !== id).concat([Object.assign({ id }, datos)]);
+    // un documento por turno: las maniobras se reparten solas segun su hora
+    const nota = $('cicFNota').value.trim();
+    const creadoTs = doc ? (doc.creadoTs || Date.now()) : Date.now();
+    const nuevosIds = [];
+    ['dia', 'noche'].forEach(t => {
+      const mt = maniobras.filter(m => cicTurnoDeHora(m.hora) === t);
+      if(!mt.length) return;
+      const id = fecha + '_' + t + '_' + pozo;
+      const datos = { fecha, turno: t, pozo, maniobras: mt, nota, creadoPor: operadorName || 'Sin nombre', creadoTs };
+      db.collection('ciclaje_plan').doc(id).set(datos).catch(e => alert('No se pudo guardar (' + e.message + ').'));
+      CIC_PLAN = CIC_PLAN.filter(x => x.id !== id).concat([Object.assign({ id }, datos)]);
+      nuevosIds.push(id);
+    });
+    // lo que estaba guardado antes para este pozo (o el pozo anterior, si se cambio) y ya no corresponde, se borra
+    const viejos = cicPlanDe(fecha).filter(p => (p.pozo === pozo || (doc && p.pozo === doc.pozo)) && !nuevosIds.includes(p.id));
+    viejos.forEach(p => { db.collection('ciclaje_plan').doc(p.id).delete().catch(() => {}); });
+    CIC_PLAN = CIC_PLAN.filter(x => !viejos.includes(x));
     // si estaba sacado de los sugeridos y lo cargan a mano, vuelve a quedar en ciclaje
     const recP = POZOS.find(p => p.pozo === pozo);
     if(recP && recP.enCiclaje === false){ recP.enCiclaje = true; recP._edited = true; saveEdit(pozo, { enCiclaje: true }); }
@@ -12943,7 +12975,7 @@ window.addEventListener('error', (ev) => {
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202611041700;
+var APP_VERSION = 202611050830;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
