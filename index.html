@@ -9169,9 +9169,17 @@ function pedBuscarCumplimiento(p){
         : 'Cerrado ' + r.horaCierre + (r.presionCierre ? ' · ' + r.presionCierre + ' kg/cm²' : '');
       return { por: r.operador, ts: pedTs(r), ev };
     }
+    // ya estaba hecho ANTES de que se cargara el pedido (ej: se cerro el pozo y despues el supervisor
+    // cargo "cerrar"): si el pozo sigue en ese estado y la maniobra fue en el mismo dia, queda hecho
+    const previo = pedHechoAntes(p, r);
+    if(previo) return previo;
   } else if(p.tipo === 'velas'){
     const v = VELAS.filter(x => x.pozo === p.objetivo && desp(x)).sort((a, b) => pedTs(a) - pedTs(b))[0];
     if(v) return { por: v.operador, ts: pedTs(v), ev: fraseVela(v.tipo, v.numero) };
+    // vela lanzada el mismo dia pero antes del pedido: se pregunta "¿Es esto?" (puede que quieran otra)
+    const ini = pedInicioDia(pedFechaDe(p));
+    const va = VELAS.filter(x => x.pozo === p.objetivo && pedTs(x) >= ini && pedTs(x) <= (p.creadoTs || 0) && pedTs(x) > (p.ignorarHasta || 0)).sort((a, b) => pedTs(b) - pedTs(a))[0];
+    if(va) return { posible: true, por: va.operador, ts: pedTs(va), ev: fraseVela(va.tipo, va.numero) + ' (antes del pedido)' };
   } else if(p.tipo === 'aib'){
     const r = AIB_POZOS.find(x => x.pozo === p.objetivo);
     if(r && desp(r)) return { por: r.operador, ts: pedTs(r), ev: buildAibNovedad(r) };
@@ -9186,6 +9194,28 @@ function pedBuscarCumplimiento(p){
     const l = COMP_LECT.filter(x => x.unidad === p.objetivo && desp(x)).sort((a, b) => pedTs(a) - pedTs(b))[0];
     if(l) return { por: l.operador, ts: pedTs(l), ev: compNovedad(l) };
   }
+  return null;
+}
+
+function pedHechoAntes(p, r){
+  if(!r || !p.creadoTs) return null;
+  const quiere = p.tipo === 'abrir' ? 'Abierto' : 'Cerrado';
+  if(r.estado !== quiere) return null;
+  const ini = pedInicioDia(pedFechaDe(p));
+  const tipoM = p.tipo === 'abrir' ? 'abrir' : 'cerrar';
+  // ultima maniobra del pozo (registro de maniobras); tiene que ser la de este tipo, del mismo dia y antes del pedido
+  const ms = (MANIOBRAS || []).filter(e => e.pozo === r.pozo && e.ts).sort((a, b) => b.ts - a.ts);
+  const ult = ms[0];
+  if(ult){
+    if(ult.tipo !== tipoM || ult.ts > p.creadoTs + 60e3) return null;
+    // de un dia anterior: no se marca solo, se pregunta "¿Es esto?" (el pozo ya figuraba asi desde antes)
+    if(ult.ts < ini) return ult.ts > (p.ignorarHasta || 0) ? { posible: true, por: ult.por, ts: ult.ts, ev: (p.tipo === 'abrir' ? 'Ya figuraba abierto desde el ' : 'Ya figuraba cerrado desde el ') + tendFechaHora(ult.ts) } : null;
+    return { por: ult.por, ts: ult.ts, ev: (p.tipo === 'abrir' ? 'Ya estaba abierto: ' : 'Ya estaba cerrado: ') + ult.hora + ' (antes del pedido)' };
+  }
+  // sin registro de maniobras: la ficha del pozo (hora cargada el mismo dia, antes del pedido)
+  const campo = p.tipo === 'abrir' ? 'horaApertura' : 'horaCierre';
+  const t = pedTs(r);
+  if(r[campo] && t >= ini && t <= p.creadoTs + 60e3) return { por: r.operador, ts: t, ev: (p.tipo === 'abrir' ? 'Ya estaba abierto: ' : 'Ya estaba cerrado: ') + r[campo] + ' (antes del pedido)' };
   return null;
 }
 
@@ -13115,7 +13145,7 @@ window.addEventListener('error', (ev) => {
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202611060905;
+var APP_VERSION = 202611060945;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
