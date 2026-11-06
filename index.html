@@ -9619,7 +9619,8 @@ function abrirPedidoForm(){
   $('pedObj').addEventListener('input', () => { clearTimeout(trazaObjT); trazaObjT = setTimeout(() => appTraza('ped: escribe pozo "' + $('pedObj').value + '"'), 700); });
   card.querySelectorAll('[data-p]').forEach(b => b.addEventListener('click', () => { prio = b.dataset.p; card.querySelectorAll('[data-p]').forEach(x => x.classList.toggle('active', x === b)); }));
   pintar();
-  $('pedGuardar').addEventListener('click', () => {
+  const pedGuardarFn = () => {
+    pedGuardarCorrio = Date.now();
     appTraza('ped: guardar (' + tipo + ' "' + $('pedObj').value + '")');
     const t = pedTipo(tipo);
     const err = $('pedErr');
@@ -9658,8 +9659,25 @@ function abrirPedidoForm(){
     acuseMarcar('pedido', ref.id, true);
     try { renderPedidos(); pedActualizarInicio(); } catch(e){ appRegistrarError('pedidos: ' + (e && e.message)); }
     appTraza('ped: listo, formulario cerrado');
-  });
+  };
+  $('pedGuardar').addEventListener('click', pedGuardarFn);
+  $('pedGuardar').dataset.lst = '1';
+  window._pedGuardarFn = pedGuardarFn;
 }
+// Red de seguridad (compu de Scada: el clic llegaba al boton "Cargar pedido" pero el guardado no arrancaba).
+// Si un clic real en el boton no dispara el guardado en 400 ms, se anota y se ejecuta igual.
+var pedGuardarCorrio = 0;
+document.addEventListener('click', (e) => {
+  const b = e.target && e.target.closest ? e.target.closest('#pedGuardar') : null;
+  if(!b) return;
+  const t0 = Date.now();
+  appTraza('ped: clic boton (lst=' + (b.dataset.lst || '-') + ' conectado=' + b.isConnected + ' mismo=' + (document.getElementById('pedGuardar') === b) + ' ult=' + (b.dataset.ultToque ? (t0 - parseInt(b.dataset.ultToque, 10)) + 'ms' : '-') + ')');
+  setTimeout(() => {
+    if(pedGuardarCorrio >= t0) return;
+    appRegistrarError('pedido: el clic no disparó el guardado (se ejecuta igual)');
+    if(typeof window._pedGuardarFn === 'function' && b.isConnected && document.getElementById('overlay').classList.contains('show')) window._pedGuardarFn();
+  }, 400);
+}, true);
 
 function pedCopiarResumen(){
   const dia = (pedPuedeVerDias() && pedDiaSel) ? pedDiaSel : pedHoy();
@@ -13075,7 +13093,7 @@ window.addEventListener('error', (ev) => {
     const b = e.target && e.target.closest ? e.target.closest(SEL) : null;
     if(!b) return;
     const ahora = Date.now(), antes = parseInt(b.dataset.ultToque || '0', 10);
-    if(ahora - antes < 2500){ e.stopImmediatePropagation(); e.preventDefault(); return; }
+    if(ahora - antes < 2500){ try { appTraza('anti doble toque bloqueó ' + (b.id || (b.textContent || '').trim().slice(0, 20)) + ' (' + (ahora - antes) + 'ms)'); } catch(x) {} e.stopImmediatePropagation(); e.preventDefault(); return; }
     b.dataset.ultToque = String(ahora);
   }, true);
 })();
@@ -13085,7 +13103,7 @@ window.addEventListener('error', (ev) => {
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202611060830;
+var APP_VERSION = 202611060845;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
