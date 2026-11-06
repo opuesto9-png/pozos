@@ -1657,6 +1657,16 @@
   .alam-pozo-check{ display:flex; align-items:center; gap:10px; margin-top:8px; font-weight:700; font-size:.95rem; cursor:pointer; padding:10px 12px; border:1.5px dashed #574A86; border-radius:10px; background:#211D35; }
   .alam-pozo-check input{ width:22px; height:22px; accent-color:#9C86E0; }
   .alam-pozo-form{ margin-top:10px; }
+  #claveModal{ position:fixed; inset:0; z-index:100000; background:rgba(5,14,22,.72); display:flex; align-items:center; justify-content:center; padding:16px; }
+  #claveModal .clave-box{ background: var(--panel, #13293B); border:1px solid var(--line); border-radius:14px; padding:20px; width:min(380px, 100%); }
+  #claveModal h2{ margin:0 0 6px; font-size:1.1rem; }
+  #claveModal p{ margin:0 0 12px; font-size:.85rem; color: var(--muted); }
+  #claveModal input{ width:100%; box-sizing:border-box; font-size:1.1rem; }
+  .clave-err{ color:#FF8A7A; font-size:.85rem; min-height:1.2em; margin:6px 0; }
+  .clave-bot{ display:flex; gap:8px; } .clave-bot button{ flex:1 1 0; min-height:44px; }
+  .clave-no{ background:transparent; border:1px solid var(--line); color: var(--text); border-radius:10px; font:inherit; cursor:pointer; }
+  #dlgBloqAviso{ position:fixed; left:12px; right:12px; bottom:12px; z-index:99999; background:#5A2A1E; color:#FFE3DA; border:1px solid #C9664D; border-radius:12px; padding:12px 14px; font-size:.92rem; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  #dlgBloqAviso button{ background:#FFE3DA; color:#5A2A1E; border:0; border-radius:8px; padding:8px 12px; font:inherit; font-weight:700; cursor:pointer; }
 </style>
 </head>
 <body>
@@ -2420,7 +2430,9 @@ function habLatido(forzar){
   if(!forzar && (document.hidden || Date.now() - habUltimoLatido < 90e3)) return;
   habUltimoLatido = Date.now();
   db.collection('presencia').doc(HAB.uid).set({
-    operador: operadorName || '', ts: Date.now(), app: HAB_APP, tipo: habTipoDispositivo(), nombre: HAB.nombre || '', cerrada: false, ver: APP_VERSION
+    operador: operadorName || '', ts: Date.now(), app: HAB_APP, tipo: habTipoDispositivo(), nombre: HAB.nombre || '', cerrada: false, ver: APP_VERSION,
+    dlgBloq: !!(typeof dialogosBloqueadosFlag !== 'undefined' && dialogosBloqueadosFlag),
+    errores: (function(){ try { return JSON.parse(localStorage.getItem('app_errores') || '[]').slice(-5).map(e => ({ ts: e.ts, ver: e.ver, txt: String(e.txt).slice(0, 160) })); } catch(e){ return []; } })()
   }, { merge: true }).catch(() => {});
 }
 // latido cada 2 min con la app a la vista; "en linea" dura 5 min sin latido. Asi, aunque el aviso de
@@ -5255,15 +5267,72 @@ function puedeModificar(sinControlHab){
   if(!sinControlHab && habBloqueado()){ habAvisarBloqueado(); return false; }
   if(esMovil()) return true;
   if(claveVigente()) return true;
-  const clave = prompt('Ingresa la clave para guardar cambios desde esta compu:\n(queda recordada en esta compu por 12 horas o hasta que se cierre la app)');
-  if(clave === null) return false; // cancelo
-  if(huellaClave(clave.trim()) !== HUELLA_CLAVE_PC){
-    alert('Clave incorrecta. No se guardo el cambio.');
-    return false;
-  }
-  claveRecordar();
-  return true;
+  // La clave se pide en un cuadro propio de la app (antes era prompt() del navegador: si el navegador
+  // tenia bloqueados los cuadros de dialogo, devolvia "cancelar" al instante y parecia que no guardaba).
+  // Al poner la clave bien, se vuelve a tocar solo el boton que se habia tocado.
+  claveAbrirModal(claveUltimoBoton);
+  return false;
 }
+var claveUltimoBoton = null;
+document.addEventListener('click', (e) => {
+  const b = e.target && e.target.closest ? e.target.closest('button, [role="button"], input[type="submit"], input[type="button"]') : null;
+  if(b && !b.closest('#claveModal')) claveUltimoBoton = b;
+}, true);
+function claveAbrirModal(boton){
+  if(document.getElementById('claveModal')) { document.getElementById('claveInput').focus(); return; }
+  const m = document.createElement('div');
+  m.id = 'claveModal';
+  m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true'); m.setAttribute('aria-labelledby', 'claveModalTit');
+  m.innerHTML = `<div class="clave-box">
+      <h2 id="claveModalTit">Clave de la compu</h2>
+      <p>Para guardar cambios desde esta compu. Queda recordada 12 horas o hasta que se cierre la app.</p>
+      <input type="password" id="claveInput" class="edit-input" autocomplete="off" aria-label="Clave">
+      <div class="clave-err" id="claveErr" role="alert"></div>
+      <div class="clave-bot"><button type="button" class="save-btn" id="claveOk">Aceptar y guardar</button><button type="button" class="clave-no" id="claveNo">Cancelar</button></div>
+    </div>`;
+  document.body.appendChild(m);
+  const inp = m.querySelector('#claveInput'), err = m.querySelector('#claveErr');
+  const cerrar = () => { m.remove(); };
+  const ok = () => {
+    if(huellaClave(inp.value.trim()) !== HUELLA_CLAVE_PC){ err.textContent = 'Clave incorrecta. Probá de nuevo.'; appRegistrarError('clave: incorrecta'); inp.select(); return; }
+    claveRecordar();
+    cerrar();
+    if(boton && document.body.contains(boton) && !boton.disabled && boton.offsetParent !== null){
+      delete boton.dataset.ultToque; // que el anti doble toque no frene el reintento
+      movToast('Clave correcta: guardando…');
+      setTimeout(() => { try { boton.click(); } catch(e){ appRegistrarError('reintento clave: ' + e.message); } }, 60);
+    } else {
+      movToast('Clave correcta. Tocá Guardar de nuevo.');
+    }
+  };
+  m.querySelector('#claveOk').addEventListener('click', ok);
+  m.querySelector('#claveNo').addEventListener('click', () => { cerrar(); appRegistrarError('clave: cancelada'); movToast('No se guardó (falta la clave).'); });
+  inp.addEventListener('keydown', (e) => { if(e.key === 'Enter'){ e.preventDefault(); ok(); } else if(e.key === 'Escape'){ cerrar(); } });
+  setTimeout(() => inp.focus(), 30);
+}
+
+// ---- Si el navegador bloquea los cuadros de aviso (alert/confirm/prompt) ----
+// Chrome/Edge ofrecen "Impedir que esta página cree cuadros de diálogo adicionales": si alguien lo tildó,
+// cada confirm() devuelve "no" al instante y la app parece no guardar. Se detecta y se avisa en pantalla.
+var dialogosBloqueadosFlag = false;
+function dialogosBloqueados(msg){
+  if(msg && typeof movToast === 'function') movToast(String(msg).slice(0, 220));
+  if(dialogosBloqueadosFlag) return;
+  dialogosBloqueadosFlag = true;
+  try { appRegistrarError('El navegador bloquea los cuadros de aviso'); } catch(e) {}
+  const b = document.createElement('div');
+  b.id = 'dlgBloqAviso';
+  b.setAttribute('role', 'alert');
+  b.innerHTML = '⚠ Este navegador está bloqueando los avisos de la app, por eso algunas cosas pueden no guardarse. <button type="button">Recargar la app</button>';
+  b.querySelector('button').addEventListener('click', () => location.reload());
+  document.body.appendChild(b);
+}
+(function(){
+  const oc = window.confirm, oa = window.alert, op = window.prompt;
+  window.confirm = function(m){ const t = Date.now(); const r = oc.call(window, m); if(!r && Date.now() - t < 30) dialogosBloqueados(); return r; };
+  window.alert = function(m){ const t = Date.now(); oa.call(window, m); if(Date.now() - t < 30) dialogosBloqueados(m); };
+  window.prompt = function(m, d){ const t = Date.now(); const r = op.call(window, m, d); if(r === null && Date.now() - t < 30) dialogosBloqueados(); return r; };
+})();
 
 // ---- la clave de la compu se recuerda durante el turno (12 h) o hasta cerrar la app (sessionStorage) ----
 var CLAVE_DURACION_MS = 12 * 3600e3;
@@ -9565,13 +9634,16 @@ function abrirPedidoForm(){
     const duracionHs = durTxt ? parseFloat(durTxt) : 0;
     if(!msg && $('pedFecha') && $('pedFecha').value && $('pedFecha').value < pedHoy()) msg = 'No se pueden cargar pedidos para días que ya pasaron.';
     if(!msg && durTxt && !(duracionHs > 0 && duracionHs <= 72)) msg = 'Las horas tienen que ser un número (ej: 2 o 1,5).';
-    if(msg){ err.textContent = msg; err.style.display = ''; return; }
+    if(msg){ err.textContent = msg; err.style.display = ''; appRegistrarError('pedido no cargado: ' + msg); try { err.scrollIntoView({ block: 'center' }); } catch(e) {} return; }
     if(!puedeModificar()) return;
-    if(!firestoreOk){ alert('No hay conexion con el guardado compartido. Revisa tu internet e intenta de nuevo.'); return; }
+    if(!firestoreOk){ appRegistrarError('pedido: sin conexion (firestoreOk=false)'); alert('No hay conexion con el guardado compartido. Revisa tu internet e intenta de nuevo.'); return; }
     const datos = { tipo, objetivo: t.obj ? objetivo : '', grupo, detalle, duracionHs, hora: $('pedHora').value, prioridad: prio, estado: 'pendiente',
       creadoPor: operadorName || 'Sin nombre', creadoTs: Date.now(), fecha: ($('pedFecha') && $('pedFecha').value) || pedHoy() };
     const ref = db.collection('pedidos').doc();
-    ref.set(datos).catch(e => alert('No se pudo guardar (' + e.message + ').'));
+    // diagnostico: si el servidor no confirma el guardado en 15 s, queda anotado (y se avisa)
+    let confirmado = false;
+    const vigia = setTimeout(() => { if(!confirmado){ appRegistrarError('pedido ' + pedTitulo(datos) + ': el servidor no confirmó en 15 s'); movToast('⚠ El pedido de ' + (datos.objetivo || tipo) + ' todavía no llegó al servidor. Revisá la conexión de esta compu.'); } }, 15e3);
+    ref.set(datos).then(() => { confirmado = true; clearTimeout(vigia); }).catch(e => { confirmado = true; clearTimeout(vigia); appRegistrarError('pedido: ' + e.message); alert('No se pudo guardar (' + e.message + ').'); });
     PEDIDOS = [Object.assign({ id: ref.id }, datos)].concat(PEDIDOS.filter(x => x.id !== ref.id));
     closeCard();
     if(pedPuedeVerDias()) pedDiaSel = datos.fecha;
@@ -12953,7 +13025,10 @@ function appRegistrarError(txt){
     l.push({ ts: Date.now(), ver: typeof APP_VERSION !== 'undefined' ? APP_VERSION : 0, txt: String(txt).slice(0, 300) });
     localStorage.setItem('app_errores', JSON.stringify(l.slice(-15)));
   } catch(e) {}
+  clearTimeout(appErrLatidoTimer);
+  appErrLatidoTimer = setTimeout(() => { try { if(typeof habLatido === 'function') habLatido(true); } catch(e) {} }, 3000);
 }
+var appErrLatidoTimer = null;
 function appUltimosErrores(){ try { return JSON.parse(localStorage.getItem('app_errores') || '[]').map(e => new Date(e.ts).toLocaleString('es-AR') + ' · v' + e.ver + ' · ' + e.txt).join('\n'); } catch(e){ return ''; } }
 var appErrorAvisado = 0;
 window.addEventListener('error', (ev) => {
@@ -12980,7 +13055,7 @@ window.addEventListener('error', (ev) => {
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202611051030;
+var APP_VERSION = 202611060815;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
