@@ -9619,7 +9619,18 @@ function abrirPedidoForm(){
   $('pedObj').addEventListener('input', () => { clearTimeout(trazaObjT); trazaObjT = setTimeout(() => appTraza('ped: escribe pozo "' + $('pedObj').value + '"'), 700); });
   card.querySelectorAll('[data-p]').forEach(b => b.addEventListener('click', () => { prio = b.dataset.p; card.querySelectorAll('[data-p]').forEach(x => x.classList.toggle('active', x === b)); }));
   pintar();
-  const pedGuardarFn = () => {
+  const miBoton = $('pedGuardar');
+  const pedGuardarFn = (ev) => {
+    // solo vale para ESTE formulario: si quedo un llamado colgado de un formulario anterior (ya cerrado),
+    // no se guarda nada (antes eso cargaba solo el pedido que se estaba escribiendo en el formulario nuevo)
+    if(!miBoton.isConnected || document.getElementById('pedGuardar') !== miBoton || !document.getElementById('overlay').classList.contains('show')){
+      appRegistrarError('pedido: llamado de un formulario viejo, ignorado (' + (ev && ev.type ? ev.type + (ev.isTrusted ? '' : ' no humano') : 'directo') + ')');
+      return;
+    }
+    if(Date.now() - (parseInt(miBoton.dataset.ultClic || '0', 10)) > 1500){
+      appRegistrarError('pedido: guardar sin clic reciente (' + (ev && ev.type ? ev.type + (ev.isTrusted ? '' : ' no humano') : 'directo') + ') ' + String((new Error()).stack || '').split('\n').slice(1, 4).map(x => x.trim().slice(0, 50)).join(' < '));
+      return;
+    }
     pedGuardarCorrio = Date.now();
     appTraza('ped: guardar (' + tipo + ' "' + $('pedObj').value + '")');
     const t = pedTipo(tipo);
@@ -9662,7 +9673,7 @@ function abrirPedidoForm(){
   };
   $('pedGuardar').addEventListener('click', pedGuardarFn);
   $('pedGuardar').dataset.lst = '1';
-  window._pedGuardarFn = pedGuardarFn;
+  miBoton._pedFn = pedGuardarFn;
 }
 // Red de seguridad (compu de Scada: el clic llegaba al boton "Cargar pedido" pero el guardado no arrancaba).
 // Si un clic real en el boton no dispara el guardado en 400 ms, se anota y se ejecuta igual.
@@ -9671,11 +9682,12 @@ document.addEventListener('click', (e) => {
   const b = e.target && e.target.closest ? e.target.closest('#pedGuardar') : null;
   if(!b) return;
   const t0 = Date.now();
+  b.dataset.ultClic = String(t0);
   appTraza('ped: clic boton (lst=' + (b.dataset.lst || '-') + ' conectado=' + b.isConnected + ' mismo=' + (document.getElementById('pedGuardar') === b) + ' ult=' + (b.dataset.ultToque ? (t0 - parseInt(b.dataset.ultToque, 10)) + 'ms' : '-') + ')');
   setTimeout(() => {
     if(pedGuardarCorrio >= t0) return;
     appRegistrarError('pedido: el clic no disparó el guardado (se ejecuta igual)');
-    if(typeof window._pedGuardarFn === 'function' && b.isConnected && document.getElementById('overlay').classList.contains('show')) window._pedGuardarFn();
+    if(typeof b._pedFn === 'function' && b.isConnected && document.getElementById('overlay').classList.contains('show')) b._pedFn();
   }, 400);
 }, true);
 
@@ -13103,7 +13115,7 @@ window.addEventListener('error', (ev) => {
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202611060845;
+var APP_VERSION = 202611060905;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
