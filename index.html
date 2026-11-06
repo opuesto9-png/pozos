@@ -2432,6 +2432,8 @@ function habLatido(forzar){
   db.collection('presencia').doc(HAB.uid).set({
     operador: operadorName || '', ts: Date.now(), app: HAB_APP, tipo: habTipoDispositivo(), nombre: HAB.nombre || '', cerrada: false, ver: APP_VERSION,
     dlgBloq: !!(typeof dialogosBloqueadosFlag !== 'undefined' && dialogosBloqueadosFlag),
+    traza: (function(){ try { return JSON.parse(localStorage.getItem('app_traza') || '[]').slice(-30); } catch(e){ return []; } })(),
+    pantalla: (window.innerWidth || 0) + 'x' + (window.innerHeight || 0) + ' ' + (navigator.maxTouchPoints ? 'tactil' : 'mouse') + ' ' + (navigator.userAgent.match(/(Edg|Chrome|Firefox)\/\d+/) || [''])[0],
     errores: (function(){ try { return JSON.parse(localStorage.getItem('app_errores') || '[]').slice(-5).map(e => ({ ts: e.ts, ver: e.ver, txt: String(e.txt).slice(0, 160) })); } catch(e){ return []; } })()
   }, { merge: true }).catch(() => {});
 }
@@ -5153,6 +5155,7 @@ function closeCardSeguro(){
 }
 
 function closeCard(){
+  try { appTraza('cierra ficha'); } catch(e) {}
   cardSucio = false;
   document.getElementById('overlay').classList.remove('show');
   if(modalHistoryPushed){
@@ -9557,6 +9560,7 @@ function pedOpciones(obj){
 }
 
 function abrirPedidoForm(){
+  appTraza('ped: abre formulario');
   let tipo = 'cerrar', prio = 'normal';
   window._currentCardRec = null;
   const card = document.getElementById('card');
@@ -9611,9 +9615,12 @@ function abrirPedidoForm(){
   }
   card.querySelectorAll('#pedTipos .aviso-chip').forEach(b => b.addEventListener('click', () => { tipo = b.dataset.t; $('pedObj').value = ''; pintar(); }));
   $('pedDur').addEventListener('input', pintar);
+  let trazaObjT = null;
+  $('pedObj').addEventListener('input', () => { clearTimeout(trazaObjT); trazaObjT = setTimeout(() => appTraza('ped: escribe pozo "' + $('pedObj').value + '"'), 700); });
   card.querySelectorAll('[data-p]').forEach(b => b.addEventListener('click', () => { prio = b.dataset.p; card.querySelectorAll('[data-p]').forEach(x => x.classList.toggle('active', x === b)); }));
   pintar();
   $('pedGuardar').addEventListener('click', () => {
+    appTraza('ped: guardar (' + tipo + ' "' + $('pedObj').value + '")');
     const t = pedTipo(tipo);
     const err = $('pedErr');
     let objetivo = $('pedObj').value.trim(), grupo = '';
@@ -9635,7 +9642,7 @@ function abrirPedidoForm(){
     if(!msg && $('pedFecha') && $('pedFecha').value && $('pedFecha').value < pedHoy()) msg = 'No se pueden cargar pedidos para días que ya pasaron.';
     if(!msg && durTxt && !(duracionHs > 0 && duracionHs <= 72)) msg = 'Las horas tienen que ser un número (ej: 2 o 1,5).';
     if(msg){ err.textContent = msg; err.style.display = ''; appRegistrarError('pedido no cargado: ' + msg); try { err.scrollIntoView({ block: 'center' }); } catch(e) {} return; }
-    if(!puedeModificar()) return;
+    if(!puedeModificar()){ appTraza('ped: puedeModificar=no (clave ' + (claveVigente() ? 'vigente' : 'no vigente') + ')'); return; }
     if(!firestoreOk){ appRegistrarError('pedido: sin conexion (firestoreOk=false)'); alert('No hay conexion con el guardado compartido. Revisa tu internet e intenta de nuevo.'); return; }
     const datos = { tipo, objetivo: t.obj ? objetivo : '', grupo, detalle, duracionHs, hora: $('pedHora').value, prioridad: prio, estado: 'pendiente',
       creadoPor: operadorName || 'Sin nombre', creadoTs: Date.now(), fecha: ($('pedFecha') && $('pedFecha').value) || pedHoy() };
@@ -9643,12 +9650,14 @@ function abrirPedidoForm(){
     // diagnostico: si el servidor no confirma el guardado en 15 s, queda anotado (y se avisa)
     let confirmado = false;
     const vigia = setTimeout(() => { if(!confirmado){ appRegistrarError('pedido ' + pedTitulo(datos) + ': el servidor no confirmó en 15 s'); movToast('⚠ El pedido de ' + (datos.objetivo || tipo) + ' todavía no llegó al servidor. Revisá la conexión de esta compu.'); } }, 15e3);
-    ref.set(datos).then(() => { confirmado = true; clearTimeout(vigia); }).catch(e => { confirmado = true; clearTimeout(vigia); appRegistrarError('pedido: ' + e.message); alert('No se pudo guardar (' + e.message + ').'); });
+    appTraza('ped: enviado ' + ref.id.slice(0, 6));
+    ref.set(datos).then(() => { confirmado = true; clearTimeout(vigia); appTraza('ped: confirmado ' + ref.id.slice(0, 6)); }).catch(e => { confirmado = true; clearTimeout(vigia); appRegistrarError('pedido: ' + e.message); alert('No se pudo guardar (' + e.message + ').'); });
     PEDIDOS = [Object.assign({ id: ref.id }, datos)].concat(PEDIDOS.filter(x => x.id !== ref.id));
     closeCard();
     if(pedPuedeVerDias()) pedDiaSel = datos.fecha;
     acuseMarcar('pedido', ref.id, true);
     try { renderPedidos(); pedActualizarInicio(); } catch(e){ appRegistrarError('pedidos: ' + (e && e.message)); }
+    appTraza('ped: listo, formulario cerrado');
   });
 }
 
@@ -13029,6 +13038,27 @@ function appRegistrarError(txt){
   appErrLatidoTimer = setTimeout(() => { try { if(typeof habLatido === 'function') habLatido(true); } catch(e) {} }, 3000);
 }
 var appErrLatidoTimer = null;
+// Traza corta de lo que se toca en los formularios (para diagnosticar "toque guardar y no hizo nada").
+// Queda en esta compu (ultimos 40 pasos) y viaja con el latido de presencia. No guarda datos de la clave.
+function appTraza(txt){
+  try {
+    const l = JSON.parse(localStorage.getItem('app_traza') || '[]');
+    l.push({ ts: Date.now(), txt: String(txt).slice(0, 120) });
+    localStorage.setItem('app_traza', JSON.stringify(l.slice(-40)));
+  } catch(e) {}
+  clearTimeout(appErrLatidoTimer);
+  appErrLatidoTimer = setTimeout(() => { try { if(typeof habLatido === 'function') habLatido(true); } catch(e) {} }, 4000);
+}
+['pointerdown', 'click', 'keydown'].forEach(ev => document.addEventListener(ev, (e) => {
+  try {
+    if(ev === 'keydown' && e.key !== 'Enter') return;
+    const t = e.target;
+    if(!t || !t.closest || !t.closest('#card, #claveModal, #salirSinGuardar')) return;
+    if(ev !== 'keydown' && !t.closest('button')) return;
+    const b = ev === 'keydown' ? t : t.closest('button');
+    appTraza(ev + ' ' + (b.id || (b.textContent || '').trim().slice(0, 25)) + (ev === 'keydown' ? ' (' + (t.id || t.tagName) + ')' : '') + (e.isTrusted ? '' : ' [no humano]') + (e.pointerType ? ' ' + e.pointerType : ''));
+  } catch(x) {}
+}, true));
 function appUltimosErrores(){ try { return JSON.parse(localStorage.getItem('app_errores') || '[]').map(e => new Date(e.ts).toLocaleString('es-AR') + ' · v' + e.ver + ' · ' + e.txt).join('\n'); } catch(e){ return ''; } }
 var appErrorAvisado = 0;
 window.addEventListener('error', (ev) => {
@@ -13055,7 +13085,7 @@ window.addEventListener('error', (ev) => {
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202611060815;
+var APP_VERSION = 202611060830;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
