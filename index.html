@@ -4845,6 +4845,11 @@ function renderCardEdit(rec, bat){
   document.getElementById('clearCicloAbierto').addEventListener('click', () => {
     document.getElementById('cicloAbierto').value = '';
   });
+  card.dataset.tocoApertura = ''; card.dataset.tocoCierre = '';
+  ['input', 'change'].forEach(ev => {
+    document.getElementById('horaApertura').addEventListener(ev, () => { card.dataset.tocoApertura = '1'; });
+    document.getElementById('horaCierre').addEventListener(ev, () => { card.dataset.tocoCierre = '1'; });
+  });
   document.getElementById('saveBtn').addEventListener('click', () => {
     if(!puedeModificar()) return;
     // valores ANTES de este guardado, para saber despues cuales campos cambiaron de verdad
@@ -4860,8 +4865,24 @@ function renderCardEdit(rec, bat){
       newFields.bateria = newFields.bateria.trim() ? normalizarBateria(newFields.bateria) : 'Sin bateria';
     }
 
-    const hA = document.getElementById('horaApertura').value;
-    const hC = document.getElementById('horaCierre').value;
+    let hA = document.getElementById('horaApertura').value;
+    let hC = document.getElementById('horaCierre').value;
+    // confusion de 12 horas (AM/PM): ej. a la 01:30 se carga "12:30" queriendo decir 00:30
+    [['horaApertura', 'apertura'], ['horaCierre', 'cierre']].forEach(([id, que]) => {
+      const el = document.getElementById(id);
+      const v = el.value;
+      const orig = id === 'horaApertura' ? horaAperturaOriginal : horaCierreOriginal;
+      const alt = horaAmPmSospechosa(v);
+      if(!v || v === orig || !alt) return;
+      const hh = parseInt(v, 10);
+      const txtV = v + (hh >= 12 ? ' (de la tarde/mediodía)' : ' (de la mañana)');
+      const txtA = alt + (parseInt(alt, 10) < 12 ? ' (de la madrugada/mañana)' : ' (de la tarde/noche)');
+      if(confirm('Hora de ' + que + ': pusiste ' + txtV + ', que fue hace más de 8 horas.\n\n¿Quisiste decir ' + txtA + '?\n\nAceptar = ' + alt + '    ·    Cancelar = dejar ' + v)){
+        el.value = alt;
+        if(id === 'horaApertura') hA = alt; else hC = alt;
+        appTraza && appTraza('ficha ' + rec.pozo + ': ' + que + ' ' + v + ' corregida a ' + alt);
+      }
+    });
     const nota = document.getElementById('horarioNota').value.trim();
 
     const cicloCerradoNum = document.getElementById('cicloCerrado').value.trim();
@@ -4909,8 +4930,10 @@ function renderCardEdit(rec, bat){
     }
     const hayVelaPendienteAcum = velaPendienteAcum.Agua || velaPendienteAcum.Gas || velaPendienteAcum.Oil;
 
-    const aperturaCambio = hA !== horaAperturaOriginal;
-    const cierreCambio = hC !== horaCierreOriginal;
+    // tambien cuenta si se escribio la MISMA hora que ya figuraba pero el pozo estaba en el otro estado
+    // (ej: cerrado, la apertura vieja decia 20:15 y hoy se abrio de nuevo a las 20:15)
+    const aperturaCambio = hA !== horaAperturaOriginal || (!!hA && rec.estado === 'Cerrado' && card.dataset.tocoApertura === '1');
+    const cierreCambio = hC !== horaCierreOriginal || (!!hC && rec.estado === 'Abierto' && card.dataset.tocoCierre === '1');
 
     // si cambiaste la apertura pero dejaste el cierre TAL CUAL estaba (sin tocarlo) y el pozo ya
     // habia completado un ciclo (estaba Cerrado), ese cierre es viejo: asumimos que estas arrancando
@@ -10798,6 +10821,17 @@ function horaATs(hhmm, ref){
   if(t > r + 10 * 60e3) t -= 86400e3;
   return t;
 }
+// "12:30" cargado a la 01:30 -> devuelve "00:30" (la misma hora 12 h corrida cae en las ultimas 3 h,
+// y la hora tal como se puso fue hace mas de 8 h). Si no hay sospecha devuelve ''.
+function horaAmPmSospechosa(hhmm){
+  const m = String(hhmm || '').match(/^(\d{1,2}):(\d{2})/);
+  if(!m) return '';
+  const ahora = Date.now();
+  const ts = horaATs(hhmm, ahora);
+  const alt = String((parseInt(m[1], 10) + 12) % 24).padStart(2, '0') + ':' + m[2];
+  const tsAlt = horaATs(alt, ahora);
+  return (ts && tsAlt && ahora - ts > 8 * 36e5 && ahora - tsAlt <= 3 * 36e5) ? alt : '';
+}
 function maniobraTsValido(ts, hora){
   return typeof ts === 'number' && ts > 0 && !!hora && hhmmDeTs(ts) === String(hora).slice(0, 5) && Date.now() - ts < 45 * 86400e3;
 }
@@ -13145,7 +13179,7 @@ window.addEventListener('error', (ev) => {
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202611060945;
+var APP_VERSION = 202611110215;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
