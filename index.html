@@ -1665,6 +1665,11 @@
   .clave-err{ color:#FF8A7A; font-size:.85rem; min-height:1.2em; margin:6px 0; }
   .clave-bot{ display:flex; gap:8px; } .clave-bot button{ flex:1 1 0; min-height:44px; }
   .clave-no{ background:transparent; border:1px solid var(--line); color: var(--text); border-radius:10px; font:inherit; cursor:pointer; }
+  #parteDiasModal{ position:fixed; inset:0; z-index:100000; background:rgba(5,14,22,.72); display:flex; align-items:center; justify-content:center; padding:16px; }
+  #parteDiasModal .clave-box{ background: var(--panel, #13293B); border:1px solid var(--line); border-radius:14px; padding:20px; width:min(460px, 100%); }
+  #parteDiasModal h2{ margin:0 0 6px; font-size:1.1rem; } #parteDiasModal p{ margin:0 0 10px; font-size:.86rem; color: var(--muted); }
+  .pd-lista{ margin:0 0 14px; padding-left:18px; font-size:.92rem; line-height:1.6; }
+  .pd-bot{ display:flex; flex-direction:column; gap:8px; } .pd-bot button{ min-height:44px; padding:8px 12px; }
   #dlgBloqAviso{ position:fixed; left:12px; right:12px; bottom:12px; z-index:99999; background:#5A2A1E; color:#FFE3DA; border:1px solid #C9664D; border-radius:12px; padding:12px 14px; font-size:.92rem; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
   #dlgBloqAviso button{ background:#FFE3DA; color:#5A2A1E; border:0; border-radius:8px; padding:8px 12px; font:inherit; font-weight:700; cursor:pointer; }
 </style>
@@ -3020,8 +3025,10 @@ function downloadFile(blob, fileName){
   a.click();
   document.body.removeChild(a);
   setTimeout(() => URL.revokeObjectURL(url), 3000);
+  if(descargaSinAviso){ movToast('Descargado: ' + fileName); return; }
   alert('Se descargo el archivo "' + fileName + '". Buscalo en tus Descargas y compartilo desde ahi (WhatsApp, mail, etc.).');
 }
+var descargaSinAviso = false; // en tandas de varios archivos (un parte por dia) se avisa una sola vez al final
 
 // devuelve una promesa: true si el archivo se compartio o se descargo, false si se cancelo sin guardarlo.
 // Los reportes se marcan como ENVIADOS solo si llego a algun lado (si se cancela "Compartir", lo pendiente
@@ -5571,10 +5578,11 @@ function buildHoraColumna(rec){
   return '';
 }
 
-function marcarReporteEnviado(){
+function marcarReporteEnviado(hasta){
   // corte LOCAL de esta compu (ver comentario junto a ultimoReporteLocalTs): recien a partir de ahora
   // esta compu deja de considerar "pendiente" lo que ya incluyo en el parte que acaba de generar.
-  ultimoReporteLocalTs = new Date();
+  // (hasta = fin de un dia operativo, cuando se generaron solo los partes de los dias mas viejos)
+  ultimoReporteLocalTs = hasta ? new Date(Math.min(hasta, Date.now())) : new Date();
   safeSet('ultimo_reporte_local_ts', ultimoReporteLocalTs.toISOString());
   if(!firestoreOk) return;
   // ademas avisamos (compartido) que esta compu genero un parte, solo para que las OTRAS compus vean
@@ -6094,28 +6102,70 @@ function exportParteDeCampo(forzarTodos){
     return;
   }
 
-  // Fecha del parte: la del DIA OPERATIVO (6am a 6am) al que corresponden los cambios que se estan
-  // informando - NO la fecha/hora en que se genera o descarga el archivo (que puede ser mas tarde,
-  // o ya al dia siguiente). Usamos el cambio mas reciente entre todo lo que entra en este parte.
-  const fechasDeCambios = [...gasBase, ...oilBase, ...notasBase, ...velaSueltaBase]
-    .map(r => r._updatedAtDate)
-    .filter(Boolean);
-  const fechaRefParte = fechasDeCambios.length
-    ? new Date(Math.max(...fechasDeCambios.map(d => d.getTime())))
-    : new Date();
-  const fechaOperativaParte = inicioDiaOperativo(fechaRefParte);
-  const hoy = fechaOperativaParte.toLocaleDateString('es-AR');
+  // UN PARTE POR DIA OPERATIVO (6 a 6): si esta compu no genero el parte en varios dias, los movimientos
+  // pendientes se reparten por el dia en que ocurrieron (antes salia todo junto con la fecha del ultimo).
+  if(forzarTodos){
+    const fechasDeCambios = [...gasBase, ...oilBase, ...notasBase, ...velaSueltaBase].map(r => r._updatedAtDate).filter(Boolean);
+    const ref = fechasDeCambios.length ? new Date(Math.max(...fechasDeCambios.map(d => d.getTime()))) : new Date();
+    parteGenerarDias([{ ini: inicioDiaOperativo(ref), gas: filasGasConNotas, oil: filasOil }], null);
+    return;
+  }
+  const dias = parteAgruparPorDia(filasGasConNotas, filasOil);
+  if(dias.length > 1){ parteElegirDias(dias); return; }
+  parteGenerarDias(dias, null);
+}
 
+function parteAgruparPorDia(filasGas, filasOil){
+  const grupos = {};
+  const conTs = [...filasGas, ...filasOil].map(f => f._ts).filter(Boolean);
+  const ultimo = conTs.length ? Math.max(...conTs) : Date.now();
+  const clave = (f) => inicioDiaOperativo(new Date(f._ts || ultimo)).getTime();
+  const g = (k) => (grupos[k] = grupos[k] || { ini: new Date(k), gas: [], oil: [] });
+  filasGas.forEach(f => g(clave(f)).gas.push(f));
+  filasOil.forEach(f => g(clave(f)).oil.push(f));
+  return Object.keys(grupos).map(Number).sort((a, b) => a - b).map(k => grupos[k]);
+}
+function parteDiaTxt(d){ return d.ini.toLocaleDateString('es-AR', { weekday: 'short', day: '2-digit', month: '2-digit' }); }
+
+// varios dias pendientes: se elige si se arma un parte por cada dia o solo el ultimo
+function parteElegirDias(dias){
+  const viejo = document.getElementById('parteDiasModal'); if(viejo) viejo.remove();
+  const m = document.createElement('div');
+  m.id = 'parteDiasModal';
+  m.className = 'modal-propio';
+  m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true'); m.setAttribute('aria-labelledby', 'parteDiasTit');
+  const ult = dias[dias.length - 1];
+  m.innerHTML = `<div class="clave-box">
+      <h2 id="parteDiasTit">Hay movimientos de ${dias.length} días</h2>
+      <p>Esta compu no generó el parte en esos días. Cada parte lleva solo lo que pasó en su día (de 06:00 a 06:00).</p>
+      <ul class="pd-lista">${dias.map(d => `<li><b>${avisoEsc(parteDiaTxt(d))}</b> · ${d.gas.length} de gas${d.oil.length ? ' · ' + d.oil.length + ' de oil' : ''}</li>`).join('')}</ul>
+      <div class="pd-bot">
+        <button type="button" class="save-btn" id="pdTodos">Generar ${dias.length} partes (uno por día)</button>
+        <button type="button" class="clave-no" id="pdUltimo">Solo el del ${avisoEsc(parteDiaTxt(ult))} (los anteriores quedan como enviados)</button>
+        <button type="button" class="clave-no" id="pdNo">Cancelar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(m);
+  const cerrar = () => m.remove();
+  m.querySelector('#pdTodos').addEventListener('click', () => { cerrar(); parteGenerarDias(dias, null); });
+  m.querySelector('#pdUltimo').addEventListener('click', () => {
+    if(!confirm('Los movimientos de ' + dias.slice(0, -1).map(parteDiaTxt).join(', ') + ' no van a salir en ningún parte desde esta compu.\n\n¿Seguro?')) return;
+    cerrar(); parteGenerarDias([ult], null);
+  });
+  m.querySelector('#pdNo').addEventListener('click', cerrar);
+  m.addEventListener('keydown', (e) => { if(e.key === 'Escape') cerrar(); });
+  setTimeout(() => m.querySelector('#pdTodos').focus(), 30);
+}
+
+async function parteGenerarDias(dias){
   if(typeof ExcelJS === 'undefined'){
-    let text = `PARTE DE CAMPO ${hoy}\n\n`;
-    if(filasGasConNotas.length){
-      text += 'GAS:\n';
-      filasGasConNotas.forEach(f => { text += `${f.hora} | ${f.instalacion} | ${f.pozo} | ${f.novedad}\n`; });
-    }
-    if(filasOil.length){
-      text += '\nOIL:\n';
-      filasOil.forEach(f => { text += `${f.hora} | ${f.instalacion} | ${f.pozo} | ${f.novedad}\n`; });
-    }
+    let text = '';
+    dias.forEach(d => {
+      text += `PARTE DE CAMPO ${d.ini.toLocaleDateString('es-AR')}\n\n`;
+      if(d.gas.length){ text += 'GAS:\n'; d.gas.forEach(f => { text += `${f.hora} | ${f.instalacion} | ${f.pozo} | ${f.novedad}\n`; }); }
+      if(d.oil.length){ text += '\nOIL:\n'; d.oil.forEach(f => { text += `${f.hora} | ${f.instalacion} | ${f.pozo} | ${f.novedad}\n`; }); }
+      text += '\n';
+    });
     if(navigator.share){ navigator.share({ title: 'Parte de campo', text }).catch(()=>{}); }
     else if(navigator.clipboard){ navigator.clipboard.writeText(text).then(()=>alert('Copiado.')); }
     else { prompt('Copia este texto:', text); }
@@ -6123,29 +6173,38 @@ function exportParteDeCampo(forzarTodos){
     marcarReporteEnviado();
     return;
   }
-
-  const wb = new ExcelJS.Workbook();
   const FONT_NAME = 'Calibri';
   const FONT_SIZE = 11.5;
-
-  if(filasGasConNotas.length){
-    agregarHojaParte(wb, 'GAS', 'REPORTE GAS - YAC. CENTENARIO', filasGasConNotas, hoy, FONT_NAME, FONT_SIZE);
+  let hechos = 0;
+  descargaSinAviso = dias.length > 1;
+  for(const d of dias){
+    const hoy = d.ini.toLocaleDateString('es-AR');
+    const wb = new ExcelJS.Workbook();
+    if(d.gas.length) agregarHojaParte(wb, 'GAS', 'REPORTE GAS - YAC. CENTENARIO', d.gas, hoy, FONT_NAME, FONT_SIZE);
+    if(d.oil.length) agregarHojaParte(wb, 'OIL', 'REPORTE OIL - YAC. CENTENARIO', d.oil, hoy, FONT_NAME, FONT_SIZE);
+    const fileName = `Parte_de_campo_${pedIso(d.ini)}.xlsx`;
+    let ok = false;
+    try {
+      const buffer = await wb.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      ok = await downloadOrShareBlob(blob, fileName, 'Parte de campo ' + hoy);
+    } catch(err){
+      alert('No se pudo generar el Excel del ' + hoy + ' (' + (err && err.message ? err.message : 'error desconocido') + '). Probá de nuevo con conexion a internet.');
+    }
+    if(!ok) break;
+    hechos++;
+    if(dias.length > 1 && hechos < dias.length) await new Promise(r => setTimeout(r, 700)); // que el navegador no frene las descargas seguidas
   }
-  if(filasOil.length){
-    agregarHojaParte(wb, 'OIL', 'REPORTE OIL - YAC. CENTENARIO', filasOil, hoy, FONT_NAME, FONT_SIZE);
+  descargaSinAviso = false;
+  if(!hechos) return;
+  miAccionParteEnCurso = true;
+  if(hechos === dias.length) marcarReporteEnviado();
+  else {
+    // se cortaron a la mitad: quedan pendientes los dias que no se generaron
+    marcarReporteEnviado(dias[hechos - 1].ini.getTime() + 864e5);
+    alert('Se generaron ' + hechos + ' de ' + dias.length + ' partes. Lo que falta queda pendiente para la próxima vez.');
   }
-
-  const fileName = `Parte_de_campo_${fechaOperativaParte.toISOString().slice(0,10)}.xlsx`;
-  wb.xlsx.writeBuffer().then(buffer => {
-    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    return downloadOrShareBlob(blob, fileName, 'Parte de campo').then(ok => {
-      if(!ok) return;
-      miAccionParteEnCurso = true;
-      marcarReporteEnviado();
-    });
-  }).catch((err) => {
-    alert('No se pudo generar el Excel (' + (err && err.message ? err.message : 'error desconocido') + '). Probá de nuevo con conexion a internet.');
-  });
+  if(dias.length > 1 && hechos === dias.length) alert('Se descargaron ' + hechos + ' partes, uno por día:\n\n' + dias.map(d => 'Parte_de_campo_' + pedIso(d.ini) + '.xlsx').join('\n') + '\n\nBuscalos en tus Descargas y compartilos desde ahí.');
 }
 
 // copia de los valores originales (antes de cualquier edicion), para poder mostrar el "antes -> despues"
@@ -13188,7 +13247,7 @@ window.addEventListener('error', (ev) => {
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202611110225;
+var APP_VERSION = 202611122130;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
