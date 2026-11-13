@@ -4732,7 +4732,7 @@ function renderCardEdit(rec, bat){
           </div>
           <div class="time-label" style="margin-top:8px;">Presion apertura (${pressureUnit === 'psi' ? 'psi' : 'kg/cm2'})</div>
           <div class="input-with-clear">
-            <input type="text" inputmode="decimal" class="edit-input" data-key="presion" value="${presionPrefill.replace(/"/g,'&quot;')}">
+            <input type="text" inputmode="decimal" class="edit-input" data-key="presion" value="" placeholder="${presionPrefill ? 'anterior: ' + presionPrefill.replace(/"/g,'&quot;') : ''}">
             <button type="button" class="field-clear-btn" data-clear-target="presion" title="Borrar presion de apertura">&times;</button>
           </div>
         </div>
@@ -4744,7 +4744,7 @@ function renderCardEdit(rec, bat){
           </div>
           <div class="time-label" style="margin-top:8px;">Presion cierre (${pressureUnit === 'psi' ? 'psi' : 'kg/cm2'})</div>
           <div class="input-with-clear">
-            <input type="text" inputmode="decimal" class="edit-input" id="presionCierre" placeholder="${rec.presionCierre ? convertPresionText(rec.presionCierre + ' kg/cm2', pressureUnit) : ''}">
+            <input type="text" inputmode="decimal" class="edit-input" id="presionCierre" placeholder="${rec.presionCierre ? 'anterior: ' + convertPresionText(rec.presionCierre + ' kg/cm2', pressureUnit) : ''}">
             <button type="button" class="field-clear-btn" id="clearPresionCierre" title="Borrar">&times;</button>
           </div>
         </div>
@@ -4866,8 +4866,10 @@ function renderCardEdit(rec, bat){
     const inputs = card.querySelectorAll('.edit-input[data-key]');
     const newFields = {};
     inputs.forEach(inp => { newFields[inp.dataset.key] = inp.value; });
-    if(newFields.presion === '') newFields.presion = 's/d';
-    else if(newFields.presion === presionPrefill) newFields.presion = rec.presion; // no se toco: queda como estaba
+    // la presion anterior se ve solo como referencia (gris): vacia = no se cargo ahora. La ficha conserva la
+    // ultima conocida, pero la maniobra y el parte llevan SOLO lo que se escribio en este guardado.
+    const presionEscrita = (newFields.presion || '').trim() !== '';
+    if(!presionEscrita) newFields.presion = rec.presion || 's/d';
     else if(pressureUnit === 'psi') newFields.presion = aibPresionToKg(newFields.presion); // se cargo en psi: pasa a kg/cm2
     if(newFields.bateria !== undefined){
       newFields.bateria = newFields.bateria.trim() ? normalizarBateria(newFields.bateria) : 'Sin bateria';
@@ -4940,8 +4942,18 @@ function renderCardEdit(rec, bat){
 
     // tambien cuenta si se escribio la MISMA hora que ya figuraba pero el pozo estaba en el otro estado
     // (ej: cerrado, la apertura vieja decia 20:15 y hoy se abrio de nuevo a las 20:15)
-    const aperturaCambio = hA !== horaAperturaOriginal || (!!hA && rec.estado === 'Cerrado' && card.dataset.tocoApertura === '1');
-    const cierreCambio = hC !== horaCierreOriginal || (!!hC && rec.estado === 'Abierto' && card.dataset.tocoCierre === '1');
+    let aperturaCambio = hA !== horaAperturaOriginal || (!!hA && rec.estado === 'Cerrado' && card.dataset.tocoApertura === '1');
+    let cierreCambio = hC !== horaCierreOriginal || (!!hC && rec.estado === 'Abierto' && card.dataset.tocoCierre === '1');
+    // REAPERTURA borrando el cierre: el pozo estaba Cerrado y se guarda con apertura y SIN cierre. Aunque la
+    // hora de apertura sea la misma que figuraba (ej: ayer tambien abrio 20:05), es una apertura NUEVA de hoy.
+    // (antes quedaba con la fecha de la apertura vieja y no salia en el parte del dia)
+    if(rec.estado === 'Cerrado' && !!hA && !hC && !!horaCierreOriginal){ aperturaCambio = true; cierreCambio = false; }
+    // REPARACION: figura Abierto pero su apertura es ANTERIOR al ultimo cierre (quedo mal de una carga
+    // anterior). Al guardar la ficha, la apertura se toma como la de hoy, contando desde ese cierre.
+    const reparaApertura = rec.estado === 'Abierto' && !!hA && !hC && !!rec.tsCierre && !!rec.tsApertura && rec.tsCierre > rec.tsApertura;
+    const horaCierreRef = reparaApertura ? hhmmDeTs(rec.tsCierre) : horaCierreOriginal;
+    if(reparaApertura){ aperturaCambio = true; cierreCambio = false; }
+    if(aperturaCambio && hA && !presionEscrita) newFields.presion = 's/d';
 
     // si cambiaste la apertura pero dejaste el cierre TAL CUAL estaba (sin tocarlo) y el pozo ya
     // habia completado un ciclo (estaba Cerrado), ese cierre es viejo: asumimos que estas arrancando
@@ -5048,16 +5060,16 @@ function renderCardEdit(rec, bat){
       // el numero SIEMPRE se calcula (haga falta o no la referencia de las 6am), pero la columna HORA
       // del reporte solo muestra el rango completo si la hora anterior era real, no inventada
       newFields.horasRangoConfirmado = !!horaAperturaOriginal;
-    } else if(aperturaCambio && !cierreCambio && rec.estado !== 'Abierto'){
-      const referenciaCierre = horaCierreOriginal || '06:00';
+    } else if(aperturaCambio && !cierreCambio && (rec.estado !== 'Abierto' || reparaApertura)){
+      const referenciaCierre = horaCierreRef || '06:00';
       newFields.horasTotalNum = calcDuracionDecimal(referenciaCierre, hA);
       newFields.horasTotalTipo = 'cerrado';
       newFields.horasRangoDesde = referenciaCierre;
       newFields.horasRangoHasta = hA;
-      newFields.horasRangoConfirmado = !!horaCierreOriginal;
+      newFields.horasRangoConfirmado = !!horaCierreRef;
       // marca aparte, solo para el texto de la novedad: si de verdad SABIAMOS que estaba cerrado
       // (no un pozo nuevo que nunca tuvo estado), para no decir "Cerrado, recupera presion" de mas
-      newFields.veniaDeCerradoConfirmado = rec.estado === 'Cerrado';
+      newFields.veniaDeCerradoConfirmado = rec.estado === 'Cerrado' || reparaApertura;
     }
 
     // Vela/s pendiente/s: recien ACA sabemos si este guardado es la reapertura de verdad (el pozo
@@ -5097,7 +5109,7 @@ function renderCardEdit(rec, bat){
 
     // fecha y hora REALES de cada maniobra (no solo HH:MM): asi un ciclo de mas de 24 h se cuenta bien
     // (antes 08:00 de un dia -> 10:00 del otro daba 2 h en vez de 26 h)
-    const tsMan = maniobraTsFicha(rec, { aperturaCambio, cierreCambio, hA, hC: hcEfectivo, terminaAbierto, horaAperturaOriginal, horaCierreOriginal });
+    const tsMan = maniobraTsFicha(rec, { aperturaCambio, cierreCambio, hA, hC: hcEfectivo, terminaAbierto, horaAperturaOriginal, horaCierreOriginal: horaCierreRef, repara: reparaApertura });
     Object.assign(newFields, tsMan.campos);
     if(tsMan.horas !== null && typeof newFields.horasTotalNum === 'number') newFields.horasTotalNum = tsMan.horas;
 
@@ -5128,7 +5140,8 @@ function renderCardEdit(rec, bat){
     // cada maniobra queda registrada aparte (el parte arma un renglon por maniobra, no solo la ultima)
     if((aperturaCambio || cierreCambio) && (hA || hcEfectivo) && newFields.estado){
       maniobraRegistrar(rec, { tipo: newFields.estado === 'Abierto' ? 'abrir' : 'cerrar', ts: newFields.estado === 'Abierto' ? rec.tsApertura : rec.tsCierre,
-        velaTxt: (changedKeys.includes('velaEnAperturaTxt') && rec.velaEnAperturaTxt) || '', origen: 'ficha', reemplaza: maniobraCorrigeA(recAntes, newFields, aperturaCambio, cierreCambio) });
+        velaTxt: (changedKeys.includes('velaEnAperturaTxt') && rec.velaEnAperturaTxt) || '', origen: 'ficha', reemplaza: maniobraCorrigeA(recAntes, newFields, aperturaCambio, cierreCambio),
+        presionNueva: presionEscrita, conApertura: !!(aperturaCambio && cierreCambio && hA) });
     }
     { const hv = {};
       if(changedKeys.includes('presion') && newFields.presion !== 's/d') hv.presion = newFields.presion;
@@ -5547,16 +5560,19 @@ function buildNovedad(rec, velaTxt){
   let base;
   if(rec.estado === 'Abierto'){
     const veniaDeCerrado = rec.veniaDeCerradoConfirmado === true;
+    // (la presion del cierre anterior no se repite: ya salio con su cierre)
     base = veniaDeCerrado
-      ? `Cerrado, recupera presion${sufPresionCierre}. Abierto${presionTxt ? ' con presion estatica de ' + presionTxt : ''}.`
+      ? `Cerrado, recupera presion. Abierto${presionTxt ? ' con presion estatica de ' + presionTxt : ''}.`
       : `Abierto${presionTxt ? ' con presion estatica de ' + presionTxt : ''}.`;
   } else if(rec.estado === 'Cerrado'){
     // si justo se completo un ciclo (estaba abierto y ahora cierra), mencionamos tambien la apertura
     // anterior con su presion - si no, es la primera vez que se cierra y no hay nada que mencionar antes.
-    const abrioAntes = rec.horasTotalTipo === 'abierto';
+    // la apertura anterior (con su presion) solo se menciona si se cargo en ESTE mismo guardado
+    // (dato pasado: apertura y cierre juntos). Si no, ya salio en su momento y aca va solo el cierre.
+    const abrioAntes = rec.horasTotalTipo === 'abierto' && rec.conApertura === true;
     base = abrioAntes
       ? `Abierto${presionTxt ? ' con presion estatica de ' + presionTxt : ''}. Cerrado, recuperando presion${sufPresionCierre}.`
-      : `Cerrado recuperando presion${sufPresionCierre}.`;
+      : `Cerrado, recuperando presion${sufPresionCierre}.`;
   } else {
     base = 'Maniobra registrada.';
   }
@@ -6050,6 +6066,9 @@ function parteCampoFilas(forzarTodos){
       frs.forEach((fr, j) => {
         // un "Abierto." / "Cerrado." suelto al principio es como venia el pozo antes de esa maniobra: no va
         if(j === 0 && frs.length > 1 && /^(Abierto|Cerrado)\.?$/i.test(fr)) return;
+        const clave = (x) => x.toLowerCase().replace('recuperando', 'recupera').replace(/,/g, '').replace(/\s*[\d.,]+\s*(kg\/cm2|psi)\.?$/, '').replace(/\.$/, '');
+        // "Cerrado, recupera presion." de una apertura, cuando el cierre ya esta en la fila
+        if(/^cerrado recupera presion$/.test(clave(fr)) && frases.some(x => clave(x).startsWith('cerrado'))) return;
         if(!frases.includes(fr)) frases.push(fr);
       });
     });
@@ -10988,7 +11007,7 @@ function maniobraTsFicha(rec, o){
   if(tsC) campos.tsCierre = tsC;
   let horas = null;
   if(tsC && !tsA && maniobraTsValido(rec.tsApertura, o.horaAperturaOriginal) && tsC > rec.tsApertura) horas = (tsC - rec.tsApertura) / 36e5;
-  else if(tsA && !tsC && rec.estado !== 'Abierto' && maniobraTsValido(rec.tsCierre, o.horaCierreOriginal) && tsA > rec.tsCierre) horas = (tsA - rec.tsCierre) / 36e5;
+  else if(tsA && !tsC && (rec.estado !== 'Abierto' || o.repara) && maniobraTsValido(rec.tsCierre, o.horaCierreOriginal) && tsA > rec.tsCierre) horas = (tsA - rec.tsCierre) / 36e5;
   return { campos, horas: horas === null ? null : Math.round(horas * 10) / 10 };
 }
 function maniobraId(pozo, tipo, ts){ return String(pozo).replace(/[\/\s]/g, '_') + '_' + tipo + '_' + Math.round(ts / 60e3); }
@@ -11004,7 +11023,8 @@ function maniobraRegistrar(rec, o){
   const v = (x, def) => (x === undefined || x === null) ? def : x;
   const doc = {
     pozo: rec.pozo, bateria: rec.bateria || 'Sin bateria', tipo: o.tipo, ts: o.ts, hora: hhmmDeTs(o.ts), estado: v(rec.estado, ''),
-    presion: v(rec.presion, 's/d'), presionCierre: v(rec.presionCierre, ''), horaApertura: v(rec.horaApertura, ''), horaCierre: v(rec.horaCierre, ''),
+    presion: o.presionNueva === false ? 's/d' : v(rec.presion, 's/d'), presionCierre: v(rec.presionCierre, ''),
+    presionNueva: o.presionNueva !== false, conApertura: o.conApertura === true, horaApertura: v(rec.horaApertura, ''), horaCierre: v(rec.horaCierre, ''),
     horasTotalNum: typeof rec.horasTotalNum === 'number' ? rec.horasTotalNum : null, horasTotalTipo: v(rec.horasTotalTipo, ''),
     horasRangoDesde: v(rec.horasRangoDesde, ''), horasRangoHasta: v(rec.horasRangoHasta, ''), horasRangoConfirmado: rec.horasRangoConfirmado === true,
     veniaDeCerradoConfirmado: rec.veniaDeCerradoConfirmado === true, horarioNota: v(rec.horarioNota, ''), velaTxt: o.velaTxt || '',
@@ -13313,7 +13333,7 @@ window.addEventListener('error', (ev) => {
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202611130030;
+var APP_VERSION = 202611132115;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
