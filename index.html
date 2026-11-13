@@ -5999,19 +5999,36 @@ function parteCampoFilas(forzarTodos){
         novedad: buildNovedad(rec, velaTxt),
         _ts: rec._ev ? rec._ev.ts : (rec._updatedAtDate ? rec._updatedAtDate.getTime() : 0),
         _medido: rec._ev ? rec._ev.horasMedidas : null,
+        _horasMed: rec._ev && typeof rec.horasTotalNum === 'number' ? rec.horasTotalNum : null,
         horasPerdida,
         horasProduccion
       };
     });
   // un pozo con varias maniobras en el mismo parte: cada renglon lleva solo sus horas medidas
   // (el "24 - x" del otro lado solo tiene sentido cuando el pozo tiene un unico renglon)
-  const porPozo = {};
-  filasGas.forEach(f => { porPozo[f.pozo] = (porPozo[f.pozo] || 0) + 1; });
+  // Horas por DIA OPERATIVO (06 a 06), maniobra por maniobra: cada renglon lleva lo medido hasta su maniobra
+  // (recortado al inicio del dia: un pozo abierto desde hace 2 dias no suma 45 h) y el ULTIMO renglon del pozo
+  // en ese dia suma ademas lo que falta hasta las 06:00 del dia siguiente, del lado en que quedo el pozo.
+  // Ej: cierra 20:25 (venia abierto desde ayer) y abre 22:00 -> 14,4 h prod | 1,6 h cierre + 8 h prod = 24 h.
+  const r1 = (x) => Math.max(0, Math.round(x * 10) / 10);
+  const porPozoDia = {};
   filasGas.forEach(f => {
-    if(porPozo[f.pozo] > 1){
-      if(f._medido === 'cerrado') f.horasProduccion = null;
-      else if(f._medido === 'abierto') f.horasPerdida = null;
-    }
+    if(!f._medido || f._horasMed === null || !f._ts) return;
+    const ini = inicioDiaOperativo(new Date(f._ts)).getTime();
+    const k = f.pozo + '|' + ini;
+    (porPozoDia[k] = porPozoDia[k] || []).push(f);
+    f._diaIni = ini;
+  });
+  Object.values(porPozoDia).forEach(l => {
+    l.sort((a, b) => a._ts - b._ts);
+    l.forEach((f, i) => {
+      const desde = Math.max(f._ts - f._horasMed * 36e5, f._diaIni);
+      const medido = r1((f._ts - desde) / 36e5);
+      const resto = i === l.length - 1 ? r1((f._diaIni + 864e5 - f._ts) / 36e5) : null;
+      // _medido = como estaba el pozo ANTES de la maniobra ('abierto' -> esta maniobra es un cierre)
+      if(f._medido === 'abierto'){ f.horasProduccion = medido; f.horasPerdida = resto; }
+      else { f.horasPerdida = medido; f.horasProduccion = resto; }
+    });
   });
   if(evs.length) filasGas.sort((a, b) => a._ts - b._ts);
 
@@ -13247,7 +13264,7 @@ window.addEventListener('error', (ev) => {
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202611122130;
+var APP_VERSION = 202611122220;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
