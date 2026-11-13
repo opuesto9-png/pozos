@@ -4600,6 +4600,7 @@ function renderCardView(rec, bat){
       <div class="v ${!hInfo.text ? 'empty' : ''}">${hInfo.text || 'Sin dato'}</div>
     </div>
     ${avisosDePozoHtml(rec)}
+    ${cicAvisoEstadoViejo(rec)}
     <div class="field alam-pozo" id="alamPozoBox"></div>
     ${(() => { const vp = velaPendienteDe(rec); return vp ? `<div class="vela-pend"><b>Vela pendiente:</b> ${vp.txt} · ${vp.cuando}. Sale en el parte junto con la próxima apertura.<button type="button" class="vela-quitar" id="velaQuitarBtn">Quitar vela pendiente</button></div>` : ''; })()}
     ${field('Presion', presionMostrada, 'presion')}
@@ -10938,6 +10939,24 @@ function horaATs(hhmm, ref){
 }
 // "12:30" cargado a la 01:30 -> devuelve "00:30" (la misma hora 12 h corrida cae en las ultimas 3 h,
 // y la hora tal como se puso fue hace mas de 8 h). Si no hay sospecha devuelve ''.
+// El ciclaje de hoy pide abrir (o cerrar) el pozo, pero la app ya lo tiene en ese estado desde OTRO dia:
+// falta cargar la maniobra intermedia. Si solo se corrige la presion, el movimiento no sale en el parte.
+function cicAvisoEstadoViejo(rec){
+  try {
+    if(!rec || !rec.pozo || typeof cicEstadoPlan !== 'function') return '';
+    const pend = cicEstadoPlan(cicHoy(), rec.pozo).filter(i => !i.hecho && !i.extra);
+    if(!pend.length) return '';
+    const it = pend[0];
+    const quiere = it.tipo === 'abrir' ? 'Abierto' : 'Cerrado';
+    if(rec.estado !== quiere) return '';
+    const ts = it.tipo === 'abrir' ? (rec.tsApertura || 0) : (rec.tsCierre || 0);
+    const ult = (MANIOBRAS || []).filter(e => e.pozo === rec.pozo).sort((a, b) => b.ts - a.ts)[0];
+    const desde = ult ? ult.ts : ts;
+    if(!desde || desde >= cicInicioDia(cicHoy())) return '';
+    const falta = it.tipo === 'abrir' ? 'el cierre' : 'la apertura';
+    return `<div class="vela-pend cic-viejo"><b>Ojo:</b> el ciclaje pide <b>${it.tipo === 'abrir' ? 'abrirlo' : 'cerrarlo'} a las ${avisoEsc(it.hora || '')}</b>, pero la app lo tiene <b>${quiere.toUpperCase()} desde el ${avisoEsc(tendFechaHora(desde))}</b> — falta cargar ${falta}. Cargá primero ${falta} con su hora y después ${it.tipo === 'abrir' ? 'la apertura' : 'el cierre'}; si no, el movimiento no sale en el parte.</div>`;
+  } catch(e){ return ''; }
+}
 function horaAmPmSospechosa(hhmm){
   const m = String(hhmm || '').match(/^(\d{1,2}):(\d{2})/);
   if(!m) return '';
@@ -13294,7 +13313,7 @@ window.addEventListener('error', (ev) => {
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202611122235;
+var APP_VERSION = 202611130030;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
