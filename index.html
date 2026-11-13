@@ -6024,12 +6024,42 @@ function parteCampoFilas(forzarTodos){
     l.forEach((f, i) => {
       const desde = Math.max(f._ts - f._horasMed * 36e5, f._diaIni);
       const medido = r1((f._ts - desde) / 36e5);
+      // si la maniobra anterior fue en otro dia (ej: volviendo de franco), la hora tambien arranca a las 06:00
+      if(f._ts - f._horasMed * 36e5 < f._diaIni - 60e3){
+        const hasta = String(f.hora || '').split('-').pop().trim() || hhmmDeTs(f._ts);
+        f.hora = '06:00-' + hasta;
+      }
       const resto = i === l.length - 1 ? r1((f._diaIni + 864e5 - f._ts) / 36e5) : null;
       // _medido = como estaba el pozo ANTES de la maniobra ('abierto' -> esta maniobra es un cierre)
       if(f._medido === 'abierto'){ f.horasProduccion = medido; f.horasPerdida = resto; }
       else { f.horasPerdida = medido; f.horasProduccion = resto; }
     });
   });
+  // UNA FILA POR POZO POR DIA: si el pozo tuvo varias maniobras en el dia (ej: cerro 20:25 y abrio 22:00),
+  // va todo en un renglon "20:25-22:00", con las horas de cierre y de produccion del dia sumadas
+  // (1,6 de cierre y 22,4 de produccion) y las novedades una detras de la otra.
+  const sobran = new Set();
+  Object.values(porPozoDia).forEach(l => {
+    if(l.length < 2) return;
+    const f0 = l[0], fN = l[l.length - 1];
+    const hHasta = (f) => String(f.hora || '').split('-').pop().trim() || hhmmDeTs(f._ts);
+    const frases = [];
+    l.forEach((f, i) => {
+      const frs = String(f.novedad || '').split(/(?<=\.)\s+/).map(x => x.trim()).filter(Boolean);
+      frs.forEach((fr, j) => {
+        // un "Abierto." / "Cerrado." suelto al principio es como venia el pozo antes de esa maniobra: no va
+        if(j === 0 && frs.length > 1 && /^(Abierto|Cerrado)\.?$/i.test(fr)) return;
+        if(!frases.includes(fr)) frases.push(fr);
+      });
+    });
+    const suma = (k) => { const v = l.map(f => f[k]).filter(x => typeof x === 'number'); return v.length ? r1(v.reduce((a, b) => a + b, 0)) : null; };
+    f0.horasPerdida = suma('horasPerdida');
+    f0.horasProduccion = suma('horasProduccion');
+    f0.hora = hHasta(f0) + '-' + hHasta(fN);
+    f0.novedad = frases.join(' ');
+    l.slice(1).forEach(f => sobran.add(f));
+  });
+  for(let i = filasGas.length - 1; i >= 0; i--) if(sobran.has(filasGas[i])) filasGas.splice(i, 1);
   if(evs.length) filasGas.sort((a, b) => a._ts - b._ts);
 
   // OIL: pozos de AIB con BP/PL cargados, modificados desde el ultimo parte (o todos, si se fuerza)
@@ -13264,7 +13294,7 @@ window.addEventListener('error', (ev) => {
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202611122220;
+var APP_VERSION = 202611122235;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
