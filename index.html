@@ -5560,10 +5560,10 @@ function buildNovedad(rec, velaTxt){
   let base;
   if(rec.estado === 'Abierto'){
     const veniaDeCerrado = rec.veniaDeCerradoConfirmado === true;
-    // (la presion del cierre anterior no se repite: ya salio con su cierre)
-    base = veniaDeCerrado
-      ? `Cerrado, recupera presion. Abierto${presionTxt ? ' con presion estatica de ' + presionTxt : ''}.`
-      : `Abierto${presionTxt ? ' con presion estatica de ' + presionTxt : ''}.`;
+    // solo el movimiento que se cargo: la apertura. Como venia el pozo (cerrado) ya salio con su cierre;
+    // si el cierre es del mismo dia, va antes en la misma fila.
+    void veniaDeCerrado;
+    base = `Abierto${presionTxt ? ' con presion estatica de ' + presionTxt : ''}.`;
   } else if(rec.estado === 'Cerrado'){
     // si justo se completo un ciclo (estaba abierto y ahora cierra), mencionamos tambien la apertura
     // anterior con su presion - si no, es la primera vez que se cierra y no hay nada que mencionar antes.
@@ -13331,7 +13331,7 @@ window.addEventListener('error', (ev) => {
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202611132135;
+var APP_VERSION = 202611132140;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
