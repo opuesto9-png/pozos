@@ -5140,9 +5140,21 @@ function renderCardEdit(rec, bat){
     try {
     // cada maniobra queda registrada aparte (el parte arma un renglon por maniobra, no solo la ultima)
     if((aperturaCambio || cierreCambio) && (hA || hcEfectivo) && newFields.estado){
-      maniobraRegistrar(rec, { tipo: newFields.estado === 'Abierto' ? 'abrir' : 'cerrar', ts: newFields.estado === 'Abierto' ? rec.tsApertura : rec.tsCierre,
+      // apertura Y cierre cargados en el mismo guardado (ej: cerro 00:20 y abrio 02:20): se registran LAS DOS
+      // maniobras, cada una con su hora, para que el parte y las horas del dia las vean a ambas
+      const ambas = aperturaCambio && cierreCambio && !!hA && !!hcEfectivo && !!rec.tsApertura && !!rec.tsCierre;
+      const finalAbre = newFields.estado === 'Abierto';
+      if(ambas){
+        const tsPrimera = finalAbre ? rec.tsCierre : rec.tsApertura;
+        const tsUltima = finalAbre ? rec.tsApertura : rec.tsCierre;
+        if(tsPrimera < tsUltima){
+          maniobraRegistrar(rec, { tipo: finalAbre ? 'cerrar' : 'abrir', ts: tsPrimera, estado: finalAbre ? 'Cerrado' : 'Abierto', origen: 'ficha',
+            presionNueva: finalAbre ? false : presionEscrita, conApertura: false, horasManual: false });
+        }
+      }
+      maniobraRegistrar(rec, { tipo: finalAbre ? 'abrir' : 'cerrar', ts: finalAbre ? rec.tsApertura : rec.tsCierre,
         velaTxt: (changedKeys.includes('velaEnAperturaTxt') && rec.velaEnAperturaTxt) || '', origen: 'ficha', reemplaza: maniobraCorrigeA(recAntes, newFields, aperturaCambio, cierreCambio),
-        presionNueva: presionEscrita, conApertura: !!(aperturaCambio && cierreCambio && hA), horasManual: !!(horasManualVal && horasManualTipo) });
+        presionNueva: (ambas && !finalAbre) ? false : presionEscrita, conApertura: ambas ? false : !!(aperturaCambio && cierreCambio && hA), horasManual: !!(horasManualVal && horasManualTipo) });
     }
     { const hv = {};
       if(changedKeys.includes('presion') && newFields.presion !== 's/d') hv.presion = newFields.presion;
@@ -11049,7 +11061,7 @@ function maniobraRegistrar(rec, o){
   const id = maniobraId(rec.pozo, o.tipo, o.ts);
   const v = (x, def) => (x === undefined || x === null) ? def : x;
   const doc = {
-    pozo: rec.pozo, bateria: rec.bateria || 'Sin bateria', tipo: o.tipo, ts: o.ts, hora: hhmmDeTs(o.ts), estado: v(rec.estado, ''),
+    pozo: rec.pozo, bateria: rec.bateria || 'Sin bateria', tipo: o.tipo, ts: o.ts, hora: hhmmDeTs(o.ts), estado: v(o.estado, v(rec.estado, '')),
     presion: o.presionNueva === false ? 's/d' : v(rec.presion, 's/d'), presionCierre: v(rec.presionCierre, ''),
     presionNueva: o.presionNueva !== false, conApertura: o.conApertura === true, horasManual: o.horasManual === true, horaApertura: v(rec.horaApertura, ''), horaCierre: v(rec.horaCierre, ''),
     horasTotalNum: typeof rec.horasTotalNum === 'number' ? rec.horasTotalNum : null, horasTotalTipo: v(rec.horasTotalTipo, ''),
@@ -11066,6 +11078,22 @@ function maniobraRegistrar(rec, o){
   MANIOBRAS = MANIOBRAS.filter(e => e.id !== id).concat([Object.assign({ id, _local: true }, doc)]);
   return id;
 }
+// Cargas viejas (hasta la version 202611140115) con apertura Y cierre en el mismo guardado registraban una
+// sola maniobra (la ultima). Se reconstruye la otra con su hora (ts - horas medidas) para que el parte y las
+// horas del dia vean las dos. Solo si no hay ya una maniobra opuesta cerca de esa hora.
+function maniobrasConVirtuales(l){
+  const out = l.filter(e => !e._virtual);
+  out.slice().forEach(e => {
+    if(e.conApertura !== true || !e.ts || typeof e.horasTotalNum !== 'number' || !e.horasTotalNum) return;
+    const opuesto = e.tipo === 'abrir' ? 'cerrar' : 'abrir';
+    const vts = e.ts - e.horasTotalNum * 36e5;
+    if(out.some(x => x.pozo === e.pozo && x.tipo === opuesto && Math.abs(x.ts - vts) < 10 * 60e3)) return;
+    out.push(Object.assign({}, e, { id: e.id + '_v', _virtual: true, tipo: opuesto, ts: vts, hora: hhmmDeTs(vts),
+      estado: opuesto === 'abrir' ? 'Abierto' : 'Cerrado', presion: opuesto === 'abrir' ? e.presion : 's/d', presionNueva: opuesto === 'abrir',
+      conApertura: false, velaTxt: '', reemplaza: null }));
+  });
+  return out;
+}
 function maniobrasPendientes(corte){
   const c = corte ? corte.getTime() : 0;
   return MANIOBRAS.filter(e => (e.clientTs || 0) > c && e.ts).sort((a, b) => a.ts - b.ts);
@@ -11078,7 +11106,7 @@ function iniciarManiobrasSync(){
     const l = [];
     snap.forEach(d => l.push(Object.assign({ id: d.id }, d.data())));
     const locales = MANIOBRAS.filter(e => e._local && !l.some(x => x.id === e.id) && Date.now() - (e.clientTs || 0) < 60e3);
-    MANIOBRAS = l.concat(locales);
+    MANIOBRAS = maniobrasConVirtuales(l.concat(locales));
     updatePendCount();
   }, (e) => console.error('pozos_maniobras', e));
 }
@@ -13360,7 +13388,7 @@ window.addEventListener('error', (ev) => {
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202611140115;
+var APP_VERSION = 202611140320;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
