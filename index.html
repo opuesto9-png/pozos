@@ -1670,6 +1670,20 @@
   #parteDiasModal h2{ margin:0 0 6px; font-size:1.1rem; } #parteDiasModal p{ margin:0 0 10px; font-size:.86rem; color: var(--muted); }
   .pd-lista{ margin:0 0 14px; padding-left:18px; font-size:.92rem; line-height:1.6; }
   .pd-bot{ display:flex; flex-direction:column; gap:8px; } .pd-bot button{ min-height:44px; padding:8px 12px; }
+  .pv-corr{ display:block; margin-top:4px; background:transparent; border:1px solid var(--line); color: var(--text); border-radius:8px; padding:4px 8px; font:inherit; font-size:.75rem; cursor:pointer; white-space:nowrap; }
+  #pvManModal{ position:fixed; inset:0; z-index:9000; background:rgba(5,14,22,.72); display:flex; align-items:center; justify-content:center; padding:16px; }
+  #pvManModal .pvm-box{ background: var(--panel, #13293B); border:1px solid var(--line); border-radius:14px; padding:18px; width:min(560px, 100%); max-height:90vh; overflow:auto; }
+  .pvm-top{ display:flex; justify-content:space-between; align-items:center; gap:10px; } .pvm-top h2{ margin:0; font-size:1.05rem; }
+  .pvm-x{ background:transparent; border:0; color: var(--text); font-size:1.6rem; cursor:pointer; line-height:1; }
+  #pvManModal p{ font-size:.86rem; color: var(--muted); margin:6px 0 12px; }
+  .pvm-it{ border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin-bottom:8px; background: var(--bg); }
+  .pvm-l1{ display:flex; justify-content:space-between; gap:10px; align-items:center; flex-wrap:wrap; }
+  .pvm-l1 small{ display:block; color: var(--muted); font-size:.75rem; margin-top:2px; }
+  .pvm-bot{ display:flex; gap:6px; flex-wrap:wrap; } .pvm-bot button{ min-height:34px; padding:4px 10px; border-radius:8px; border:1px solid var(--line); background:transparent; color: var(--text); font:inherit; font-size:.82rem; cursor:pointer; }
+  .pvm-an, .pvm-ok.an{ color:#F2A08F !important; border-color:#7A4A40 !important; }
+  .pvm-form{ margin-top:10px; border-top:1px dashed var(--line); padding-top:10px; }
+  .pvm-anular{ display:flex; flex-direction:column; gap:6px; font-size:.86rem; }
+  .pvm-ficha{ width:100%; min-height:40px; margin-top:6px; }
   #dlgBloqAviso{ position:fixed; left:12px; right:12px; bottom:12px; z-index:99999; background:#5A2A1E; color:#FFE3DA; border:1px solid #C9664D; border-radius:12px; padding:12px 14px; font-size:.92rem; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
   #dlgBloqAviso button{ background:#FFE3DA; color:#5A2A1E; border:0; border-radius:8px; padding:8px 12px; font:inherit; font-weight:700; cursor:pointer; }
 </style>
@@ -5979,7 +5993,9 @@ function parteCampoFilas(forzarTodos){
   // version anterior de la app), ese guardado tambien sale, para no perderlo mientras conviven versiones
   const ultEv = {};
   evs.forEach(e => { ultEv[e.pozo] = Math.max(ultEv[e.pozo] || 0, e.clientTs || 0); });
-  const gasBase = evs.map(e => maniobraComoRec(e)).concat(gasBaseVieja.filter(r => !ultEv[r.pozo] || (r._updatedAtDate && r._updatedAtDate.getTime() > ultEv[r.pozo] + 2 * 60e3)));
+  // (las correcciones / anulaciones hechas desde el Parte en vivo tocan la ficha pero no son un movimiento nuevo)
+  const desdeParte = (r) => (r.updatedFields || []).some(k => k === 'anulacion' || k === 'corregidoParte');
+  const gasBase = evs.map(e => maniobraComoRec(e)).concat(gasBaseVieja.filter(r => !desdeParte(r) && (!ultEv[r.pozo] || (r._updatedAtDate && r._updatedAtDate.getTime() > ultEv[r.pozo] + 2 * 60e3))));
   const filasGas = gasBase
     .map(rec => {
       let horasPerdida = null, horasProduccion = null;
@@ -9964,7 +9980,7 @@ function parteVivoDatos(iso){
     const envGas = parteMs(ultimoReporteTs);
     out.hojas.push({ id: 'gas', titulo: 'GAS', sub: 'Parte de campo', desde: ini6,
       cols: ['Hora', 'Instalación', 'Pozo', 'Novedad', 'Hs cierre', 'Hs prod.'],
-      filas: c.filasGasConNotas.map(f => ({ ts: f._ts || 0, enviado: !!(envGas && f._ts && f._ts <= envGas),
+      filas: c.filasGasConNotas.map(f => ({ ts: f._ts || 0, enviado: !!(envGas && f._ts && f._ts <= envGas), pozo: f.pozo, man: !!f._tipoMan,
         celdas: [f.hora, f.instalacion, f.pozo, f.novedad, f.horasPerdida == null ? '' : String(f.horasPerdida).replace('.', ','), f.horasProduccion == null ? '' : String(f.horasProduccion).replace('.', ',')] })) });
     out.hojas.push({ id: 'oil', titulo: 'OIL', sub: 'Parte de campo (AIB)', desde: ini6,
       cols: ['Hora', 'Instalación', 'Pozo', 'Novedad'],
@@ -10096,7 +10112,8 @@ function renderParteVivo(){
       const k = h.id + '|' + f.celdas.join('|');
       vistos.add(k);
       const nueva = !primera && !parteVivoVistos.has(k);
-      html += `<tr class="${f.enviado ? 'env' : ''}${nueva ? ' nueva' : ''}">${f.celdas.map((c, i) => `<td${i === 3 ? ' class="nov"' : ''}>${parteEsc(c)}</td>`).join('')}<td class="est">${f.enviado === null ? '' : (f.enviado ? 'enviado' : 'sin enviar')}</td></tr>`;
+      const corr = h.id === 'gas' && f.man && f.pozo && !esMovil() ? `<button type="button" class="pv-corr" data-pozo="${parteEsc(f.pozo)}">Corregir / anular</button>` : '';
+      html += `<tr class="${f.enviado ? 'env' : ''}${nueva ? ' nueva' : ''}">${f.celdas.map((c, i) => `<td${i === 3 ? ' class="nov"' : ''}>${parteEsc(c)}</td>`).join('')}<td class="est">${f.enviado === null ? '' : (f.enviado ? 'enviado' : 'sin enviar')}${corr}</td></tr>`;
     });
     html += `</tbody></table></div></section>`;
   });
@@ -10106,6 +10123,7 @@ function renderParteVivo(){
   window.scrollTo(0, y);
   parteVivoVistos = vistos;
   main.querySelectorAll('[data-pdia]').forEach(b => b.addEventListener('click', () => { parteDiaSel = b.dataset.pdia; parteVivoVistos = null; renderParteVivo(); }));
+  main.querySelectorAll('.pv-corr').forEach(b => b.addEventListener('click', () => pvAbrirManiobras(b.dataset.pozo, d.ini6.getTime())));
   main.querySelectorAll('.pv-copiar').forEach(b => b.addEventListener('click', () => {
     const h = d.hojas.find(x => x.id === b.dataset.hoja);
     if(!h) return;
@@ -10114,6 +10132,152 @@ function renderParteVivo(){
     if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(ok, () => prompt('Copiá el texto:', t));
     else prompt('Copiá el texto:', t);
   }));
+}
+// ---- Parte en vivo: CORREGIR / ANULAR una maniobra (solo en la compu) ----
+// El parte no se escribe a mano: se corrige el dato de origen (registro de maniobras + ficha del pozo) y el
+// parte, las horas del dia y el ciclaje se rearman solos. Cada anulacion queda anotada en Movimientos.
+var pvManSel = null; // { pozo, ini }
+function pvManiobrasDe(pozo, ini){
+  return (MANIOBRAS || []).filter(e => e.pozo === pozo && e.ts >= ini && e.ts < ini + 864e5 && (e.tipo === 'abrir' || e.tipo === 'cerrar')).sort((a, b) => a.ts - b.ts);
+}
+function pvAbrirManiobras(pozo, ini){
+  pvManSel = { pozo, ini };
+  const viejo = document.getElementById('pvManModal'); if(viejo) viejo.remove();
+  const m = document.createElement('div');
+  m.id = 'pvManModal';
+  m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true'); m.setAttribute('aria-labelledby', 'pvManTit');
+  document.body.appendChild(m);
+  m.addEventListener('keydown', (e) => { if(e.key === 'Escape') pvCerrarManiobras(); });
+  m.addEventListener('click', (e) => { if(e.target === m) pvCerrarManiobras(); });
+  pvPintarManiobras();
+}
+function pvCerrarManiobras(){ const m = document.getElementById('pvManModal'); if(m) m.remove(); pvManSel = null; }
+function pvPintarManiobras(){
+  const m = document.getElementById('pvManModal');
+  if(!m || !pvManSel) return;
+  const { pozo, ini } = pvManSel;
+  const l = pvManiobrasDe(pozo, ini);
+  const h = horasDiaPozo(pozo, ini);
+  const n = (x) => String(x).replace('.', ',');
+  m.innerHTML = `<div class="clave-box pvm-box">
+    <div class="pvm-top"><h2 id="pvManTit">${avisoEsc(pozo)} · maniobras del ${avisoEsc(parteFechaCorta(new Date(ini)))}</h2><button type="button" class="pvm-x" aria-label="Cerrar">&times;</button></div>
+    <p>Corregí o anulá la maniobra que quedó mal. El parte, las horas y el ciclaje se acomodan solos. Hoy: <b>${n(h.cierre)} h cierre · ${n(h.prod)} h producción</b>.</p>
+    <div class="pvm-lista">${l.length ? l.map(e => `<div class="pvm-it" data-id="${avisoEsc(e.id)}">
+        <div class="pvm-l1"><span><b>${e.tipo === 'abrir' ? 'Abrió' : 'Cerró'} ${avisoEsc(e.hora || hhmmDeTs(e.ts))}</b>${e.tipo === 'abrir' && e.presionNueva !== false && e.presion && e.presion !== 's/d' ? ' · ' + avisoEsc(e.presion) + ' kg/cm²' : ''}${e.tipo === 'cerrar' && e.presionCierre ? ' · ' + avisoEsc(e.presionCierre) + ' kg/cm²' : ''}
+          <small>${e._virtual ? 'cargada junto con la otra maniobra' : 'cargó ' + avisoEsc(e.por || '—') + (e.clientTs ? ' · ' + hhmmDeTs(e.clientTs) : '')}${e.editadoPor ? ' · corregida por ' + avisoEsc(e.editadoPor) : ''}</small></span>
+          <span class="pvm-bot"><button type="button" class="pvm-ed">Cambiar hora${e.tipo === 'abrir' ? ' / presión' : ''}</button><button type="button" class="pvm-an">Anular</button></span></div>
+        <div class="pvm-form" style="display:none;"></div>
+      </div>`).join('') : '<div class="pv-vacio">No hay maniobras registradas de este pozo en ese día.</div>'}</div>
+    <button type="button" class="clave-no pvm-ficha">Abrir la ficha completa del pozo</button>
+  </div>`;
+  m.querySelector('.pvm-x').addEventListener('click', pvCerrarManiobras);
+  m.querySelector('.pvm-ficha').addEventListener('click', () => { const r = POZOS.find(x => x.pozo === pozo); pvCerrarManiobras(); if(r){ document.getElementById('tabLista').click(); openCard(r, r.bateria || 'Sin bateria'); } });
+  m.querySelectorAll('.pvm-it').forEach(it => {
+    const e = l.find(x => x.id === it.dataset.id);
+    const form = it.querySelector('.pvm-form');
+    it.querySelector('.pvm-ed').addEventListener('click', () => {
+      form.style.display = '';
+      form.innerHTML = `<div class="qc-form"><label class="qc-f"><span>Hora real</span><input type="time" class="edit-input pvm-h" value="${avisoEsc(e.hora || hhmmDeTs(e.ts))}"></label>
+        <label class="qc-f"><span>${e.tipo === 'abrir' ? 'Presión estática (kg/cm²)' : 'Presión de cierre (opcional)'}</span><input class="edit-input pvm-p" inputmode="decimal" value="${avisoEsc(e.tipo === 'abrir' ? (e.presionNueva !== false && e.presion !== 's/d' ? (e.presion || '') : '') : (e.presionCierre || ''))}"></label></div>
+        <div class="qc-err pvm-err" role="alert"></div>
+        <div class="pvm-bot"><button type="button" class="save-btn pvm-ok">Guardar corrección</button><button type="button" class="clave-no pvm-no">Cancelar</button></div>`;
+      form.querySelector('.pvm-no').addEventListener('click', () => { form.style.display = 'none'; form.innerHTML = ''; });
+      form.querySelector('.pvm-ok').addEventListener('click', () => {
+        const hh = form.querySelector('.pvm-h').value, pp = form.querySelector('.pvm-p').value.trim().replace(',', '.');
+        if(!/^\d{2}:\d{2}$/.test(hh)){ form.querySelector('.pvm-err').textContent = 'Poné la hora.'; return; }
+        if(pp && isNaN(parseFloat(pp))){ form.querySelector('.pvm-err').textContent = 'La presión tiene que ser un número.'; return; }
+        if(!puedeModificar()) return;
+        pvCorregirManiobra(e, hh, pp);
+      });
+      form.querySelector('.pvm-h').focus();
+    });
+    it.querySelector('.pvm-an').addEventListener('click', () => {
+      form.style.display = '';
+      form.innerHTML = `<div class="pvm-anular"><b>¿Anular "${e.tipo === 'abrir' ? 'Abrió' : 'Cerró'} ${avisoEsc(e.hora || '')}" de ${avisoEsc(pozo)}?</b>
+        <span>Sale del parte, de las horas del día y del ciclaje.</span>
+        <label class="qc-f"><span>Motivo (queda anotado)</span><input class="edit-input pvm-mot" maxlength="80" placeholder="ej: cargado dos veces"></label>
+        <div class="qc-err pvm-err" role="alert"></div>
+        <div class="pvm-bot"><button type="button" class="pvm-ok an">Anular maniobra</button><button type="button" class="clave-no pvm-no">Cancelar</button></div></div>`;
+      form.querySelector('.pvm-no').addEventListener('click', () => { form.style.display = 'none'; form.innerHTML = ''; });
+      form.querySelector('.pvm-ok').addEventListener('click', () => {
+        const mot = form.querySelector('.pvm-mot').value.trim();
+        if(!mot){ form.querySelector('.pvm-err').textContent = 'Escribí el motivo.'; return; }
+        if(!puedeModificar()) return;
+        pvAnularManiobra(e, mot);
+      });
+      form.querySelector('.pvm-mot').focus();
+    });
+  });
+}
+function pvTsDelDia(ini, hhmm){
+  const [h, mi] = hhmm.split(':').map(Number);
+  const d = new Date(ini); d.setHours(h, mi, 0, 0);
+  let t = d.getTime();
+  if(t < ini) t += 864e5; // de 00:00 a 05:59 es la madrugada del dia siguiente (mismo dia operativo)
+  return t;
+}
+// si es la ultima maniobra del pozo, la ficha tambien se acomoda
+function pvEsUltima(e){ const ult = (MANIOBRAS || []).filter(x => x.pozo === e.pozo && x.ts).sort((a, b) => b.ts - a.ts)[0]; return ult && ult.id === e.id; }
+function pvCorregirManiobra(e, hhmm, presion){
+  if(!firestoreOk){ alert('No hay conexion con el guardado compartido.'); return; }
+  const ini = pvManSel.ini;
+  const ts = pvTsDelDia(ini, hhmm);
+  const ultima = pvEsUltima(e);
+  const por = operadorName || 'Sin nombre';
+  const cambios = { ts, hora: hhmm, editadoPor: por, editadoTs: Date.now() };
+  if(e.tipo === 'abrir'){ cambios.presion = presion || 's/d'; cambios.presionNueva = !!presion; }
+  else cambios.presionCierre = presion || '';
+  if(e._virtual){
+    // la maniobra reconstruida pasa a ser un registro propio; la original deja de reconstruirla
+    const src = (MANIOBRAS || []).find(x => x.id === e.id.replace(/_v$/, ''));
+    const doc = Object.assign({}, e, cambios, { conApertura: false, clientTs: e.clientTs || Date.now(), updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+    ['id', '_virtual', '_local', '_mod'].forEach(k => delete doc[k]);
+    const id = maniobraId(e.pozo, e.tipo, ts);
+    db.collection('pozos_maniobras').doc(id).set(doc).catch(err => alert('No se pudo guardar (' + err.message + ').'));
+    if(src){ db.collection('pozos_maniobras').doc(src.id).update({ conApertura: false }).catch(() => {}); src.conApertura = false; }
+    MANIOBRAS = maniobrasConVirtuales((MANIOBRAS || []).filter(x => x.id !== e.id).concat([Object.assign({ id, _local: true }, doc)]));
+  } else {
+    db.collection('pozos_maniobras').doc(e.id).update(Object.assign({}, cambios, { updatedAt: firebase.firestore.FieldValue.serverTimestamp() })).catch(err => alert('No se pudo guardar (' + err.message + ').'));
+    Object.assign(e, cambios);
+    MANIOBRAS = maniobrasConVirtuales(MANIOBRAS);
+  }
+  if(ultima){
+    const f = e.tipo === 'abrir' ? { horaApertura: hhmm, tsApertura: ts } : { horaCierre: hhmm, tsCierre: ts };
+    if(e.tipo === 'abrir' && presion) f.presion = presion;
+    if(e.tipo === 'cerrar') f.presionCierre = presion || '';
+    f.corregidoParte = por + ' corrigió ' + (e.tipo === 'abrir' ? 'apertura' : 'cierre') + ' a las ' + hhmm + ' · ' + hhmmDeTs(Date.now());
+    const r = POZOS.find(x => x.pozo === e.pozo);
+    if(r){ Object.assign(r, f); saveEdit(e.pozo, f, Object.keys(f)); }
+  }
+  movToast('Corregido: ' + e.pozo + ' ' + (e.tipo === 'abrir' ? 'abrió' : 'cerró') + ' ' + hhmm + '.');
+  pvPintarManiobras(); parteRefrescarSiAbierto(); updatePendCount();
+}
+function pvAnularManiobra(e, motivo){
+  if(!firestoreOk){ alert('No hay conexion con el guardado compartido.'); return; }
+  const ultima = pvEsUltima(e);
+  const por = operadorName || 'Sin nombre';
+  if(e._virtual){
+    const src = (MANIOBRAS || []).find(x => x.id === e.id.replace(/_v$/, ''));
+    if(src){ db.collection('pozos_maniobras').doc(src.id).update({ conApertura: false }).catch(() => {}); src.conApertura = false; }
+  } else {
+    db.collection('pozos_maniobras').doc(e.id).delete().catch(err => alert('No se pudo (' + err.message + ').'));
+  }
+  MANIOBRAS = maniobrasConVirtuales((MANIOBRAS || []).filter(x => x.id !== e.id));
+  // queda anotado en Movimientos (y si era la ultima maniobra, el pozo vuelve al estado anterior)
+  const nota = por + ' anuló ' + (e.tipo === 'abrir' ? 'apertura ' : 'cierre ') + (e.hora || '') + ' (' + motivo + ') · ' + hhmmDeTs(Date.now());
+  const f = { anulacion: nota };
+  if(ultima){
+    // la ficha queda como la maniobra anterior que sigue en el registro
+    const prev = (MANIOBRAS || []).filter(x => x.pozo === e.pozo && x.ts).sort((a, b) => b.ts - a.ts)[0];
+    if(prev && prev.tipo === 'cerrar') Object.assign(f, { estado: 'Cerrado', horaCierre: prev.hora || hhmmDeTs(prev.ts), tsCierre: prev.ts, horaApertura: '' });
+    else if(prev) Object.assign(f, { estado: 'Abierto', horaApertura: prev.hora || hhmmDeTs(prev.ts), tsApertura: prev.ts, horaCierre: '' });
+    else if(e.tipo === 'abrir') Object.assign(f, { estado: 'Cerrado', horaApertura: '' });
+    else Object.assign(f, { estado: 'Abierto', horaCierre: '' });
+  }
+  const r = POZOS.find(x => x.pozo === e.pozo);
+  if(r){ Object.assign(r, f); saveEdit(e.pozo, f, Object.keys(f)); }
+  movToast('Anulada: ' + e.pozo + ' ' + (e.tipo === 'abrir' ? 'apertura ' : 'cierre ') + (e.hora || '') + '.');
+  pvPintarManiobras(); parteRefrescarSiAbierto(); updatePendCount();
 }
 function parteRefrescarSiAbierto(){
   const m = document.getElementById('parteMain');
@@ -13388,7 +13552,7 @@ window.addEventListener('error', (ev) => {
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202611140320;
+var APP_VERSION = 202611140340;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
