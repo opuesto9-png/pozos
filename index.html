@@ -4607,10 +4607,11 @@ function renderCardView(rec, bat){
     ${field('Colectora', rec.colectora)}
     ${field('Ciclo', rec.ciclo)}
     ${ultimaVelaTxt ? field('Ultima vela lanzada', ultimaVelaTxt) : ''}
-    ${typeof rec.horasTotalNum === 'number' ? `<div class="field">
-      <div class="k">Horas para el reporte</div>
-      <div class="v">${rec.horasTotalNum.toString().replace('.',',')} hs &middot; ${rec.horasTotalTipo === 'cerrado' ? 'PERDIDA' : 'PRODUCCION'}</div>
-    </div>` : ''}
+    ${(() => { try { const h = horasDiaPozo(rec.pozo); const n = (x) => String(x).replace('.', ',');
+      const mans = h.maniobras.map(e => (e.tipo === 'abrir' ? 'abrió ' : 'cerró ') + (e.hora || hhmmDeTs(e.ts))).join(', ');
+      return `<div class="field"><div class="k">Horas del día (06:00 a 06:00)</div>
+        <div class="v">${n(h.cierre)} h cierre &middot; ${n(h.prod)} h producción</div>
+        <div class="edit-hint">A las 06:00 estaba ${h.abiertoA06 ? 'abierto' : 'cerrado'}${mans ? '; ' + avisoEsc(mans) : '; sin maniobras hoy'}. Lo que falta hasta las 06:00 se cuenta según cómo quedó.</div></div>`; } catch(e){ return ''; } })()}
     ${field('Tablero', rec.tablero)}
     ${field('Optimizador', pozoTieneOptim(rec) ? rec.optim + (pozoOptimAuto(rec) ? ' — funcionando en AUTOMÁTICO' : ' — funcionando en MANUAL') : '', 'optim')}
     ${field('Ultima visita', rec.fecha)}
@@ -5141,7 +5142,7 @@ function renderCardEdit(rec, bat){
     if((aperturaCambio || cierreCambio) && (hA || hcEfectivo) && newFields.estado){
       maniobraRegistrar(rec, { tipo: newFields.estado === 'Abierto' ? 'abrir' : 'cerrar', ts: newFields.estado === 'Abierto' ? rec.tsApertura : rec.tsCierre,
         velaTxt: (changedKeys.includes('velaEnAperturaTxt') && rec.velaEnAperturaTxt) || '', origen: 'ficha', reemplaza: maniobraCorrigeA(recAntes, newFields, aperturaCambio, cierreCambio),
-        presionNueva: presionEscrita, conApertura: !!(aperturaCambio && cierreCambio && hA) });
+        presionNueva: presionEscrita, conApertura: !!(aperturaCambio && cierreCambio && hA), horasManual: !!(horasManualVal && horasManualTipo) });
     }
     { const hv = {};
       if(changedKeys.includes('presion') && newFields.presion !== 's/d') hv.presion = newFields.presion;
@@ -6017,6 +6018,8 @@ function parteCampoFilas(forzarTodos){
         _ts: rec._ev ? rec._ev.ts : (rec._updatedAtDate ? rec._updatedAtDate.getTime() : 0),
         _medido: rec._ev ? rec._ev.horasMedidas : null,
         _horasMed: rec._ev && typeof rec.horasTotalNum === 'number' ? rec.horasTotalNum : null,
+        _horasManual: !!(rec._ev && rec._ev.horasManual),
+        _tipoMan: rec._ev ? rec._ev.tipo : null,
         horasPerdida,
         horasProduccion
       };
@@ -6030,7 +6033,7 @@ function parteCampoFilas(forzarTodos){
   const r1 = (x) => Math.max(0, Math.round(x * 10) / 10);
   const porPozoDia = {};
   filasGas.forEach(f => {
-    if(!f._medido || f._horasMed === null || !f._ts) return;
+    if(!f._ts || !(f._tipoMan || f._medido) || (f._horasManual && f._horasMed === null)) return;
     const ini = inicioDiaOperativo(new Date(f._ts)).getTime();
     const k = f.pozo + '|' + ini;
     (porPozoDia[k] = porPozoDia[k] || []).push(f);
@@ -6038,14 +6041,23 @@ function parteCampoFilas(forzarTodos){
   });
   Object.values(porPozoDia).forEach(l => {
     l.sort((a, b) => a._ts - b._ts);
+    const regPozo = (typeof MANIOBRAS !== 'undefined' ? MANIOBRAS : []).filter(e => e.pozo === l[0].pozo && e.ts).map(e => e.ts);
+    let sumaMed = 0, arrancaA06 = false;
     l.forEach((f, i) => {
-      const desde = Math.max(f._ts - f._horasMed * 36e5, f._diaIni);
+      // desde la maniobra anterior del registro (o las 06:00 si fue otro dia / no hay). Las horas guardadas en
+      // la ficha solo cuentan si se corrigieron a mano.
+      const prevTs = regPozo.filter(x => x < f._ts - 30e3).reduce((a, b) => Math.max(a, b), 0);
+      const desde = f._horasManual ? Math.max(f._ts - f._horasMed * 36e5, f._diaIni) : Math.max(prevTs || f._diaIni, f._diaIni);
       const medido = r1((f._ts - desde) / 36e5);
       // columna HORA: solo la hora de la maniobra (el tramo entre maniobras se arma abajo, si hubo varias)
-      f.hora = String(f.hora || '').split('-').pop().trim() || hhmmDeTs(f._ts);
-      const resto = i === l.length - 1 ? r1((f._diaIni + 864e5 - f._ts) / 36e5) : null;
-      // _medido = como estaba el pozo ANTES de la maniobra ('abierto' -> esta maniobra es un cierre)
-      if(f._medido === 'abierto'){ f.horasProduccion = medido; f.horasPerdida = resto; }
+      f.hora = hhmmDeTs(f._ts); // la hora real de la maniobra (no el rango guardado en la ficha, que puede ser viejo)
+      sumaMed += medido;
+      if(i === 0) arrancaA06 = desde <= f._diaIni + 30e3;
+      // el ultimo tramo hasta las 06:00; si el dia esta completo desde las 06:00, que cierre justo en 24
+      const resto = i === l.length - 1 ? (arrancaA06 ? r1(24 - sumaMed) : r1((f._diaIni + 864e5 - f._ts) / 36e5)) : null;
+      // como estaba el pozo ANTES de la maniobra: un cierre mide produccion, una apertura mide cierre
+      const veniaAbierto = f._tipoMan ? f._tipoMan === 'cerrar' : f._medido === 'abierto';
+      if(veniaAbierto){ f.horasProduccion = medido; f.horasPerdida = resto; }
       else { f.horasPerdida = medido; f.horasProduccion = resto; }
     });
   });
@@ -10974,6 +10986,23 @@ function cicAvisoEstadoViejo(rec){
     return `<div class="vela-pend cic-viejo"><b>Ojo:</b> el ciclaje pide <b>${it.tipo === 'abrir' ? 'abrirlo' : 'cerrarlo'} a las ${avisoEsc(it.hora || '')}</b>, pero la app lo tiene <b>${quiere.toUpperCase()} desde el ${avisoEsc(tendFechaHora(desde))}</b> — falta cargar ${falta}. Cargá primero ${falta} con su hora y después ${it.tipo === 'abrir' ? 'la apertura' : 'el cierre'}; si no, el movimiento no sale en el parte.</div>`;
   } catch(e){ return ''; }
 }
+// HORAS DEL DIA OPERATIVO de un pozo, a partir del registro de maniobras (hora real de cada apertura/cierre).
+// El dia arranca a las 06:00 con el estado que tenia el pozo a esa hora; cada maniobra cambia el estado; el
+// ultimo tramo se proyecta hasta las 06:00 del dia siguiente. Cierre + produccion = 24 h siempre.
+function horasDiaPozo(pozo, iniMs){
+  const ini = iniMs || inicioDiaOperativo(new Date()).getTime(), fin = ini + 864e5;
+  const todas = (typeof MANIOBRAS !== 'undefined' ? MANIOBRAS : []).filter(e => e.pozo === pozo && e.ts && (e.tipo === 'abrir' || e.tipo === 'cerrar')).sort((a, b) => a.ts - b.ts);
+  const delDia = todas.filter(e => e.ts >= ini && e.ts < fin);
+  const antes = todas.filter(e => e.ts < ini).pop();
+  const rec = POZOS.find(x => x.pozo === pozo) || {};
+  // estado a las 06:00: lo contrario de la primera maniobra del dia; si no hubo, como quedo la ultima anterior
+  let abierto = delDia.length ? delDia[0].tipo === 'cerrar' : (antes ? antes.tipo === 'abrir' : rec.estado === 'Abierto');
+  let t = ini, cierre = 0, prod = 0;
+  delDia.forEach(e => { const h = (e.ts - t) / 36e5; if(abierto) prod += h; else cierre += h; abierto = e.tipo === 'abrir'; t = e.ts; });
+  const resto = (fin - t) / 36e5; if(abierto) prod += resto; else cierre += resto;
+  const r1 = (x) => Math.round(Math.max(0, x) * 10) / 10;
+  return { cierre: r1(cierre), prod: r1(24 - r1(cierre)), maniobras: delDia, abiertoA06: delDia.length ? delDia[0].tipo === 'cerrar' : (antes ? antes.tipo === 'abrir' : rec.estado === 'Abierto') };
+}
 function horaAmPmSospechosa(hhmm){
   const m = String(hhmm || '').match(/^(\d{1,2}):(\d{2})/);
   if(!m) return '';
@@ -11022,7 +11051,7 @@ function maniobraRegistrar(rec, o){
   const doc = {
     pozo: rec.pozo, bateria: rec.bateria || 'Sin bateria', tipo: o.tipo, ts: o.ts, hora: hhmmDeTs(o.ts), estado: v(rec.estado, ''),
     presion: o.presionNueva === false ? 's/d' : v(rec.presion, 's/d'), presionCierre: v(rec.presionCierre, ''),
-    presionNueva: o.presionNueva !== false, conApertura: o.conApertura === true, horaApertura: v(rec.horaApertura, ''), horaCierre: v(rec.horaCierre, ''),
+    presionNueva: o.presionNueva !== false, conApertura: o.conApertura === true, horasManual: o.horasManual === true, horaApertura: v(rec.horaApertura, ''), horaCierre: v(rec.horaCierre, ''),
     horasTotalNum: typeof rec.horasTotalNum === 'number' ? rec.horasTotalNum : null, horasTotalTipo: v(rec.horasTotalTipo, ''),
     horasRangoDesde: v(rec.horasRangoDesde, ''), horasRangoHasta: v(rec.horasRangoHasta, ''), horasRangoConfirmado: rec.horasRangoConfirmado === true,
     veniaDeCerradoConfirmado: rec.veniaDeCerradoConfirmado === true, horarioNota: v(rec.horarioNota, ''), velaTxt: o.velaTxt || '',
@@ -13331,7 +13360,7 @@ window.addEventListener('error', (ev) => {
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202611132140;
+var APP_VERSION = 202611140115;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
