@@ -6041,11 +6041,8 @@ function parteCampoFilas(forzarTodos){
     l.forEach((f, i) => {
       const desde = Math.max(f._ts - f._horasMed * 36e5, f._diaIni);
       const medido = r1((f._ts - desde) / 36e5);
-      // si la maniobra anterior fue en otro dia (ej: volviendo de franco), la hora tambien arranca a las 06:00
-      if(f._ts - f._horasMed * 36e5 < f._diaIni - 60e3){
-        const hasta = String(f.hora || '').split('-').pop().trim() || hhmmDeTs(f._ts);
-        f.hora = '06:00-' + hasta;
-      }
+      // columna HORA: solo la hora de la maniobra (el tramo entre maniobras se arma abajo, si hubo varias)
+      f.hora = String(f.hora || '').split('-').pop().trim() || hhmmDeTs(f._ts);
       const resto = i === l.length - 1 ? r1((f._diaIni + 864e5 - f._ts) / 36e5) : null;
       // _medido = como estaba el pozo ANTES de la maniobra ('abierto' -> esta maniobra es un cierre)
       if(f._medido === 'abierto'){ f.horasProduccion = medido; f.horasPerdida = resto; }
@@ -6068,7 +6065,8 @@ function parteCampoFilas(forzarTodos){
         if(j === 0 && frs.length > 1 && /^(Abierto|Cerrado)\.?$/i.test(fr)) return;
         const clave = (x) => x.toLowerCase().replace('recuperando', 'recupera').replace(/,/g, '').replace(/\s*[\d.,]+\s*(kg\/cm2|psi)\.?$/, '').replace(/\.$/, '');
         // "Cerrado, recupera presion." de una apertura, cuando el cierre ya esta en la fila
-        if(/^cerrado recupera presion$/.test(clave(fr)) && frases.some(x => clave(x).startsWith('cerrado'))) return;
+        // (solo el que va al principio de una apertura; el cierre del final del dia SI va)
+        if(j === 0 && frs.length > 1 && /^abierto/i.test(frs[1]) && /^cerrado recupera presion$/.test(clave(fr)) && frases.some(x => clave(x).startsWith('cerrado'))) return;
         if(!frases.includes(fr)) frases.push(fr);
       });
     });
@@ -13333,7 +13331,7 @@ window.addEventListener('error', (ev) => {
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202611132115;
+var APP_VERSION = 202611132135;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
