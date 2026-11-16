@@ -1692,11 +1692,12 @@
   @media (min-width:1300px){ body.modo-seccion.sec-tabCiclaje main#ciclajeMain{ margin-left:calc(50% - 320px); margin-right:0; max-width:min(880px, calc(50% + 300px)); } }
   @media (min-width:1500px){ body.modo-seccion.sec-tabCiclaje main#ciclajeMain{ max-width:calc(50% + 300px); } }
   .cc-grid{ display:grid; gap:16px; } @media (min-width:1500px){ .cc-grid{ grid-template-columns: minmax(0,1fr) minmax(0,1fr); align-items:start; } }
-  .cc-pozo{ display:grid; grid-template-columns: 1.3fr 1fr 1fr auto; gap:6px; align-items:end; padding:8px; border:1px solid var(--line); border-radius:10px; margin-bottom:8px; background: var(--bg); }
-  .cc-pozo .qc-f span{ font-size:.72rem; white-space:nowrap; } .cc-pozo label:nth-of-type(4){ grid-column: span 2; } .cc-pozo label:nth-of-type(5){ grid-column: span 2; } .cc-pozo .edit-input{ min-width:0; padding:6px; font-size:.86rem; }
-  .cc-quitar{ grid-column:4; grid-row:1; align-self:end; padding:0 10px; min-height:34px; border-radius:8px; border:1px solid #7A4A40; background:transparent; color:#F2A08F; font:inherit; font-size:.8rem; cursor:pointer; }
-  .cc-ref{ grid-column:1 / -1; font-size:.75rem; color: var(--muted); } .cc-ref.ok{ color:#6FC9B0; }
-  @media (max-width:700px){ .cc-pozo{ grid-template-columns: 1fr 1fr; } }
+  .cc-pozo{ display:grid; grid-template-columns: 1.2fr 1.2fr .8fr .8fr auto; gap:6px; align-items:end; padding:8px; border:1px solid var(--line); border-radius:10px; margin-bottom:8px; background: var(--bg); }
+  .cc-pozo .qc-f span{ font-size:.72rem; white-space:nowrap; } .cc-pozo .cc-c34{ grid-column: span 3; } .cc-pozo .edit-input{ min-width:0; padding:6px; font-size:.86rem; }
+  .cc-quitar{ align-self:end; padding:0 10px; min-height:34px; border-radius:8px; border:1px solid #7A4A40; background:transparent; color:#F2A08F; font:inherit; font-size:.8rem; cursor:pointer; }
+  .cc-ref{ grid-column:1 / -1; font-size:.75rem; color: var(--muted); } .cc-ref.ok{ color:#6FC9B0; } .cc-ref:empty{ display:none; }
+  .cc-guardar-ciclo{ margin-left:6px; padding:3px 8px; border-radius:7px; border:1px solid #5FA3C9; background:transparent; color:#8FC3DF; font:inherit; font-size:.75rem; cursor:pointer; }
+  @media (max-width:700px){ .cc-pozo{ grid-template-columns: 1fr 1fr; } .cc-pozo .cc-c34{ grid-column: span 2; } }
   .cc-acc{ display:flex; gap:8px; flex-wrap:wrap; align-items:end; margin-top:6px; }
   .cc-turno{ border:1px solid var(--line); border-radius:10px; padding:8px 12px; margin-bottom:8px; }
   .cc-turno.dia{ background:rgba(232,182,74,.08); } .cc-turno.noche{ background:rgba(95,163,201,.08); }
@@ -8242,15 +8243,23 @@ function cicCalcSimular(){
 function cicCalcRender(main){
   const res = cicCalcSimular();
   const dias = [...new Set(res.eventos.map(e => e.dia))];
-  const filaPozo = (p, i) => `<div class="cc-pozo" data-i="${i}">
-      <label class="qc-f"><span>Pozo</span><input class="edit-input" data-k="pozo" list="ccPozos" value="${avisoEsc(p.pozo || '')}" placeholder="ej: 1567"></label>
-      <label class="qc-f"><span>Hs cierre</span><input class="edit-input" data-k="cierre" type="number" min="0.25" step="0.25" value="${p.cierre || ''}"></label>
-      <label class="qc-f"><span>Hs apertura</span><input class="edit-input" data-k="apertura" type="number" min="0.25" step="0.25" value="${p.apertura || ''}"></label>
-      <label class="qc-f"><span>Arranca desde</span><input class="edit-input" data-k="inicio" type="datetime-local" value="${avisoEsc(p.inicio || '')}"></label>
-      <label class="qc-f"><span>Estado</span><select class="edit-input" data-k="arranca"><option value="c"${p.arranca !== 'o' ? ' selected' : ''}>Cerrado</option><option value="o"${p.arranca === 'o' ? ' selected' : ''}>Abierto</option></select></label>
+  const filaPozo = (p, i) => {
+    const r = POZOS.find(x => x.pozo === p.pozo);
+    const cicloTxt = p.cierre && p.apertura ? String(p.cierre).replace('.', ',') + 'c x ' + String(p.apertura).replace('.', ',') + 'a' : '';
+    const difFicha = r && cicloTxt && (r.ciclo || '').replace(/\s+/g, '').toLowerCase() !== cicloTxt.replace(/\s+/g, '').toLowerCase();
+    const [dia, hora] = String(p.inicio || '').split('T');
+    return `<div class="cc-pozo" data-i="${i}">
+      <label class="qc-f cc-c1"><span>Pozo</span><input class="edit-input" data-k="pozo" list="ccPozos" value="${avisoEsc(p.pozo || '')}" placeholder="ej: 1567"></label>
+      <label class="qc-f cc-c2"><span>Ciclo</span><input class="edit-input" data-k="ciclo" value="${avisoEsc(cicloTxt)}" placeholder="ej: 20c x 4a"></label>
+      <label class="qc-f"><span>Hs cierre</span><input class="edit-input" data-k="cierre" inputmode="decimal" value="${p.cierre ? String(p.cierre).replace('.', ',') : ''}"></label>
+      <label class="qc-f"><span>Hs apertura</span><input class="edit-input" data-k="apertura" inputmode="decimal" value="${p.apertura ? String(p.apertura).replace('.', ',') : ''}"></label>
       <button type="button" class="cc-quitar">Quitar</button>
-      ${p.ref ? `<span class="cc-ref${p.auto ? ' ok' : ''}">${avisoEsc(p.ref)}</span>` : ''}
+      <label class="qc-f cc-c1"><span>Arranca el día</span><input class="edit-input" data-k="dia" type="date" value="${avisoEsc(dia || '')}"></label>
+      <label class="qc-f cc-c2"><span>a las (ej: 0:00)</span><input class="edit-input" data-k="hora" inputmode="numeric" maxlength="5" value="${avisoEsc(hora || '')}" placeholder="00:00"></label>
+      <label class="qc-f cc-c34"><span>Estado</span><select class="edit-input" data-k="arranca"><option value="c"${p.arranca !== 'o' ? ' selected' : ''}>Cerrado</option><option value="o"${p.arranca === 'o' ? ' selected' : ''}>Abierto</option></select></label>
+      <span class="cc-ref${p.auto ? ' ok' : ''}">${avisoEsc(p.ref || '')}${difFicha ? ` <button type="button" class="cc-guardar-ciclo">Guardar ciclo "${avisoEsc(cicloTxt)}" en la ficha</button>` : ''}</span>
     </div>`;
+  };
   const tag = (e) => `<span class="cc-tag ${e.tipo}">${e.tipo === 'abrir' ? 'ABRIR' : 'CERRAR'}</span>`;
   let out = '';
   if(!cicCalc.pozos.length) out = '<div class="cic-vacio">Agregá pozos para calcular.</div>';
@@ -8317,11 +8326,36 @@ function cicCalcRender(main){
   main.querySelectorAll('.cc-pozo').forEach(row => {
     const p = cicCalc.pozos[parseInt(row.dataset.i, 10)];
     row.querySelectorAll('[data-k]').forEach(inp => inp.addEventListener('change', () => {
-      const k = inp.dataset.k;
-      p[k] = (k === 'cierre' || k === 'apertura') ? parseFloat(inp.value) : inp.value;
-      if(k === 'pozo') cicCalcAuto(p); else { p.auto = false; p.ref = 'Cambiado a mano.'; }
+      const k = inp.dataset.k, v = inp.value.trim();
+      const [dia0, hora0] = String(p.inicio || '').split('T');
+      if(k === 'pozo'){ p.pozo = v; cicCalcAuto(p); }
+      else if(k === 'ciclo'){
+        // acepta "20c x 4a", "20 x 4", "20/4"
+        const m = v.match(/(\d+(?:[.,]\d+)?)\s*c?\s*[x×\/-]\s*(\d+(?:[.,]\d+)?)\s*a?/i);
+        if(m){ p.cierre = parseFloat(m[1].replace(',', '.')); p.apertura = parseFloat(m[2].replace(',', '.')); p.ref = 'Ciclo escrito a mano.'; p.auto = false; }
+        else { movToast('Escribí el ciclo así: 20c x 4a (horas cerrado x horas abierto).'); }
+      }
+      else if(k === 'cierre' || k === 'apertura'){ const n = parseFloat(v.replace(',', '.')); if(n > 0) p[k] = n; p.auto = false; p.ref = 'Cambiado a mano.'; }
+      else if(k === 'hora'){
+        // acepta 0:00, 00:00, 0, 2, 2:30, 0230
+        const m = v.match(/^(\d{1,2})(?::?(\d{2}))?$/);
+        if(m && parseInt(m[1], 10) < 24 && parseInt(m[2] || '0', 10) < 60){ p.inicio = (dia0 || pedIso(new Date())) + 'T' + m[1].padStart(2, '0') + ':' + (m[2] || '00'); p.auto = false; p.ref = 'Cambiado a mano.'; }
+        else movToast('Escribí la hora así: 0:00, 8:30, 20:05.');
+      }
+      else if(k === 'dia'){ if(v){ p.inicio = v + 'T' + (hora0 || '00:00'); p.auto = false; p.ref = 'Cambiado a mano.'; } }
+      else { p[k] = v; p.auto = false; p.ref = 'Cambiado a mano.'; }
       re();
     }));
+    const gc = row.querySelector('.cc-guardar-ciclo');
+    if(gc) gc.addEventListener('click', () => {
+      const r = POZOS.find(x => x.pozo === p.pozo);
+      if(!r || !puedeModificar()) return;
+      const ciclo = String(p.cierre).replace('.', ',') + 'c x ' + String(p.apertura).replace('.', ',') + 'a';
+      r.ciclo = ciclo; saveEdit(r.pozo, { ciclo }, ['ciclo']);
+      p.ref = '✓ Ciclo "' + ciclo + '" guardado en la ficha.'; p.auto = true;
+      movToast('Ciclo de ' + r.pozo + ' guardado en la ficha: ' + ciclo + '.');
+      re();
+    });
     row.querySelector('.cc-quitar').addEventListener('click', () => { cicCalc.pozos.splice(parseInt(row.dataset.i, 10), 1); re(); });
   });
   document.getElementById('ccAgregar').addEventListener('click', () => { cicCalc.pozos.push({ pozo: '', cierre: '', apertura: '', inicio: cicCalcLocalInput(cicInicioDia(cicDiaSel || cicHoy())), arranca: 'c' }); re(); setTimeout(() => { const l = main.querySelectorAll('.cc-pozo [data-k=pozo]'); if(l.length) l[l.length - 1].focus(); }, 30); });
@@ -13762,7 +13796,7 @@ window.addEventListener('error', (ev) => {
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202611160815;
+var APP_VERSION = 202611160830;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
