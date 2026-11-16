@@ -3274,6 +3274,16 @@ function movTexto(col, id, d){
   return id;
 }
 
+// cuando se cargo de verdad el dato (ultima escritura en la base, o la hora del equipo que lo cargo)
+function movDatoTs(d){
+  const tsDe = (v) => v && typeof v.toMillis === 'function' ? v.toMillis() : (typeof v === 'number' ? v : 0);
+  return syncModMs(d) || tsDe(d.updatedAt) || tsDe(d.clientTs) || tsDe(d.creadoTs) || 0;
+}
+function movDatoViejo(d, ahora){
+  const ts = movDatoTs(d || {});
+  return !!ts && (ahora || Date.now()) - ts > MOV_AV_VIEJO_MS;
+}
+var MOV_AV_VIEJO_MS = 20 * 60e3; // margen amplio por si el reloj de la compu esta un poco corrido
 // se llama al principio de cada listener de Firestore
 function detectarMovimientos(snapshot, col, soloAltas){
   if(!movAvisosActivo() || !snapshot || typeof snapshot.docChanges !== 'function') return;
@@ -3300,7 +3310,10 @@ function detectarMovimientos(snapshot, col, soloAltas){
     if(MOV_AV_PROPIOS[key] && ahora - MOV_AV_PROPIOS[key] < 120000) return;
     if(!yaCargada) return;
     const d = ch.doc.data() || {};
-    MOV_AV_COLA.push({ key, tab: MOV_AV_TABS[col], texto: movTexto(col, ch.doc.id, d), operador: d.operador || '', ts: ahora });
+    // dato viejo que llega tarde (la compu estuvo dormida / sin internet, o la app se recargo al actualizarse):
+    // se cuenta en "nuevos" pero NO suena ni avisa, porque no es algo que se acaba de cargar
+    const viejo = movDatoViejo(d, ahora);
+    MOV_AV_COLA.push({ key, tab: MOV_AV_TABS[col], texto: movTexto(col, ch.doc.id, d), operador: d.operador || '', ts: ahora, viejo });
   });
   // varias colecciones pueden cambiar juntas: juntamos todo en un solo aviso
   if(MOV_AV_COLA.length && !MOV_AV_TIMER) MOV_AV_TIMER = setTimeout(movProcesarCola, 400);
@@ -3315,7 +3328,9 @@ function movProcesarCola(){
     MOV_AV_NUEVOS.push(n);
   });
   movActualizarBadge();
-  movAvisar(nuevas);
+  const recientes = nuevas.filter(n => !n.viejo);
+  if(typeof appTraza === 'function') appTraza('aviso ' + (recientes.length ? 'sonó' : 'mudo (viejo)') + ': ' + nuevas.map(n => n.texto).join(' · '));
+  if(recientes.length) movAvisar(recientes);
 }
 
 function movActualizarBadge(){
@@ -6130,6 +6145,8 @@ function parteCampoFilas(forzarTodos){
         const pz = POZOS.find(x => x.pozo === rec.pozo);
         const vp = pz && velaPendienteDe(pz);
         if(vp && vp.ts && Math.abs(vp.ts - (rec._ev.clientTs || 0)) < 3 * 60e3) velaTxt = fraseVelasPozo(vp.cant, '');
+        // pozo con optimizador en automatico: la vela quedo como "vela suelta" del mismo guardado que el cierre
+        else if(pz && pz.velaSueltaTxt && Math.abs((parseInt(pz.velaSueltaTs, 10) || 0) - (rec._ev.clientTs || 0)) < 3 * 60e3) velaTxt = pz.velaSueltaTxt;
       }
       if(velaTxt) pozosConVelaUsada.add(rec.pozo);
       return {
@@ -9902,7 +9919,7 @@ function iniciarPedidosSync(){
     if(pedCargaInicial && typeof snap.docChanges === 'function'){
       snap.docChanges().forEach(ch => {
         const d = ch.doc.data();
-        if(ch.type === 'added' && !(ch.doc.metadata && ch.doc.metadata.hasPendingWrites) && d.estado === 'pendiente' && d.creadoPor !== operadorName && pedFechaDe(d) <= pedHoy()){
+        if(ch.type === 'added' && !(ch.doc.metadata && ch.doc.metadata.hasPendingWrites) && d.estado === 'pendiente' && d.creadoPor !== operadorName && pedFechaDe(d) <= pedHoy() && !movDatoViejo(d)){
           if(typeof movToast === 'function') movToast('Pedido nuevo' + (d.prioridad === 'urgente' ? ' URGENTE' : '') + ': ' + pedTitulo(d) + (d.creadoPor ? ' (' + d.creadoPor + ')' : ''));
           if(typeof movDing === 'function') movDing();
         }
@@ -13132,7 +13149,7 @@ function iniciarAlambreSync(){
     if(alamCargaInicial && typeof snap.docChanges === 'function'){
       snap.docChanges().forEach(ch => {
         const d = ch.doc.data();
-        if(ch.type === 'added' && !(ch.doc.metadata && ch.doc.metadata.hasPendingWrites) && (d.estado === 'pendiente' || d.estado === 'enpozo') && d.creadoPor !== operadorName && alamFecha(d) <= pedHoy()){
+        if(ch.type === 'added' && !(ch.doc.metadata && ch.doc.metadata.hasPendingWrites) && (d.estado === 'pendiente' || d.estado === 'enpozo') && d.creadoPor !== operadorName && alamFecha(d) <= pedHoy() && !movDatoViejo(d)){
           movToast((d.estado === 'enpozo' ? 'Naser en el pozo: ' : 'Equipo de alambre: ') + d.pozo + ' · ' + alamTrabajosTxt(d, true) + (d.hora ? ' · ' + d.hora : '') + (d.creadoPor ? ' (' + d.creadoPor + ')' : ''));
           if(typeof movDing === 'function') movDing();
         }
@@ -13905,7 +13922,7 @@ window.addEventListener('error', (ev) => {
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202611161230;
+var APP_VERSION = 202611161340;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
