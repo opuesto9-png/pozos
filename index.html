@@ -1684,6 +1684,34 @@
   .pvm-form{ margin-top:10px; border-top:1px dashed var(--line); padding-top:10px; }
   .pvm-anular{ display:flex; flex-direction:column; gap:6px; font-size:.86rem; }
   .pvm-ficha{ width:100%; min-height:40px; margin-top:6px; }
+  .cc-vistas{ display:flex; gap:6px; flex-wrap:wrap; margin:6px 0 10px; }
+  .cc-vistas button{ padding:7px 12px; border-radius:8px; border:1px solid var(--line); background:transparent; color: var(--text); font:inherit; font-size:.86rem; cursor:pointer; }
+  .cc-vistas button.on{ background:#E8B64A; color:#14283A; border-color:#E8B64A; font-weight:700; }
+  .cic-vistas{ margin-top:2px; }
+  main#ciclajeMain{ max-width:1200px; }
+  @media (min-width:1300px){ body.modo-seccion.sec-tabCiclaje main#ciclajeMain{ margin-left:calc(50% - 320px); margin-right:0; max-width:min(880px, calc(50% + 300px)); } }
+  @media (min-width:1500px){ body.modo-seccion.sec-tabCiclaje main#ciclajeMain{ max-width:calc(50% + 300px); } }
+  .cc-grid{ display:grid; gap:16px; } @media (min-width:1500px){ .cc-grid{ grid-template-columns: minmax(0,1fr) minmax(0,1fr); align-items:start; } }
+  .cc-pozo{ display:grid; grid-template-columns: 1.3fr 1fr 1fr auto; gap:6px; align-items:end; padding:8px; border:1px solid var(--line); border-radius:10px; margin-bottom:8px; background: var(--bg); }
+  .cc-pozo .qc-f span{ font-size:.72rem; white-space:nowrap; } .cc-pozo label:nth-of-type(4){ grid-column: span 2; } .cc-pozo label:nth-of-type(5){ grid-column: span 2; } .cc-pozo .edit-input{ min-width:0; padding:6px; font-size:.86rem; }
+  .cc-quitar{ grid-column:4; grid-row:1; align-self:end; padding:0 10px; min-height:34px; border-radius:8px; border:1px solid #7A4A40; background:transparent; color:#F2A08F; font:inherit; font-size:.8rem; cursor:pointer; }
+  .cc-ref{ grid-column:1 / -1; font-size:.75rem; color: var(--muted); } .cc-ref.ok{ color:#6FC9B0; }
+  @media (max-width:700px){ .cc-pozo{ grid-template-columns: 1fr 1fr; } }
+  .cc-acc{ display:flex; gap:8px; flex-wrap:wrap; align-items:end; margin-top:6px; }
+  .cc-turno{ border:1px solid var(--line); border-radius:10px; padding:8px 12px; margin-bottom:8px; }
+  .cc-turno.dia{ background:rgba(232,182,74,.08); } .cc-turno.noche{ background:rgba(95,163,201,.08); }
+  .cc-th{ display:flex; justify-content:space-between; gap:8px; font-size:.9rem; } .cc-th span{ color: var(--muted); font-size:.78rem; }
+  .cc-turno ul{ margin:6px 0 0; padding-left:18px; font-size:.9rem; } .cc-turno li{ margin:2px 0; } .cc-turno small{ color: var(--muted); }
+  .cc-tag{ display:inline-block; padding:1px 8px; border-radius:10px; font-size:.7rem; font-weight:800; color:#fff; } .cc-tag.abrir{ background:#2E9E5B; } .cc-tag.cerrar{ background:#C9473D; }
+  .cc-leyenda{ display:flex; gap:14px; flex-wrap:wrap; font-size:.75rem; color: var(--muted); margin-bottom:6px; }
+  .cc-sw{ display:inline-block; width:11px; height:11px; border-radius:3px; margin-right:4px; vertical-align:-1px; } .cc-sw.o{ background:#2E9E5B; } .cc-sw.c{ background:#C9473D; }
+  .cc-dia{ font-weight:700; font-size:.85rem; margin:10px 0 4px; }
+  .cc-lane{ display:flex; align-items:center; gap:6px; margin:3px 0; font-size:.78rem; } .cc-lane > span{ width:70px; flex:0 0 70px; overflow:hidden; text-overflow:ellipsis; }
+  .cc-bar{ position:relative; flex:1; height:20px; border-radius:5px; overflow:hidden; background:linear-gradient(90deg, rgba(232,182,74,.18) 0 50%, rgba(95,163,201,.14) 50% 100%); }
+  .cc-seg{ position:absolute; top:4px; bottom:4px; border-radius:3px; } .cc-seg.o{ background:#2E9E5B; } .cc-seg.c{ background:#C9473D; opacity:.85; }
+  .cc-ahora{ position:absolute; top:0; bottom:0; width:2px; background:#fff; }
+  .cc-txt{ width:100%; min-height:220px; font:12px ui-monospace,monospace; background: var(--bg); color: var(--text); border:1px solid var(--line); border-radius:8px; padding:8px; box-sizing:border-box; }
+  .cc-cargar{ border:1px solid #5FA3C9; border-radius:12px; padding:12px 14px; margin-top:10px; display:flex; flex-direction:column; gap:6px; font-size:.86rem; } .cc-cargar small{ color: var(--muted); }
   #dlgBloqAviso{ position:fixed; left:12px; right:12px; bottom:12px; z-index:99999; background:#5A2A1E; color:#FFE3DA; border:1px solid #C9664D; border-radius:12px; padding:12px 14px; font-size:.92rem; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
   #dlgBloqAviso button{ background:#FFE3DA; color:#5A2A1E; border:0; border-radius:8px; padding:8px 12px; font:inherit; font-weight:700; cursor:pointer; }
 </style>
@@ -8169,15 +8197,196 @@ function cicTarjetaPlan(doc, fecha, enCompu, turnoVista){
   return card;
 }
 
+// ---- CALCULADOR DE CICLADO (solapa dentro de Ciclaje, solo compu) ----
+// Igual que el calculador suelto: regimen (hs cierre x hs apertura) + desde cuando arranca y en que estado ->
+// simula los proximos dias y separa las maniobras por turno (dia 07-19 / noche 19-07). Ademas:
+//  - toma el ciclo de la ficha ("20c x 4a") y arranca desde la ULTIMA MANIOBRA REAL del registro;
+//  - "Cargar al plan" pasa las maniobras al plan de ciclaje de cada dia (Por hacer, celulares, Parte en vivo).
+var cicVista = 'plan', cicCalcTimer = null;
+var cicCalc = (function(){ try { const s = JSON.parse(localStorage.getItem('cic_calc') || 'null'); if(s && Array.isArray(s.pozos)) return s; } catch(e) {} return { pozos: [], dias: 2, vista: 'turnos' }; })();
+function cicCalcGuardar(){ try { localStorage.setItem('cic_calc', JSON.stringify(cicCalc)); } catch(e) {} }
+function cicCalcLocalInput(ts){ const d = new Date(ts); const p = (n) => String(n).padStart(2, '0'); return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes()); }
+// completa regimen y arranque desde la ficha y el registro de maniobras
+function cicCalcAuto(p){
+  const nombre = alamPozoNorm(p.pozo) || p.pozo;
+  const r = POZOS.find(x => x.pozo === nombre);
+  if(!r){ p.ref = p.pozo ? 'No encuentro ese pozo en la lista: completalo a mano.' : ''; return p; }
+  p.pozo = r.pozo;
+  const refs = [];
+  const c = cicParseCiclo(r.ciclo);
+  if(c){ p.cierre = c.cH; p.apertura = c.aH; refs.push('ciclo "' + r.ciclo + '"'); }
+  const ult = (typeof MANIOBRAS !== 'undefined' ? MANIOBRAS : []).filter(e => e.pozo === r.pozo && e.ts && (e.tipo === 'abrir' || e.tipo === 'cerrar')).sort((a, b) => b.ts - a.ts)[0];
+  if(ult){ p.inicio = cicCalcLocalInput(ult.ts); p.arranca = ult.tipo === 'abrir' ? 'o' : 'c'; refs.push('última maniobra real: ' + (ult.tipo === 'abrir' ? 'abrió ' : 'cerró ') + tendFechaHora(ult.ts)); }
+  p.ref = refs.length ? '✓ Tomado de la ficha: ' + refs.join(' · ') : 'Sin ciclo ni maniobras en la ficha: completalo a mano.';
+  p.auto = refs.length > 0;
+  return p;
+}
+function cicCalcSimular(){
+  const ini = cicInicioDia(cicDiaSel || cicHoy());
+  const fin = ini + Math.max(1, Math.min(14, cicCalc.dias || 2)) * 864e5;
+  const eventos = [], segs = [];
+  cicCalc.pozos.forEach((p, pi) => {
+    const c = parseFloat(p.cierre), a = parseFloat(p.apertura), t0 = new Date(p.inicio).getTime();
+    if(!(c > 0 && a > 0) || isNaN(t0) || !p.pozo) return;
+    let t = t0, s = p.arranca === 'o' ? 'o' : 'c', n = 0;
+    while(t < fin && n++ < 2000){
+      const dur = (s === 'c' ? c : a) * 36e5;
+      if(t + dur > ini) segs.push({ pi, s, a: Math.max(t, ini), b: Math.min(t + dur, fin) });
+      t += dur; s = s === 'c' ? 'o' : 'c';
+      if(t >= ini && t < fin) eventos.push({ pi, pozo: p.pozo, tipo: s === 'o' ? 'abrir' : 'cerrar', ts: t, hora: hhmmDeTs(t), dia: pedIso(new Date(t - TURNO_DIA_INI * 36e5)) });
+    }
+  });
+  eventos.sort((x, y) => x.ts - y.ts);
+  return { ini, fin, eventos, segs };
+}
+function cicCalcRender(main){
+  const res = cicCalcSimular();
+  const dias = [...new Set(res.eventos.map(e => e.dia))];
+  const filaPozo = (p, i) => `<div class="cc-pozo" data-i="${i}">
+      <label class="qc-f"><span>Pozo</span><input class="edit-input" data-k="pozo" list="ccPozos" value="${avisoEsc(p.pozo || '')}" placeholder="ej: 1567"></label>
+      <label class="qc-f"><span>Hs cierre</span><input class="edit-input" data-k="cierre" type="number" min="0.25" step="0.25" value="${p.cierre || ''}"></label>
+      <label class="qc-f"><span>Hs apertura</span><input class="edit-input" data-k="apertura" type="number" min="0.25" step="0.25" value="${p.apertura || ''}"></label>
+      <label class="qc-f"><span>Arranca desde</span><input class="edit-input" data-k="inicio" type="datetime-local" value="${avisoEsc(p.inicio || '')}"></label>
+      <label class="qc-f"><span>Estado</span><select class="edit-input" data-k="arranca"><option value="c"${p.arranca !== 'o' ? ' selected' : ''}>Cerrado</option><option value="o"${p.arranca === 'o' ? ' selected' : ''}>Abierto</option></select></label>
+      <button type="button" class="cc-quitar">Quitar</button>
+      ${p.ref ? `<span class="cc-ref${p.auto ? ' ok' : ''}">${avisoEsc(p.ref)}</span>` : ''}
+    </div>`;
+  const tag = (e) => `<span class="cc-tag ${e.tipo}">${e.tipo === 'abrir' ? 'ABRIR' : 'CERRAR'}</span>`;
+  let out = '';
+  if(!cicCalc.pozos.length) out = '<div class="cic-vacio">Agregá pozos para calcular.</div>';
+  else if(cicCalc.vista === 'grafico'){
+    const nd = Math.round((res.fin - res.ini) / 864e5);
+    out = '<div class="cc-leyenda"><span><i class="cc-sw o"></i>Abierto</span><span><i class="cc-sw c"></i>Cerrado</span><span>Fondo claro = turno día (07–19)</span></div>';
+    for(let d = 0; d < nd; d++){
+      const a = res.ini + d * 864e5, b = a + 864e5;
+      out += `<div class="cc-dia">${avisoEsc(parteFechaCorta(new Date(a)))} 07:00 → 07:00</div>`;
+      cicCalc.pozos.forEach((p, pi) => {
+        let inner = '';
+        res.segs.filter(s => s.pi === pi && s.b > a && s.a < b).forEach(s => {
+          const x = (Math.max(s.a, a) - a) / 864e5 * 100, w = (Math.min(s.b, b) - Math.max(s.a, a)) / 864e5 * 100;
+          inner += `<div class="cc-seg ${s.s}" title="${s.s === 'o' ? 'Abierto' : 'Cerrado'} ${hhmmDeTs(s.a)}–${hhmmDeTs(s.b)}" style="left:${x}%;width:${w}%"></div>`;
+        });
+        if(Date.now() > a && Date.now() < b) inner += `<div class="cc-ahora" style="left:${(Date.now() - a) / 864e5 * 100}%"></div>`;
+        out += `<div class="cc-lane"><span>${avisoEsc(p.pozo || '')}</span><div class="cc-bar">${inner}</div></div>`;
+      });
+    }
+  } else if(cicCalc.vista === 'listado'){
+    out = res.eventos.length ? `<table class="pv-tabla"><thead><tr><th>Día</th><th>Hora</th><th>Turno</th><th>Maniobra</th><th>Pozo</th></tr></thead><tbody>${res.eventos.map(e => `<tr><td>${avisoEsc(parteFechaCorta(new Date(e.ts)))}</td><td><b>${e.hora}</b></td><td>${cicTurnoDeHora(e.hora) === 'dia' ? 'Día' : 'Noche'}</td><td>${tag(e)}</td><td>${avisoEsc(e.pozo)}</td></tr>`).join('')}</tbody></table>` : '<div class="cic-vacio">Sin maniobras en el período.</div>';
+  } else if(cicCalc.vista === 'texto'){
+    let t = 'CICLADO DE POZOS — ' + cicCalc.pozos.filter(p => p.pozo).map(p => p.pozo + ' ' + p.cierre + 'c x ' + p.apertura + 'a').join(' · ') + '\n';
+    let ult = '';
+    res.eventos.forEach(e => { const d = parteFechaCorta(new Date(e.ts)); if(d !== ult){ t += '\n' + d.toUpperCase() + '\n'; ult = d; } t += '  ' + e.hora + '  ' + (e.tipo === 'abrir' ? 'ABRIR ' : 'CERRAR') + '  ' + e.pozo + '  (' + (cicTurnoDeHora(e.hora) === 'dia' ? 'Día' : 'Noche') + ')\n'; });
+    out = `<textarea class="cc-txt" readonly>${avisoEsc(t)}</textarea><button type="button" class="ped-copiar-btn" id="ccCopiar">Copiar</button>`;
+  } else {
+    dias.length || (out = '<div class="cic-vacio">Sin maniobras en el período.</div>');
+    const ndias = Math.round((res.fin - res.ini) / 864e5);
+    for(let d = 0; d < ndias; d++){
+      const iso = pedSumarDias(cicDiaSel || cicHoy(), d);
+      ['dia', 'noche'].forEach(t => {
+        const ev = res.eventos.filter(e => e.dia === iso && cicTurnoDeHora(e.hora) === t);
+        out += `<div class="cc-turno ${t}"><div class="cc-th"><b>${t === 'dia' ? '☀ Turno día' : '☾ Turno noche'} — ${avisoEsc(pedNombreDia(iso, true, cicHoy()))}</b><span>${ev.length} maniobra${ev.length === 1 ? '' : 's'}</span></div>
+          ${ev.length ? '<ul>' + ev.map(e => `<li><b>${e.hora}</b>${t === 'noche' && cicOrden(e.hora) >= (24 - TURNO_DIA_INI) * 60 ? ' <small>(madrugada)</small>' : ''} — ${tag(e)} ${avisoEsc(e.pozo)}</li>`).join('') + '</ul>' : '<div class="cic-vacio">Sin maniobras — turno libre</div>'}</div>`;
+      });
+    }
+  }
+  const porDia = dias.map(d => ({ d, n: res.eventos.filter(e => e.dia === d).length }));
+  main.innerHTML = `<div class="cc-grid">
+    <section>
+      <h2 class="alam-h" style="margin-bottom:8px">Pozos a ciclar</h2>
+      <datalist id="ccPozos">${POZOS.map(p => `<option value="${avisoEsc(p.pozo)}">`).join('')}</datalist>
+      ${cicCalc.pozos.map(filaPozo).join('')}
+      <div class="cc-acc">
+        <button type="button" class="ped-nuevo-btn" id="ccAgregar">+ Agregar pozo</button>
+        <button type="button" class="ped-copiar-btn" id="ccTodos">+ Todos los pozos con ciclo en la ficha</button>
+        <label class="qc-f" style="width:150px; margin-left:auto"><span>Desde el día</span><input class="edit-input" id="ccDesde" type="date" value="${cicDiaSel || cicHoy()}"></label>
+        <label class="qc-f" style="width:110px"><span>Días a simular</span><input class="edit-input" id="ccDias" type="number" min="1" max="14" value="${cicCalc.dias || 2}"></label>
+      </div>
+      <p class="ped-resumen">Arranca desde el ${avisoEsc(pedNombreDia(cicDiaSel || cicHoy(), true, cicHoy()))} a las 07:00. Si el pozo tiene ciclo en la ficha y maniobras cargadas, toma solo el régimen y la última maniobra real; se puede cambiar a mano.</p>
+    </section>
+    <section>
+      <div class="cc-vistas">${[['turnos', 'Por turno'], ['grafico', 'Gráfico'], ['listado', 'Listado'], ['texto', 'Texto para copiar']].map(v => `<button type="button" data-ccv="${v[0]}" class="${cicCalc.vista === v[0] ? 'on' : ''}">${v[1]}</button>`).join('')}</div>
+      <div class="cc-out">${out}</div>
+      ${res.eventos.length ? `<div class="cc-cargar"><b>Cargar al plan de ciclaje</b>
+        <span>Pasa estas maniobras al plan de cada día: aparecen en "Por hacer", en los celulares y en "Falta hacer" del Parte en vivo.</span>
+        <div class="cc-acc">${porDia.length ? `<button type="button" class="ped-nuevo-btn" data-cccargar="${porDia[0].d}">Cargar ${avisoEsc(pedNombreDia(porDia[0].d, true, cicHoy()))} (${porDia[0].n})</button>` : ''}
+          ${porDia.length > 1 ? `<button type="button" class="ped-copiar-btn" data-cccargar="todos">Cargar los ${porDia.length} días (${res.eventos.length})</button>` : ''}</div>
+        <small>Si un pozo ya tiene plan ese día, pregunta antes de reemplazarlo.</small></div>` : ''}
+    </section></div>`;
+  // se redibuja despues del evento (si no, el 'change' que dispara el blur choca con el innerHTML)
+  const re = () => { cicCalcGuardar(); clearTimeout(cicCalcTimer); cicCalcTimer = setTimeout(() => { if(main.isConnected) cicCalcRender(main); }, 0); };
+  main.querySelectorAll('.cc-pozo').forEach(row => {
+    const p = cicCalc.pozos[parseInt(row.dataset.i, 10)];
+    row.querySelectorAll('[data-k]').forEach(inp => inp.addEventListener('change', () => {
+      const k = inp.dataset.k;
+      p[k] = (k === 'cierre' || k === 'apertura') ? parseFloat(inp.value) : inp.value;
+      if(k === 'pozo') cicCalcAuto(p); else { p.auto = false; p.ref = 'Cambiado a mano.'; }
+      re();
+    }));
+    row.querySelector('.cc-quitar').addEventListener('click', () => { cicCalc.pozos.splice(parseInt(row.dataset.i, 10), 1); re(); });
+  });
+  document.getElementById('ccAgregar').addEventListener('click', () => { cicCalc.pozos.push({ pozo: '', cierre: '', apertura: '', inicio: cicCalcLocalInput(cicInicioDia(cicDiaSel || cicHoy())), arranca: 'c' }); re(); setTimeout(() => { const l = main.querySelectorAll('.cc-pozo [data-k=pozo]'); if(l.length) l[l.length - 1].focus(); }, 30); });
+  document.getElementById('ccTodos').addEventListener('click', () => {
+    let n = 0;
+    POZOS.filter(r => cicParseCiclo(r.ciclo) && !cicCalc.pozos.some(p => p.pozo === r.pozo)).forEach(r => { cicCalc.pozos.push(cicCalcAuto({ pozo: r.pozo })); n++; });
+    movToast(n ? 'Se agregaron ' + n + ' pozos con ciclo en la ficha.' : 'No hay más pozos con ciclo en la ficha.');
+    re();
+  });
+  document.getElementById('ccDesde').addEventListener('change', (e) => { if(e.target.value){ cicDiaSel = e.target.value; re(); } });
+  document.getElementById('ccDias').addEventListener('change', (e) => { cicCalc.dias = Math.max(1, Math.min(14, parseInt(e.target.value, 10) || 2)); re(); });
+  main.querySelectorAll('[data-ccv]').forEach(b => b.addEventListener('click', () => { cicCalc.vista = b.dataset.ccv; re(); }));
+  const cp = document.getElementById('ccCopiar');
+  if(cp) cp.addEventListener('click', () => { const t = main.querySelector('.cc-txt'); if(navigator.clipboard) navigator.clipboard.writeText(t.value).then(() => movToast('Copiado.')); else { t.select(); } });
+  main.querySelectorAll('[data-cccargar]').forEach(b => b.addEventListener('click', () => cicCalcCargar(res, b.dataset.cccargar === 'todos' ? dias : [b.dataset.cccargar])));
+}
+function cicCalcCargar(res, dias){
+  const ev = res.eventos.filter(e => dias.includes(e.dia));
+  if(!ev.length) return;
+  const pozos = [...new Set(ev.map(e => e.pozo))];
+  const yaHay = [];
+  dias.forEach(d => cicPlanDe(d).forEach(p => { if(pozos.includes(p.pozo)) yaHay.push(p.pozo + ' (' + pedNombreDia(d, true, cicHoy()) + ')'); }));
+  if(yaHay.length && !confirm('Ya tienen plan cargado:\n\n' + [...new Set(yaHay)].join('\n') + '\n\n¿Reemplazarlo por lo calculado?')) return;
+  if(!puedeModificar()) return;
+  if(!firestoreOk){ alert('No hay conexion con el guardado compartido.'); return; }
+  let docs = 0;
+  dias.forEach(d => pozos.forEach(pz => {
+    const nuevos = [];
+    ['dia', 'noche'].forEach(t => {
+      const mt = ev.filter(e => e.dia === d && e.pozo === pz && cicTurnoDeHora(e.hora) === t).map(e => ({ tipo: e.tipo, hora: e.hora }));
+      if(!mt.length) return;
+      const id = d + '_' + t + '_' + pz;
+      const datos = { fecha: d, turno: t, pozo: pz, maniobras: mt, nota: 'Calculador de ciclado', creadoPor: operadorName || 'Sin nombre', creadoTs: Date.now() };
+      db.collection('ciclaje_plan').doc(id).set(datos).catch(e => alert('No se pudo guardar (' + e.message + ').'));
+      CIC_PLAN = CIC_PLAN.filter(x => x.id !== id).concat([Object.assign({ id }, datos)]);
+      nuevos.push(id); docs++;
+    });
+    if(nuevos.length){
+      const viejos = cicPlanDe(d).filter(p => p.pozo === pz && !nuevos.includes(p.id));
+      viejos.forEach(p => db.collection('ciclaje_plan').doc(p.id).delete().catch(() => {}));
+      CIC_PLAN = CIC_PLAN.filter(x => !viejos.includes(x));
+    }
+  }));
+  movToast('Cargado al plan: ' + ev.length + ' maniobras de ' + pozos.length + ' pozo' + (pozos.length === 1 ? '' : 's') + ' en ' + dias.length + ' día' + (dias.length === 1 ? '' : 's') + '.');
+  cicVista = 'plan'; cicDiaSel = dias[0];
+  renderCiclaje();
+  try { updatePendCount(); pedActualizarInicio(); } catch(e) {}
+}
 function renderCiclaje(){
   const main = document.getElementById('ciclajeMain');
   const enCompu = !esMovil();
   const hoy = cicHoy();
   if(!enCompu || !cicDiaSel) cicDiaSel = hoy;
+  const vistasHtml = enCompu ? `<div class="cc-vistas cic-vistas"><button type="button" data-cicv="plan" class="${cicVista === 'plan' ? 'on' : ''}">Plan del día</button><button type="button" data-cicv="calc" class="${cicVista === 'calc' ? 'on' : ''}">Calculador de ciclado</button></div>` : '';
+  const atarVistas = () => main.querySelectorAll('[data-cicv]').forEach(b => b.addEventListener('click', () => { cicVista = b.dataset.cicv; renderCiclaje(); }));
+  if(enCompu && cicVista === 'calc'){
+    main.innerHTML = vistasHtml + '<div id="ccMain"></div>';
+    atarVistas();
+    try { cicCalcRender(document.getElementById('ccMain')); } catch(e){ appRegistrarError('calculador: ' + e.message); }
+    return;
+  }
   const fecha = cicDiaSel;
   const plan = cicPlanDe(fecha);
   const turnoAct = cicTurnoActual();
-  main.innerHTML = `<div class="plano-note">${enCompu ? 'Cargá para cada día qué pozos se ciclan en el turno día y en el turno noche. ' : ''}Las horas son de referencia: cuando se carga la apertura o el cierre en la ficha del pozo, la maniobra se tacha sola.</div>
+  main.innerHTML = vistasHtml + `<div class="plano-note">${enCompu ? 'Cargá para cada día qué pozos se ciclan en el turno día y en el turno noche. ' : ''}Las horas son de referencia: cuando se carga la apertura o el cierre en la ficha del pozo, la maniobra se tacha sola.</div>
     ${enCompu ? cicBarraDias() : ''}
     <div class="ped-dia-tit">Ciclaje · ${avisoEsc(pedNombreDia(fecha, true, cicHoy()))}${!enCompu ? ' <small>(lo carga el supervisor; vos cargá las maniobras en la ficha del pozo)</small>' : ''}</div>
     ${enCompu ? `<div class="ped-top">
@@ -8186,6 +8395,7 @@ function renderCiclaje(){
     </div>` : ''}
     <div id="cicCuerpo"></div>`;
   main.querySelectorAll('[data-cdia]').forEach(b => b.addEventListener('click', () => { cicDiaSel = b.dataset.cdia; renderCiclaje(); }));
+  atarVistas();
   const fs = document.getElementById('cicFechaSel');
   if(fs) fs.addEventListener('change', () => { if(fs.value){ cicDiaSel = fs.value; renderCiclaje(); } });
   const nb = document.getElementById('cicNuevoBtn');
@@ -13552,7 +13762,7 @@ window.addEventListener('error', (ev) => {
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202611140340;
+var APP_VERSION = 202611160815;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
