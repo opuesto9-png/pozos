@@ -4652,7 +4652,7 @@ function renderCardView(rec, bat){
     ${avisosDePozoHtml(rec)}
     ${cicAvisoEstadoViejo(rec)}
     <div class="field alam-pozo" id="alamPozoBox"></div>
-    ${(() => { const vp = velaPendienteDe(rec); return vp ? `<div class="vela-pend"><b>Vela pendiente:</b> ${vp.txt} · ${vp.cuando}. Sale en el parte junto con la próxima apertura.<button type="button" class="vela-quitar" id="velaQuitarBtn">Quitar vela pendiente</button></div>` : ''; })()}
+    ${(() => { const vp = velaPendienteDe(rec); return vp && !velaPendienteFueConCierre(rec) ? `<div class="vela-pend"><b>Vela pendiente:</b> ${vp.txt} · ${vp.cuando}. Sale en el parte junto con la próxima apertura.<button type="button" class="vela-quitar" id="velaQuitarBtn">Quitar vela pendiente</button></div>` : ''; })()}
     ${field('Presion', presionMostrada, 'presion')}
     ${field('Colectora', rec.colectora)}
     ${field('Ciclo', rec.ciclo)}
@@ -4826,7 +4826,7 @@ function renderCardEdit(rec, bat){
     </div>
     <div class="field">
       <div class="k">Vela lanzada (si corresponde)</div>
-      <div class="edit-hint">Si le tiraron vela/s a este pozo, poné la cantidad en el tipo que corresponda (se pueden cargar las tres juntas). Al tocar Guardar (abajo de todo) quedan registradas como novedad, sin tocar el horario del pozo. Si tambien cerro/abrio, cargalo aparte en Horario de maniobra.</div>
+      <div class="edit-hint">Si le tiraron vela/s a este pozo, poné la cantidad en el tipo que corresponda (se pueden cargar las tres juntas). Al tirar velas el pozo se cierra: cargá la hora de cierre arriba y la cantidad acá, y guardá. En el parte sale una sola fila con el lanzamiento de velas y sus horas de cierre y producción. Si el cierre ya estaba cargado, la vela se suma a esa misma fila.</div>
       <div class="aib-fields">
         <div class="aib-field">
           <div class="time-label">Agua</div>
@@ -4842,7 +4842,7 @@ function renderCardEdit(rec, bat){
         </div>
       </div>
       ${pozoOptimAuto(rec) ? '<div class="edit-hint" style="margin-top:6px">Pozo con optimizador en automático: la vela sale en el parte en el momento, como novedad propia.</div>' : ''}
-      ${(() => { const vp = velaPendienteDe(rec); return vp ? `<label class="vela-pend vela-incl"><input type="checkbox" id="velaInclPend" ${vp.reciente ? 'checked' : ''}> Incluir la vela pendiente (<b>${vp.txt}</b>, ${vp.cuando}) cuando se cargue la apertura</label>` : ''; })()}
+      ${(() => { const vp = velaPendienteDe(rec); return vp && !velaPendienteFueConCierre(rec) ? `<label class="vela-pend vela-incl"><input type="checkbox" id="velaInclPend" ${vp.reciente ? 'checked' : ''}> Incluir la vela pendiente (<b>${vp.txt}</b>, ${vp.cuando}) cuando se cargue la apertura</label>` : ''; })()}
       ${ultimasVelasHtml}
     </div>
     <div class="field">
@@ -5131,10 +5131,50 @@ function renderCardEdit(rec, bat){
     // acumulado. Si todavia NO es la reapertura (sigue cerrado, o esta abierto y solo se cargo la vela
     // sin tocar el horario), la vela se queda pendiente, sumada a la que ya hubiera.
     const seAbreAhora = newFields.estado === 'Abierto' && rec.estado !== 'Abierto';
-    if(seAbreAhora){
+    // al tirar velas el pozo se cierra: si en este guardado se carga el CIERRE junto con la vela, el parte lleva
+    // UNA fila (la del cierre) que dice solo "Se lanzan velas: ..." con sus horas de cierre y produccion. La vela
+    // ya no queda pendiente para la reapertura (no se repite despues).
+    const cierraAhora = cierreCambio && !!hcEfectivo && newFields.estado === 'Cerrado';
+    let velaCierreTxt = '';
+    // vela cargada con el pozo YA cerrado (el cierre se cargo antes, en otro guardado): si ese cierre todavia no
+    // salio en un parte, la vela se suma a la fila de ese cierre
+    const ultManPozo = (typeof MANIOBRAS !== 'undefined' ? MANIOBRAS : []).filter(e => e.pozo === rec.pozo && e.ts && !e._virtual).sort((a, b) => a.ts - b.ts).pop();
+    const corteVela = corteDePendientes();
+    const cierrePrevioPend = !cierraAhora && !seAbreAhora && velasACargar.length && rec.estado === 'Cerrado' && newFields.estado !== 'Abierto'
+      && ultManPozo && ultManPozo.tipo === 'cerrar' && (ultManPozo.clientTs || 0) > (corteVela ? corteVela.getTime() : 0) ? ultManPozo : null;
+    if(velasACargar.length && (cierraAhora || cierrePrevioPend)){
+      const comb = { Agua: velaNuevas.Agua, Gas: velaNuevas.Gas, Oil: velaNuevas.Oil };
+      if(incluirPendiente && !velaPendienteFueConCierre(rec)){
+        comb.Agua += parseFloat(rec.velaPendienteAgua) || 0;
+        comb.Gas += parseFloat(rec.velaPendienteGas) || 0;
+        comb.Oil += parseFloat(rec.velaPendienteOil) || 0;
+      }
+      velaCierreTxt = fraseVelasPozo(comb, velaPendienteHoraAcum);
+      newFields.velaPendienteAgua = 0;
+      newFields.velaPendienteGas = 0;
+      newFields.velaPendienteOil = 0;
+      newFields.velaPendienteHora = '';
+      newFields.velaPendienteTs = 0;
+      if(cierrePrevioPend && velaCierreTxt){
+        const txt = (cierrePrevioPend.velaTxt ? cierrePrevioPend.velaTxt + ' ' : '') + velaCierreTxt;
+        cierrePrevioPend.velaTxt = txt;
+        if(firestoreOk && !cierrePrevioPend._virtual) db.collection('pozos_maniobras').doc(cierrePrevioPend.id).set({ velaTxt: txt, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }).catch(e => console.error('vela cierre', e));
+      }
+    } else if(seAbreAhora){
+      // carga vieja: la vela pendiente se guardo junto con el cierre -> queda escrita en ese cierre (para que
+      // la fila del cierre la siga mostrando aunque ahora se limpie lo pendiente)
+      if(velaPendienteFueConCierre(rec)){
+        const vts = parseInt(rec.velaPendienteTs, 10) || 0;
+        const evC = MANIOBRAS.find(e => e.pozo === rec.pozo && e.tipo === 'cerrar' && !e._virtual && Math.abs((e.clientTs || 0) - vts) < 3 * 60e3);
+        const vtxt = fraseVelasPozo({ Agua: parseFloat(rec.velaPendienteAgua) || 0, Gas: parseFloat(rec.velaPendienteGas) || 0, Oil: parseFloat(rec.velaPendienteOil) || 0 }, '');
+        if(evC && !evC.velaTxt && vtxt){
+          evC.velaTxt = vtxt;
+          if(firestoreOk) db.collection('pozos_maniobras').doc(evC.id).set({ velaTxt: vtxt, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }).catch(e => console.error('vela cierre', e));
+        }
+      }
       // reapertura: va la vela de este guardado + la pendiente (solo si se dejo marcada la casilla)
       const comb = { Agua: velaNuevas.Agua, Gas: velaNuevas.Gas, Oil: velaNuevas.Oil };
-      if(incluirPendiente){
+      if(incluirPendiente && !velaPendienteFueConCierre(rec)){
         comb.Agua += parseFloat(rec.velaPendienteAgua) || 0;
         comb.Gas += parseFloat(rec.velaPendienteGas) || 0;
         comb.Oil += parseFloat(rec.velaPendienteOil) || 0;
@@ -5203,7 +5243,7 @@ function renderCardEdit(rec, bat){
         }
       }
       maniobraRegistrar(rec, { tipo: finalAbre ? 'abrir' : 'cerrar', ts: finalAbre ? rec.tsApertura : rec.tsCierre,
-        velaTxt: (changedKeys.includes('velaEnAperturaTxt') && rec.velaEnAperturaTxt) || '', origen: 'ficha', reemplaza: maniobraCorrigeA(recAntes, newFields, aperturaCambio, cierreCambio),
+        velaTxt: (!finalAbre && velaCierreTxt) || (changedKeys.includes('velaEnAperturaTxt') && rec.velaEnAperturaTxt) || '', origen: 'ficha', reemplaza: maniobraCorrigeA(recAntes, newFields, aperturaCambio, cierreCambio),
         presionNueva: (ambas && !finalAbre) ? false : presionEscrita, conApertura: ambas ? false : !!(aperturaCambio && cierreCambio && hA), horasManual: !!(horasManualVal && horasManualTipo) });
     }
     { const hv = {};
@@ -5581,6 +5621,13 @@ function velaPendienteDe(rec){
   let cuando = 'fecha desconocida';
   if(ts){ const d = new Date(ts); cuando = 'cargada el ' + String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + ' a las ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
   return { cant: c, txt: frases.join(' + '), ts, cuando, reciente: !!(ts && Date.now() - ts < 24 * 3600e3) };
+}
+// cargas viejas: la vela se guardo como pendiente en el MISMO guardado que el cierre. En el parte ya sale en la
+// fila de ese cierre, asi que no se vuelve a sumar a la reapertura.
+function velaPendienteFueConCierre(rec){
+  const ts = parseInt(rec && rec.velaPendienteTs, 10) || 0;
+  if(!ts) return false;
+  return (typeof MANIOBRAS !== 'undefined' ? MANIOBRAS : []).some(e => e.pozo === rec.pozo && e.tipo === 'cerrar' && !e._virtual && Math.abs((e.clientTs || 0) - ts) < 3 * 60e3);
 }
 function quitarVelaPendiente(rec, bat){
   const vp = velaPendienteDe(rec);
@@ -6078,6 +6125,12 @@ function parteCampoFilas(forzarTodos){
         }, rec.velaPendienteHora || '');
       }
       if(rec._ev) velaTxt = rec._ev.velaTxt || '';
+      // cargas viejas: cierre y vela en el mismo guardado (la vela quedo pendiente) -> va en la fila del cierre
+      if(rec._ev && !velaTxt && rec._ev.tipo === 'cerrar'){
+        const pz = POZOS.find(x => x.pozo === rec.pozo);
+        const vp = pz && velaPendienteDe(pz);
+        if(vp && vp.ts && Math.abs(vp.ts - (rec._ev.clientTs || 0)) < 3 * 60e3) velaTxt = fraseVelasPozo(vp.cant, '');
+      }
       if(velaTxt) pozosConVelaUsada.add(rec.pozo);
       return {
         hora: buildHoraColumna(rec),
@@ -13852,7 +13905,7 @@ window.addEventListener('error', (ev) => {
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202611160900;
+var APP_VERSION = 202611161230;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
