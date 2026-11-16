@@ -1657,6 +1657,13 @@
   .alam-pozo-check{ display:flex; align-items:center; gap:10px; margin-top:8px; font-weight:700; font-size:.95rem; cursor:pointer; padding:10px 12px; border:1.5px dashed #574A86; border-radius:10px; background:#211D35; }
   .alam-pozo-check input{ width:22px; height:22px; accent-color:#9C86E0; }
   .alam-pozo-form{ margin-top:10px; }
+  .qoil-box{ border:1px solid var(--line); border-radius:12px; padding:10px 12px; margin:10px 0; background: rgba(232,182,74,.06); }
+  .qoil-tit{ margin:0 0 8px; font-weight:800; font-size:.92rem; }
+  .qoil-grid{ display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:8px; align-items:end; }
+  .qoil-grid .camion-field span{ font-size:.75rem; color: var(--muted); display:block; margin-bottom:3px; }
+  .qoil-grid input{ width:100%; box-sizing:border-box; }
+  .qoil-err{ color:#FF8A7A; font-size:.82rem; min-height:1em; margin-top:4px; }
+  .qoil-ult{ font-size:.78rem; color: var(--muted); margin-top:4px; }
   #claveModal{ position:fixed; inset:0; z-index:100000; background:rgba(5,14,22,.72); display:flex; align-items:center; justify-content:center; padding:16px; }
   #claveModal .clave-box{ background: var(--panel, #13293B); border:1px solid var(--line); border-radius:14px; padding:20px; width:min(380px, 100%); }
   #claveModal h2{ margin:0 0 6px; font-size:1.1rem; }
@@ -5778,8 +5785,13 @@ function parteBateriasFilas(forzarTodos){
     (b.bombasEnServicio || []).join(' / '),
     'Se bombea stock de oil: ' + bombeoFmt(Number(b.volumenM3) || 0, 2) + ' m³'
   ]));
+  // medicion de petroleo (Q oil) cargada a mano
+  const prodBase = forzarTodos ? (HIST || []).filter(h => h.tipo === 'produccion' && TANQUES_BATERIAS[h.grupo] && h.ts > Date.now() - 864e5) : pendientesQoil();
+  prodBase.forEach(h => { const d = new Date(h.ts); const f = (n) => String(Math.round(n * 100) / 100).replace('.', ',');
+    filasTs.push([h.ts, fechaDe(d), horaDe(d), h.grupo, 'Medición de petróleo',
+      'Q oil: ' + f(h.vals.qoil) + ' m³' + (h.vals.qagua != null ? ' / Q agua: ' + f(h.vals.qagua) + ' m³' : '')]); });
   filasTs.sort((a,b) => a[0] - b[0]);
-  return { base, notasBase, bombeoBase, filasTs };
+  return { base, notasBase, bombeoBase, prodBase, filasTs };
 }
 
 function exportReporteBaterias(forzarTodos){
@@ -5787,8 +5799,8 @@ function exportReporteBaterias(forzarTodos){
     alert('No se pudo generar el Excel (falta conexion a internet para cargar la libreria).');
     return;
   }
-  const { base, notasBase, bombeoBase, filasTs } = parteBateriasFilas(forzarTodos);
-  if(base.length === 0 && notasBase.length === 0 && bombeoBase.length === 0){
+  const { base, notasBase, bombeoBase, prodBase, filasTs } = parteBateriasFilas(forzarTodos);
+  if(base.length === 0 && notasBase.length === 0 && bombeoBase.length === 0 && !(prodBase || []).length){
     if(!forzarTodos){
       const quiere = confirm('No hay mediciones, bombeos ni novedades de Baterias nuevas desde el ultimo reporte enviado.\n\n¿Generar igual el reporte con TODO lo cargado?');
       if(quiere) exportReporteBaterias(true);
@@ -9277,6 +9289,48 @@ function bombeoSinRepetidos(lista){
   return quedan.sort((a, b) => ts(b) - ts(a));
 }
 
+// ---- MEDICION DE PETROLEO (Q oil) por bateria: el dato que pasan cuando terminan de medir a mano ----
+// Queda en el historial (Tendencia) y sale en el Reporte de Baterias / Parte en vivo.
+function crearBloqueQoil(bat){
+  const box = document.createElement('div');
+  box.className = 'qoil-box';
+  const ult = (HIST || []).filter(h => h.tipo === 'produccion' && h.grupo === bat).sort((a, b) => b.ts - a.ts).slice(0, 3);
+  const fmt = (n) => n == null ? '' : String(Math.round(n * 100) / 100).replace('.', ',');
+  box.innerHTML = `<p class="qoil-tit">Medición de petróleo (Q oil)</p>
+    <div class="qoil-grid">
+      <label class="camion-field"><span>Q oil (m³)</span><input type="text" inputmode="decimal" class="qo-oil" placeholder="ej: 26,6"></label>
+      <label class="camion-field"><span>Q agua (m³, opcional)</span><input type="text" inputmode="decimal" class="qo-agua" placeholder="opcional"></label>
+      <label class="camion-field"><span>Hora de la medición</span><input type="text" inputmode="numeric" maxlength="5" class="qo-hora" value="${hhmmDeTs(Date.now())}"></label>
+      <button type="button" class="camion-save qo-ok">Guardar Q oil</button>
+    </div>
+    <div class="qoil-err" role="alert"></div>
+    <div class="qoil-ult">${ult.length ? 'Últimas: ' + ult.map(h => `<b>${fmt(h.vals.qoil)} m³</b>${h.vals.qagua != null ? ' (agua ' + fmt(h.vals.qagua) + ')' : ''} · ${avisoEsc(tendFechaHora(h.ts))}${h.por ? ' · ' + avisoEsc(h.por) : ''}`).join(' &nbsp;|&nbsp; ') : (tendSyncIniciado ? 'Todavía no hay mediciones cargadas.' : 'Cargando historial…')}</div>`;
+  box.querySelector('.qo-ok').addEventListener('click', () => {
+    const err = box.querySelector('.qoil-err'); err.textContent = '';
+    const num = (v) => { v = String(v || '').trim().replace(',', '.'); return v === '' ? null : parseFloat(v); };
+    const qo = num(box.querySelector('.qo-oil').value), qa = num(box.querySelector('.qo-agua').value);
+    const hm = box.querySelector('.qo-hora').value.trim().match(/^(\d{1,2})(?::?(\d{2}))?$/);
+    if(qo === null || isNaN(qo) || qo < 0){ err.textContent = 'Poné el Q oil en m³ (ej: 26,6).'; return; }
+    if(qa !== null && (isNaN(qa) || qa < 0)){ err.textContent = 'El Q agua tiene que ser un número.'; return; }
+    if(!hm || parseInt(hm[1], 10) > 23){ err.textContent = 'Poné la hora así: 8:30.'; return; }
+    if(!puedeModificar()) return;
+    if(!firestoreOk){ alert('No hay conexion con el guardado compartido.'); return; }
+    const hora = hm[1].padStart(2, '0') + ':' + (hm[2] || '00');
+    const ts = horaATs(hora, Date.now()) || Date.now();
+    const vals = { qoil: qo }; if(qa !== null) vals.qagua = qa;
+    histRegistrar('produccion', bat, bat, vals, ts, operadorName || 'Sin nombre');
+    movToast(bat.replace('Bateria', 'Batería') + ': Q oil ' + fmt(qo) + ' m³ guardado. Sale en el reporte de Baterías.');
+    updatePendCount();
+    try { parteRefrescarSiAbierto(); } catch(e) {}
+    const nuevo = crearBloqueQoil(bat); box.replaceWith(nuevo);
+  });
+  return box;
+}
+function pendientesQoil(){
+  const corte = corteDePendientesBaterias();
+  const c = corte ? (corte.getTime ? corte.getTime() : corte) : 0;
+  return (HIST || []).filter(h => h.tipo === 'produccion' && TANQUES_BATERIAS[h.grupo] && (h._creado || h.ts) > c && h.ts > c - 864e5).sort((a, b) => a.ts - b.ts);
+}
 function crearBloqueBombeo(bat){
   const cfg = BOMBEO_PTC[bat];
   const box = document.createElement('div');
@@ -9389,6 +9443,7 @@ function crearBloqueBombeo(bat){
 
 function renderTanques(){
   const main = document.getElementById('tanquesMain');
+  if(!tendSyncIniciado){ iniciarTendenciaSync(); setTimeout(() => { const m = document.getElementById('tanquesMain'); if(m && m.style.display !== 'none' && !(document.activeElement && document.activeElement.closest && document.activeElement.closest('#tanquesMain'))) renderTanques(); }, 4000); }
   main.innerHTML = '<p class="seccion-titulo">Baterias</p><div id="bateriasAcordeon"></div>';
   const cont = document.getElementById('bateriasAcordeon');
   Object.keys(TANQUES_BATERIAS).forEach(bat => {
@@ -9403,6 +9458,7 @@ function renderTanques(){
         .concat(BOMBEO_PTC[bat] ? BOMBEO_PTC[bat].bombas.map(b => ({ origen: 'bateria', equipo: b, bateria: bat, label: b + ' (bomba a PTC)' })) : []),
       otro: { origen: 'bateria', bateria: bat } }));
     body.appendChild(crearNotasEquipoBox(bat));
+    body.appendChild(crearBloqueQoil(bat));
     if(BOMBEO_PTC[bat]) body.appendChild(crearBloqueBombeo(bat));
     TANQUES_BATERIAS[bat].forEach(tk => body.appendChild(crearTarjetaTanque(tk, bat, 'baterias_tanques', TANQUES_DATA)));
     body.appendChild(crearBotonGrupo(bat, x => x.tipo === 'tk' && x.col === 'baterias_tanques' && x.bateria === bat));
@@ -13796,7 +13852,7 @@ window.addEventListener('error', (ev) => {
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202611160830;
+var APP_VERSION = 202611160900;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
