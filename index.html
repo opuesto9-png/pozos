@@ -1659,6 +1659,13 @@
   .alam-pozo-form{ margin-top:10px; }
   .bat-solapas{ display:flex; gap:8px; margin:8px 0 4px; flex-wrap:wrap; }
   .bctrl-top{ max-width:180px; }
+  .bctrl-activos{ display:flex; flex-direction:column; gap:6px; margin:6px 0 10px; }
+  .bctrl-act{ display:flex; align-items:center; gap:8px; flex-wrap:nowrap; background:rgba(232,131,58,.10); border:1px solid rgba(232,131,58,.35); border-radius:10px; padding:8px 10px; font-size:14px; }
+  .bctrl-act-t{ flex:1; min-width:0; }
+  .bctrl-act .bc-quitar{ flex:0 0 auto; margin:0; }
+  .bctrl-nuevo{ margin:6px 0 4px; }
+  .bctrl-nuevo summary{ cursor:pointer; font-weight:600; color:var(--accent, #7fd3e8); padding:6px 0; }
+  .bctrl-tit2{ margin-top:16px; }
   .bctrl-pozo{ border-top:1px solid var(--line); padding:10px 0 4px; margin-top:8px; }
   .bctrl-pz{ display:flex; flex-direction:column; gap:2px; margin-bottom:6px; }
   .bctrl-pz small{ color:var(--muted); font-size:12px; }
@@ -5857,9 +5864,10 @@ function parteBateriasFilas(forzarTodos){
     'Se bombea stock de oil: ' + bombeoFmt(Number(b.volumenM3) || 0, 2) + ' m³'
   ]));
   // medicion de petroleo (Q oil) cargada a mano
-  const prodBase = forzarTodos ? (HIST || []).filter(h => (h.tipo === 'produccion' || h.tipo === 'control') && TANQUES_BATERIAS[h.grupo] && h.ts > Date.now() - 864e5) : pendientesQoil();
+  const prodBase = forzarTodos ? (HIST || []).filter(h => (h.tipo === 'produccion' || h.tipo === 'control' || h.tipo === 'control_ini') && TANQUES_BATERIAS[h.grupo] && h.ts > Date.now() - 2 * 864e5) : pendientesQoil();
   prodBase.forEach(h => { const d = new Date(h.ts); const f = (n) => String(Math.round(n * 100) / 100).replace('.', ',');
-    if(h.tipo === 'control'){ filasTs.push([h.ts, fechaDe(d), horaDe(d), h.grupo, 'Control ' + h.equipo, batCtrlTexto(h.vals || {}, h)]); return; }
+    if(h.tipo === 'control_ini'){ filasTs.push([h.ts, fechaDe(d), horaDe(d), h.grupo, 'Control ' + h.equipo, 'Entra en control en ' + batTkCorto(h.tanque) + ' a las ' + hhmmDeTs(h.ts)]); return; }
+    if(h.tipo === 'control'){ filasTs.push([h.ts, fechaDe(d), horaDe(d), h.grupo, 'Control ' + h.equipo + (h.tanque ? ' (' + batTkCorto(h.tanque) + ')' : ''), (h.inicio ? 'Resultado del control iniciado el ' + tendFechaHora(h.inicio) + ': ' : '') + batCtrlTexto(h.vals || {}, h)]); return; }
     filasTs.push([h.ts, fechaDe(d), horaDe(d), h.grupo, 'Medición de petróleo',
       'Q oil: ' + f(h.vals.qoil) + ' m³' + (h.vals.qagua != null ? ' / Q agua: ' + f(h.vals.qagua) + ' m³' : '')]); });
   filasTs.sort((a,b) => a[0] - b[0]);
@@ -9380,7 +9388,7 @@ function crearBloqueQoil(bat){
     <div class="qoil-grid">
       <label class="camion-field"><span>Q oil (m³)</span><input type="text" inputmode="decimal" class="qo-oil" placeholder="ej: 26,6"></label>
       <label class="camion-field"><span>Q agua (m³, opcional)</span><input type="text" inputmode="decimal" class="qo-agua" placeholder="opcional"></label>
-      <label class="camion-field"><span>Hora de la medición</span><input type="text" inputmode="numeric" maxlength="5" class="qo-hora" value="${hhmmDeTs(Date.now())}"></label>
+      <label class="camion-field"><span>Hora de la medición</span><input type="text" inputmode="numeric" maxlength="5" class="qo-hora hora-auto" value="${hhmmDeTs(Date.now())}"></label>
       <button type="button" class="camion-save qo-ok">Guardar Q oil</button>
     </div>
     <div class="qoil-err" role="alert"></div>
@@ -9429,28 +9437,68 @@ function batCtrlTexto(v, h){
   if(v.gpd != null) partes.push('GPD ' + f(v.gpd) + ' m³/día'); else if(v.gpdSR || (h && h.sinGpd)) partes.push('GPD SR');
   return partes.join(' · ');
 }
+// controles en curso: un pozo "entra en control" en un tanque a una hora y al dia siguiente se cargan los
+// resultados. El inicio queda como 'control_ini' en el historial (extra: tanque); el resultado como 'control'
+// (extra: tanque e inicio) y cierra el control.
+function batCtrlActivos(bat){
+  const ini = (HIST || []).filter(h => h.tipo === 'control_ini' && h.grupo === bat).sort((a, b) => b.ts - a.ts);
+  const vistos = new Set(), out = [];
+  ini.forEach(h => {
+    if(vistos.has(h.equipo)) return;
+    vistos.add(h.equipo);
+    const cerrado = (HIST || []).some(x => x.tipo === 'control' && x.equipo === h.equipo && x.ts > h.ts);
+    if(!cerrado) out.push(h);
+  });
+  return out.sort((a, b) => a.ts - b.ts);
+}
+function batCtrlTanques(bat){
+  const l = (TANQUES_BATERIAS[bat] || []).slice();
+  return l.filter(t => /control/i.test(t)).concat(l.filter(t => !/control/i.test(t)));
+}
+function batTkCorto(t){ return String(t || '').split(' ')[0]; }
+function batHoraParse(txt){
+  const m = String(txt || '').trim().match(/^(\d{1,2})(?::?(\d{2}))?$/);
+  if(!m || parseInt(m[1], 10) > 23 || (m[2] && parseInt(m[2], 10) > 59)) return null;
+  return [parseInt(m[1], 10), parseInt(m[2] || '0', 10)];
+}
 function crearBloqueControlesBat(bat){
   const box = document.createElement('div');
   box.className = 'qoil-box bctrl-box';
-  const pozos = batCtrlPozos(bat);
+  const activos = batCtrlActivos(bat);
   const ultDe = (pz) => (HIST || []).filter(h => h.tipo === 'control' && h.equipo === pz).sort((a, b) => b.ts - a.ts)[0];
   const fmt = (n) => n == null ? '' : String(Math.round(n * 100) / 100).replace('.', ',');
-  box.innerHTML = `<p class="qoil-tit">Controles de pozos</p>
-    <div class="bctrl-top"><label class="camion-field"><span>Hora del control</span><input type="text" inputmode="numeric" maxlength="5" class="bc-hora" value="${hhmmDeTs(Date.now())}"></label></div>
-    ${pozos.length ? pozos.map(pz => { const u = ultDe(pz), v = (u && u.vals) || {}; return `<div class="bctrl-pozo" data-pozo="${avisoEsc(pz)}">
-      <div class="bctrl-pz"><b>${avisoEsc(pz)}</b><small>${u ? 'anterior ' + avisoEsc(qcCuando(u.ts)) + ': ' + avisoEsc(batCtrlTexto(v, u)) : 'sin controles anteriores'}</small></div>
+  const filas = activos.map(h => ({ pz: h.equipo, ini: h })).concat((crearBloqueControlesBat._extra[bat] || []).filter(pz => !activos.some(a => a.equipo === pz)).map(pz => ({ pz, ini: null })));
+  const tks = batCtrlTanques(bat);
+  box.innerHTML = `<p class="qoil-tit">Pozos en control</p>
+    ${activos.length ? `<div class="bctrl-activos">${activos.map(h => `<div class="bctrl-act"><span class="bctrl-act-t"><b>${avisoEsc(h.equipo)}</b> en <b>${avisoEsc(batTkCorto(h.tanque))}</b> desde ${avisoEsc(qcCuando(h.ts))}${h.por ? ' · ' + avisoEsc(h.por) : ''}</span><button type="button" class="qc-x bc-quitar" data-id="${avisoEsc(h.docId || h.id)}" aria-label="Quitar">&times;</button></div>`).join('')}</div>` : '<div class="qoil-ult">No hay pozos en control en esta batería.</div>'}
+    <details class="bctrl-nuevo"${activos.length ? '' : ' open'}><summary>Poner un pozo en control</summary>
+      <div class="bctrl-grid">
+        <label class="camion-field"><span>Pozo</span><input type="text" inputmode="numeric" class="ci-pozo" placeholder="ej: 1314"></label>
+        <label class="camion-field"><span>Tanque</span><select class="edit-input ci-tk">${tks.map(t => `<option value="${avisoEsc(t)}">${avisoEsc(t)}</option>`).join('')}</select></label>
+        <label class="camion-field"><span>Empieza</span><select class="edit-input ci-dia"><option value="0">hoy</option><option value="1">ayer</option></select></label>
+        <label class="camion-field"><span>Hora de inicio</span><input type="text" inputmode="numeric" maxlength="5" class="ci-hora hora-auto" value="${hhmmDeTs(Date.now())}"></label>
+      </div>
+      <div class="qoil-err ci-err" role="alert"></div>
+      <div class="qc-bot"><button type="button" class="camion-save ci-ok">Entra en control</button></div>
+    </details>
+    <p class="qoil-tit bctrl-tit2">Resultados del control</p>
+    ${filas.length ? `<div class="bctrl-top"><label class="camion-field"><span>Hora del resultado</span><input type="text" inputmode="numeric" maxlength="5" class="bc-hora hora-auto" value="${hhmmDeTs(Date.now())}"></label></div>
+    ${filas.map(({ pz, ini }) => { const u = ultDe(pz), v = (u && u.vals) || {}; return `<div class="bctrl-pozo" data-pozo="${avisoEsc(pz)}" data-ini="${ini ? avisoEsc(ini.docId || ini.id) : ''}">
+      <div class="bctrl-pz"><b>${avisoEsc(pz)}${ini ? ' · ' + avisoEsc(batTkCorto(ini.tanque)) : ''}</b><small>${ini ? 'en control desde ' + avisoEsc(qcCuando(ini.ts)) : 'sin control marcado'}${u ? ' · anterior ' + avisoEsc(qcCuando(u.ts)) + ': ' + avisoEsc(batCtrlTexto(v, u)) : ''}</small></div>
       <div class="bctrl-grid">
         <label class="camion-field"><span>FPD m³/día</span><input type="text" inputmode="decimal" class="bc-fpd" placeholder="${fmt(v.fpd)}"></label>
         <label class="camion-field"><span>APD m³/día</span><input type="text" inputmode="decimal" class="bc-apd" placeholder="${fmt(v.apd)}"></label>
         <label class="camion-field"><span>OPD m³/día</span><input type="text" inputmode="decimal" class="bc-opd" placeholder="FPD − APD"></label>
         <label class="camion-field"><span>% agua</span><input type="text" inputmode="decimal" class="bc-agua" placeholder="APD / FPD"></label>
         <label class="camion-field"><span>GPD m³/día</span><input type="text" class="bc-gpd" placeholder="número o SR"></label>
-      </div></div>`; }).join('') : '<div class="qoil-ult">Todavía no hay pozos de control en esta batería. Agregá uno abajo.</div>'}
-    <div class="bctrl-add"><input type="text" class="edit-input bc-nuevo" placeholder="Agregar pozo de control (ej: 1314)"><button type="button" class="camion-save bc-add">Agregar</button></div>
-    <div class="qoil-err" role="alert"></div>
-    <div class="qc-bot"><button type="button" class="camion-save bc-ok">Guardar controles</button></div>
-    <div class="qoil-ult">Con FPD y APD, el OPD y el % de agua se calculan solos (se pueden corregir). En GPD poné SR si no hay registro.</div>`;
+      </div></div>`; }).join('')}
+    <div class="qoil-err bc-err" role="alert"></div>
+    <div class="qc-bot"><button type="button" class="camion-save bc-ok">Guardar resultados</button></div>
+    <div class="qoil-ult">Con FPD y APD, el OPD y el % de agua se calculan solos (se pueden corregir). En GPD poné SR si no hay registro. Al guardar, el control se da por terminado.</div>` : '<div class="qoil-ult">Cuando un pozo esté en control, acá se cargan sus resultados.</div>'}
+    <div class="bctrl-add"><input type="text" inputmode="numeric" class="edit-input bc-nuevo" placeholder="Resultado de otro pozo (ej: 1314)"><button type="button" class="camion-save bc-add">Agregar</button></div>`;
   const num = (v) => { v = String(v || '').trim().replace(',', '.'); return v === '' ? null : parseFloat(v); };
+  const pozoNorm = (v) => { v = String(v || '').trim(); return /^\d+$/.test(v) ? 'Ce-' + v : v.replace(/^ce[\s-]*/i, 'Ce-'); };
+  const rehacer = () => box.replaceWith(crearBloqueControlesBat(bat));
   box.querySelectorAll('.bctrl-pozo').forEach(row => {
     const calc = () => {
       const f = num(row.querySelector('.bc-fpd').value), a = num(row.querySelector('.bc-apd').value);
@@ -9461,17 +9509,45 @@ function crearBloqueControlesBat(bat){
     row.querySelector('.bc-fpd').addEventListener('input', calc);
     row.querySelector('.bc-apd').addEventListener('input', calc);
   });
-  box.querySelector('.bc-add').addEventListener('click', () => {
-    let v = box.querySelector('.bc-nuevo').value.trim();
-    if(!v) return;
-    if(/^\d+$/.test(v)) v = 'Ce-' + v;
-    try { const k = 'bat_ctrl_extra_' + bat; const l = JSON.parse(localStorage.getItem(k) || '[]'); if(!l.includes(v)) l.push(v); localStorage.setItem(k, JSON.stringify(l)); } catch(e) {}
-    box.replaceWith(crearBloqueControlesBat(bat));
+  box.querySelectorAll('.bc-quitar').forEach(b => b.addEventListener('click', () => {
+    const h = activos.find(x => (x.docId || x.id) === b.dataset.id);
+    if(!h || !confirm('¿Sacar a ' + h.equipo + ' de control? (se borra la marca de inicio)')) return;
+    if(!puedeModificar()) return;
+    const id = h.docId || h.id;
+    if(firestoreOk && !String(id).startsWith('local-')) db.collection('historial_mediciones').doc(id).delete().catch(() => {});
+    HIST = HIST.filter(x => x !== h);
+    updatePendCount();
+    rehacer();
+  }));
+  box.querySelector('.ci-ok').addEventListener('click', () => {
+    const err = box.querySelector('.ci-err'); err.textContent = '';
+    const pz = pozoNorm(box.querySelector('.ci-pozo').value);
+    const hm = batHoraParse(box.querySelector('.ci-hora').value);
+    if(!pz){ err.textContent = 'Poné el número de pozo.'; return; }
+    if(!hm){ err.textContent = 'Poné la hora de inicio, por ejemplo 900 para las 9:00.'; return; }
+    if(activos.some(a => a.equipo === pz)){ err.textContent = pz + ' ya está en control.'; return; }
+    const d = new Date(); d.setDate(d.getDate() - parseInt(box.querySelector('.ci-dia').value, 10)); d.setHours(hm[0], hm[1], 0, 0);
+    if(d.getTime() > Date.now() + 5 * 60e3){ err.textContent = 'Esa hora todavía no llegó. Si empezó ayer, elegí "ayer".'; return; }
+    if(!puedeModificar()) return;
+    if(!firestoreOk){ alert('No hay conexion con el guardado compartido.'); return; }
+    const tk = box.querySelector('.ci-tk').value;
+    histRegistrar('control_ini', bat, pz, { ini: 1 }, d.getTime(), operadorName || 'Sin nombre', { tanque: tk });
+    movToast(pz + ' en control en ' + batTkCorto(tk) + ' desde las ' + hhmmDeTs(d.getTime()) + '.');
+    updatePendCount();
+    rehacer();
   });
-  box.querySelector('.bc-ok').addEventListener('click', () => {
-    const err = box.querySelector('.qoil-err'); err.textContent = '';
-    const hm = box.querySelector('.bc-hora').value.trim().match(/^(\d{1,2})(?::?(\d{2}))?$/);
-    if(!hm || parseInt(hm[1], 10) > 23){ err.textContent = 'Poné la hora así: 9:00.'; return; }
+  box.querySelector('.bc-add').addEventListener('click', () => {
+    const pz = pozoNorm(box.querySelector('.bc-nuevo').value);
+    if(!pz) return;
+    const l = (crearBloqueControlesBat._extra[bat] = crearBloqueControlesBat._extra[bat] || []);
+    if(!l.includes(pz)) l.push(pz);
+    rehacer();
+  });
+  const ok = box.querySelector('.bc-ok');
+  if(ok) ok.addEventListener('click', () => {
+    const err = box.querySelector('.bc-err'); err.textContent = '';
+    const hm = batHoraParse(box.querySelector('.bc-hora').value);
+    if(!hm){ err.textContent = 'Poné la hora, por ejemplo 900 para las 9:00.'; return; }
     const cargas = [];
     for(const row of box.querySelectorAll('.bctrl-pozo')){
       const pz = row.dataset.pozo;
@@ -9483,26 +9559,43 @@ function crearBloqueControlesBat(bat){
       if(vals.opd == null && vals.fpd != null && vals.apd != null) vals.opd = Math.round((vals.fpd - vals.apd) * 100) / 100;
       if(vals.agua == null && vals.fpd > 0 && vals.apd != null) vals.agua = Math.round(vals.apd / vals.fpd * 10000) / 100;
       if(vals.agua != null && vals.agua > 100){ err.textContent = pz + ': el % de agua no puede pasar de 100.'; return; }
-      if(gpdTxt){ if(/^s\/?r$/i.test(gpdTxt.replace(/\s/g, ''))) vals.gpdSR = true; else { const g = num(gpdTxt); if(g === null || isNaN(g)){ err.textContent = pz + ': en GPD poné un número o SR.'; return; } vals.gpd = g; } }
-      cargas.push([pz, vals]);
+      let sr = false;
+      if(gpdTxt){ if(/^s\/?r$/i.test(gpdTxt.replace(/\s/g, ''))) sr = true; else { const g = num(gpdTxt); if(g === null || isNaN(g)){ err.textContent = pz + ': en GPD poné un número o SR.'; return; } vals.gpd = g; } }
+      const ini = activos.find(a => (a.docId || a.id) === row.dataset.ini);
+      cargas.push([pz, vals, sr, ini]);
     }
     if(!cargas.length){ err.textContent = 'Cargá los valores de al menos un pozo.'; return; }
     if(!puedeModificar()) return;
     if(!firestoreOk){ alert('No hay conexion con el guardado compartido.'); return; }
-    const hora = hm[1].padStart(2, '0') + ':' + (hm[2] || '00');
-    const ts = horaATs(hora, Date.now()) || Date.now();
-    cargas.forEach(([pz, vals]) => { const sr = !!vals.gpdSR; delete vals.gpdSR; histRegistrar('control', bat, pz, vals, ts, operadorName || 'Sin nombre', sr ? { sinGpd: true } : null); });
-    movToast(bat.replace('Bateria', 'Batería') + ': controles de ' + cargas.map(c => c[0]).join(', ') + ' guardados. Salen en el reporte de Baterías.');
+    const d = new Date(); d.setHours(hm[0], hm[1], 0, 0);
+    if(d.getTime() > Date.now() + 5 * 60e3) d.setDate(d.getDate() - 1);
+    cargas.forEach(([pz, vals, sr, ini]) => {
+      const ex = {};
+      if(sr) ex.sinGpd = true;
+      if(ini){ ex.tanque = ini.tanque || ''; ex.inicio = ini.ts; }
+      histRegistrar('control', bat, pz, vals, Math.max(d.getTime(), ini ? ini.ts + 60e3 : 0), operadorName || 'Sin nombre', ex);
+    });
+    crearBloqueControlesBat._extra[bat] = [];
+    movToast(bat.replace('Bateria', 'Batería') + ': resultados de ' + cargas.map(c => c[0]).join(', ') + ' guardados. Salen en el reporte de Baterías.');
     updatePendCount();
     try { parteRefrescarSiAbierto(); } catch(e) {}
-    box.replaceWith(crearBloqueControlesBat(bat));
+    rehacer();
   });
   return box;
 }
+crearBloqueControlesBat._extra = {};
+// hora sin dos puntos: se escribe 900 o 1530 y queda 9:00 / 15:30 (en el celular el teclado numerico no trae ":")
+document.addEventListener('input', (e) => {
+  const t = e.target;
+  if(!t || !t.classList || !t.classList.contains('hora-auto')) return;
+  const dig = t.value.replace(/\D/g, '').slice(0, 4);
+  const nuevo = dig.length <= 2 ? dig : dig.slice(0, dig.length - 2) + ':' + dig.slice(-2);
+  if(nuevo !== t.value) t.value = nuevo;
+}, true);
 function pendientesQoil(){
   const corte = corteDePendientesBaterias();
   const c = corte ? (corte.getTime ? corte.getTime() : corte) : 0;
-  return (HIST || []).filter(h => (h.tipo === 'produccion' || h.tipo === 'control') && TANQUES_BATERIAS[h.grupo] && (h._creado || h.ts) > c && h.ts > c - 864e5).sort((a, b) => a.ts - b.ts);
+  return (HIST || []).filter(h => (h.tipo === 'produccion' || h.tipo === 'control' || h.tipo === 'control_ini') && TANQUES_BATERIAS[h.grupo] && (h._creado || h.ts) > c && h.ts > c - 864e5).sort((a, b) => a.ts - b.ts);
 }
 function crearBloqueBombeo(bat){
   const cfg = BOMBEO_PTC[bat];
@@ -14038,7 +14131,7 @@ window.addEventListener('error', (ev) => {
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202611181000;
+var APP_VERSION = 202611181030;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
