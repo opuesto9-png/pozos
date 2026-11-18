@@ -10983,7 +10983,7 @@ function histRegistrar(tipo, grupo, equipo, vals, ts, por, extra){
   const limpio = {};
   Object.keys(vals || {}).forEach(k => { const n = histNum(vals[k]); if(n !== null) limpio[k] = n; });
   if(!Object.keys(limpio).length) return;
-  const d = Object.assign({ tipo, grupo: grupo || '', equipo, vals: limpio, ts: ts || Date.now(), por: por || operadorName || 'Sin nombre' }, extra || {});
+  const d = Object.assign({ tipo, grupo: grupo || '', equipo, vals: limpio, ts: ts || Date.now(), por: por || operadorName || 'Sin nombre', creadoTs: Date.now() }, extra || {});
   const ref = db.collection('historial_mediciones').doc();
   ref.set(d).catch(() => {});
   HIST = HIST.concat([Object.assign({ id: 'local-' + Date.now() + Math.random(), docId: ref.id, _creado: Date.now() }, d)]);
@@ -11007,7 +11007,9 @@ function iniciarTendenciaSync(){
   tendSyncIniciado = true;
   syncVivo('historial_mediciones', { campo: 'ts', tipo: 'num', desde: () => Date.now() - 31 * 86400e3, limite: 8000 }, (snap) => {
     const l = [];
-    snap.forEach(d => l.push(Object.assign({ id: d.id }, d.data())));
+    // _creado = cuando se GUARDO de verdad (hora del servidor), no la hora escrita en el formulario: si se carga
+    // a las 14 un dato con hora 9:16 y entre medio ya se mando un reporte, igual tiene que salir en el proximo
+    snap.forEach(d => { const x = d.data(); l.push(Object.assign({ id: d.id, _creado: syncModMs(x) || x.creadoTs || 0 }, x)); });
     const locales = HIST.filter(h => String(h.id).startsWith('local-') && Date.now() - (h._creado || h.ts) < 60e3 && !l.some(x => x.id === h.docId || (x.equipo === h.equipo && x.ts === h.ts)));
     HIST = l.concat(locales);
     tendRefrescarSiAbierta();
@@ -14219,7 +14221,7 @@ window.addEventListener('error', (ev) => {
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202611181400;
+var APP_VERSION = 202611181430;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
