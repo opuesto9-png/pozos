@@ -9962,7 +9962,13 @@ function pedTitulo(p){
   let obj = p.objetivo || '';
   if(p.tipo === 'tanque' && p.grupo) obj += ' (' + p.grupo + ')';
   const dur = pedDuracion(p);
-  return t.verbo + ' ' + obj + (dur ? ' por ' + pedDurTxt(dur) : '') + (p.hora ? ' a las ' + p.hora : '');
+  return t.verbo + ' ' + obj + (dur ? ' por ' + pedDurTxt(dur) : '') + (p.hora ? ' a las ' + p.hora : '') + pedVelasTxt(p);
+}
+// pedido de velas con cantidad y tipo (en un mismo lanzamiento puede haber de los tres tipos)
+function pedVelasTxt(p){
+  if(!p || p.tipo !== 'velas' || !p.velas) return '';
+  const f = fraseVelasPozo(p.velas, '');
+  return f ? ': ' + f.replace(/^Se lanzan velas: /, '').replace(/\.$/, '') : '';
 }
 function pedHoraTs(ts){ return ts ? new Date(ts).toTimeString().slice(0, 5) : ''; }
 function pedTs(r){ return r && r._updatedAtDate ? r._updatedAtDate.getTime() : (r && r.clientTs) || 0; }
@@ -10440,6 +10446,14 @@ function abrirPedidoForm(){
       <div class="time-label" id="pedDurLbl">¿Por cuántas horas? (opcional)</div>
       <input type="text" inputmode="decimal" class="edit-input" id="pedDur" placeholder="ej: 2  (vacío = queda abierto)">
     </div>
+    <div id="pedVelasWrap" style="margin-top:8px;display:none">
+      <div class="time-label">¿Cuántas y de qué tipo? (se pueden combinar)</div>
+      <div class="aib-fields">
+        <div class="aib-field"><div class="time-label">Generadoras de gas</div><input type="text" inputmode="numeric" class="edit-input" id="pedVelaGas" placeholder="0"></div>
+        <div class="aib-field"><div class="time-label">Surfactantes de agua</div><input type="text" inputmode="numeric" class="edit-input" id="pedVelaAgua" placeholder="0"></div>
+        <div class="aib-field"><div class="time-label">Condensado</div><input type="text" inputmode="numeric" class="edit-input" id="pedVelaOil" placeholder="0"></div>
+      </div>
+    </div>
     <div class="time-label" style="margin-top:8px" id="pedDetLbl">Detalle (opcional)</div>
     <input type="text" class="edit-input" id="pedDet" placeholder="ej: avisar a sala de control antes">
     ${pedPuedeVerDias() ? `<div class="time-label" style="margin-top:8px">Día</div><input type="date" class="edit-input" id="pedFecha" value="${pedDiaSel || pedHoy()}" min="${pedHoy()}">` : ''}
@@ -10467,6 +10481,7 @@ function abrirPedidoForm(){
     $('pedDetLbl').textContent = t.id === 'otro' ? 'Tarea' : 'Detalle (opcional)';
     $('pedDet').placeholder = t.id === 'otro' ? 'ej: Revisar pérdida en separador SG 8' : 'ej: avisar a sala de control antes';
     $('pedDurWrap').style.display = (t.id === 'abrir' || t.id === 'cerrar') ? '' : 'none';
+    $('pedVelasWrap').style.display = t.id === 'velas' ? '' : 'none';
     $('pedDurLbl').textContent = t.id === 'cerrar' ? '¿Por cuántas horas? (opcional, después se reabre)' : '¿Por cuántas horas? (opcional, después se cierra)';
     $('pedDur').placeholder = t.id === 'cerrar' ? 'ej: 4  (vacío = queda cerrado)' : 'ej: 2  (vacío = queda abierto)';
     const durN = parseFloat(($('pedDur').value || '').replace(',', '.')) || 0;
@@ -10513,11 +10528,24 @@ function abrirPedidoForm(){
     const duracionHs = durTxt ? parseFloat(durTxt) : 0;
     if(!msg && $('pedFecha') && $('pedFecha').value && $('pedFecha').value < pedHoy()) msg = 'No se pueden cargar pedidos para días que ya pasaron.';
     if(!msg && durTxt && !(duracionHs > 0 && duracionHs <= 72)) msg = 'Las horas tienen que ser un número (ej: 2 o 1,5).';
+    let velas = null;
+    if(!msg && t.id === 'velas'){
+      velas = {};
+      for(const [k, id] of [['Gas', 'pedVelaGas'], ['Agua', 'pedVelaAgua'], ['Oil', 'pedVelaOil']]){
+        const v = ($(id).value || '').trim();
+        if(!v) continue;
+        const n = parseInt(v, 10);
+        if(!/^\d+$/.test(v) || n < 1 || n > 50){ msg = 'La cantidad de velas tiene que ser un número entero (ej: 2).'; break; }
+        velas[k] = n;
+      }
+      if(!msg && !Object.keys(velas).length) velas = null;
+    }
     if(msg){ err.textContent = msg; err.style.display = ''; appRegistrarError('pedido no cargado: ' + msg); try { err.scrollIntoView({ block: 'center' }); } catch(e) {} return; }
     if(!puedeModificar()){ appTraza('ped: puedeModificar=no (clave ' + (claveVigente() ? 'vigente' : 'no vigente') + ')'); return; }
     if(!firestoreOk){ appRegistrarError('pedido: sin conexion (firestoreOk=false)'); alert('No hay conexion con el guardado compartido. Revisa tu internet e intenta de nuevo.'); return; }
     const datos = { tipo, objetivo: t.obj ? objetivo : '', grupo, detalle, duracionHs, hora: $('pedHora').value, prioridad: prio, estado: 'pendiente',
       creadoPor: operadorName || 'Sin nombre', creadoTs: Date.now(), fecha: ($('pedFecha') && $('pedFecha').value) || pedHoy() };
+    if(velas) datos.velas = velas;
     const ref = db.collection('pedidos').doc();
     // diagnostico: si el servidor no confirma el guardado en 15 s, queda anotado (y se avisa)
     let confirmado = false;
@@ -14191,7 +14219,7 @@ window.addEventListener('error', (ev) => {
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202611181100;
+var APP_VERSION = 202611181400;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
