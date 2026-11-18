@@ -3183,7 +3183,7 @@ function updatePendCount(){
   }
   const badgeAgua = document.getElementById('pendCountAgua');
   if(badgeAgua){
-    const na = pendientesAguaTanques().length + pendientesAguaEquipos().length + pendientesAguaCamiones().length + pendientesNotaAguaPias2().length;
+    const na = pendientesAguaTanques().length + pendientesAguaEquipos().length + pendientesAguaCamiones().length + pendientesNotaAguaPias2().length + pendientesAguaCamaras().length;
     if(na > 0){ badgeAgua.style.display = ''; badgeAgua.textContent = na; } else { badgeAgua.style.display = 'none'; }
   }
   const badgePtc = document.getElementById('pendCountPtc');
@@ -5903,6 +5903,7 @@ function parteAguaFilas(forzarTodos){
   const equiposBase = forzarTodos ? PIAS2_EQUIPOS_DATA.filter(t => t.estado || t.nota) : pendientesAguaEquipos();
   const camionesBase = forzarTodos ? PIAS2_CAMIONES_DATA : pendientesAguaCamiones();
   const notasBase = forzarTodos ? EQUIPOS_NOTAS.filter(n => n.grupo === 'Pias 2' && n.texto && notaFechaMs(n) > Date.now() - 864e5) : pendientesNotaAguaPias2();
+  const camarasBase = forzarTodos ? (HIST || []).filter(h => h.tipo === 'pias_camaras' && h.ts > Date.now() - 864e5) : pendientesAguaCamaras();
 
   const filasOil = [];
   const conTs = (fila, d) => { fila._ts = d ? d.getTime() : 0; return fila; };
@@ -5920,6 +5921,7 @@ function parteAguaFilas(forzarTodos){
     n.hora || (n._updatedAtDate ? n._updatedAtDate.toTimeString().slice(0,5) : ''),
     'Pias 2', n.equipo || 'General', n.texto || ''
   ], n._updatedAtDate)));
+  camarasBase.forEach(h => filasOil.push(conTs([hhmmDeTs(h.ts), 'Pias 2', 'Cámaras y PQ', piasCamarasTexto(h.vals || {})], new Date(h.ts))));
   filasOil.sort((a,b) => (a[0]||'').localeCompare(b[0]||''));
 
   const filasCamiones = camionesBase.map(c => [
@@ -5927,7 +5929,7 @@ function parteAguaFilas(forzarTodos){
     c.volumen || '', c.nivelTotal || '', c.nivelCorteAgua || '', c.chofer || '', c.transporte || '',
     c.operador || '', c.tanqueDestino || ''
   ]);
-  return { tanquesBase, equiposBase, camionesBase, notasBase, filasOil, filasCamiones };
+  return { tanquesBase, equiposBase, camionesBase, notasBase, camarasBase, filasOil, filasCamiones };
 }
 
 function exportReporteAgua(forzarTodos){
@@ -5935,8 +5937,8 @@ function exportReporteAgua(forzarTodos){
     alert('No se pudo generar el Excel (falta conexion a internet para cargar la libreria).');
     return;
   }
-  const { tanquesBase, equiposBase, camionesBase, notasBase, filasOil, filasCamiones } = parteAguaFilas(forzarTodos);
-  if(tanquesBase.length === 0 && equiposBase.length === 0 && camionesBase.length === 0 && notasBase.length === 0){
+  const { tanquesBase, equiposBase, camionesBase, notasBase, camarasBase, filasOil, filasCamiones } = parteAguaFilas(forzarTodos);
+  if(tanquesBase.length === 0 && equiposBase.length === 0 && camionesBase.length === 0 && notasBase.length === 0 && camarasBase.length === 0){
     if(!forzarTodos){
       const quiere = confirm('No hay novedades de Agua/Pias 2 nuevas desde el ultimo reporte enviado.\n\n¿Generar igual el reporte con TODO lo cargado?');
       if(quiere) exportReporteAgua(true);
@@ -9753,6 +9755,56 @@ function renderTanques(){
   grEnlazarBotones(main);
 }
 
+// ---- Pías 2: cámara de oil, cámara de agua y PQ clarificante ----
+function pendientesAguaCamaras(){
+  const corte = corteDePendientesAgua();
+  const c = corte ? (corte.getTime ? corte.getTime() : corte) : 0;
+  return (HIST || []).filter(h => h.tipo === 'pias_camaras' && (h._creado || h.ts) > c && h.ts > c - 864e5).sort((a, b) => a.ts - b.ts);
+}
+function piasCamarasTexto(v){
+  const f = (n) => String(Math.round(n * 100) / 100).replace('.', ',');
+  const p = [];
+  if(v.camOil != null) p.push('Cámara de oil: ' + f(v.camOil) + ' cm');
+  if(v.camAgua != null) p.push('Cámara de agua: ' + f(v.camAgua) + ' cm');
+  if(v.pqClar != null) p.push('PQ clarificante: ' + f(v.pqClar) + ' lts');
+  return p.join(' / ');
+}
+function crearBloqueCamarasPias(){
+  const box = document.createElement('div');
+  box.className = 'qoil-box';
+  const ult = (HIST || []).filter(h => h.tipo === 'pias_camaras').sort((a, b) => b.ts - a.ts).slice(0, 3);
+  const u = (ult[0] && ult[0].vals) || {};
+  const fmt = (n) => n == null ? '' : String(Math.round(n * 100) / 100).replace('.', ',');
+  box.innerHTML = `<p class="qoil-tit">Cámaras y PQ clarificante</p>
+    <div class="qoil-grid">
+      <label class="camion-field"><span>Cámara de oil (cm)</span><input type="text" inputmode="decimal" class="pc-oil" placeholder="${u.camOil != null ? 'anterior ' + fmt(u.camOil) : 'ej: 120'}"></label>
+      <label class="camion-field"><span>Cámara de agua (cm)</span><input type="text" inputmode="decimal" class="pc-agua" placeholder="${u.camAgua != null ? 'anterior ' + fmt(u.camAgua) : 'ej: 95'}"></label>
+      <label class="camion-field"><span>PQ clarificante (lts)</span><input type="text" inputmode="decimal" class="pc-pq" placeholder="${u.pqClar != null ? 'anterior ' + fmt(u.pqClar) : 'ej: 400'}"></label>
+      <label class="camion-field"><span>Hora</span><input type="text" inputmode="numeric" maxlength="5" class="pc-hora hora-auto" value="${hhmmDeTs(Date.now())}"></label>
+      <button type="button" class="camion-save pc-ok">Guardar</button>
+    </div>
+    <div class="qoil-err" role="alert"></div>
+    <div class="qoil-ult">${ult.length ? 'Últimas: ' + ult.map(h => avisoEsc(piasCamarasTexto(h.vals || {})) + ' · ' + avisoEsc(tendFechaHora(h.ts)) + (h.por ? ' · ' + avisoEsc(h.por) : '')).join(' &nbsp;|&nbsp; ') : (tendSyncIniciado ? 'Todavía no hay datos cargados.' : 'Cargando historial…')}</div>`;
+  box.querySelector('.pc-ok').addEventListener('click', () => {
+    const err = box.querySelector('.qoil-err'); err.textContent = '';
+    const num = (v) => { v = String(v || '').trim().replace(',', '.'); return v === '' ? null : parseFloat(v); };
+    const vals = { camOil: num(box.querySelector('.pc-oil').value), camAgua: num(box.querySelector('.pc-agua').value), pqClar: num(box.querySelector('.pc-pq').value) };
+    if(Object.values(vals).every(v => v === null)){ err.textContent = 'Cargá al menos un dato.'; return; }
+    if(Object.values(vals).some(v => v !== null && (isNaN(v) || v < 0))){ err.textContent = 'Los valores tienen que ser números (ej: 120 o 95,5).'; return; }
+    const hm = String(box.querySelector('.pc-hora').value).trim().match(/^(\d{1,2})(?::?(\d{2}))?$/);
+    if(!hm || parseInt(hm[1], 10) > 23){ err.textContent = 'Poné la hora, por ejemplo 900 para las 9:00.'; return; }
+    if(!puedeModificar()) return;
+    if(!firestoreOk){ alert('No hay conexion con el guardado compartido.'); return; }
+    Object.keys(vals).forEach(k => { if(vals[k] === null) delete vals[k]; });
+    const hora = hm[1].padStart(2, '0') + ':' + (hm[2] || '00');
+    const ts = horaATs(hora, Date.now()) || Date.now();
+    histRegistrar('pias_camaras', 'Pias 2', 'Cámaras', vals, ts, operadorName || 'Sin nombre');
+    movToast('Pías 2: ' + piasCamarasTexto(vals) + ' guardado. Sale en el reporte de Agua.');
+    updatePendCount();
+    box.replaceWith(crearBloqueCamarasPias());
+  });
+  return box;
+}
 function renderPias(){
   const main = document.getElementById('piasMain');
   main.innerHTML = `
@@ -9760,6 +9812,7 @@ function renderPias(){
     <div id="piasNotasCont"></div>
     <p class="seccion-titulo">Tanques Pias 2</p>
     <div id="piasTanquesCont"></div>
+    <div id="piasCamarasCont"></div>
     <p class="seccion-titulo">Compresores de aire</p>
     <div id="compresoresCont"></div>
     <p class="seccion-titulo">Bombas Pias 2</p>
@@ -9798,6 +9851,8 @@ function renderPias(){
   document.getElementById('piasNotasCont').appendChild(crearNotasEquipoBox('Pias 2'));
   const piasTanquesCont = document.getElementById('piasTanquesCont');
   PIAS2_TANQUES_NOMBRES.forEach(tk => piasTanquesCont.appendChild(crearTarjetaTanque(tk, 'Pias 2', 'pias2_tanques', PIAS2_TANQUES_DATA)));
+  if(!tendSyncIniciado){ iniciarTendenciaSync(); setTimeout(() => { const c = document.getElementById('piasCamarasCont'); if(c && !(document.activeElement && document.activeElement.closest && document.activeElement.closest('#piasCamarasCont'))){ c.innerHTML = ''; c.appendChild(crearBloqueCamarasPias()); } }, 4000); }
+  document.getElementById('piasCamarasCont').appendChild(crearBloqueCamarasPias());
 
   const compresoresCont = document.getElementById('compresoresCont');
   COMPRESORES_PIAS2.forEach(k => compresoresCont.appendChild(crearTarjetaEquipo(k, 'compresor', PIAS2_EQUIPOS_DATA)));
@@ -10985,6 +11040,11 @@ function tendSeries(){
       const nom = h.equipo && h.equipo !== 'Scraper' ? 'Scraper ' + h.equipo : 'Scraper';
       add('sc|' + h.equipo, { sector: 'quim', nombre: nom, que: 'minutos de viaje', unidad: 'min', grupo: h.grupo }, h.ts, v.minutos, h.por);
       add('sp|' + h.equipo, { sector: 'quim', nombre: nom, que: 'presión de salida', unidad: 'kg/cm²', grupo: h.grupo }, h.ts, v.psal, h.por);
+    }
+    else if(h.tipo === 'pias_camaras'){
+      add('pco|', { sector: 'pias', nombre: 'Cámara de oil', que: 'nivel', unidad: 'cm', grupo: 'Pias 2' }, h.ts, v.camOil, h.por);
+      add('pca|', { sector: 'pias', nombre: 'Cámara de agua', que: 'nivel', unidad: 'cm', grupo: 'Pias 2' }, h.ts, v.camAgua, h.por);
+      add('ppq|', { sector: 'pias', nombre: 'PQ clarificante', que: 'stock', unidad: 'lts', grupo: 'Pias 2' }, h.ts, v.pqClar, h.por);
     }
     else if(h.tipo === 'produccion'){
       add('qo|' + h.equipo, { sector: 'baterias', nombre: h.equipo, que: 'Q oil', unidad: 'm³', grupo: h.grupo }, h.ts, v.qoil, h.por);
@@ -14131,7 +14191,7 @@ window.addEventListener('error', (ev) => {
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202611181030;
+var APP_VERSION = 202611181100;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
