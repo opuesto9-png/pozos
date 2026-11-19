@@ -3076,6 +3076,62 @@ function saveAibPozo(pozoKey, newFields){
     alert('No se pudo guardar el cambio (' + err.message + '). Revisa tu conexion.');
   });
   if(newFields.bp || newFields.pl) histRegistrar('aib', newFields.bateria, pozoKey, { bp: newFields.bp, pl: newFields.pl });
+  if(newFields.estado){
+    const ts = horaATs(newFields.hora, Date.now()) || Date.now();
+    const vals = { marcha: newFields.estado === 'Parado' ? 0 : 1 };
+    if(histNum(newFields.bp) !== null) vals.bp = newFields.bp;
+    if(histNum(newFields.pl) !== null) vals.pl = newFields.pl;
+    histRegistrar('aib_ev', newFields.bateria, pozoKey, vals, ts, operadorName || 'Sin nombre',
+      { estado: newFields.estado, motivoParo: newFields.motivoParo || '', nota: newFields.nota || '', perdidas: !!newFields.perdidas, bpTxt: newFields.bp || '', plTxt: newFields.pl || '' });
+  }
+}
+// ---- AIB: paradas y puestas en marcha por dia operativo (de 09:00 a 09:00) ----
+function inicioDiaAib(ts){
+  const d = new Date(ts);
+  if(d.getHours() < 9) d.setDate(d.getDate() - 1);
+  d.setHours(9, 0, 0, 0);
+  return d.getTime();
+}
+function aibEvRec(h){
+  return { estado: h.estado || (h.vals && h.vals.marcha === 0 ? 'Parado' : 'Marcha'), motivoParo: h.motivoParo || '', nota: h.nota || '',
+    perdidas: !!h.perdidas, bp: h.bpTxt || (h.vals && h.vals.bp != null ? String(h.vals.bp) : ''), pl: h.plTxt || (h.vals && h.vals.pl != null ? String(h.vals.pl) : '') };
+}
+function aibEventos(pozo){
+  return (HIST || []).filter(h => h.tipo === 'aib_ev' && (!pozo || h.equipo === pozo)).sort((a, b) => a.ts - b.ts);
+}
+// horas paradas / en marcha del dia (siempre suman 24). Estado a las 09:00: el ultimo evento anterior;
+// si no hay, se asume que estaba en marcha (un paro registrado implica que venia funcionando)
+function aibHorasDia(pozo, ini){
+  const fin = ini + 864e5;
+  const evs = aibEventos(pozo);
+  const previo = evs.filter(e => e.ts < ini).pop();
+  let marcha = previo ? aibEvRec(previo).estado !== 'Parado' : true;
+  let t = ini, parado = 0;
+  evs.filter(e => e.ts >= ini && e.ts < fin).forEach(e => {
+    if(!marcha) parado += e.ts - t;
+    t = e.ts;
+    marcha = aibEvRec(e).estado !== 'Parado';
+  });
+  if(!marcha) parado += fin - t;
+  const hp = Math.round(parado / 36e5 * 10) / 10;
+  return { parado: hp, marcha: Math.round((24 - hp) * 10) / 10 };
+}
+function aibFilasEventos(forzarTodos){
+  const corte = corteDePendientes();
+  const c = corte ? (corte.getTime ? corte.getTime() : corte) : 0;
+  const ev = aibEventos().filter(h => forzarTodos ? h.ts > Date.now() - 864e5 : ((h._creado || h.ts) > c && h.ts > c - 2 * 864e5));
+  const grupos = {};
+  ev.forEach(h => { const k = h.equipo + '|' + inicioDiaAib(h.ts); (grupos[k] = grupos[k] || []).push(h); });
+  return Object.values(grupos).map(l => {
+    l.sort((a, b) => a.ts - b.ts);
+    const ini = inicioDiaAib(l[0].ts);
+    const frases = [];
+    l.forEach(h => { let t = buildAibNovedad(aibEvRec(h)).trim(); if(t && !/[.!?]$/.test(t)) t += '.'; if(!frases.includes(t)) frases.push(t); });
+    const hs = aibHorasDia(l[0].equipo, ini);
+    const ult = l[l.length - 1];
+    return { hora: l.length > 1 ? hhmmDeTs(l[0].ts) + '-' + hhmmDeTs(ult.ts) : hhmmDeTs(l[0].ts), instalacion: ult.grupo || '', pozo: l[0].equipo,
+      novedad: frases.join(' '), _ts: ult.ts, _aibIni: ini, horasPerdida: hs.parado, horasProduccion: hs.marcha };
+  }).sort((a, b) => a._ts - b._ts);
 }
 function deleteAibPozo(pozoKey){
   if(!firestoreOk) return;
@@ -6254,7 +6310,10 @@ function parteCampoFilas(forzarTodos){
 
   // OIL: pozos de AIB con BP/PL cargados, modificados desde el ultimo parte (o todos, si se fuerza)
   const oilBase = forzarTodos ? AIB_POZOS.filter(p => p.bp || p.pl || p.estado === 'Parado' || (p.nota && p.nota.trim())).sort((a,b) => (a._updatedAtDate||0) - (b._updatedAtDate||0)) : pendientesDeReporteAib();
-  const filasOil = oilBase
+  if(!tendSyncIniciado){ try { iniciarTendenciaSync(); } catch(e) {} }
+  const filasOilEv = aibFilasEventos(forzarTodos);
+  const conEv = new Set(filasOilEv.map(f => f.pozo));
+  const filasOil = oilBase.filter(rec => !conEv.has(rec.pozo))
     .map(rec => ({
       hora: rec.hora || '',
       instalacion: rec.bateria || '',
@@ -6263,7 +6322,7 @@ function parteCampoFilas(forzarTodos){
       _ts: rec._updatedAtDate ? rec._updatedAtDate.getTime() : 0,
       horasPerdida: null,
       horasProduccion: null
-    }));
+    })).concat(filasOilEv).sort((a, b) => (a._ts || 0) - (b._ts || 0));
 
   // NOVEDADES GENERALES de USPA (sin pozo especifico), modificadas desde el ultimo parte (o todas, si se fuerza)
   const notasBase = forzarTodos ? USPA_NOTAS.filter(n => n.texto && notaFechaMs(n) > Date.now() - 864e5).sort((a,b) => (a._updatedAtDate||0) - (b._updatedAtDate||0)) : pendientesDeReporteNotas();
@@ -6359,7 +6418,9 @@ function parteAgruparPorDia(filasGas, filasOil){
   const clave = (f) => inicioDiaOperativo(new Date(f._ts || ultimo)).getTime();
   const g = (k) => (grupos[k] = grupos[k] || { ini: new Date(k), gas: [], oil: [] });
   filasGas.forEach(f => g(clave(f)).gas.push(f));
-  filasOil.forEach(f => g(clave(f)).oil.push(f));
+  // OIL (AIB) va por dia operativo de 09:00 a 09:00: se agrupa con el parte de gas de esa misma fecha
+  const claveOil = (f) => { const d = new Date(f._aibIni || inicioDiaAib(f._ts || ultimo)); d.setHours(6, 0, 0, 0); return d.getTime(); };
+  filasOil.forEach(f => g(claveOil(f)).oil.push(f));
   return Object.keys(grupos).map(Number).sort((a, b) => a - b).map(k => grupos[k]);
 }
 function parteDiaTxt(d){ return d.ini.toLocaleDateString('es-AR', { weekday: 'short', day: '2-digit', month: '2-digit' }); }
@@ -10640,15 +10701,15 @@ function parteVivoDatos(iso){
   parteCorteVivo = { gas: new Date(ini6.getTime() - 1), bat: new Date(ini9.getTime() - 1), agua: new Date(ini9.getTime() - 1) };
   try {
     const c0 = parteCampoFilas(false);
-    const c = { filasGasConNotas: c0.filasGasConNotas.filter(f => en6(f._ts)), filasOil: c0.filasOil.filter(f => en6(f._ts)) };
+    const c = { filasGasConNotas: c0.filasGasConNotas.filter(f => en6(f._ts)), filasOil: c0.filasOil.filter(f => en9(f._ts)) };
     const envGas = parteMs(ultimoReporteTs);
     out.hojas.push({ id: 'gas', titulo: 'GAS', sub: 'Parte de campo', desde: ini6,
       cols: ['Hora', 'Instalación', 'Pozo', 'Novedad', 'Hs cierre', 'Hs prod.'],
       filas: c.filasGasConNotas.map(f => ({ ts: f._ts || 0, enviado: !!(envGas && f._ts && f._ts <= envGas), pozo: f.pozo, man: !!f._tipoMan,
         celdas: [f.hora, f.instalacion, f.pozo, f.novedad, f.horasPerdida == null ? '' : String(f.horasPerdida).replace('.', ','), f.horasProduccion == null ? '' : String(f.horasProduccion).replace('.', ',')] })) });
-    out.hojas.push({ id: 'oil', titulo: 'OIL', sub: 'Parte de campo (AIB)', desde: ini6,
-      cols: ['Hora', 'Instalación', 'Pozo', 'Novedad'],
-      filas: c.filasOil.map(f => ({ ts: f._ts || 0, enviado: !!(envGas && f._ts && f._ts <= envGas), celdas: [f.hora, f.instalacion, f.pozo, f.novedad] })) });
+    out.hojas.push({ id: 'oil', titulo: 'OIL', sub: 'Parte de campo (AIB) · de 09:00 a 09:00', desde: ini9,
+      cols: ['Hora', 'Instalación', 'Pozo', 'Novedad', 'Hs parado', 'Hs marcha'],
+      filas: c.filasOil.map(f => ({ ts: f._ts || 0, enviado: !!(envGas && f._ts && f._ts <= envGas), celdas: [f.hora, f.instalacion, f.pozo, f.novedad, f.horasPerdida == null ? '' : String(f.horasPerdida).replace('.', ','), f.horasProduccion == null ? '' : String(f.horasProduccion).replace('.', ',')] })) });
     const b0 = parteBateriasFilas(false);
     const b = { filasTs: b0.filasTs.filter(f => en9(f[0])) };
     const envBat = parteMs(ultimoReporteBateriasTs);
@@ -14223,7 +14284,7 @@ window.addEventListener('error', (ev) => {
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202611191045;
+var APP_VERSION = 202611191500;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
