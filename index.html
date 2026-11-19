@@ -5772,7 +5772,8 @@ function marcarMovimientosLimpios(){
 
 function pendientesDeReporteAib(){
   const corte = corteDePendientes();
-  return AIB_POZOS.filter(p => (p.bp || p.pl) && p._updatedAtDate && p._updatedAtDate > corte)
+  // un AIB parado (o con nota) sale aunque no tenga BP/PL cargados (ej: detenido por mantenimiento)
+  return AIB_POZOS.filter(p => (p.bp || p.pl || p.estado === 'Parado' || (p.nota && p.nota.trim())) && p._updatedAtDate && p._updatedAtDate > corte)
     .sort((a,b) => a._updatedAtDate - b._updatedAtDate);
 }
 
@@ -6252,7 +6253,7 @@ function parteCampoFilas(forzarTodos){
   if(evs.length) filasGas.sort((a, b) => a._ts - b._ts);
 
   // OIL: pozos de AIB con BP/PL cargados, modificados desde el ultimo parte (o todos, si se fuerza)
-  const oilBase = forzarTodos ? AIB_POZOS.filter(p => p.bp || p.pl).sort((a,b) => (a._updatedAtDate||0) - (b._updatedAtDate||0)) : pendientesDeReporteAib();
+  const oilBase = forzarTodos ? AIB_POZOS.filter(p => p.bp || p.pl || p.estado === 'Parado' || (p.nota && p.nota.trim())).sort((a,b) => (a._updatedAtDate||0) - (b._updatedAtDate||0)) : pendientesDeReporteAib();
   const filasOil = oilBase
     .map(rec => ({
       hora: rec.hora || '',
@@ -9013,8 +9014,9 @@ function buildAibNovedad(rec){
   const plTxt = formatAibPresion(rec.pl);
 
   if(rec.estado === 'Parado'){
-    const motivo = rec.motivoParo || 'sin especificar';
-    let texto = `Se verifica AIB, PARADO - Motivo: ${motivo}. #BP: ${bpTxt} / #PL: ${plTxt}.`;
+    const motivo = rec.motivoParo || (rec.nota && rec.nota.trim() ? '' : 'sin especificar');
+    let texto = 'Se verifica AIB, PARADO' + (motivo ? ` - Motivo: ${motivo}.` : '.');
+    if(rec.bp || rec.pl) texto += ` #BP: ${bpTxt} / #PL: ${plTxt}.`;
     if(rec.nota && rec.nota.trim()) texto += ` ${rec.nota.trim()}`;
     return texto;
   }
@@ -9067,7 +9069,7 @@ function renderAib(){
       otro: null }));
   });
 
-  const MOTIVOS_PARO = ['Paro ecologico', 'Corte de vastago', 'Sobrecarga', 'Sobrevelocidad'];
+  const MOTIVOS_PARO = ['Paro ecologico', 'Corte de vastago', 'Sobrecarga', 'Sobrevelocidad', 'Mtto programado', 'Ajuste golpe de bomba'];
 
   ordenados.forEach(rec => {
     const row = document.createElement('div');
@@ -14221,7 +14223,7 @@ window.addEventListener('error', (ev) => {
 // se vuelve a abrir) si en GitHub hay una version mas nueva que la que esta corriendo; si la hay, muestra
 // un cartel con un solo boton "Actualizar". Si hay una ficha o formulario abierto, espera a que se cierre
 // para no perder lo que se esta escribiendo.
-var APP_VERSION = 202611181430;
+var APP_VERSION = 202611191045;
 // ---- version de la app: "Ultima version" o "Version vieja", con su fecha (APP_VERSION = AAAAMMDDhhmm) ----
 function appVersionFecha(v){
   const t = String(v || '');
